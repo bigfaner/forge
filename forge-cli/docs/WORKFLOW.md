@@ -343,7 +343,7 @@ Note: verify-task-done only validates status; it does not delete any files.
     └────────┬────────┘             └─────────────────┘
               ▼
     ┌─────────────────┐
-    │ Warn if e2e     │
+    │ Warn if test     │
     │ scripts exist   │
     │ but not         │
     │ promoted        │
@@ -368,24 +368,12 @@ Note: verify-task-done only validates status; it does not delete any files.
               │ pass
               ▼
     ┌─────────────────┐
-    │ Step 3: E2E     │
-    │ regression      │
-    │ (if test-e2e    │
-    │  recipe exists) │
-    │                 │
-    │ 3a. just        │──────► setup FAIL: skip e2e, warn
-    │     e2e-setup   │
-    │                 │
-    │ 3b. Server      │──────► probe FAIL: skip e2e, warn
-    │     health      │
-    │     probe       │
-    │                 │
-    │ 3c. just        │      ┌──────────────────────────────┐
-    │     test-e2e    │─────►│ FAIL: addFixTask() creates   │
-    │                 │      │ P0 fix-task, save output,    │
+    │ Step 3: Full    │      ┌──────────────────────────────┐
+    │ test regression │─────►│ FAIL: addFixTask() creates   │
+    │ just test       │      │ P0 fix-task, save output,    │
     └────────┬────────┘      │ block hook → exit(0)         │
              │               └──────────────────────────────┘
-             │ pass (or e2e unavailable)
+             │ pass
              ▼
     ┌─────────────────┐
     │ ALL PASS:       │
@@ -395,12 +383,12 @@ Note: verify-task-done only validates status; it does not delete any files.
 
 **addFixTask()**: On failure at any gate/test step, auto-creates a P0 fix-task with
 type `coding.fix` (auto-discovers template). Extracts source files from error output, saves raw output
-to `tests/results/` (unit) or `tests/e2e/results/` (e2e), updates `.forge/state.json`,
+to `tests/results/`, updates `.forge/state.json`,
 and prints a hook JSON block reason so the agent can `forge task claim` the fix.
 
-**Note**: Feature e2e tests are NOT run by this hook.
-They are owned by T-test-3 (`run-e2e-tests` task) in the task chain.
-This hook is the project health gate: unit/integration tests + regression suite.
+**Note**: Feature-specific tests are NOT run by this hook.
+They are owned by the test-run task in the task chain.
+This hook is the project health gate: unit tests + regression suite.
 
 **Test command detection order:**
 1. `justfile`/`Justfile` contains `test` recipe -> `just test`
@@ -971,8 +959,8 @@ Source → pending
                     ┌─────────────────┐
                     │ Generate test   │
                     │ tasks from      │
-                    │ embedded        │
-                    │ profiles        │
+                    │ detected        │
+                    │ surfaces        │
                     └────────┬────────┘
                               │
                               ▼
@@ -987,6 +975,5 @@ Source → pending
 | Flag | Required | Default | Description |
 |------|----------|---------|-------------|
 | `--feature` | Yes | - | Feature slug |
-| `--test-profiles` | No | from config | Override test profiles (comma-separated) |
 
 **Idempotent:** re-running produces the same output. Runtime state (status, sourceTaskID, blockedReason) is always preserved.

@@ -2036,7 +2036,7 @@ func TestSurfaceOrchestrationSequence(t *testing.T) {
 		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte("test:\n  echo test-ok\n"), 0644); err != nil {
 			t.Fatal(err)
 		}
-		// Should fall back to the legacy behavior (e2eprobe + just test)
+		// Should fall back to the legacy behavior (serverprobe + just test)
 		// which returns nil since no e2e config exists (CLI-only probe returns true)
 		err := runTestRegression(projectRoot, "test-feature")
 		if err != nil {

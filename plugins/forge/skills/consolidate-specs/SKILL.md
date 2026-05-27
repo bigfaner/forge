@@ -19,7 +19,7 @@ Extract key business rules and technical specifications from feature documents i
 
 ## When to Use
 
-- As T-specs-1 after all e2e tests are promoted (standard task pipeline)
+- As T-specs-1 after all tests pass (standard task pipeline)
 - User invokes `/consolidate-specs` manually at any time
 
 ## Prerequisites

@@ -11,7 +11,7 @@
 | Java           | `**/*Test.java`, `**/*Tests.java`               |
 | C#             | `**/*Tests.cs`, `**/*Test.cs`                   |
 
-Focus on `tests/` and `tests/e2e/` directories first (forge convention), then project-wide.
+Focus on `tests/` and `tests/<journey>/` directories first (forge convention), then project-wide.
 
 ## Import Detection (Assertion Library)
 
@@ -24,10 +24,10 @@ For each test file found, read and extract imports:
 
 ## Tag / Marker Detection
 
-- Go: `//go:build e2e`, `//go:build feature`, `// +build e2e`
-- JS/TS: `describe('@feature', ...)`, `describe('@e2e', ...)`, `{ tags: ['@feature'] }`
-- Python: `@pytest.mark.e2e`, `@pytest.mark.feature`
-- Java: `@Tag("e2e")`, `@Tag("feature")`
+- Go: `//go:build <surface>-<type>`, `//go:build feature`, `// +build <surface>-<type>`
+- JS/TS: `describe('@feature', ...)`, `describe('@<surface>-<type>', ...)`, `{ tags: ['@feature'] }`
+- Python: `@pytest.mark.<surface>_<type>`, `@pytest.mark.feature`
+- Java: `@Tag("<surface>-<type>")`, `@Tag("feature")`
 
 ## Test Function Naming
 

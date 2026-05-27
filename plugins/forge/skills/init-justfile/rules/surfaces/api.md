@@ -80,8 +80,6 @@ api-test:
     set -euo pipefail
     echo "TODO: implement api-test" >&2; exit 1
 
-# DEPRECATED: removed after v3.2.0 — use api-test instead
-alias test-e2e := api-test
 
 # Clean up API test artifacts
 # user-customized

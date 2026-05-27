@@ -93,13 +93,13 @@ One task file per design element. Set `breaking: true` if modifying shared inter
 
 IF `rules/existing-code-split.md` loaded, apply split for shared-code modifications. IF `rules/db-schema.md` loaded, apply schema task rules. IF `rules/ui-placement.md` loaded, apply UI Reference File Requirements.
 
-### Breaking Task Integration Test Impact Assessment
+### Breaking Task Test Impact Assessment
 
-When setting `breaking: true` on a task, the task description MUST include an integration test impact assessment. This ensures fix-tasks are grouped correctly by test suite (directory) rather than by problem type.
+When setting `breaking: true` on a task, the task description MUST include a test impact assessment. This ensures fix-tasks are grouped correctly by test suite (directory) rather than by problem type.
 
 **Assessment format** (add to `## Implementation Notes`):
 ```
-### Integration Test Impact
+### Test Impact
 - Affected test suite(s): <test directory paths>
 - Expected fixture changes: <which test fixtures need updating>
 - Risk level: low/medium/high

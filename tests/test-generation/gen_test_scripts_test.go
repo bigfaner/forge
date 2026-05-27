@@ -1,4 +1,4 @@
-//go:build e2e
+//go:build cli_functional
 
 package testgeneration
 
@@ -151,7 +151,7 @@ domains: [testing, go]
 - Import: "github.com/onsi/gomega"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -193,7 +193,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -262,7 +262,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -327,7 +327,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -346,7 +346,7 @@ domains: [testing, go, cli]
 - Import: "github.com/stretchr/testify/require"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -381,7 +381,7 @@ func TestGenScripts_TC_011_ConventionFileMissingDomainsFrontmatter(t *testing.T)
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -436,7 +436,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -484,7 +484,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -523,7 +523,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -566,7 +566,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/require"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -644,7 +644,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream

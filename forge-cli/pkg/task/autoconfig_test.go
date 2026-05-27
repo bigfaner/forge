@@ -17,7 +17,7 @@ func TestGetBreakdownTestTasks_TestFullFalse(t *testing.T) {
 	// No e2e test tasks, no consolidate (consolidate depends on e2e test chain in breakdown)
 	for _, task := range tasks {
 		if task.ID == "T-test-gen-scripts-cli" ||
-			task.ID == "T-test-run" || task.ID == "T-test-verify-regression" {
+			task.ID == "T-test-run" {
 			t.Errorf("e2e test task %s should not be generated when test.full=false", task.ID)
 		}
 	}
@@ -80,8 +80,7 @@ func TestGetQuickTestTasks_TestQuickFalse(t *testing.T) {
 		if task.ID == "T-test-gen-journeys-cli" ||
 			task.ID == "T-test-gen-contracts" ||
 			task.ID == "T-test-gen-scripts-cli" ||
-			task.ID == "T-test-run" ||
-			task.ID == "T-test-verify-regression" {
+			task.ID == "T-test-run" {
 			t.Errorf("e2e test task %s should not be generated when test.quick=false", task.ID)
 		}
 	}

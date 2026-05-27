@@ -16,7 +16,7 @@ dev:
 unit-test:
     @echo "Error: unit-test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 
-# test: surface-level advanced tests (e2e, integration, etc.)
+# test: surface-level advanced tests (functional, integration, e2e, etc.)
 test journey='':
     @echo "Error: test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 
@@ -45,7 +45,7 @@ test-setup:
 probe path="":
     #!/usr/bin/env bash
     set -euo pipefail
-    config="tests/e2e/config.yaml"
+    config="tests/config.yaml"
     if [ ! -f "$config" ]; then
         echo "OK: no config.yaml (CLI-only project)"
         exit 0

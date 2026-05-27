@@ -648,7 +648,6 @@ func TestGenerateTestTaskMD_EmbedTemplate_LoadsContent(t *testing.T) {
 	}{
 		{"gen-scripts", TypeTestGenScripts, "executable test scripts"},
 		{"run", TypeTestRun, "staged test scripts"},
-		{"verify-regression", TypeTestVerifyRegression, "just test"},
 		{"eval-journey", TypeEvalJourney, "6-dimension rubric"},
 		{"eval-contract", TypeEvalContract, "6-dimension rubric"},
 		{"validation-code", TypeValidationCode, "quality gate"},
@@ -1331,7 +1330,6 @@ func TestAutogenTemplateDiscovery(t *testing.T) {
 	// Verify all auto-gen types resolve to a readable template via naming convention
 	wantTypes := []string{
 		TypeTestGenScripts, TypeTestRun,
-		TypeTestVerifyRegression, TypeEvalJourney, TypeEvalContract,
 		TypeValidationCode, TypeValidationUx,
 		TypeDocReview, TypeDocConsolidate, TypeDocDrift, TypeCleanCode,
 		TypeTestGenJourneys, TypeTestGenContracts,

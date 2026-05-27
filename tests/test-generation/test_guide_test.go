@@ -1,4 +1,4 @@
-//go:build e2e
+//go:build cli_functional
 
 package testgeneration
 
@@ -31,7 +31,7 @@ func TestGuide_TC_003_TestGuideConventionFileCreatedFromExistingTests(t *testing
 	// Create existing test file with testify imports and e2e build tag
 	pkgDir := filepath.Join(projectRoot, "pkg")
 	require.NoError(t, os.MkdirAll(pkgDir, 0755))
-	existingTest := `//go:build e2e
+	existingTest := `//go:build cli_functional
 
 package pkg
 
@@ -68,7 +68,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -121,7 +121,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -200,7 +200,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream

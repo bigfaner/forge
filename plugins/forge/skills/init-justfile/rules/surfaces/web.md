@@ -82,8 +82,6 @@ web-test:
     set -euo pipefail
     echo "TODO: implement web-test" >&2; exit 1
 
-# DEPRECATED: removed after v3.2.0 — use web-test instead
-alias test-e2e := web-test
 
 # Clean up web test artifacts
 # user-customized

@@ -50,8 +50,6 @@ tui-test:
     set -euo pipefail
     echo "TODO: implement tui-test" >&2; exit 1
 
-# DEPRECATED: removed after v3.2.0 — use tui-test instead
-alias test-e2e := tui-test
 
 # Clean up TUI test artifacts
 # user-customized

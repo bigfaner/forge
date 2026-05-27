@@ -29,7 +29,7 @@ The file must include:
 
    - **Name**: <framework name + assertion library>
    - **File pattern**: <test file pattern>
-   - **Package**: <test package name, e.g., e2e>
+   - **Package**: <test package name, e.g., surfacetest>
    - **Test runner**: <test runner command>
    - **Build tag**: <tag syntax if applicable>
    ```
@@ -64,7 +64,7 @@ The file must include:
 
 4. **Optional sections** -- include if extracted patterns provide enough detail, or the framework has well-known conventions:
 
-   - **Import Patterns**: Standard import blocks for e2e tests.
+   - **Import Patterns**: Standard import blocks for surface-level tests.
    - **Code Style**: Test function naming, table-driven test patterns, traceability conventions.
    - **Anti-patterns**: Framework-specific forbidden patterns.
    - **Helpers**: Common helper functions (e.g., `runCLI`, `withRetry`).

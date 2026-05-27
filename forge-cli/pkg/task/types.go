@@ -38,27 +38,26 @@ func IsBusinessTask(id string) bool {
 // Task type constants define the valid execution types.
 // Naming convention: prefix-based categories (coding.*, doc*, test.*, validation.*).
 const (
-	TypeCodingFeature        = "coding.feature"
-	TypeCodingEnhancement    = "coding.enhancement"
-	TypeCodingCleanup        = "coding.cleanup"
-	TypeCodingRefactor       = "coding.refactor"
-	TypeCodingFix            = "coding.fix"
-	TypeDoc                  = "doc"
-	TypeDocReview            = "doc.review"
-	TypeDocSummary           = "doc.summary"
-	TypeDocConsolidate       = "doc.consolidate"
-	TypeDocDrift             = "doc.drift"
-	TypeTestGenContracts     = "test.gen-contracts"
-	TypeTestGenJourneys      = "test.gen-journeys"
-	TypeTestGenScripts       = "test.gen-scripts"
-	TypeTestRun              = "test.run"
-	TypeTestVerifyRegression = "test.verify-regression"
-	TypeEvalJourney          = "eval.journey"
-	TypeEvalContract         = "eval.contract"
-	TypeValidationCode       = "validation.code"
-	TypeValidationUx         = "validation.ux"
-	TypeGate                 = "gate"
-	TypeCleanCode            = "code-quality.simplify"
+	TypeCodingFeature     = "coding.feature"
+	TypeCodingEnhancement = "coding.enhancement"
+	TypeCodingCleanup     = "coding.cleanup"
+	TypeCodingRefactor    = "coding.refactor"
+	TypeCodingFix         = "coding.fix"
+	TypeDoc               = "doc"
+	TypeDocReview         = "doc.review"
+	TypeDocSummary        = "doc.summary"
+	TypeDocConsolidate    = "doc.consolidate"
+	TypeDocDrift          = "doc.drift"
+	TypeTestGenContracts  = "test.gen-contracts"
+	TypeTestGenJourneys   = "test.gen-journeys"
+	TypeTestGenScripts    = "test.gen-scripts"
+	TypeTestRun           = "test.run"
+	TypeEvalJourney       = "eval.journey"
+	TypeEvalContract      = "eval.contract"
+	TypeValidationCode    = "validation.code"
+	TypeValidationUx      = "validation.ux"
+	TypeGate              = "gate"
+	TypeCleanCode         = "code-quality.simplify"
 )
 
 // TaskTypeInfo describes a single task type for display and discovery.
@@ -84,7 +83,6 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeTestGenJourneys, Description: "generate test journeys from specs"},
 	{Name: TypeTestGenScripts, Description: "generate executable test scripts"},
 	{Name: TypeTestRun, Description: "run test scripts and collect results"},
-	{Name: TypeTestVerifyRegression, Description: "verify regression suite after graduation"},
 	{Name: TypeEvalJourney, Description: "evaluate Journey quality with rubric scoring"},
 	{Name: TypeEvalContract, Description: "evaluate Contract quality with rubric scoring"},
 	{Name: TypeValidationCode, Description: "validate code quality and correctness"},
@@ -95,27 +93,26 @@ var TaskTypeRegistry = []TaskTypeInfo{
 
 // ValidTypes is the complete set of valid task type values.
 var ValidTypes = map[string]bool{
-	TypeCodingFeature:        true,
-	TypeCodingEnhancement:    true,
-	TypeCodingCleanup:        true,
-	TypeCodingRefactor:       true,
-	TypeCodingFix:            true,
-	TypeDoc:                  true,
-	TypeDocReview:            true,
-	TypeDocSummary:           true,
-	TypeDocConsolidate:       true,
-	TypeDocDrift:             true,
-	TypeTestGenContracts:     true,
-	TypeTestGenJourneys:      true,
-	TypeTestGenScripts:       true,
-	TypeTestRun:              true,
-	TypeTestVerifyRegression: true,
-	TypeEvalJourney:          true,
-	TypeEvalContract:         true,
-	TypeValidationCode:       true,
-	TypeValidationUx:         true,
-	TypeGate:                 true,
-	TypeCleanCode:            true,
+	TypeCodingFeature:     true,
+	TypeCodingEnhancement: true,
+	TypeCodingCleanup:     true,
+	TypeCodingRefactor:    true,
+	TypeCodingFix:         true,
+	TypeDoc:               true,
+	TypeDocReview:         true,
+	TypeDocSummary:        true,
+	TypeDocConsolidate:    true,
+	TypeDocDrift:          true,
+	TypeTestGenContracts:  true,
+	TypeTestGenJourneys:   true,
+	TypeTestGenScripts:    true,
+	TypeTestRun:           true,
+	TypeEvalJourney:       true,
+	TypeEvalContract:      true,
+	TypeValidationCode:    true,
+	TypeValidationUx:      true,
+	TypeGate:              true,
+	TypeCleanCode:         true,
 }
 
 // IsValidType checks whether a task type string is valid.
@@ -145,19 +142,18 @@ func IsValidType(typ string) bool {
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because
 // they can also serve as business tasks.
 var SystemTypes = map[string]bool{
-	TypeGate:                 true,
-	TypeTestGenContracts:     true,
-	TypeTestGenJourneys:      true,
-	TypeTestGenScripts:       true,
-	TypeTestRun:              true,
-	TypeTestVerifyRegression: true,
-	TypeEvalJourney:          true,
-	TypeEvalContract:         true,
-	TypeValidationCode:       true,
-	TypeValidationUx:         true,
-	TypeDocReview:            true,
-	TypeDocSummary:           true,
-	TypeCleanCode:            true,
+	TypeGate:             true,
+	TypeTestGenContracts: true,
+	TypeTestGenJourneys:  true,
+	TypeTestGenScripts:   true,
+	TypeTestRun:          true,
+	TypeEvalJourney:      true,
+	TypeEvalContract:     true,
+	TypeValidationCode:   true,
+	TypeValidationUx:     true,
+	TypeDocReview:        true,
+	TypeDocSummary:       true,
+	TypeCleanCode:        true,
 }
 
 // IsSystemType returns true if the given type is an auto-generated system type.

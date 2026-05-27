@@ -57,9 +57,9 @@ test journey='':
     if [ -n "{{journey}}" ]; then
         feature_flag="-run TestTC.*$(echo '{{journey}}' | sed 's/.*/\u&/')"
     fi
-    cd tests && go test -v -tags=e2e -timeout=10m -json $feature_flag ./... \
+    cd tests && go test -v -tags=cli_functional -timeout=10m -json $feature_flag ./... \
       | go-junit-report > results/report.xml 2>/dev/null \
-      || go test -v -tags=e2e -timeout=10m $feature_flag ./...
+      || go test -v -tags=cli_functional -timeout=10m $feature_flag ./...
 
 # lint: static analysis
 lint scope="":
@@ -124,7 +124,7 @@ test-setup:
     # Pre-build forge binary for faster test startup (cache optimization)
     cd forge-cli && go build -o bin/forge.exe ./cmd/forge/ && cp bin/forge.exe bin/forge
     # Pre-compile e2e test packages to warm the build cache
-    cd tests && go build -tags=e2e ./...
+    cd tests && go build -tags=cli_functional ./...
     echo "OK: build cache warmed (optional — tests auto-build via TestMain)"
 
 # probe: check if configured services are healthy
@@ -137,6 +137,6 @@ probe path="":
 test-discover:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd tests && go test -tags=e2e -list '.*' ./...
+    cd tests && go test -tags=cli_functional -list '.*' ./...
 
 # --- end forge standard recipes ---

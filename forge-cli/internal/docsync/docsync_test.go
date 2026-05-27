@@ -324,8 +324,7 @@ func TestNoDeadPathReferences(t *testing.T) {
 		constValue string
 	}{
 		{"docs/features/", feature.FeaturesDir},
-		{"tests/e2e/", feature.E2ETestsBaseDir},
-		{"tests/e2e/.graduated/", feature.E2EGraduatedDir},
+		{"tests/", feature.TestBaseDir},
 	}
 
 	for _, rp := range requiredPaths {

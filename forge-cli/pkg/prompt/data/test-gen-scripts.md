@@ -30,7 +30,7 @@ Invoke the skill:
 Skill(skill="forge:gen-test-scripts"{{TEST_TYPE_ARG}})
 ```
 
-This generates executable e2e test scripts from test cases, using the framework specified by the active profile.
+This generates executable e2e test scripts from test cases, using the framework specified by the surface.
 
 ## Record Fields
 

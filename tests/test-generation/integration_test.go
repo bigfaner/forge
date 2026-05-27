@@ -1,4 +1,4 @@
-//go:build e2e
+//go:build cli_functional
 
 package testgeneration
 
@@ -135,7 +135,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -174,7 +174,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -232,7 +232,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -286,7 +286,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream
@@ -324,7 +324,7 @@ func TestIntegration_TC_036_TestGuideToGenTestScriptsPipeline(t *testing.T) {
 	// Create existing test files with testify patterns
 	testDir := filepath.Join(projectRoot, "pkg")
 	require.NoError(t, os.MkdirAll(testDir, 0755))
-	existingTest := `//go:build e2e
+	existingTest := `//go:build cli_functional
 
 package pkg
 
@@ -353,7 +353,7 @@ domains: [testing, go]
 - Import: "github.com/stretchr/testify/assert"
 
 ## Tags
-- Build tag: "//go:build e2e"
+- Build tag: "//go:build cli_functional"
 
 ## Result Format
 - Format: json-stream

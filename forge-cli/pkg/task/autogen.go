@@ -607,6 +607,11 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 	if validateIdx >= 0 && auto.Test.Full && lastRunID != "" {
 		tasks[validateIdx].Dependencies = []string{lastRunID}
 	}
+	// T-validate-ux depends on last run-test (if e2e tasks exist)
+	uxIdx := findTaskIndex(tasks, "T-validate-ux")
+	if uxIdx >= 0 && auto.Test.Full && lastRunID != "" {
+		tasks[uxIdx].Dependencies = []string{lastRunID}
+	}
 
 	// T-specs-consolidate depends on last run-test (if e2e tasks exist) or nothing
 	if auto.ConsolidateSpecs.Full {
@@ -642,6 +647,11 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, _ []string, surfaces map[string]st
 		validateIdx := findTaskIndex(tasks, "T-validate-code")
 		if validateIdx >= 0 && auto.Test.Quick && lastRunID != "" {
 			tasks[validateIdx].Dependencies = []string{lastRunID}
+		}
+		// T-validate-ux depends on last run-test (if e2e tasks exist) or nothing
+		uxIdx := findTaskIndex(tasks, "T-validate-ux")
+		if uxIdx >= 0 && auto.Test.Quick && lastRunID != "" {
+			tasks[uxIdx].Dependencies = []string{lastRunID}
 		}
 	}
 

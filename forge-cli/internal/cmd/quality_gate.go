@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"forge-cli/internal/cmd/base"
-	"forge-cli/pkg/e2eprobe"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/serverprobe"
 	"forge-cli/pkg/task"
 	tmpl "forge-cli/pkg/template"
 	"forge-cli/pkg/testrunner"
@@ -143,15 +143,11 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		os.Exit(0)
 	}
 
-	// Warn if feature test scripts exist but haven't been promoted.
-	e2eScriptsDir := feature.GetE2EStagingDir(result.ProjectRoot, result.FeatureSlug)
-	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
-	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
-		fmt.Fprintln(os.Stderr,
-			"WARNING: feature test scripts exist but haven't been run or promoted.\n"+
-				"  Add T-test-run (run-test) to your task index,\n"+
-				"  or run /run-tests to promote and run test scripts manually.")
-	}
+	// NOTE: The legacy promotion model was removed in v3.0.0 in favor of
+	// tag-based test promotion. No pre-run validation is needed here —
+	// runTestRegression handles the full lifecycle per surface type.
+	_ = result.ProjectRoot
+	_ = result.FeatureSlug
 
 	// Step 1: Quality gate (compile -> fmt -> lint)
 	// Stops at first blocking failure.
@@ -192,7 +188,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	// Step 3: Full test regression (promoted scripts in tests/e2e/)
+	// Step 3: Full test regression (test scripts in tests/)
 	if err := runTestRegression(result.ProjectRoot, result.FeatureSlug); err != nil {
 		os.Exit(0)
 	}
@@ -223,7 +219,7 @@ func runTestRegression(projectRoot, featureSlug string) error {
 }
 
 // runTestRegressionLegacy is the pre-surface-aware test regression logic.
-// Runs test-setup (optional), e2eprobe health check, then just test.
+// Runs test-setup (optional), serverprobe health check, then just test.
 func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	// Optional setup step — skip regression on failure.
 	if just.HasRecipe(projectRoot, "test-setup") {
@@ -244,7 +240,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	}
 
 	// Health check — skip regression if servers aren't ready.
-	if !e2eprobe.ProbeServers(projectRoot, "") {
+	if !serverprobe.ProbeServers(projectRoot, "") {
 		fmt.Fprintln(os.Stderr, "WARNING: server health check failed; skipping test regression")
 		fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test")
 		return nil
@@ -272,7 +268,8 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 
 // runTestRegressionSurface orchestrates per-surface-type lifecycle sequences.
 // For each unique surface type, runs the appropriate sequence:
-//   - web/api/mobile: dev → probe → test → teardown (full lifecycle)
+//   - web/api: dev → probe → test → teardown (full lifecycle)
+//   - mobile: dev → probe → test-setup → test → teardown (full lifecycle with mobile setup)
 //   - cli/tui: test → teardown (simplified)
 //
 // Surfaces of the same type share a single lifecycle (dev/probe run once per type).
@@ -283,7 +280,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 		fmt.Fprintf(os.Stderr, "--- Running surface orchestration for %s ---\n", surfaceType)
 		result := runSurfaceLifecycle(projectRoot, surfaceType)
 		if !result.success {
-			errorDocPath := "tests/e2e/results/raw-output.txt"
+			errorDocPath := "tests/results/raw-output.txt"
 			if result.output != "" {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, result.output); err != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
@@ -326,7 +323,8 @@ func resolveRecipe(projectRoot, surfaceType, genericRecipe string) string {
 }
 
 // runSurfaceLifecycle executes the per-surface lifecycle sequence.
-// For web/api/mobile: dev → probe → test → teardown
+// For web/api: dev → probe → test → teardown
+// For mobile: dev → probe → mobile-test-setup → test → teardown
 // For cli/tui: test → teardown
 // Teardown always executes (via defer-like pattern).
 func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
@@ -353,6 +351,20 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 			fmt.Fprintln(os.Stderr, "  ERROR: probe failed after retries")
 			runTeardown(projectRoot, surfaceType)
 			return lifecycleResult{success: false, output: "probe failed: server not responding after 3 retries"}
+		}
+	}
+
+	// Phase 2b: Mobile test setup (mobile surfaces only)
+	if surfaceType == "mobile" {
+		setupRecipe := resolveRecipe(projectRoot, surfaceType, "test-setup")
+		if setupRecipe != "" {
+			fmt.Fprintf(os.Stderr, "  Running mobile test setup (just %s)...\n", setupRecipe)
+			output, success := just.RunCapture(projectRoot, "just", setupRecipe)
+			if !success {
+				fmt.Fprintf(os.Stderr, "  ERROR: mobile-test-setup failed (just %s)\n", setupRecipe)
+				runTeardown(projectRoot, surfaceType)
+				return lifecycleResult{success: false, output: output}
+			}
 		}
 	}
 

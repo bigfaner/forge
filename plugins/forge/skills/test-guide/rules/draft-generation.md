@@ -211,10 +211,10 @@ When a field cannot be determined from project signals, use these defaults:
 
 | Framework   | Default runner          | Default assertion        | Default tag format        |
 |-------------|------------------------|--------------------------|---------------------------|
-| Go testing  | `go test -v -json`     | testify/assert           | `//go:build e2e`          |
-| Ginkgo      | `ginkgo -v --json-report=report.json` | Gomega Expect | `Label("e2e")` |
+| Go testing  | `go test -v -json`     | testify/assert           | `//go:build <surface>-<type>`          |
+| Ginkgo      | `ginkgo -v --json-report=report.json` | Gomega Expect | `Label("<surface>-<type>")` |
 | Vitest      | `vitest run --reporter=verbose` | `expect` from vitest | `describe('@tag', ...)` |
 | Jest        | `jest --verbose`       | `expect` from @jest/globals | `describe('@tag', ...)` |
 | pytest      | `pytest -v`            | Python assert            | `@pytest.mark.<tag>`     |
 | JUnit 5     | `mvn test`             | JUnit 5 Assertions       | `@Tag("name")`           |
-| Rust        | `cargo test`           | `assert!` macro          | `#[cfg(feature = "e2e")]` |
+| Rust        | `cargo test`           | `assert!` macro          | `#[cfg(feature = "<surface>-<type>")]` |

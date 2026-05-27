@@ -76,7 +76,7 @@ Forge 由三个核心子系统组成：
 | 设计 | `/tech-design` | `design/*.{2}` + `manifest.md` | `/eval-design` |
 | UI | `/ui-design` | `ui/ui-design.md` + `prototype/` | `/eval-ui` |
 | 拆分 | `/breakdown-tasks` | `tasks/*.md` + `index.json` + `manifest.md` | — |
-| 测试 | T-test-1~5 | Journey、Contract、测试脚本、报告 | `/eval-journey` → `/eval-contract` |
+| 测试 | T-test-gen-journeys / T-eval-journey / T-test-gen-contracts / T-eval-contract / T-test-gen-scripts / T-test-run | Journey、Contract、测试脚本、报告 | `/eval-journey` → `/eval-contract` |
 | 执行 | `/run-tasks` | 代码 + 记录 | — |
 | 收尾 | `/consolidate-specs` | 项目级规范 | — |
 
@@ -97,7 +97,7 @@ Forge 由三个核心子系统组成：
 - 无 PRD、无设计、无评估步骤
 - `proposal.md` 是唯一输入文档
 - 扁平任务列表（无 phase、无 gate、无 phase summary）
-- 测试任务使用 `T-quick-1~5`（完整模式 7 个任务的子集）
+- 测试任务使用 `T-test-gen-journeys` + `T-test-run`（无 eval 质量关卡的精简串行链路）
 - 简化 manifest（无 Traceability 表）
 - 纯文档 feature 自动跳过测试任务，生成 T-eval-doc 替代
 
@@ -262,7 +262,6 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 | T-test-eval-contract | `/eval-contract` | 评分报告 | 是 |
 | T-test-gen-scripts | `/gen-test-scripts` | `tests/<journey>/*` | 是 |
 | T-test-run | `/run-tests` | `results/latest.md` | 是 |
-| T-test-promote | `/run-tests` (tag promotion) |  `tests/<surface-key>/`（回归测试） | 是 |
 
 前置任务：`/gen-sitemap`（生成 `sitemap.json` 页面元素映射）。
 
@@ -271,22 +270,17 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 跳过 eval 质量关卡的精简链路，采用 **staged across types** 拓扑：
 
 ```
-┌─────────────────────────────┐
-│ gen-journeys (各 type 并行)  │  ← 各 profile type 独立执行，无相互依赖
-│   ├─ type: api              │
-│   ├─ type: web              │
-│   └─ type: cli              │
-└──────────────┬──────────────┘
-               │ 汇聚：所有 type 的 Journey 完成后
-               ▼
-┌─────────────────────────────┐
-│ gen-contracts               │  ← 依赖全部 Journey 完成后执行代码侦察
-└──────────────┬──────────────┘
+┌──────────────────────────────┐
+│ gen-journeys                 │  ← 单一任务覆盖所有 surface type
+└──────────────┬───────────────┘
                │
                ▼
-┌─────────────────────────────┐
-│ gen-scripts (各 type 并行)   │
-└──────────────┬──────────────┘
+┌──────────────────────────────┐
+│ run-test (各 surface 串行)    │  ← 无 gen-contracts / gen-scripts，串行执行
+│   ├─ key: api                │
+│   ├─ key: web                │
+│   └─ key: cli                │
+└──────────────┬───────────────┘
                │
                ▼
           run → verify
@@ -295,14 +289,13 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 **与 Breakdown 模式的差异**：
 - 无 eval-journey / eval-contract 质量关卡
 - gen-journeys 以 `proposal.md` 为输入（非 PRD user stories）
-- gen-contracts 通过 `SKIP_EVAL_GATE=true` 跳过 eval 前置检查
 - gen-journeys 通过 `AUTO_COMMIT=true` 跳过人工审批
 - 若 gen-journeys 产出零 Journey（proposal.md 信息不足），任务 abort 并输出诊断信息
 
 #### 依赖解析
 
 - **Breakdown 模式**：基于 `findTaskIndexByPrefix` 的 ID 查找（非硬编码索引）
-- **Quick 模式**：staged across types 策略，所有 profile type 的 gen-journeys 并行执行后汇聚到 gen-contracts
+- **Quick 模式**：staged across types 策略，gen-journeys 单一任务后接各 surface 的 run-test 串行链（无 gen-contracts / gen-scripts）
 
 ### run-tests 内部流程
 
@@ -513,7 +506,7 @@ v3.0.0 新增的辅助子系统，扩展了 Forge 的环境感知、知识管理
 
 ### Surface Detection
 
-项目 surface（api/web/cli/tui/mobile）自动检测机制。`forge surfaces detect` 扫描项目目录结构和依赖文件，识别测试 surface 类型，结果用于 gen-journeys 和 gen-test-scripts 的 profile 路由。实现在 forge CLI (`forge-cli/pkg/forgeconfig/detect_surface.go`)，非 skill 组件。
+项目 surface（api/web/cli/tui/mobile）自动检测机制。`forge surfaces detect` 扫描项目目录结构和依赖文件，识别测试 surface 类型，结果用于 gen-journeys 和 gen-test-scripts 的 Convention 路由。实现在 forge CLI (`forge-cli/pkg/forgeconfig/detect_surface.go`)，非 skill 组件。
 
 - 相关规则：[surface-api.md](../../plugins/forge/skills/gen-journeys/rules/surface-api.md) | [surface-web.md](../../plugins/forge/skills/gen-journeys/rules/surface-web.md) | [surface-cli.md](../../plugins/forge/skills/gen-journeys/rules/surface-cli.md) | [surface-tui.md](../../plugins/forge/skills/gen-journeys/rules/surface-tui.md) | [surface-mobile.md](../../plugins/forge/skills/gen-journeys/rules/surface-mobile.md)
 

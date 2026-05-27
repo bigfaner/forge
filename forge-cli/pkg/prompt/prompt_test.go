@@ -67,7 +67,6 @@ func TestSynthesize_AllTypes(t *testing.T) {
 		task.TypeDocDrift,
 		task.TypeTestGenScripts,
 		task.TypeTestRun,
-		task.TypeTestVerifyRegression,
 		task.TypeCodingFix,
 		task.TypeGate,
 		task.TypeCleanCode,
@@ -549,7 +548,6 @@ func TestInferType(t *testing.T) {
 		// T-test exact IDs
 		{"T-test-gen-scripts", task.TypeTestGenScripts},
 		{"T-test-run", task.TypeTestRun},
-		{"T-test-verify-regression", task.TypeTestVerifyRegression},
 		{"T-specs-consolidate", task.TypeDocConsolidate},
 		// T-quick-doc-drift drift detection
 		{"T-quick-doc-drift", task.TypeDocDrift},
@@ -1397,7 +1395,6 @@ func TestSynthesize_DocTemplates_ContainRecordFieldHints(t *testing.T) {
 func TestSynthesize_TestTemplates_ContainRecordFieldHints(t *testing.T) {
 	testTypes := []string{
 		task.TypeTestGenScripts,
-		task.TypeTestVerifyRegression,
 	}
 
 	for _, typ := range testTypes {
