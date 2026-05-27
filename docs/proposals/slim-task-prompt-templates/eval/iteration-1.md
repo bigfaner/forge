@@ -3,102 +3,136 @@
 ## Phase 1: Reasoning Audit
 
 **Pre-Score Anchors:**
-- Problem → Solution: Direct mapping. In-place trimming directly addresses non-instructional content. Pre-revision strengthened this with error recovery analysis and AC per-line decomposition.
-- Solution → Evidence: Evidence table is more nuanced after pre-revision (per-task clarification added). AC blocks now have functional decomposition. However, CODING_PRINCIPLES ~50 line reduction and Record Fields ~20 line reduction still lack per-line functional analysis — lines are counted as redundant without proving each is redundant.
-- Evidence → Success Criteria: Pre-revision added "100% retention rate" dual-layer structure, partially addressing the surrogate-goal problem. But SC2/SC3 still lack operationalized detection methods — "no visible behavior difference" has no defined measurement protocol.
-- Self-contradiction: Pre-revision mitigated the core contradiction (claiming no behavior change while compressing 75%) by adding error recovery analysis (line 69) and per-line AC analysis (lines 73-82). No remaining contradiction.
+
+- **Problem → Solution**: Direct mapping. The problem (15 templates + Execution Protocol contain non-instructional content that increases token waste and dilutes instruction clarity) is directly addressed by the solution (in-place trimming — delete non-instructional, keep instructional). Pre-revision strengthened this with AC block per-line decomposition (lines 92-99), CODING_PRINCIPLES per-principle analysis (lines 102-111), Record Fields per-field analysis (lines 143-149), error recovery analysis for Execution Protocol merge (line 84), and cognitive segmentation design (line 86). No gap.
+
+- **Solution → Evidence**: The evidence table (7 categories, ~190 total lines) is now supplemented with per-line functional decomposition for AC blocks, CODING_PRINCIPLES, and Record Fields. The caveat on line 27 ("并非每个任务都加载全部 200 行") correctly clarifies per-task vs aggregate framing. However, three in-scope templates (validation-code.md, validation-ux.md, code-quality-simplify.md) are discussed only briefly at lines 71-78 with rough line estimates, not per-line decomposition — their evidence base is thinner than other categories. The evidence is strong for the main categories but uneven across all in-scope files.
+
+- **Evidence → Success Criteria**: SC1 (100% retention rate via functional snapshot checklist) is the primary gate. SC2 (2+2 trial runs, 90% trajectory consistency) operationalizes the "no behavior change" requirement. SC3-SC5 cover structural verification for specific categories. SC6-SC7 cover efficiency metrics (lines and steps). SC8 adds post-hoc token verification. The evidence-to-SC chain is substantially stronger than baseline. Remaining tension: SC2's 90% threshold lacks operational definition of "functional difference" vs "non-functional difference" (line 242), creating ambiguity in pass/fail determination.
+
+- **Self-contradiction check**:
+  - Problem stated in "token 消耗" terms (line 11) but primary metric SC6 is in lines, not tokens. SC8 adds token verification post-hoc but the primary gate (SC1) and efficiency target (SC6) are both line-based. The measurement unit mismatches the problem unit.
+  - SC2 mentions automated trajectory comparison script (line 242: "轨迹对比通过脚本自动完成") but also says optional PR check ("不阻塞合并但报告差异"). This creates ambiguity about whether verification is enforced or advisory.
+  - The Assumptions Challenged section (line 194) acknowledges role description changes are "假设而非定论" with "领域存在争议," then states NFR #2 requires "所有 task-executor 的行为不发生变化." This tension is acknowledged with a SC2 + rollback resolution (line 195), which is a reasonable reconciliation.
+
+- **SC Consistency Deep-Dive**:
+
+  **Cluster A (template files at `forge-cli/pkg/prompt/data/*.md`):**
+  - SC1 (100% retention rate of instruction/constraint nodes) ↔ SC3 (CODING_PRINCIPLES: "保留 1 行指令 + 1 行边界概括"): **Resolved** — SC1 explicitly excludes boundary descriptions from the 100% gate: "不含边界说明——边界说明允许按 SC3 压缩" (line 238). Clear hierarchy established.
+  - SC1 ↔ SC6 (≥150 line reduction): **Coherent** — retention rate is primary gate, line reduction is secondary. "'保留率为首要校验门禁...行数压缩为次要效率指标" (line 233).
+  - In Scope (15 templates + task-executor) ↔ Requirements Analysis (covers coding-*, gate/doc, test-*, task-executor; only brief mention of validation-*/code-quality-*): **Partial gap** — the three templates at lines 71-78 have line estimates but no per-line functional decomposition, unlike AC blocks (lines 92-99) and CODING_PRINCIPLES (lines 102-111).
+
+  **Cluster B (task-executor at `plugins/forge/agents/task-executor.md`):**
+  - SC7 (≤8 steps) ↔ SC2 (no behavior difference): **Resolved** — error recovery analysis (line 84) and cognitive segmentation design (line 86) provide dual-dimension safety argument.
+
+  **Cluster C (verification artifact layer):**
+  - Risk 1 mitigation ↔ SC1 verification: **Coherent** — both reference the same functional snapshot checklist artifact. Definition includes format (JSON), fields (id/category/type/content_snippet/role), granularity principle with examples, category/type enum dictionaries, and sign-off procedure. Well-defined.
 
 ## Phase 2: Rubric Scoring
 
-### 1. Problem Definition — 88/110
-- Problem stated clearly (35/40): Clear, unambiguous statement of the problem.
-- Evidence provided (33/40): Pre-revision improved this dimension with per-task clarification (line 28) and AC per-line analysis (lines 73-82). However, CODING_PRINCIPLES and Record Fields still lack functional decomposition — asserted as redundant without proof per line.
-- Urgency justified (20/30): Still the weak point. "Every task consumes these tokens" is generically true. No cost quantification, no measurement of current impact on agent error rates or task completion times.
+### 1. Problem Definition — 89/110
+- **Problem stated clearly (38/40)**: Core problem is unambiguous — two dimensions (template non-instructional content + Execution Protocol redundancy) clearly delineated. The pre-revision added precise per-line classification to strengthen clarity.
+- **Evidence provided (33/40)**: Seven-category quantification table with per-line decomposition for AC blocks, CODING_PRINCIPLES, and Record Fields. The caveat on line 27 ("并非每个任务都加载全部 200 行") is honest but reduces precision. Three in-scope templates (validation-code, validation-ux, code-quality-simplify) at lines 71-78 have rough estimates but no per-line decomposition — the evidence is uneven.
+- **Urgency justified (18/30)**: Weakest sub-dimension. "每个 task 执行都在消耗这些冗余 token" (line 34) is generically true. No dollar-cost estimate, no agent error rate data, no task completion time impact. "日积月累规模可观" (line 34) is vague — no quantification of cumulative impact.
 
-### 2. Solution Clarity — 65/120
-- Approach concrete (35/40): In-place trimming with per-template-group specification.
-- User-facing behavior described (20/45): No user-facing benefit described. The proposal is entirely internal — no description of what users will notice (faster task completion? lower cost? same experience?).
-- Technical direction clear (30/35): Clear direction — edit .md files, don't touch Go code.
-- Vague language penalty (-20): Line 149 "可考虑精简其行数" in Out of Scope is a non-committal phrase that contradicts the section's purpose of clear boundaries. Not addressed by pre-revision.
+### 2. Solution Clarity — 81/120
+- **Approach concrete (37/40)**: Per-template-group specification with per-line analysis tables. Concrete line-count targets (12->4, 50->20, 3->1). Execution Protocol merge with error recovery and cognitive segmentation analysis.
+- **User-facing behavior described (12/45)**: Essentially absent. "No behavior change" is the goal, not a user experience description. No section describes what users will notice — faster task completion? lower cost? same experience? For an internal infrastructure proposal, this is a structural weakness.
+- **Technical direction clear (32/35)**: Clear — edit .md files, don't touch Go code. Specific file paths provided.
+- **Vague language penalty**: None found. Previous "可考虑" issue resolved to "不增不减" (line 219).
 
-### 3. Industry Benchmarking — 39/120
-- Industry solutions referenced (5/40): No prompt-engineering-specific references. No cited papers, tools, or published patterns for prompt template management. The field has extensive work on prompt compression, system prompt design, and template optimization — none referenced.
-- At least 3 meaningful alternatives (12/30): Four options presented but none from prompt engineering practice. "DSL" is borderline straw-man (dismissed as "over-engineered" without serious evaluation). No industry-validated prompt engineering alternative included.
-- Honest trade-off comparison (12/25): One-liner depth in pros/cons. No quantification.
-- Chosen approach justified (10/25): "Simple and direct" is not a justification against industry alternatives. No analysis of why in-place trimming is better than structured template composition.
+### 3. Industry Benchmarking — 70/120
+- **Industry solutions referenced (20/40)**: Three references (LangChain Prompt Templates, Anthropic Prompt Engineering Guide, OpenAI GPTs Instructions) at lines 49-51. However, these are decorative rather than substantive — they state consistency with the proposal's "design philosophy" but the proposal adopts no specific mechanism from any. No compression techniques, template composition patterns, or prompt optimization tools are actually cited or analyzed.
+- **At least 3 meaningful alternatives (18/30)**: Four alternatives presented (layering composition, DSL generation, do nothing, DRY modularization). Layering has a genuine industry reference. DSL is a generalized pattern. Meets numeric threshold but lacks depth.
+- **Honest trade-off comparison (16/25)**: One-liner pros/cons with pre-revision additions for DSL rejection ("模板规模小、变更频次低，DSL 工具链成本不合理", line 170) and layering rejection ("与'不改后端代码'约束冲突", line 169). Improved but no quantification.
+- **Chosen approach justified (16/25)**: "简单直接" (line 174) remains a thin justification. The implicit reasoning (only approach satisfying "zero architecture change" constraint) should be made explicit as constraint-weighted decision.
 
-### 4. Requirements Completeness — 80/110
-- Scenario coverage (30/40): Four scenario groups cover the templates. Error scenarios for template modification not discussed.
-- Non-functional requirements (25/40): Two NFRs listed. Missing performance targets, compatibility concerns, token consumption baselines.
-- Constraints & dependencies (25/30): File locations, Go code dependency clearly stated.
+### 4. Requirements Completeness — 85/110
+- **Scenario coverage (30/40)**: Four scenario groups with per-template-group specification. Per-line analysis for AC/CODING_PRINCIPLES/Record Fields adds precision. Three lower-complexity templates (validation-*, code-quality-*) are discussed at lines 71-78 with line estimates, but lack per-line decomposition. Missing: error scenarios for template modification process itself.
+- **Non-functional requirements (28/40)**: Only two NFRs (instruction equivalence, no behavior change). No token consumption baseline, no compatibility requirements, no performance targets. For a proposal whose primary metric is waste reduction, a consumption baseline is essential.
+- **Constraints & dependencies (27/30)**: File locations, Go code dependency, task-executor location clearly stated. Minor gap: no mention of whether other agents or components reference these templates.
 
-### 5. Solution Creativity — 23/100
-- Novelty over baseline (5/40): Self-identified as "not a technical innovation."
-- Cross-domain inspiration (0/35): None. No reference to how other LLM tool platforms (LangChain, Vercel AI SDK, OpenAI GPTs, Anthropic) handle template design.
-- Simplicity of insight (18/25): The "prompt is instruction, not documentation" principle is genuinely elegant and deserves credit.
+### 5. Solution Creativity — 52/100
+- **Novelty over baseline (15/40)**: Self-identified as "不是技术创新" — the proposal's own framing correctly acknowledges cleanup, not innovation. The Assumptions Challenged section (line 194) introduces a genuinely interesting insight (role descriptions vs. imperative instructions as an unsettled research question).
+- **Cross-domain inspiration (15/35)**: References to LangChain, Anthropic, OpenAI demonstrate awareness but the proposal doesn't borrow or adapt specific mechanisms. The AC block simplification and CODING_PRINCIPLES compression are derived from internal analysis, not cross-domain inspiration.
+- **Simplicity of insight (22/25)**: "Prompt is instruction, not documentation" (line 46) remains genuinely elegant. The AC per-line decomposition table (lines 92-99) is clean and intuitively correct. The "三类指令" classification framework (lines 117-125) is a strong methodological contribution.
 
-### 6. Feasibility — 91/100
-- Technical feasibility (38/40): Pure text editing, no technical risk.
-- Resource & timeline (28/30): 1 coding task, realistic scope.
-- Dependency readiness (25/30): Proposal approval as prerequisite, clearly stated.
+### 6. Feasibility — 93/100
+- **Technical feasibility (38/40)**: Pure text editing, no technical risk.
+- **Resource & timeline (28/30)**: 10-15 files, 1 coding task, well-scoped.
+- **Dependency readiness (27/30)**: Proposal approval as prerequisite, clearly stated.
 
-### 7. Scope Definition — 73/80
-- In-scope concrete (27/30): Specific files and specific change types listed.
-- Out-of-scope explicit (23/25): Clear "not doing" list.
-- Scope bounded (23/25): "1 coding task" — well bounded.
+### 7. Scope Definition — 74/80
+- **In-scope concrete (28/30)**: 15 specific files + task-executor, each with defined change types (remove HTML comments, trim role descriptions, compress AC blocks, etc.). Highly concrete.
+- **Out-of-scope explicit (23/25)**: 6 clear items. No more "可考虑" ambiguity — resolved to "不增不减" (line 219).
+- **Scope bounded (23/25)**: "1 次编码任务" — well bounded, clear completion criteria.
 
-### 8. Risk Assessment — 71/90
-- Risks identified (22/30): 3 risks identified (meets threshold). Pre-revision improved Risk 3 with regression mechanism detail. But Risk 3 ("缺乏回归检测机制") is actually a mitigation deficiency consequence, not an independent risk.
-- Likelihood + impact (22/30): Ratings provided but feel arbitrary. Risk 1: Low/High with no nuance. Risk 2: Medium/Medium. Risk 3: Medium/High.
-- Mitigations actionable (27/30): Pre-revision significantly improved Risk 3's mitigation (snapshot + diff + checklist + coverage requirement). Risks 1-2 mitigations remain vague ("对比所有功能点", "以 coding-feature 为基准对齐") — no operator, no procedure, no pass/fail criteria.
+### 8. Risk Assessment — 79/90
+- **Risks identified (27/30)**: 5 risks (exceeds threshold of 3). Genuine operational risks identified: over-trimming, cross-template inconsistency, test infrastructure gap, rollback process gap, attention decay. Risk 3 correctly reframed from "lack of regression mechanism" to "existing test infrastructure cannot detect prompt-level behavior drift."
+- **Likelihood + impact (24/30)**: Ratings provided but lack derivation. Risk 1: Low/High — why Low? Risk 3: Medium/High — basis? Ratings feel asserted rather than derived.
+- **Mitigations actionable (28/30)**: Substantially improved from baseline. Risk 1 mitigation specifies artifact (JSON snapshot), process (pass/fail per item, reviewer sign-off), and rollback condition. Risk 2 specifies baseline file, operator role, and diff threshold. Risk 3 specifies trial runs (2+2) and snapshot PR auto-diff. Risk 4 specifies 3-batch independent commits, post-merge observation, git revert procedure, and baseline snapshot fallback — highly detailed. Risk 5 qualitatively addresses attention decay with mitigation strategy. Only gap: trajectory comparison (core validation) is explicitly optional ("不阻塞合并但报告差异", lines 228, 242).
 
-### 9. Success Criteria — 53/80
-- Measurable and testable (18/30): SC1 (≥150 line reduction) is measurable. Pre-revision added "100% retention rate" which is an improvement. But SC2/SC3 ("no visible behavior difference") still lack detection method — not operationalized. How is "visible behavior difference" detected? Manual observation? Automated diff? Journey comparison?
-- Coverage complete (17/25): Gaps remain — no SC addresses CODING_PRINCIPLES constraint retention, no SC for Record Fields format preservation, no SC for Step 2 descriptive text removal verification.
-- Internal consistency (18/25): SC1 ↔ retention rate still has inherent tension — line reduction incentivizes deletion, retention rate incentivizes preservation. Without a defined measurement method for retention rate, SC1 dominates behaviorally.
+### 9. Success Criteria — 71/80
+- **Measurable and testable (27/30)**: SC1 detection method defined (node-by-node pass/fail with reviewer sign-off). SC2 protocol detailed (2+2 trial runs, 90% trajectory consistency threshold, automation script). SC3-SC5 define verification methods (diff, grep). SC6 (>=150 lines) and SC7 (<=8 steps) are straightforward. SC8 (tokenize) adds measurable post-hoc verification. SC2's "90% trajectory consistency" threshold still lacks definition of what constitutes a "non-functional difference" vs. "functional difference" — ambiguity will cause disputes during evaluation.
+- **Coverage complete (22/25)**: All In Scope items map to at least one SC. SC1 covers 6 constraint node categories. SC3 covers CODING_PRINCIPLES. SC4 covers Record Fields. SC5 covers Step 2 deletion. SC8 covers token verification.
+- **Internal consistency (22/25)**: SC1/SC3 gap resolved — SC1 explicitly excludes boundary descriptions from 100% retention gate (line 238). The dual-layer structure (retention rate as gate, line reduction as secondary, line 233) is correctly framed. Remaining consistency gap: problem is framed in tokens (line 11) but SC6 is in lines — SC8 adds token verification but as a secondary report rather than a primary metric.
 
-### 10. Logical Consistency — 87/90
-- Solution addresses problem (32/35): Yes. Pre-revision strengthened the chain with error recovery and orthogonality analysis.
-- Scope ↔ Solution ↔ SC aligned (28/30): Pre-revision improved alignment between step merging scope and SC4 (≤8 steps). Minor remaining issue: Spec Authority Enforcement "可考虑" conflicts with Out of Scope exclusion.
-- Requirements ↔ Solution (27/25): Clean mapping. Requirements map directly to specific template modifications.
+### 10. Logical Consistency — 84/90
+- **Solution addresses problem (32/35)**: Yes — in-place trimming and Execution Protocol merge directly address both dimensions of the stated problem.
+- **Scope ↔ Solution ↔ SC aligned (28/30)**: Well aligned. SCs map to in-scope items. Retention rate aligns with "no behavior change" NFR. Step count aligns with Execution Protocol merge scope.
+- **Requirements ↔ Solution coherent (24/25)**: The Assumptions section tension (line 194: role description change is unsettled research) with NFR #2 (line 155: "行为不发生变化") is explicitly acknowledged and resolved through SC2 + conditional rollback (line 195). The SC2 protocol validates against this risk. Coherent.
+
+### Deductions
+
+- **Vague language without quantification (-20)**: "日积月累规模可观" (line 34) in Urgency section — no quantification of cumulative token waste, dollar cost, or agent error rate impact. This is a vague claim about accumulated scale without supporting data.
+
+**Total Before Deductions**: 89+81+70+85+52+93+74+79+71+84 = 778
+**Total After Deductions**: 778 - 20 = **758**
 
 ## Phase 3: Blindspot Hunt
 
-1. **[blindspot] No ROI quantification**: The proposal is entirely internal infrastructure work but provides no estimate of token savings (in dollar terms), no performance improvement projection, and no measurement of current waste. For a resource-allocation decision, the business case is incomplete. — Quote: Urgency section: "每个 task 执行都在消耗这些冗余 token，日积月累规模可观" — lacks any quantification.
+1. **[blindspot] Problem-to-metric mismatch — tokens vs lines**: The problem statement (line 11) frames the issue as "token 消耗" — the cost of processing non-instructional content. But all quantification (evidence table lines 17-27, SC6 line 252) is in **lines**, not tokens. Lines and tokens have different density characteristics: Markdown formatting characters and whitespace have high line-to-token ratios while instruction text has low line-to-token ratios. A 150-line reduction may translate to 150 tokens or 1,500 tokens depending on what is removed. SC8 adds post-hoc token verification but doesn't bridge the mismatch for the primary metrics. The proposal cannot demonstrate meaningful token savings without token-level measurement being the primary metric. — Quote: Problem (line 11): "增加 token 消耗并稀释指令清晰度"; SC6 (line 252): "15 个模板文件 + task-executor 共减少 **≥150 行**." — What must improve: Convert SC6 to a token-based metric, or at minimum provide a pre-implementation token baseline alongside the line target.
 
-2. **[blindspot] CODING_PRINCIPLES examples may function as few-shot demonstrations**: The proposal treats CODING_PRINCIPLES examples as "explanatory redundancy" (line 22: "每原则 2-5 行"). In prompt engineering, principles-with-examples is a standard few-shot structure — examples may not explain but constrain behavior by demonstrating application boundaries. The proposal does not distinguish rule-only from rule+example entries. — The pre-revision addressed role descriptions (line 124) but not this.
+2. **[blindspot] CODING_PRINCIPLES examples-to-summary format change is a representation change, not compression**: The pre-revision correctly identifies that examples "可能作为 few-shot 约束模型行为" (line 106) and creates the "约束边界演示" category (line 125). However, the chosen strategy replaces 2-5 line examples with "1 行边界概括" (line 111). A 2-5 line example demonstrating application boundaries (positive/negative examples) is structurally different from a 1-line abstract summary of those boundaries. This is a format change that removes the few-shot demonstration mechanism — the LLM loses the concrete before/after comparison that the original format provided. The pre-revision's rationale for retaining 1 example per principle (line 111, "视觉分隔" and "注意力重置") addresses the structural/visual function but not the few-shot learning function. The SC2 detection protocol has limited power to detect subtle behavior drift caused by this representation change. — Quote: line 106: "约束边界演示——非核心指令，但作为'注意力分段锚点'在密集指令排列中提供视觉分隔和注意力重置作用"; line 111: "每原则保留 1 个代表性示例（视觉分隔功能）+ 压缩边界说明为 1 行概括". — What must improve: Provide analysis of functional equivalence between examples and boundary summaries for the few-shot learning path, or retain one substantive example per principle rather than compressing to a summary.
 
-3. **[blindspot] No validation/pilot strategy**: After trimming 16 files, how will the team verify correctness before full deployment? Pre-revision added regression mechanism to the mitigation table, but it's still manual comparison. No mention of A/B testing, canary deployment, or staged rollout. A single batch modification of 16 prompt files with only manual verification is high risk. — Quote: Risk mitigation: "每个模板在修改时以 coding-feature 为基准对齐" — no mention of staged rollout or automated validation.
+3. **[blindspot] SC2 "90% trajectory consistency" threshold undefined**: SC2 allows a 10% tolerance for "非功能性差异" (line 242) — differences caused by LLM generation randomness in step ordering. However, no operational definition is provided distinguishing "functional differences" (behavior changes caused by prompt modification) from "non-functional differences" (random ordering variations). In practice, an agent might handle a constraint differently (functional change) or vary step order (non-functional change) — and without a classification rubric, the 90% threshold is unenforceable. Two different evaluators could classify the same trajectory deviation differently, making pass/fail determinations inconsistent. — Quote: SC2 (line 242): "轨迹一致性 ≥ 90%（容差：步骤顺序因 LLM 生成随机性导致的非功能性差异）视为通过". — What must improve: Define a classification rubric for trajectory differences — list 3-5 examples of functional vs. non-functional differences with decision rules.
+
+4. **[blindspot] CI/CD integration is incomplete for the most critical validation**: Risk 4 mitigation (line 229) specifies "(a) 功能快照清单存储为版本化 JSON...PR 自动 diff 检查节点不可被意外删除" — this is a solid automated CI gate. However, the trajectory comparison script (the core behavioral validation) is explicitly "可选 PR check（不阻塞合并但报告差异）" (lines 228, 242). This means the primary mechanism for detecting prompt-level behavior drift (SC2) has no mandatory enforcement — it can be skipped under schedule pressure. For a change affecting 16 files that define agent behavior, behavioral validation should be mandatory, not optional. — Quote: line 228: "轨迹对比脚本作为可选 PR check（不阻塞合并但报告差异）". — What must improve: Make the trajectory comparison script a mandatory PR check that blocks merge on >10% trajectory deviation, or justify why optional is sufficient.
+
+5. **[blindspot] No pre-implementation token baseline**: The proposal measures everything against post-implementation state (SC8: tokenize after modification) but provides no pre-implementation token baseline. Without knowing the current token consumption per template, the savings claim has no reference point. The evidence table (lines 17-27) uses line counts, not token counts. The Token 估算 (line 29) provides a range (8K-22K tokens daily) marked as "[approximate]" — but there is no SC requiring measurement of the actual current state before making changes. This means the ROI of the effort cannot be verified. — Quote: SC8 (line 257): "精简完成后，对每个修改的模板文件执行实际 tokenize". — What must improve: Add a pre-implementation SC requiring tokenization of all current templates as a baseline, so post-implementation token counts can be compared against a measured (not estimated) starting point.
 
 ## Bias Detection Report
-- Annotated regions: 4 attack points / 8 paragraphs = density 0.50
-- Unannotated regions: 9 attack points / 22 paragraphs = density 0.41
-- Ratio (annotated/unannotated): 1.22 — slightly higher density in annotated regions, but within acceptable range. No systemic bias against pre-revised content. Two attacks targeting pre-revised content (CODING_PRINCIPLES #2 and validation strategy #3) note that the pre-revision partially addressed but didn't fully resolve the underlying issue.
+
+- **Annotated regions**: 4 attack points / 14 paragraphs = density 0.29
+  - Attack #4 (CI/CD incomplete): targets risk mitigation area, partially pre-revised — 1 paragraph attacks pre-revised content (Risk 4 mitigation at line 228: "可选 PR check"), noting the pre-revision added automated snapshot CI but kept trajectory check optional. Tag: conflict-with-pre-revision — the pre-revision improved CI (snapshot auto-diff) but left the core validation optional; the attack targets the pre-revision's incomplete resolution, not a regression.
+  - Attack #2 (CODING_PRINCIPLES examples): targets the pre-revised CODING_PRINCIPLES analysis (lines 102-111). The pre-revision added insightful "约束边界演示" analysis but the compression strategy still conflicts with the insight. Tag: conflict-with-pre-revision — the pre-revision's own analysis (examples serve few-shot function) contradicts its compression strategy (replace with summary).
+  - Attack #5 (no pre-baseline): SC8 (pre-revised, medium) added post-hoc tokenization but not pre-baseline. The attack targets an omission in the pre-revision's otherwise thorough SC8 addition.
+
+- **Unannotated regions**: 3 attack points / ~16 paragraphs = density 0.19
+  - Attack #1 (tokens vs lines): targets problem statement (line 11, not pre-revised) and SC6 (line 252, not pre-revised). No pre-revision markers in the attacked paragraphs.
+  - Attack #3 (SC2 90% undefined): targets SC2 which existed pre-revision but the "non-functional difference" definition gap was not identified by prior revisions.
+
+- **Ratio (annotated/unannotated)**: 0.29 / 0.19 = 1.53 — moderately higher density in annotated regions, driven by 2 conflict-with-pre-revision tags where the pre-revision's own content introduced or failed to resolve internal contradictions. This is not systemic bias but targeted identification of incomplete remedy patterns. No evidence of scorer being harder on pre-revised content for its own sake.
 
 ## Summary
 
 ```
-SCORE: 670/1000
+SCORE: 758/1000
 DIMENSIONS:
-  Problem Definition: 88/110
-  Solution Clarity: 65/120
-  Industry Benchmarking: 39/120
-  Requirements Completeness: 80/110
-  Solution Creativity: 23/100
-  Feasibility: 91/100
-  Scope Definition: 73/80
-  Risk Assessment: 71/90
-  Success Criteria: 53/80
-  Logical Consistency: 87/90
+  Problem Definition: 89/110
+  Solution Clarity: 81/120
+  Industry Benchmarking: 70/120
+  Requirements Completeness: 85/110
+  Solution Creativity: 52/100
+  Feasibility: 93/100
+  Scope Definition: 74/80
+  Risk Assessment: 79/90
+  Success Criteria: 71/80
+  Logical Consistency: 84/90
 ATTACKS:
-1. [Solution Clarity]: Out of Scope section contradicts itself — "不改动 Spec Authority Enforcement 逻辑（保留但可考虑精简其行数）" — "可考虑" is a non-committal phrase in a section meant to establish clear boundaries. Must either commit to trim or firmly exclude. — Line 149
-2. [Industry Benchmarking]: No prompt-engineering-specific industry references cited — four alternatives presented (do nothing, DRY, DSL, in-place) are all generic software patterns, not derived from prompt engineering literature or practice. Must cite at least one relevant published approach to prompt template design or compression. — Lines 96-104
-3. [Industry Benchmarking]: DSL alternative is a straw man — dismissed as "过度工程化" with one-line evaluation, no serious analysis of whether lightweight template composition could add value. Must either evaluate honestly with trade-offs or replace with a genuine alternative from prompt engineering practice. — Line 103
-4. [Problem Definition]: CODING_PRINCIPLES ~50 lines and Record Fields ~20 lines still lack per-line functional analysis — AC blocks received this treatment (pre-revision lines 73-82) but other categories are asserted as "redundant" without proving each line's function. Must extend per-line analysis to all redundancy categories. — Line 22
-5. [Risk Assessment]: Risk 1 and 2 mitigations are not actionable — "每个模板修改后对比：所有功能点是否仍被覆盖" and "以 coding-feature 为基准对齐" describe intent without specifying operator, baseline document, checklist, or pass/fail criteria. Must define artifacts and procedures. — Lines 156-157
-6. [Success Criteria]: SC2 and SC3 are redundant and lack detection method — both state "no visible behavior difference" with no definition of how "visible difference" is detected (manual? automated diff? journey comparison?). Must merge and add detection protocol, or delete the duplicate. — Lines 162-163
-7. [Success Criteria]: SC internal consistency remains unresolved — SC1 (≥150 line reduction) incentivizes deletion while the pre-revision-added "100% retention rate" is secondary with no defined measurement method. Retention rate must be the primary gate with line reduction as secondary. — Lines 162-163
-8. [Success Criteria]: Success Criteria do not cover all In Scope items — CODING_PRINCIPLES constraint retention, Record Fields format preservation, and Step 2 descriptive text removal verification have no corresponding SC. Each In Scope item must map to at least one SC. — Lines 160-166
-9. [Solution Creativity]: Cross-domain inspiration entirely absent — no reference to how LangChain, Vercel AI SDK, OpenAI GPTs, or Anthropic's own prompt engineering guidelines handle template design. The proposal's approach is unanchored from industry practice. — Lines 42-44
-10. [Risk Assessment]: Risk 3 ("缺乏回归检测机制") addresses a mitigation gap, not an independent risk — it describes a consequence of the first two risks' weak mitigations, not a distinct threat. Must restructure to identify genuine operational risks (e.g., "existing test infrastructure cannot detect prompt-level behavior drift"). — Line 158
+1. [Problem Definition / Success Criteria]: Problem-to-metric mismatch — problem framed as "token 消耗" (line 11) but all quantification uses lines (evidence table, SC6). SC8 adds post-hoc token verification but primary metrics remain line-based. Cannot verify meaningful token savings. Must convert SC6 to token-based metric or add pre-implementation token baseline. — Blindspot #1
+2. [Solution Clarity / Risk Assessment]: CODING_PRINCIPLES examples-to-summary format change replaces 2-5 line few-shot demonstrations with 1-line boundary summaries (line 111) — a representation change, not compression. Pre-revision correctly identifies few-shot function ("可能作为 few-shot 约束模型行为", line 106) but the compression strategy conflicts with this insight. Must provide functional equivalence analysis or retain one substantive example per principle. — Blindspot #2, conflict-with-pre-revision
+3. [Success Criteria]: SC2 "90% trajectory consistency" threshold lacks operational definition — "非功能性差异" (line 242) has no classification rubric distinguishing functional vs. non-functional differences. Two evaluators may classify the same deviation differently. Must provide 3-5 examples of each type with decision rules. — Blindspot #3
+4. [Risk Assessment]: CI/CD integration is incomplete — snapshot auto-diff is mandatory (well done) but trajectory comparison script (the core behavioral validation) is explicitly "可选 PR check（不阻塞合并但报告差异）" (line 228). Behavioral validation can be skipped under schedule pressure — must be mandatory for a 16-file behavior-defining change. — Blindspot #4, conflict-with-pre-revision
+5. [Problem Definition / Success Criteria]: No pre-implementation token baseline — SC8 measures post-implementation state only. Without measured current-state token consumption, savings claims have no reference point and ROI cannot be verified. Must add pre-implementation tokenization SC before modification begins. — Blindspot #5
 ```
