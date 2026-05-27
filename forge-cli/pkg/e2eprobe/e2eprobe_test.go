@@ -49,8 +49,8 @@ func TestProbeServers(t *testing.T) {
 
 	t.Run("empty config returns true", func(t *testing.T) {
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(""), 0644)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte(""), 0644)
 		if !ProbeServers(dir, "") {
 			t.Error("expected true for empty config")
 		}
@@ -58,8 +58,8 @@ func TestProbeServers(t *testing.T) {
 
 	t.Run("unreachable endpoint returns false", func(t *testing.T) {
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte("baseUrl: http://127.0.0.1:1\n"), 0644)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte("baseUrl: http://127.0.0.1:1\n"), 0644)
 		if ProbeServers(dir, "") {
 			t.Error("expected false for unreachable endpoint")
 		}
@@ -72,9 +72,9 @@ func TestProbeServers(t *testing.T) {
 		defer ts.Close()
 
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
 		config := "baseUrl: " + ts.URL + "\n"
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir, "") {
 			t.Error("expected true for reachable baseUrl")
@@ -88,9 +88,9 @@ func TestProbeServers(t *testing.T) {
 		defer ts.Close()
 
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
 		config := "apiBaseUrl: " + ts.URL + "\n"
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir, "") {
 			t.Error("expected true for reachable apiBaseUrl")
@@ -109,9 +109,9 @@ func TestProbeServers(t *testing.T) {
 		defer ts2.Close()
 
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
 		config := "baseUrl: " + ts1.URL + "\napiBaseUrl: " + ts2.URL + "\n"
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir, "") {
 			t.Error("expected true when both endpoints are reachable")
@@ -126,9 +126,9 @@ func TestProbeServers(t *testing.T) {
 		defer ts.Close()
 
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
 		config := "baseUrl: " + ts.URL + "\n"
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir, "/api/health") {
 			t.Error("expected true for reachable baseUrl with custom path")
@@ -146,9 +146,9 @@ func TestProbeServers(t *testing.T) {
 		defer ts.Close()
 
 		dir := t.TempDir()
-		_ = os.MkdirAll(filepath.Join(dir, "tests", "e2e"), 0755)
+		_ = os.MkdirAll(filepath.Join(dir, "tests"), 0755)
 		config := "baseUrl: " + ts.URL + "\n"
-		_ = os.WriteFile(filepath.Join(dir, "tests", "e2e", "config.yaml"), []byte(config), 0644)
+		_ = os.WriteFile(filepath.Join(dir, "tests", "config.yaml"), []byte(config), 0644)
 
 		if !ProbeServers(dir, "") {
 			t.Error("expected true for reachable baseUrl with default path")

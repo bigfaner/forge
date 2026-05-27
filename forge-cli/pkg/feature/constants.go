@@ -50,10 +50,10 @@ const (
 	TestingResultsDirName = "testing/results"
 	TestCasesFileName     = "testing/test-cases.md"
 
-	// E2E graduation paths
-	E2ETestsBaseDir = "tests/e2e"
-	E2EStagingDir   = "tests/e2e/features"
-	E2EGraduatedDir = "tests/e2e/.graduated"
+	// Test paths (flat structure)
+	TestBaseDir    = "tests"
+	TestResultsDir = "tests/results"
+	TestConfigFile = "tests/config.yaml"
 
 	// Forge runtime directory (project-level)
 	ForgeDir            = ".forge"

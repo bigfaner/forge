@@ -109,19 +109,14 @@ func GetFeatureTestCasesFile(featureSlug string) string {
 	return filepath.Join(FeaturesDir, featureSlug, TestCasesFileName)
 }
 
-// GetE2EGraduatedMarker returns the path to tests/e2e/.graduated/<slug>.
-func GetE2EGraduatedMarker(projectRoot, featureSlug string) string {
-	return filepath.Join(projectRoot, E2EGraduatedDir, featureSlug)
+// GetTestResultsDir returns the path to tests/results/.
+func GetTestResultsDir(projectRoot string) string {
+	return filepath.Join(projectRoot, TestResultsDir)
 }
 
-// GetE2EStagingDir returns the path to tests/e2e/features/<slug> (pre-graduation staging area).
-func GetE2EStagingDir(projectRoot, featureSlug string) string {
-	return filepath.Join(projectRoot, E2EStagingDir, featureSlug)
-}
-
-// GetE2ETargetDir returns the path to tests/e2e/<target> (post-graduation regression suite, e.g. tests/e2e/ui/login).
-func GetE2ETargetDir(projectRoot, target string) string {
-	return filepath.Join(projectRoot, E2ETestsBaseDir, target)
+// GetTestConfigPath returns the path to tests/config.yaml.
+func GetTestConfigPath(projectRoot string) string {
+	return filepath.Join(projectRoot, TestConfigFile)
 }
 
 // GetForgeStatePath returns the absolute path to .forge/state.json.

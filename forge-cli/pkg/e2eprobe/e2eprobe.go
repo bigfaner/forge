@@ -23,7 +23,7 @@ func ProbeEndpoint(url string, timeout time.Duration) bool {
 	return resp.StatusCode < 500
 }
 
-// ProbeServers reads tests/e2e/config.yaml and probes baseUrl/apiBaseUrl.
+// ProbeServers reads tests/config.yaml and probes baseUrl/apiBaseUrl.
 // Returns true if all configured endpoints respond, or if no config exists.
 // path is the health check path appended to each URL (defaults to "/health").
 func ProbeServers(projectRoot, path string) bool {
@@ -31,7 +31,7 @@ func ProbeServers(projectRoot, path string) bool {
 		path = "/health"
 	}
 
-	configPath := filepath.Join(projectRoot, "tests", "e2e", "config.yaml")
+	configPath := filepath.Join(projectRoot, "tests", "config.yaml")
 	if !just.FileExists(configPath) {
 		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
 		return true

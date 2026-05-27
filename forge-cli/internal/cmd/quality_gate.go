@@ -144,14 +144,10 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	}
 
 	// Warn if feature test scripts exist but haven't been promoted.
-	e2eScriptsDir := feature.GetE2EStagingDir(result.ProjectRoot, result.FeatureSlug)
-	markerPath := feature.GetE2EGraduatedMarker(result.ProjectRoot, result.FeatureSlug)
-	if just.FileExists(e2eScriptsDir) && !just.FileExists(markerPath) {
-		fmt.Fprintln(os.Stderr,
-			"WARNING: feature test scripts exist but haven't been run or promoted.\n"+
-				"  Add T-test-run (run-test) to your task index,\n"+
-				"  or run /run-tests to promote and run test scripts manually.")
-	}
+	// NOTE: staging/graduation directories removed in v3.0.0 — this check
+	// is retained as a no-op placeholder for future test-run validation.
+	_ = result.ProjectRoot
+	_ = result.FeatureSlug
 
 	// Step 1: Quality gate (compile -> fmt -> lint)
 	// Stops at first blocking failure.
@@ -192,7 +188,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		}
 	}
 
-	// Step 3: Full test regression (promoted scripts in tests/e2e/)
+	// Step 3: Full test regression (promoted scripts in tests/)
 	if err := runTestRegression(result.ProjectRoot, result.FeatureSlug); err != nil {
 		os.Exit(0)
 	}
@@ -283,7 +279,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 		fmt.Fprintf(os.Stderr, "--- Running surface orchestration for %s ---\n", surfaceType)
 		result := runSurfaceLifecycle(projectRoot, surfaceType)
 		if !result.success {
-			errorDocPath := "tests/e2e/results/raw-output.txt"
+			errorDocPath := "tests/results/raw-output.txt"
 			if result.output != "" {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, result.output); err != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
