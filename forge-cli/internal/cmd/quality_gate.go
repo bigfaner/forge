@@ -293,7 +293,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 			if fixErr != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 			}
-			lastErr = handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(result.output, 5))
+			lastErr = handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(result.output, 5), true)
 		}
 	}
 	return lastErr
