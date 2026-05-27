@@ -593,6 +593,19 @@ func TestAutoConfigDefaults(t *testing.T) {
 	if !defaults.KnowledgeSave.Quick || defaults.KnowledgeSave.Full {
 		t.Errorf("KnowledgeSave = %+v, want {Quick:true Full:false}", defaults.KnowledgeSave)
 	}
+	// Eval defaults (bool)
+	if !defaults.Eval.Proposal {
+		t.Errorf("Eval.Proposal = %v, want true", defaults.Eval.Proposal)
+	}
+	if defaults.Eval.Prd {
+		t.Errorf("Eval.Prd = %v, want false", defaults.Eval.Prd)
+	}
+	if !defaults.Eval.UiDesign {
+		t.Errorf("Eval.UiDesign = %v, want true", defaults.Eval.UiDesign)
+	}
+	if defaults.Eval.TechDesign {
+		t.Errorf("Eval.TechDesign = %v, want false", defaults.Eval.TechDesign)
+	}
 }
 
 func TestAutoConfigIsZero(t *testing.T) {
@@ -621,6 +634,13 @@ func TestAutoConfigIsZero(t *testing.T) {
 		a := AutoConfig{KnowledgeSave: ModeToggle{Quick: true, Full: false}}
 		if a.IsZero() {
 			t.Error("expected AutoConfig with KnowledgeSave set to be non-zero")
+		}
+	})
+
+	t.Run("only Eval.Proposal set is not zero", func(t *testing.T) {
+		a := AutoConfig{Eval: EvalConfig{Proposal: true}}
+		if a.IsZero() {
+			t.Error("expected AutoConfig with Eval.Proposal set to be non-zero")
 		}
 	})
 }
@@ -1290,20 +1310,9 @@ func TestReadConfig_OldKeyMigration(t *testing.T) {
 }
 
 func TestGetConfigValue_EvalConfig(t *testing.T) {
-	t.Run("auto.eval.proposal returns quick:true full:true (default)", func(t *testing.T) {
+	t.Run("auto.eval.proposal returns true (default)", func(t *testing.T) {
 		dir := t.TempDir()
 		val, err := GetConfigValue(dir, "auto.eval.proposal")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if val != "quick:true full:true" {
-			t.Errorf("expected 'quick:true full:true', got %q", val)
-		}
-	})
-
-	t.Run("auto.eval.proposal.quick returns true (4-level depth)", func(t *testing.T) {
-		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1338,9 +1347,9 @@ func TestGetConfigValue_EvalConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("auto.eval.proposal.quick.extra returns errKeyNotFound", func(t *testing.T) {
+	t.Run("auto.eval.proposal.extra returns errKeyNotFound (bool is leaf)", func(t *testing.T) {
 		dir := t.TempDir()
-		_, err := GetConfigValue(dir, "auto.eval.proposal.quick.extra")
+		_, err := GetConfigValue(dir, "auto.eval.proposal.extra")
 		if err != errKeyNotFound {
 			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
@@ -1367,23 +1376,26 @@ func TestSetConfigValue_EvalConfig(t *testing.T) {
 		}
 	})
 
-	t.Run("auto.eval.proposal rejected as ModeToggle", func(t *testing.T) {
+	t.Run("auto.eval.proposal set to true (bool field)", func(t *testing.T) {
 		dir := t.TempDir()
-		err := SetConfigValue(dir, "auto.eval.proposal", "true")
-		if err == nil {
-			t.Fatal("expected error for ModeToggle direct set")
+		if err := SetConfigValue(dir, "auto.eval.proposal", "true"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
-			t.Errorf("expected 'cannot set ModeToggle directly' in error, got %v", err)
+		val, err := GetConfigValue(dir, "auto.eval.proposal")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "true" {
+			t.Errorf("expected 'true', got %q", val)
 		}
 	})
 
-	t.Run("auto.eval.prd.full true writes nested config", func(t *testing.T) {
+	t.Run("auto.eval.prd set to true writes and persists", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+		if err := SetConfigValue(dir, "auto.eval.prd", "true"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		val, err := GetConfigValue(dir, "auto.eval.prd")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1432,7 +1444,7 @@ func TestGetConfigValue_WorktreeRegression(t *testing.T) {
 
 func TestParseAutoRaw_EvalConfig(t *testing.T) {
 	t.Run("eval sub-fields tracked with flat-path keys", func(t *testing.T) {
-		dir := setupConfig(t, "auto:\n  eval:\n    proposal:\n      quick: false\n    prd:\n      quick: true\n      full: false\n  test:\n    quick: true\n")
+		dir := setupConfig(t, "auto:\n  eval:\n    proposal: false\n    prd: true\n  test:\n    quick: true\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -1441,23 +1453,17 @@ func TestParseAutoRaw_EvalConfig(t *testing.T) {
 			t.Fatal("expected non-nil config")
 		}
 
-		if cfg.Auto.Eval.Proposal.Quick {
-			t.Error("Eval.Proposal.Quick should be false (explicitly set)")
+		if cfg.Auto.Eval.Proposal {
+			t.Error("Eval.Proposal should be false (explicitly set)")
 		}
-		if !cfg.Auto.Eval.Proposal.Full {
-			t.Error("Eval.Proposal.Full should be true (default applied)")
+		if !cfg.Auto.Eval.Prd {
+			t.Error("Eval.Prd should be true (explicitly set)")
 		}
-		if !cfg.Auto.Eval.Prd.Quick {
-			t.Error("Eval.Prd.Quick should be true")
+		if !cfg.Auto.Eval.UiDesign {
+			t.Errorf("Eval.UiDesign should default to true, got %v", cfg.Auto.Eval.UiDesign)
 		}
-		if cfg.Auto.Eval.Prd.Full {
-			t.Error("Eval.Prd.Full should be false")
-		}
-		if !cfg.Auto.Eval.UiDesign.Quick || !cfg.Auto.Eval.UiDesign.Full {
-			t.Errorf("Eval.UiDesign should default to true/true, got %+v", cfg.Auto.Eval.UiDesign)
-		}
-		if cfg.Auto.Eval.TechDesign.Quick || cfg.Auto.Eval.TechDesign.Full {
-			t.Errorf("Eval.TechDesign should default to false/false, got %+v", cfg.Auto.Eval.TechDesign)
+		if cfg.Auto.Eval.TechDesign {
+			t.Errorf("Eval.TechDesign should default to false, got %v", cfg.Auto.Eval.TechDesign)
 		}
 	})
 }
@@ -1493,36 +1499,25 @@ func TestParseAutoRaw_ExistingFields_Regression(t *testing.T) {
 
 // TestGetStructValueByPath tests the reflect-based getByPath at various depths and edge cases.
 func TestGetStructValueByPath(t *testing.T) {
-	t.Run("three-level path auto.eval.proposal", func(t *testing.T) {
+	t.Run("three-level path auto.eval.proposal returns bool", func(t *testing.T) {
 		dir := t.TempDir()
 		val, err := GetConfigValue(dir, "auto.eval.proposal")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if val != "quick:true full:true" {
-			t.Errorf("expected 'quick:true full:true', got %q", val)
-		}
-	})
-
-	t.Run("four-level path auto.eval.proposal.quick", func(t *testing.T) {
-		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
 		if val != "true" {
 			t.Errorf("expected 'true', got %q", val)
 		}
 	})
 
-	t.Run("four-level path auto.eval.proposal.full", func(t *testing.T) {
+	t.Run("three-level path auto.eval.prd returns bool", func(t *testing.T) {
 		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.proposal.full")
+		val, err := GetConfigValue(dir, "auto.eval.prd")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if val != "true" {
-			t.Errorf("expected 'true', got %q", val)
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
 		}
 	})
 
@@ -1559,7 +1554,7 @@ func TestGetStructValueByPath(t *testing.T) {
 
 	t.Run("path beyond leaf returns errKeyNotFound", func(t *testing.T) {
 		dir := t.TempDir()
-		_, err := GetConfigValue(dir, "auto.eval.proposal.quick.extra")
+		_, err := GetConfigValue(dir, "auto.eval.proposal.extra")
 		if err != errKeyNotFound {
 			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
@@ -1590,12 +1585,12 @@ func TestGetStructValueByPath(t *testing.T) {
 
 // TestSetStructValueByPath tests the reflect-based setByPath for various scenarios.
 func TestSetStructValueByPath(t *testing.T) {
-	t.Run("multi-level path set auto.eval.prd.full true", func(t *testing.T) {
+	t.Run("multi-level path set auto.eval.prd true", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+		if err := SetConfigValue(dir, "auto.eval.prd", "true"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		val, err := GetConfigValue(dir, "auto.eval.prd")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1604,14 +1599,17 @@ func TestSetStructValueByPath(t *testing.T) {
 		}
 	})
 
-	t.Run("ModeToggle direct set rejected", func(t *testing.T) {
+	t.Run("bool field direct set succeeds", func(t *testing.T) {
 		dir := t.TempDir()
-		err := SetConfigValue(dir, "auto.eval.proposal", "true")
-		if err == nil {
-			t.Fatal("expected error for ModeToggle direct set")
+		if err := SetConfigValue(dir, "auto.eval.proposal", "false"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
-		if !strings.Contains(err.Error(), "cannot set ModeToggle directly") {
-			t.Errorf("expected 'cannot set ModeToggle directly' in error, got %v", err)
+		val, err := GetConfigValue(dir, "auto.eval.proposal")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "false" {
+			t.Errorf("expected 'false', got %q", val)
 		}
 	})
 
@@ -1655,13 +1653,13 @@ func TestSetStructValueByPath(t *testing.T) {
 		}
 	})
 
-	t.Run("set auto.eval.uiDesign.quick to true (flip default)", func(t *testing.T) {
+	t.Run("set auto.eval.prd to true (flip default)", func(t *testing.T) {
 		dir := t.TempDir()
-		// First set it to true (non-default for prd), then verify
-		if err := SetConfigValue(dir, "auto.eval.prd.quick", "true"); err != nil {
+		// Default for prd is false, flip to true
+		if err := SetConfigValue(dir, "auto.eval.prd", "true"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		val, err := GetConfigValue(dir, "auto.eval.prd.quick")
+		val, err := GetConfigValue(dir, "auto.eval.prd")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1784,44 +1782,33 @@ func TestDetectPipelineMode(t *testing.T) {
 	// These tests validate mode-related config behavior:
 	// The actual mode detection (quick/full/none) is tested in
 	// internal/cmd/config_test.go::TestDetectModeFromPath.
-	// Here we test that the config system supports the mode-based eval keys.
+	// Here we test that the config system supports bool-based eval keys.
 
-	t.Run("auto.eval.proposal.quick default enables quick mode eval", func(t *testing.T) {
+	t.Run("auto.eval.proposal default is true", func(t *testing.T) {
 		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.proposal.quick")
+		val, err := GetConfigValue(dir, "auto.eval.proposal")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if val != "true" {
-			t.Errorf("expected 'true' (quick mode enabled by default), got %q", val)
+			t.Errorf("expected 'true' (enabled by default), got %q", val)
 		}
 	})
 
-	t.Run("auto.eval.prd.quick default disables quick mode eval", func(t *testing.T) {
+	t.Run("auto.eval.prd default is false", func(t *testing.T) {
 		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.prd.quick")
+		val, err := GetConfigValue(dir, "auto.eval.prd")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if val != "false" {
-			t.Errorf("expected 'false' (quick mode disabled by default), got %q", val)
+			t.Errorf("expected 'false' (disabled by default), got %q", val)
 		}
 	})
 
-	t.Run("auto.eval.prd.full default disables full mode eval", func(t *testing.T) {
+	t.Run("auto.eval.uiDesign default is true", func(t *testing.T) {
 		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.prd.full")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if val != "false" {
-			t.Errorf("expected 'false' (full mode disabled by default), got %q", val)
-		}
-	})
-
-	t.Run("auto.eval.uiDesign.quick default enables quick mode eval", func(t *testing.T) {
-		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.uiDesign.quick")
+		val, err := GetConfigValue(dir, "auto.eval.uiDesign")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1830,9 +1817,9 @@ func TestDetectPipelineMode(t *testing.T) {
 		}
 	})
 
-	t.Run("auto.eval.techDesign.full default disables full mode eval", func(t *testing.T) {
+	t.Run("auto.eval.techDesign default is false", func(t *testing.T) {
 		dir := t.TempDir()
-		val, err := GetConfigValue(dir, "auto.eval.techDesign.full")
+		val, err := GetConfigValue(dir, "auto.eval.techDesign")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -1845,56 +1832,63 @@ func TestDetectPipelineMode(t *testing.T) {
 // TestParseAutoRaw_FlatPathTracking verifies the raw map flat-path key structure.
 func TestParseAutoRaw_FlatPathTracking(t *testing.T) {
 	t.Run("raw map contains eval.proposal flat-path key", func(t *testing.T) {
-		yaml := []byte("auto:\n  eval:\n    proposal:\n      quick: true\n")
+		yaml := []byte("auto:\n  eval:\n    proposal: true\n")
 		raw, err := parseAutoRaw(yaml)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		fieldRaw, exists := raw["eval.proposal"]
+		_, exists := raw["eval.proposal"]
 		if !exists {
 			t.Fatal("expected 'eval.proposal' key in raw map")
-		}
-		if !fieldRaw["quick"] {
-			t.Error("expected quick=true in eval.proposal raw")
 		}
 	})
 
 	t.Run("raw map tracks multiple eval sub-fields", func(t *testing.T) {
-		yaml := []byte("auto:\n  eval:\n    proposal:\n      quick: false\n    prd:\n      full: true\n")
+		yaml := []byte("auto:\n  eval:\n    proposal: false\n    prd: true\n")
 		raw, err := parseAutoRaw(yaml)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		proposalRaw, exists := raw["eval.proposal"]
+		_, exists := raw["eval.proposal"]
 		if !exists {
 			t.Fatal("expected 'eval.proposal' in raw map")
 		}
-		if !proposalRaw["quick"] {
-			t.Error("expected quick tracked for eval.proposal")
-		}
 
-		prdRaw, exists := raw["eval.prd"]
+		_, exists = raw["eval.prd"]
 		if !exists {
 			t.Fatal("expected 'eval.prd' in raw map")
 		}
-		if !prdRaw["full"] {
-			t.Error("expected full tracked for eval.prd")
-		}
 	})
 
-	t.Run("applyDefaults only fills missing sub-keys", func(t *testing.T) {
-		dir := setupConfig(t, "auto:\n  eval:\n    proposal:\n      quick: false\n")
+	t.Run("applyDefaults preserves explicit values", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  eval:\n    proposal: false\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		// quick was explicitly set to false — should remain false
-		if cfg.Auto.Eval.Proposal.Quick {
-			t.Error("Eval.Proposal.Quick should be false (explicitly set)")
+		// proposal was explicitly set to false — should remain false
+		if cfg.Auto.Eval.Proposal {
+			t.Error("Eval.Proposal should be false (explicitly set)")
 		}
-		// full was not set — should get default (true)
-		if !cfg.Auto.Eval.Proposal.Full {
-			t.Error("Eval.Proposal.Full should be true (default applied)")
+		// prd was not set — should get default (false)
+		if cfg.Auto.Eval.Prd {
+			t.Error("Eval.Prd should be false (default)")
+		}
+		// uiDesign was not set — should get default (true)
+		if !cfg.Auto.Eval.UiDesign {
+			t.Error("Eval.UiDesign should be true (default)")
+		}
+	})
+
+	t.Run("raw map tracks old ModeToggle format for eval", func(t *testing.T) {
+		yaml := []byte("auto:\n  eval:\n    proposal:\n      quick: false\n      full: true\n")
+		raw, err := parseAutoRaw(yaml)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		_, exists := raw["eval.proposal"]
+		if !exists {
+			t.Fatal("expected 'eval.proposal' in raw map (old ModeToggle format)")
 		}
 	})
 }
@@ -1904,25 +1898,19 @@ func TestGetConfigValue_EvalExplicitConfig(t *testing.T) {
 	t.Run("explicit eval config overrides defaults", func(t *testing.T) {
 		dir := setupConfig(t, `auto:
   eval:
-    proposal:
-      quick: false
-      full: false
-    prd:
-      quick: true
-      full: true
-    uiDesign:
-      quick: false
-    techDesign:
-      full: true
+    proposal: false
+    prd: true
+    uiDesign: false
+    techDesign: true
 `)
 		tests := []struct {
 			key      string
 			expected string
 		}{
-			{"auto.eval.proposal", "quick:false full:false"},
-			{"auto.eval.prd", "quick:true full:true"},
-			{"auto.eval.uiDesign", "quick:false full:true"},   // quick explicit false, full defaults to true
-			{"auto.eval.techDesign", "quick:false full:true"}, // quick defaults false, full explicit true
+			{"auto.eval.proposal", "false"},
+			{"auto.eval.prd", "true"},
+			{"auto.eval.uiDesign", "false"},
+			{"auto.eval.techDesign", "true"},
 		}
 		for _, tt := range tests {
 			t.Run(tt.key, func(t *testing.T) {
@@ -1964,7 +1952,7 @@ func TestGetConfigValue_AutoSummary(t *testing.T) {
 			t.Errorf("expected 'eval:' in auto summary, got:\n%s", val)
 		}
 
-		// Check eval sub-fields appear (indented under eval)
+		// Check eval sub-fields appear (bool format)
 		for _, field := range []string{"proposal:", "prd:", "uiDesign:", "techDesign:"} {
 			if !strings.Contains(val, field) {
 				t.Errorf("expected eval sub-field %q in auto summary, got:\n%s", field, val)
@@ -1974,24 +1962,24 @@ func TestGetConfigValue_AutoSummary(t *testing.T) {
 }
 
 func TestEvalConfigDefaults(t *testing.T) {
-	t.Run("eval defaults match proposal spec", func(t *testing.T) {
+	t.Run("eval defaults match spec", func(t *testing.T) {
 		defaults := AutoConfigDefaults()
 
-		// proposal: quick=true, full=true
-		if !defaults.Eval.Proposal.Quick || !defaults.Eval.Proposal.Full {
-			t.Errorf("Eval.Proposal = %+v, want {Quick:true Full:true}", defaults.Eval.Proposal)
+		// proposal: true
+		if !defaults.Eval.Proposal {
+			t.Errorf("Eval.Proposal = %v, want true", defaults.Eval.Proposal)
 		}
-		// prd: quick=false, full=false
-		if defaults.Eval.Prd.Quick || defaults.Eval.Prd.Full {
-			t.Errorf("Eval.Prd = %+v, want {Quick:false Full:false}", defaults.Eval.Prd)
+		// prd: false
+		if defaults.Eval.Prd {
+			t.Errorf("Eval.Prd = %v, want false", defaults.Eval.Prd)
 		}
-		// uiDesign: quick=true, full=true
-		if !defaults.Eval.UiDesign.Quick || !defaults.Eval.UiDesign.Full {
-			t.Errorf("Eval.UiDesign = %+v, want {Quick:true Full:true}", defaults.Eval.UiDesign)
+		// uiDesign: true
+		if !defaults.Eval.UiDesign {
+			t.Errorf("Eval.UiDesign = %v, want true", defaults.Eval.UiDesign)
 		}
-		// techDesign: quick=false, full=false
-		if defaults.Eval.TechDesign.Quick || defaults.Eval.TechDesign.Full {
-			t.Errorf("Eval.TechDesign = %+v, want {Quick:false Full:false}", defaults.Eval.TechDesign)
+		// techDesign: false
+		if defaults.Eval.TechDesign {
+			t.Errorf("Eval.TechDesign = %v, want false", defaults.Eval.TechDesign)
 		}
 	})
 }
@@ -2005,7 +1993,7 @@ func TestAutoConfigIsZero_IncludesEval(t *testing.T) {
 	})
 
 	t.Run("non-zero Eval makes AutoConfig non-zero", func(t *testing.T) {
-		a := AutoConfig{Eval: EvalConfig{Proposal: ModeToggle{Quick: true}}}
+		a := AutoConfig{Eval: EvalConfig{Proposal: true}}
 		if a.IsZero() {
 			t.Error("expected AutoConfig with Eval set to be non-zero")
 		}
@@ -2013,9 +2001,9 @@ func TestAutoConfigIsZero_IncludesEval(t *testing.T) {
 }
 
 func TestSetConfigValue_EvalPersistence(t *testing.T) {
-	t.Run("set auto.eval.techDesign.quick persists across read", func(t *testing.T) {
+	t.Run("set auto.eval.techDesign persists across read", func(t *testing.T) {
 		dir := t.TempDir()
-		if err := SetConfigValue(dir, "auto.eval.techDesign.quick", "true"); err != nil {
+		if err := SetConfigValue(dir, "auto.eval.techDesign", "true"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
@@ -2027,22 +2015,18 @@ func TestSetConfigValue_EvalPersistence(t *testing.T) {
 		if cfg.Auto == nil {
 			t.Fatal("expected Auto non-nil")
 		}
-		if !cfg.Auto.Eval.TechDesign.Quick {
-			t.Error("Eval.TechDesign.Quick should be true after set")
-		}
-		// Full should be default (false)
-		if cfg.Auto.Eval.TechDesign.Full {
-			t.Error("Eval.TechDesign.Full should be false (default)")
+		if !cfg.Auto.Eval.TechDesign {
+			t.Error("Eval.TechDesign should be true after set")
 		}
 	})
 
-	t.Run("set auto.eval.prd.full true after false default", func(t *testing.T) {
+	t.Run("set auto.eval.prd true after false default", func(t *testing.T) {
 		dir := t.TempDir()
-		// Default for prd.full is false, set to true
-		if err := SetConfigValue(dir, "auto.eval.prd.full", "true"); err != nil {
+		// Default for prd is false, set to true
+		if err := SetConfigValue(dir, "auto.eval.prd", "true"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		val, err := GetConfigValue(dir, "auto.eval.prd.full")
+		val, err := GetConfigValue(dir, "auto.eval.prd")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -2062,10 +2046,8 @@ func TestParseAutoRaw_EvalRegressionWithExistingFields(t *testing.T) {
     full: false
   gitPush: true
   eval:
-    proposal:
-      quick: false
-    prd:
-      full: true
+    proposal: false
+    prd: true
 `)
 		cfg, err := ReadConfig(dir)
 		if err != nil {
@@ -2089,18 +2071,18 @@ func TestParseAutoRaw_EvalRegressionWithExistingFields(t *testing.T) {
 			t.Error("GitPush should be true")
 		}
 
-		// Eval fields
-		if cfg.Auto.Eval.Proposal.Quick {
-			t.Error("Eval.Proposal.Quick should be false (explicit)")
+		// Eval fields (bool)
+		if cfg.Auto.Eval.Proposal {
+			t.Error("Eval.Proposal should be false (explicit)")
 		}
-		if !cfg.Auto.Eval.Proposal.Full {
-			t.Error("Eval.Proposal.Full should be true (default)")
+		if !cfg.Auto.Eval.Prd {
+			t.Error("Eval.Prd should be true (explicit)")
 		}
-		if cfg.Auto.Eval.Prd.Quick {
-			t.Error("Eval.Prd.Quick should be false (default)")
+		if !cfg.Auto.Eval.UiDesign {
+			t.Errorf("Eval.UiDesign should default to true, got %v", cfg.Auto.Eval.UiDesign)
 		}
-		if !cfg.Auto.Eval.Prd.Full {
-			t.Error("Eval.Prd.Full should be true (explicit)")
+		if cfg.Auto.Eval.TechDesign {
+			t.Errorf("Eval.TechDesign should default to false, got %v", cfg.Auto.Eval.TechDesign)
 		}
 	})
 }
@@ -2182,14 +2164,10 @@ func TestGetConfigValue_EvalFullRoundtrip(t *testing.T) {
 		key        string
 		defaultVal string
 	}{
-		{"auto.eval.proposal.quick", "true"},
-		{"auto.eval.proposal.full", "true"},
-		{"auto.eval.prd.quick", "false"},
-		{"auto.eval.prd.full", "false"},
-		{"auto.eval.uiDesign.quick", "true"},
-		{"auto.eval.uiDesign.full", "true"},
-		{"auto.eval.techDesign.quick", "false"},
-		{"auto.eval.techDesign.full", "false"},
+		{"auto.eval.proposal", "true"},
+		{"auto.eval.prd", "false"},
+		{"auto.eval.uiDesign", "true"},
+		{"auto.eval.techDesign", "false"},
 	}
 
 	for _, tt := range evalKeys {
@@ -2204,4 +2182,65 @@ func TestGetConfigValue_EvalFullRoundtrip(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestEvalConfig_OldModeToggleCompat tests backward compatibility with old ModeToggle format.
+func TestEvalConfig_OldModeToggleCompat(t *testing.T) {
+	t.Run("old ModeToggle map format reads 'full' sub-key", func(t *testing.T) {
+		dir := setupConfig(t, `auto:
+  eval:
+    proposal:
+      quick: false
+      full: true
+    prd:
+      quick: true
+      full: false
+    uiDesign:
+      quick: false
+      full: false
+    techDesign:
+      quick: true
+      full: true
+`)
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg == nil || cfg.Auto == nil {
+			t.Fatal("expected non-nil config")
+		}
+
+		// proposal: full=true → true
+		if !cfg.Auto.Eval.Proposal {
+			t.Errorf("Eval.Proposal should be true (full=true from ModeToggle), got %v", cfg.Auto.Eval.Proposal)
+		}
+		// prd: full=false → false
+		if cfg.Auto.Eval.Prd {
+			t.Errorf("Eval.Prd should be false (full=false from ModeToggle), got %v", cfg.Auto.Eval.Prd)
+		}
+		// uiDesign: full=false → false
+		if cfg.Auto.Eval.UiDesign {
+			t.Errorf("Eval.UiDesign should be false (full=false from ModeToggle), got %v", cfg.Auto.Eval.UiDesign)
+		}
+		// techDesign: full=true → true
+		if !cfg.Auto.Eval.TechDesign {
+			t.Errorf("Eval.TechDesign should be true (full=true from ModeToggle), got %v", cfg.Auto.Eval.TechDesign)
+		}
+	})
+
+	t.Run("old ModeToggle map format with only quick", func(t *testing.T) {
+		dir := setupConfig(t, `auto:
+  eval:
+    proposal:
+      quick: true
+`)
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		// No 'full' sub-key → defaults to false (map without 'full' key)
+		if cfg.Auto.Eval.Proposal {
+			t.Errorf("Eval.Proposal should be false (no 'full' sub-key in ModeToggle map), got %v", cfg.Auto.Eval.Proposal)
+		}
+	})
 }

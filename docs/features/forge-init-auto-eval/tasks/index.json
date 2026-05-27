@@ -8,7 +8,7 @@
       "title": "EvalConfig 扁平化为 bool 并简化默认值",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-evalconfig-bool.md",
       "record": "records/1-evalconfig-bool.md",
       "breaking": true,
