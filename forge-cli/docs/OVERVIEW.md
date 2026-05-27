@@ -84,20 +84,19 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 | `forge prompt get-by-task-id <id>` | Prompt synthesis | Generate agent prompt for a task based on its type; `--fix-record-missed` for recovery |
 | `forge forensic` | Session analysis | Search/extract past session transcripts for deviation analysis |
 | `forge task migrate` | Data migration | Infer type fields for all tasks in index.json |
-| `forge e2e validate-specs` | Spec validation | AST validation against generated Playwright spec files |
 | `forge version` | Version info | Print CLI version |
 
-**Profile detection signals:**
+**Surface type detection signals:**
 
-| Signal | Profile |
-|--------|---------|
-| `package.json` + `@playwright/test` or `playwright.config.*` | `web-playwright` |
-| `go.mod` | `go-test` |
-| `android/` or `ios/` directory | `maestro` |
-| `pom.xml` or `build.gradle(.kts)` | `java-junit` |
-| `Cargo.toml` | `rust-test` |
-| `requirements.txt`/`pyproject.toml` + pytest | `pytest` |
-| `package.json` without Playwright | `web-playwright` (fallback) |
+| Signal | Surface Type |
+|--------|-------------|
+| `package.json` + `@playwright/test` or `playwright.config.*` | `web` |
+| `go.mod` | `cli` |
+| `android/` or `ios/` directory | `mobile` |
+| `pom.xml` or `build.gradle(.kts)` | `api` |
+| `Cargo.toml` | `cli` |
+| `requirements.txt`/`pyproject.toml` + pytest | `cli` |
+| `package.json` without Playwright | `web` (fallback) |
 
 **all-completed behavior:**
 - Guard: only proceeds when `.forge/state.json` has `allCompleted=true`
@@ -105,24 +104,22 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 - No feature or no project root → silent exit, exit 0
 - When all tasks done, runs a multi-step pipeline in order:
   1. **Quality gate**: `just compile → just fmt (non-blocking) → just lint`
-  2. **Project-wide tests**: `just test` (or detected test command)
-  3. **E2E setup**: `just e2e-setup` (if recipe exists)
-  4. **Server health probe**: check e2e servers are responding before running tests
-  5. **E2E regression**: `just test-e2e` (if recipe exists)
+  2. **Project-wide unit tests**: `just test` (or detected test command)
+  3. **Full test regression**: `just test` (test scripts in `tests/`)
 
 **Auto-fix task creation on failure:**
 - At any step failure, `addFixTask()` creates a P0 fix-task using the `fix-task` template
 - Extracts source file paths from error output, saves raw output to disk
 - Prints hook JSON block reason → agent picks up fix task via `forge task claim`
 
-**feature e2e tests (NOT run by this hook):**
-- Feature e2e execution is owned by T-test-3 (`run-e2e-tests` task in the task chain)
-- If `tests/e2e/features/<feature>/` exists but no graduation marker, hook prints a WARNING to guide migration
+**Feature-specific tests (NOT run by this hook):**
+- Feature test execution is owned by the test run task in the task chain
+- If scripts exist in the feature's tests directory but lack promotion markers, hook prints a WARNING to guide migration
 
-**e2e test script graduation model:**
-- Promotion is done via `/run-tests` — after tests pass, `@feature` tags are replaced with `@regression`
+**Test tag-based promotion model:**
+- Promotion is done via the test pipeline — after tests pass, `@feature` tags are replaced with `@regression`
 - Tag-based lifecycle: `@feature` (newly generated) -> `@regression` (verified, promoted)
-- Source scripts at `tests/e2e/features/<feature>/` are reorganized into `tests/e2e/<target>/` after graduation
+- Source scripts are organized under `tests/<journey>/` and promoted via tag replacement
 
 **Test command auto-detection order (project-level):**
 1. `justfile`/`Justfile` contains `test` recipe -> `just test`
@@ -130,9 +127,6 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 3. `go.mod` exists -> `go test ./...`
 4. `package.json` contains `scripts.test` -> `npm test`
 5. `pytest.ini` / `pyproject.toml` exists -> `pytest`
-
-**e2e test detection order:**
-1. `justfile`/`Justfile` contains `test-e2e` recipe -> `just test-e2e`
 
 ---
 
@@ -157,7 +151,7 @@ project-root/
 │       ├── testing/
 │       │   ├── test-cases.md      # Test cases (with target field)
 │       │   └── results/
-│       │       └── latest.md      # e2e test results report
+│       │       └── latest.md      # test results report
 │       └── tasks/
 │           ├── index.json          # Task definitions
 │           ├── process/            # Runtime state
@@ -166,15 +160,14 @@ project-root/
 │           ├── 1.1-<title>.md     # Task details
 │           └── records/            # Execution records
 ├── tests/
-│   └── e2e/                       # Regression test suite (promoted via tags)
-│       ├── .graduated/            # Legacy `tests/e2e/.graduated/` marker files
-│       │   └── <slug>             # YAML marker (schema_version, status, timestamp, source, targets, modules, testCount)
-│       ├── ui/<page>/             # UI tests (aggregated by page)
-│       │   └── ui.spec.ts
-│       ├── api/<resource>/        # API tests (aggregated by resource)
-│       │   └── api.spec.ts
-│       └── cli/<command>/         # CLI tests (aggregated by command)
-│           └── cli.spec.ts
+│   ├── results/                   # Test results output
+│   │   └── raw-output.txt
+│   ├── ui/<page>/                 # UI tests (aggregated by page)
+│   │   └── ui.spec.ts
+│   ├── api/<resource>/            # API tests (aggregated by resource)
+│   │   └── api.spec.ts
+│   └── cli/<command>/             # CLI tests (aggregated by command)
+│       └── cli.spec.ts
 ```
 
 ### Project Root Detection
@@ -241,12 +234,10 @@ type Task struct {
 | `gate` | Quality gate between phases |
 | `doc-generation.summary` | Phase summary document generation |
 | `doc-generation.consolidate` | Specification consolidation |
+| `test.run` | Run test scripts and collect results |
 | `test.gen-journeys` | Generate test journeys from specs |
 | `test.gen-contracts` | Generate test contracts from journeys |
 | `test.gen-scripts` | Generate executable test scripts |
-| `test.run` | E2E test execution |
-| `test.verify-regression` | Regression verification |
-| `test-pipeline.promote` | Tag-based promotion: @feature -> @regression |
 
 ### TaskIndex
 

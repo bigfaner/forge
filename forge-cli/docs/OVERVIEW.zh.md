@@ -73,20 +73,19 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 | `forge quality-gate` | Stop hook | 检查所有任务是否完成，若完成则自动运行测试 |
 
 **all-completed 行为：**
-- 所有任务均为 `completed` 或 `skipped` → 运行项目级测试 + e2e 回归，exit 0
+- 所有任务均为 `completed` 或 `skipped` → 运行项目级测试 + 回归测试，exit 0
 - 任意任务为 `pending`/`in_progress`/`blocked` → 静默退出，exit 0
 - 无 feature 或无 project root → 静默退出，exit 0
 
-**e2e 测试失败恢复：**
-- 当回归测试 (`just test-e2e`) 失败时，保存原始输出到 `tests/results/raw-output.txt`
+**测试失败恢复：**
+- 当回归测试失败时，保存原始输出到 `tests/results/raw-output.txt`
 - 阻止 Stop hook，指示 agent 分析失败原因并使用 `forge task add` 创建修复任务
 - agent 读取原始输出，确定根因，动态添加修复任务
 
-**feature e2e 测试（不由本 hook 运行）：**
-- Feature e2e 执行由 T-test-3（`run-e2e-tests` 任务）负责
-- 若 `tests/e2e/features/<feature>/` 存在但无毕业标记，hook 打印 WARNING 引导迁移
+**feature 测试（不由本 hook 运行）：**
+- Feature 测试执行由 T-test-3 任务负责
 
-**e2e 测试标签晋升模型：**
+**测试标签晋升模型：**
 - 晋升通过 `/run-tests` 完成——测试通过后自动替换 `@feature` 为 `@regression`
 - 标签生命周期：`@feature`（新生成，验证中）-> `@regression`（已验证，回归测试）
 
@@ -98,8 +97,8 @@ Override with `--force`: `forge task submit <id> --data record.json --force`
 5. `package.json` 含 `scripts.test` → `npm test`
 6. `pytest.ini` / `pyproject.toml` 存在 → `pytest`
 
-**e2e 测试检测顺序：**
-1. `justfile`/`Justfile` 含 `test-e2e` recipe → `just test-e2e`
+**测试检测顺序：**
+1. `justfile`/`Justfile` 含 `test` recipe → `just test`
 
 ---
 
@@ -124,7 +123,7 @@ project-root/
 │       ├── testing/
 │       │   ├── test-cases.md      # 测试用例（含 target 字段）
 │       │   └── results/
-│       │       └── latest.md      # e2e 测试结果报告
+│       │       └── latest.md      # 测试结果报告
 │       └── tasks/
 │           ├── index.json          # 任务定义
 │           ├── process/            # 运行时状态
@@ -133,15 +132,14 @@ project-root/
 │           ├── 1.1-<title>.md     # 任务详情
 │           └── records/            # 执行记录
 ├── tests/
-│   └── e2e/                       # 回归测试套件（通过标签晋升）
-│       ├── .graduated/            # 遗留毕业标记文件
-│       │   └── <slug>             # YAML 标记（schema_version, status, timestamp, source, targets, modules, testCount）
-│       ├── ui/<page>/             # UI 测试（按页面聚合）
-│       │   └── ui.spec.ts
-│       ├── api/<resource>/        # API 测试（按资源聚合）
-│       │   └── api.spec.ts
-│       └── cli/<command>/         # CLI 测试（按命令聚合）
-│           └── cli.spec.ts
+│   ├── results/                   # 测试结果输出
+│   │   └── raw-output.txt
+│   ├── ui/<page>/                 # UI 测试（按页面聚合）
+│   │   └── ui.spec.ts
+│   ├── api/<resource>/            # API 测试（按资源聚合）
+│   │   └── api.spec.ts
+│   └── cli/<command>/             # CLI 测试（按命令聚合）
+│       └── cli.spec.ts
 ```
 
 ### 项目根目录检测

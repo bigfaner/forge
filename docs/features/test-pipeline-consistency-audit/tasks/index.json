@@ -25,7 +25,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "11-sync-overview-workflow.md",
       "record": "records/11-sync-overview-workflow.md",
       "type": "doc"

@@ -317,8 +317,8 @@ for each dep in T.Dependencies:
               │
               ▼
     ┌─────────────────┐
-    │ 若 e2e 脚本存在 │
-    │ 但未毕业则警告  │
+    │ 若测试脚本存在  │
+    │ 但未晋升则警告  │
     └────────┬────────┘
               │
               ▼
@@ -329,8 +329,8 @@ for each dep in T.Dependencies:
               │
               ▼
     ┌─────────────────┐
-    │ E2e 回归测试    │
-    │ (just test-e2e) │
+    │ 全量回归测试    │
+    │ just test       │
     │ 若可用          │
     └────────┬────────┘
               │
@@ -345,9 +345,9 @@ for each dep in T.Dependencies:
                   └──────────────────────────┘
 ```
 
-**注意**: Feature e2e 测试不由此 hook 运行。
-由 T-test-3（`run-e2e-tests` 任务）负责。
-此 hook 是项目健康门禁：单元/集成测试 + 回归套件。
+**注意**: Feature 测试不由此 hook 运行。
+由 test-run 任务负责。
+此 hook 是项目健康门禁：单元测试 + 回归套件。
 
 **测试命令检测顺序：**
 1. `testCommand` 字段在 `index.json` 中
