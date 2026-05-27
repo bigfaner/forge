@@ -231,20 +231,45 @@ func TestGetReviewDocTask(t *testing.T) {
 }
 
 func TestResolveReviewDocDep(t *testing.T) {
-	t.Run("sets dependency on last business task", func(t *testing.T) {
+	t.Run("depends on all doc-type tasks, not just the last", func(t *testing.T) {
 		existing := map[string]Task{
 			"1-doc":              {ID: "1.1", Type: TypeDoc},
 			"2-doc":              {ID: "1.2", Type: TypeDoc},
+			"3-code":             {ID: "2.1", Type: TypeCodingFeature},
+			"4-doc":              {ID: "3.1", Type: TypeDoc},
 			"T-test-gen-scripts": {ID: "T-test-gen-scripts-cli", Type: TypeTestGenScripts},
 		}
 		task := GetReviewDocTask()
 		ResolveReviewDocDep(&task, existing)
 
-		if len(task.Dependencies) != 1 {
-			t.Fatalf("Dependencies = %v, want exactly 1", task.Dependencies)
+		if len(task.Dependencies) != 3 {
+			t.Fatalf("Dependencies = %v, want exactly 3 doc tasks", task.Dependencies)
 		}
-		if task.Dependencies[0] != "1.2" {
-			t.Errorf("dep = %q, want 1.2", task.Dependencies[0])
+
+		depSet := make(map[string]bool)
+		for _, dep := range task.Dependencies {
+			depSet[dep] = true
+		}
+
+		if !depSet["1.1"] || !depSet["1.2"] || !depSet["3.1"] {
+			t.Errorf("should depend on all doc tasks {1.1, 1.2, 3.1}, got %v", task.Dependencies)
+		}
+		if depSet["2.1"] {
+			t.Error("should NOT depend on non-doc task 2.1")
+		}
+	})
+
+	t.Run("excludes non-doc business tasks", func(t *testing.T) {
+		existing := map[string]Task{
+			"1-code": {ID: "1", Type: TypeCodingFeature},
+			"2-code": {ID: "2", Type: TypeCodingEnhancement},
+			"3-fix":  {ID: "3", Type: TypeCodingFix},
+		}
+		task := GetReviewDocTask()
+		ResolveReviewDocDep(&task, existing)
+
+		if len(task.Dependencies) != 0 {
+			t.Errorf("should have no deps when no doc tasks exist, got %v", task.Dependencies)
 		}
 	})
 
@@ -255,6 +280,18 @@ func TestResolveReviewDocDep(t *testing.T) {
 
 		if len(task.Dependencies) != 0 {
 			t.Errorf("Dependencies = %v, want empty for no tasks", task.Dependencies)
+		}
+	})
+
+	t.Run("single doc task", func(t *testing.T) {
+		existing := map[string]Task{
+			"1-doc": {ID: "1.1", Type: TypeDoc},
+		}
+		task := GetReviewDocTask()
+		ResolveReviewDocDep(&task, existing)
+
+		if len(task.Dependencies) != 1 || task.Dependencies[0] != "1.1" {
+			t.Errorf("should depend on the single doc task, got %v", task.Dependencies)
 		}
 	})
 }

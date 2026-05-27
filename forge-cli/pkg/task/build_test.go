@@ -1697,7 +1697,7 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 	if evalTask.Type != TypeDocReview {
 		t.Errorf("review-doc type = %q, want %q", evalTask.Type, TypeDocReview)
 	}
-	// Should depend on last business task
+	// Should depend on all doc tasks
 	if len(evalTask.Dependencies) == 0 {
 		t.Error("review-doc has no dependencies")
 	} else {

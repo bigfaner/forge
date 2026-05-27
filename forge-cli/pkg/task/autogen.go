@@ -969,20 +969,22 @@ func GetReviewDocTask() AutoGenTaskDef {
 	}
 }
 
-// ResolveReviewDocDep sets the dependency of T-review-doc on the last business task.
-// Uses lexicographic ordering to find the maximum task ID among business tasks.
+// ResolveReviewDocDep sets the dependency of T-review-doc on all doc-category business tasks.
+// Root cause: previously depended only on the single highest-ID business task,
+// allowing review-doc to run before doc tasks that were added later.
 func ResolveReviewDocDep(task *AutoGenTaskDef, existingTasks map[string]Task) {
-	var bestID string
+	var deps []string
 	for _, t := range existingTasks {
 		if isAutoGenForDep(t.ID) {
 			continue
 		}
-		if t.ID > bestID {
-			bestID = t.ID
+		if CategoryForType(t.Type) == CategoryDoc {
+			deps = append(deps, t.ID)
 		}
 	}
-	if bestID != "" {
-		task.Dependencies = []string{bestID}
+	sort.Strings(deps)
+	if len(deps) > 0 {
+		task.Dependencies = deps
 	}
 }
 
