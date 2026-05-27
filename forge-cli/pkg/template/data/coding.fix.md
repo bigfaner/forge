@@ -33,14 +33,14 @@ This fix-task was created by the quality-gate hook. If `surface-key` and `surfac
 
 If `forge surfaces --json` fails (no surfaces configured, command not found), proceed without surface information — this does not block the fix.
 
-## E2E Fix Boundaries
+## Fix Boundaries
 
-When fixing E2E test failures, observe these boundaries:
+When fixing test failures, observe these boundaries:
 
 **Forbidden:**
 - Starting dev server (`npx expo start`, `npm run dev`, etc.)
 - Running `npm install` more than 3 times — mark task as blocked if dependency installation fails 3 times
-- Running e2e tests (`just test-e2e`) — regression is verified by the dispatcher after fix completes
+- Running full test suite — regression is verified by the dispatcher after fix completes
 - Manually opening browser to verify rendering
 
 **Correct workflow:**
@@ -58,6 +58,6 @@ After fixing, verify the fix works:
 
 > **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.
 
-E2e regression is verified by the dispatcher, not by this fix task.
+Full regression is verified by the dispatcher, not by this fix task.
 
 When this task is recorded as completed via `task record`, the source task {{SOURCE_TASK_ID}} is automatically restored to pending if all its dependencies are completed.

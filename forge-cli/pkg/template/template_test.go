@@ -38,7 +38,7 @@ func TestGet_FixTask(t *testing.T) {
 		"## Reference Files",
 		"## Verification",
 		"targeted tests",
-		"just test-e2e",
+		"full test suite",
 		"breaking: true",
 		`priority: "P0"`,
 	}

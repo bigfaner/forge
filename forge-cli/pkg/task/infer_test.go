@@ -26,10 +26,8 @@ func TestInferType(t *testing.T) {
 		// Breakdown test tasks (exact match, nil surfaces)
 		{"T-test-gen-scripts", nil, TypeTestGenScripts},
 		{"T-test-run", nil, TypeTestRun},
-		{"T-test-verify-regression", nil, TypeTestVerifyRegression},
 
 		// Quick test tasks (exact match)
-		{"T-quick-verify-regression", nil, TypeTestVerifyRegression},
 		{"T-quick-doc-drift", nil, TypeDocDrift},
 
 		// Fix tasks
@@ -58,12 +56,10 @@ func TestInferType(t *testing.T) {
 		{"T-test-gen-journeys", nil, TypeTestGenJourneys},
 
 		// Type suffix on tasks that don't support it should NOT match
-		{"T-test-verify-regression-api", nil, ""},
 		{"T-specs-consolidate-api", nil, ""},
 
 		// T-test-run-api without surfaces map: no prefix matching, falls through
 		{"T-test-run-api", nil, ""},
-		{"T-quick-verify-regression-api", nil, ""},
 
 		// Unknown IDs return empty string
 		{"1.1", nil, ""},
@@ -84,7 +80,6 @@ func TestInferType(t *testing.T) {
 		// Old profile-suffixed IDs no longer match
 		{"T-test-gen-scriptsa", nil, ""},
 		{"T-test-runa", nil, ""},
-		{"T-quick-verify-regressiona", nil, ""},
 		{"T-quick-doc-drifta", nil, ""},
 
 		// Hard Rule: gen-journeys type suffix with hyphenated types

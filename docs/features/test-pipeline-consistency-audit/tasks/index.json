@@ -96,7 +96,7 @@
         "1a",
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-quality-gate.md",
       "record": "records/3-update-quality-gate.md",
       "breaking": true,
@@ -112,7 +112,7 @@
       "dependencies": [
         "1a"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-cleanup-dead-code-types.md",
       "record": "records/4-cleanup-dead-code-types.md",
       "breaking": true,

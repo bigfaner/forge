@@ -31,7 +31,6 @@ func TestCategoryForType_AllTypes(t *testing.T) {
 		// Test category (test.* prefix)
 		{"test.gen-scripts", TypeTestGenScripts, CategoryTest},
 		{"test.run", TypeTestRun, CategoryTest},
-		{"test.verify-regression", TypeTestVerifyRegression, CategoryTest},
 		// Validation category (validation.* prefix)
 		{"validation.code", TypeValidationCode, CategoryValidation},
 		{"validation.ux", TypeValidationUx, CategoryValidation},

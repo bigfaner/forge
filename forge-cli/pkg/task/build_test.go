@@ -718,10 +718,7 @@ func TestIsTestTaskID(t *testing.T) {
 		{"T-test-gen-scripts-api", true},
 		{"T-test-run", true},
 		{"T-test-runa", true},
-		{"T-test-verify-regression", true},
 		// T-quick-* prefix
-		{"T-quick-verify-regressiona", true},
-		{"T-quick-verify-regression", true},
 		// T-specs-* prefix
 		{"T-specs-consolidate", true},
 		// T-clean-* prefix
@@ -758,7 +755,6 @@ func TestIsAutoGenTaskID(t *testing.T) {
 		// Test pipeline IDs
 		{"T-test-gen-scripts-cli", true},
 		{"T-test-run", true},
-		{"T-quick-verify-regression", true},
 		{"T-specs-consolidate", true},
 		{"T-clean-code", true},
 		{"T-validate-code", true},
@@ -1832,7 +1828,7 @@ func TestBuildIndex_WithSurfaces_ProducesPerTypeTasks(t *testing.T) {
 	}
 
 	// 1 business task + test pipeline tasks (gen-journeys, gen-contracts,
-	// gen-test-scripts-api, run-test, verify-regression, quick-drift-detection)
+	// gen-test-scripts-api, run-test, quick-drift-detection)
 	total := result.NewCount + result.UpdatedCount
 	if total < 2 {
 		t.Errorf("total = %d (new=%d, updated=%d), want at least 2 (1 biz + test tasks)", total, result.NewCount, result.UpdatedCount)

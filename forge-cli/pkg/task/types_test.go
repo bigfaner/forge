@@ -589,7 +589,6 @@ func TestTypeConstants(t *testing.T) {
 		{TypeTestGenJourneys, "test.gen-journeys"},
 		{TypeTestGenScripts, "test.gen-scripts"},
 		{TypeTestRun, "test.run"},
-		{TypeTestVerifyRegression, "test.verify-regression"},
 		{TypeValidationCode, "validation.code"},
 		{TypeValidationUx, "validation.ux"},
 		{TypeGate, "gate"},
@@ -603,9 +602,9 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 13 entries", func(t *testing.T) {
-		if len(SystemTypes) != 13 {
-			t.Errorf("SystemTypes has %d entries, want 13", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 12 entries", func(t *testing.T) {
+		if len(SystemTypes) != 12 {
+			t.Errorf("SystemTypes has %d entries, want 12", len(SystemTypes))
 		}
 	})
 
@@ -614,14 +613,13 @@ func TestSystemTypes(t *testing.T) {
 			TypeGate,
 			TypeTestGenContracts, TypeTestGenJourneys,
 			TypeTestGenScripts, TypeTestRun,
-			TypeTestVerifyRegression,
 			TypeValidationCode, TypeValidationUx,
 			TypeDocReview, TypeDocSummary,
 			TypeCleanCode,
 			TypeEvalJourney, TypeEvalContract,
 		}
-		if len(expected) != 13 {
-			t.Fatalf("test setup error: expected list has %d entries, want 13", len(expected))
+		if len(expected) != 12 {
+			t.Fatalf("test setup error: expected list has %d entries, want 12", len(expected))
 		}
 		for _, typ := range expected {
 			if !SystemTypes[typ] {
@@ -704,7 +702,6 @@ func TestValidTypes(t *testing.T) {
 			TypeTestGenJourneys,
 			TypeTestGenScripts,
 			TypeTestRun,
-			TypeTestVerifyRegression,
 			TypeEvalJourney,
 			TypeEvalContract,
 			TypeValidationCode,
@@ -820,7 +817,6 @@ func TestGenSurfaceTestType(t *testing.T) {
 	}{
 		{"test.gen-scripts", "cli", "test.gen-scripts.cli"},
 		{"test.run", "api", "test.run.api"},
-		{"test.verify-regression", "web", "test.verify-regression.web"},
 		{"test.gen-scripts", "", "test.gen-scripts"},
 		{"test.run", "", "test.run"},
 	}
@@ -850,8 +846,6 @@ func TestIsValidType(t *testing.T) {
 			"test.gen-scripts.web",
 			"test.run.cli",
 			"test.run.api",
-			"test.verify-regression.web",
-			"test.verify-regression.cli",
 		}
 		for _, typ := range surfaceVariants {
 			if !IsValidType(typ) {
