@@ -518,6 +518,19 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 	return false, fixID, fixErr
 }
 
+// requireSurfaceInference wraps inferSurface with a hard-failure policy.
+// When surface inference fails (returns empty key+type), it returns an error
+// with guidance to run `forge surfaces detect`.
+// This is the hard-constraint entry point used by addSingleFixTask.
+// To revert to soft behavior, replace the call with inferSurface and use empty strings.
+func requireSurfaceInference(projectRoot, sourceFiles string) (surfaceKey, surfaceType string, err error) {
+	key, typ := inferSurface(projectRoot, sourceFiles)
+	if key == "" && typ == "" {
+		return "", "", fmt.Errorf("surface inference failed: no surfaces configured or no match for source files %q. Run 'forge surfaces detect' to configure surfaces", sourceFiles)
+	}
+	return key, typ, nil
+}
+
 // inferSurface attempts to determine the surface-key and surface-type for a
 // fix-task by querying forge surfaces with all extracted source file paths.
 // Returns ("", "") on any failure (no surfaces configured, no match, parse error)
@@ -709,10 +722,13 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		}
 	}
 
-	// Infer surface-key/type from the first extracted source file path.
-	// Falls back to empty strings on any failure (no surfaces, no match, etc.)
-	// so fix-task creation is never blocked by surface inference failure.
-	surfaceKey, surfaceType := inferSurface(projectRoot, sourceFiles)
+	// Surface inference with hard-failure policy.
+	// When surfaces are not configured or no match is found, fix-task creation
+	// is blocked and the user is guided to run 'forge surfaces detect'.
+	surfaceKey, surfaceType, inferErr := requireSurfaceInference(projectRoot, sourceFiles)
+	if inferErr != nil {
+		return "", inferErr
+	}
 
 	testScript := "just " + step
 

@@ -68,6 +68,9 @@
       "title": "迁移 pkg/task/autogen 渲染引擎并清理 scope",
       "priority": "P0",
       "estimatedTime": "2h",
+      "dependencies": [
+        "fix-1"
+      ],
       "status": "completed",
       "file": "5-autogen-render-engine.md",
       "record": "records/5-autogen-render-engine.md",
@@ -86,7 +89,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-surface-hard-constraint.md",
       "record": "records/6-surface-hard-constraint.md",
       "breaking": true,
@@ -145,6 +148,18 @@
       "surface-type": "cli",
       "type": "coding.refactor",
       "complexity": "low"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: task 5 leftover Scope references in tests",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "5",
+      "type": "coding.fix"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
