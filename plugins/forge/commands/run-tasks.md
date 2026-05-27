@@ -61,11 +61,11 @@ If `MAIN_SESSION == "true"`:
 2. Follow instructions exactly (task document specifies skill, outcome, record logic).
 3. If section missing: report error, create fix task to block it, then continue to Step 3:
    ```bash
-   forge task add --template fix-task --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
    ```
 4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source`:
    ```bash
-   forge task add --template fix-task --title "Fix: MAIN_SESSION task failed" \
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION task failed" \
      --source-task-id <TASK_ID> \
      --block-source \
      --description "Main session task <TASK_ID> failed — verify output and fix issues"
@@ -85,7 +85,7 @@ Else: proceed to Step 2.
 - **STATUS == "completed"**: proceed to Step 3 (Continue Loop).
 - **STATUS == "blocked"** (auto-downgraded): create fix task using `--block-source`:
   ```bash
-  forge task add --template fix-task --title "Fix: <failure>" \
+  forge task add --type coding.fix --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
     --description "Dispatched task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
@@ -110,13 +110,13 @@ Return to Step 1.
 | Agent timeout | Mark blocked, continue |
 | Record missing | Dispatch fix-record subagent (2c) |
 | 3 consecutive failures | STOP |
-| Main session fails | Follow task doc's error section; if missing, `forge task add --template fix-task --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
+| Main session fails | Follow task doc's error section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
 
 ## Post-Completion
 
 After loop ends, print: "All tasks completed. T-test-run and T-test-verify-regression handle e2e verification and regression automatically."
 
-If index lacks T-test-run, suggest: "Run `/run-tests` then `forge test promote <journey>`."
+If index lacks T-test-run, suggest: "Run `/run-tests` to run and promote tests."
 
 Do NOT run e2e tests from the dispatcher.
 

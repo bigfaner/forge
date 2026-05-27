@@ -48,16 +48,6 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
 | `forge task list [slug]` | 列出当前 feature 或指定 feature 的所有任务（支持 `--local` 忽略 worktree） | `list.go` |
 
-### forge test — 测试工具
-
-源文件：`test/test.go`
-
-| 命令 | 用途 | 源文件 |
-|------|------|--------|
-| `forge test promote <journey-name>` | 将 journey 的 @feature 标签提升为 @regression | `test/test_promote.go` |
-| `forge test run-journey <journey-name>` | 在隔离的临时目录中运行单个 journey | `test/test.go` |
-| `forge test verify` | 对比 Contract spec 与当前代码，检测契约破坏 | `test/test_verify.go` |
-
 ### forge prompt — Agent 执行提示词管理
 
 源文件：`prompt/register.go`, `prompt/prompt_get.go`
@@ -144,11 +134,14 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge test interfaces` | test | 已移除。通过读取项目结构和 `docs/conventions/` 推断接口类型 |
 | `forge test framework` | test | 已移除 |
 | `forge test get` | test | 已移除 |
+| `forge test promote` | test | 已移除。标签晋升由 `/run-tests` skill 直接处理 |
+| `forge test run-journey` | test | 已移除。skill 层直接调用 `just test` |
+| `forge test verify` | test | 已移除。contract 验证已集成到 skill 层 |
 | `forge probe` | 顶层 | 已移除。e2e 探测功能集成到 `quality-gate` 中 |
 | `forge e2e validate-specs` | e2e | 已移除。整个 `forge e2e` 命令组不再存在 |
-| `forge e2e run` | e2e | 已移除。使用 `forge test run-journey` 替代 |
+| `forge e2e run` | e2e | 已移除。使用 `/run-tests` 替代 |
 | `forge e2e setup` | e2e | 已移除 |
-| `forge e2e verify` | e2e | 已移除。使用 `forge test verify` 替代 |
+| `forge e2e verify` | e2e | 已移除。契约验证已集成到 `/run-tests` skill 中 |
 | `forge e2e compile` | e2e | 已移除 |
 | `forge e2e discover` | e2e | 已移除 |
 

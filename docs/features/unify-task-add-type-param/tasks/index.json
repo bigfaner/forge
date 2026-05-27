@@ -1,0 +1,83 @@
+{
+  "feature": "unify-task-add-type-param",
+  "proposal": "docs/proposals/unify-task-add-type-param/proposal.md",
+  "created": "2026-05-26",
+  "tasks": {
+    "1-core-cli-refactor": {
+      "id": "1",
+      "title": "Core CLI refactor: remove --template, add --type auto-discovery",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-core-cli-refactor.md",
+      "record": "records/1-core-cli-refactor.md",
+      "breaking": true,
+      "type": "coding.refactor"
+    },
+    "2-update-plugin-components": {
+      "id": "2",
+      "title": "Update plugin components to use --type coding.fix",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-update-plugin-components.md",
+      "record": "records/2-update-plugin-components.md",
+      "type": "doc"
+    },
+    "3-update-cli-documentation": {
+      "id": "3",
+      "title": "Update CLI documentation (WORKFLOW.md, OVERVIEW.md, README.md)",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-cli-documentation.md",
+      "record": "records/3-update-cli-documentation.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

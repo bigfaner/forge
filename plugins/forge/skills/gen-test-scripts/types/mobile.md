@@ -8,6 +8,8 @@ conventions:
 
 Type-specific generation instructions for **Mobile** (touch, gestures, screen transitions) test scripts. Loaded by the dispatcher when interface detection identifies Mobile-type test cases.
 
+**Test type**: 移动端端到端测试 (Mobile E2E Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@mobile-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Web).
+
 This file defines two zones:
 
 - **Golden Rules**: Framework-agnostic constraints that govern all Mobile test generation. These rules are mandatory and cannot be overridden by Convention files.

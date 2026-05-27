@@ -259,10 +259,10 @@ scope = "frontend"/"backend"
 
 ## 测试生命周期
 
-两层测试 recipe 模型，解耦语言级单元测试与 surface 级高级测试：
+两层测试 recipe 模型，解耦语言级单元测试与 surface 级测试（按 Surface 类型区分，详见 [test-type-model.md](reference/test-type-model.md)）：
 
 ```
-unit-test (语言级) ──────→ test (Surface 级)
+unit-test (语言级) ──────→ test (Surface 级，按 surface type 区分)
 (per task submit)          (all-completed hook)
      ↑                           ↑
 UnitGateSequence          FullGateSequence
@@ -272,7 +272,7 @@ compile→fmt→lint→unit-test  compile→fmt→lint→unit-test→test→prob
 | 层 | 命令 | 范围 | 触发 | 通过标准 |
 |---|---|---|---|---|
 | **Unit** | `just unit-test [scope]` | 任务级 | Breaking 任务 submit gate | 全部通过 + 覆盖率 >= 80% |
-| **Advanced** | `just test [journey]` | 功能/项目级 | all-completed hook | 全部高级测试通过 |
+| **Surface Test** | `just test [journey]` | 功能/项目级 | all-completed hook | 全部 surface 测试通过（CLI 功能测试 / API 功能测试 / Web 端到端测试等） |
 
 ### 测试生成管道
 
@@ -283,7 +283,7 @@ compile→fmt→lint→unit-test  compile→fmt→lint→unit-test→test→prob
 ```
 gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contract ──→ gen-scripts ──→ run ──→ verify
      │                │                  │                  │               │            │
-     │                │                  │                  │               │            └─ forge test promote
+     │                │                  │                  │               │            └─ /run-tests (tag promotion)
      │                │                  │                  │               └─ /run-tests
      │                │                  │                  └─ /eval-contract（6 维度门禁）
      │                │                  └─ /gen-contracts（6 维度合约 + 边界衍生）
@@ -301,7 +301,7 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 | T-test-eval-contract | `/eval-contract` | 评分报告 | 是 |
 | T-test-gen-scripts | `/gen-test-scripts` | `tests/<journey>/*` | 是 |
 | T-test-run | `/run-tests` | `results/latest.md` | 是 |
-| T-test-promote | `forge test promote` | `tests/e2e/` | 是 |
+| T-test-promote | `/run-tests` (tag promotion) |  `tests/<surface-key>/`（回归测试） | 是 |
 
 前置任务：`/gen-sitemap`（生成 `sitemap.json` 页面元素映射）。
 
@@ -347,7 +347,7 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 
 ```
 Setup Environment → Verify Scripts (无占位符) → Run Test Specs
-     → Collect Results (解析 Playwright JSON) → Generate Report → Teardown
+     → Collect Results (解析测试输出) → Generate Report → Teardown
 ```
 
 - Teardown 必须执行（即使测试失败）
@@ -522,15 +522,16 @@ docs/
 ### 测试目录
 
 ```
-tests/e2e/
-├── playwright.config.ts     # Playwright 配置
+tests/<surface-key>/
 ├── helpers.ts               # 共享工具函数
 ├── features/<slug>/         # 功能级测试（staging）
 │   ├── *.spec.ts            #   测试脚本
 │   └── results/             #   执行结果
-└── <module>/                # 回归测试（forge test promote 迁移）
+└── <module>/                # 回归测试（通过 /run-tests 标签晋升）
     └── *.spec.ts            #   按功能模块组织
 ```
+
+> Web surface 的测试目录下额外包含 `playwright.config.ts`（Playwright 配置）。测试类型命名遵循 Surface → Test Type 映射（见 [test-type-model.md](reference/test-type-model.md)）。
 
 ### 生成规则
 
@@ -538,8 +539,8 @@ tests/e2e/
 |------|---------|---------|
 | `process/` | forge CLI 运行时 | **否**（gitignore） |
 | `testing/` | `/gen-journeys` + `/gen-contracts` | 是 |
-| `tests/e2e/features/` | `/gen-test-scripts` | 是 |
-| `tests/e2e/` (根级) | `forge test promote` | 是 |
+| `tests/<surface-key>/features/` | `/gen-test-scripts` | 是 |
+| `tests/<surface-key>/` (根级) | `/run-tests` (tag promotion) | 是 |
 | `records/` | `forge task submit` | 是 |
 | `specs/` | `/consolidate-specs` | 是（用户确认后） |
 

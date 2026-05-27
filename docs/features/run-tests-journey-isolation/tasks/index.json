@@ -1,0 +1,80 @@
+{
+  "feature": "run-tests-journey-isolation",
+  "proposal": "docs/proposals/run-tests-journey-isolation/proposal.md",
+  "created": "2026-05-27",
+  "tasks": {
+    "1-fix-prompt-and-journey-isolation": {
+      "id": "1",
+      "title": "Fix prompt template + add journey isolation to run-tests skill",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-fix-prompt-and-journey-isolation.md",
+      "record": "records/1-fix-prompt-and-journey-isolation.md",
+      "type": "doc"
+    },
+    "2-remove-verify-regression": {
+      "id": "2",
+      "title": "Remove verify-regression from auto-generated task pipeline",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "2-remove-verify-regression.md",
+      "record": "records/2-remove-verify-regression.md",
+      "breaking": true,
+      "type": "coding.enhancement"
+    },
+    "3-quality-gate-surface-orchestration": {
+      "id": "3",
+      "title": "Add surface-aware orchestration to quality-gate",
+      "priority": "P1",
+      "estimatedTime": "2-3h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-quality-gate-surface-orchestration.md",
+      "record": "records/3-quality-gate-surface-orchestration.md",
+      "type": "coding.feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift",
+      "scope": "all"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review",
+      "scope": "all"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

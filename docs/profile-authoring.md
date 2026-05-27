@@ -27,7 +27,7 @@ forge-cli/pkg/testing/languages/<key>/
 - Lowercase, no hyphens for single-word languages: `go`, `rust`, `python`, `java`
 - Framework-specific keys for multi-framework languages: `javascript` (Playwright, the only supported JS framework in v3.0)
 - Platform keys for non-language targets: `mobile`
-- The language key is both the directory name and the internal identifier used by `forge testing` commands
+- The language key is both the directory name and the internal identifier used by test-related skills
 
 ## Supported Interfaces (Closed Enum)
 

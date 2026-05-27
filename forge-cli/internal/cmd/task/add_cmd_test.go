@@ -11,7 +11,7 @@ import (
 	"forge-cli/pkg/task"
 )
 
-func TestAddCmd_WithTemplateAndVars(t *testing.T) {
+func TestAddCmd_WithTypeAndVars(t *testing.T) {
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
 	}})
@@ -20,7 +20,7 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 		Cmd.SetArgs([]string{
 			"add",
 			"--title", "Fix: login bug",
-			"--template", "fix-task",
+			"--type", "coding.fix",
 			"--source-task-id", "1.1",
 			"--description", "Selector not found",
 			"--var", "SOURCE_FILES=src/Login.tsx",
@@ -35,7 +35,7 @@ func TestAddCmd_WithTemplateAndVars(t *testing.T) {
 	if !strings.Contains(output, "ACTION: ADDED") {
 		t.Errorf("expected ACTION: ADDED, got %q", output)
 	}
-	// Template defaults should apply: PRIORITY=P0, BREAKING=true
+	// Template defaults should apply (auto-discovered via --type): PRIORITY=P0, BREAKING=true
 	if !strings.Contains(output, "PRIORITY: P0") {
 		t.Errorf("expected PRIORITY: P0 from template defaults, got %q", output)
 	}
@@ -121,24 +121,24 @@ func TestAddCmd_VarParsing(t *testing.T) {
 	}
 }
 
-func TestAddCmd_UnknownTemplateReturnsError(t *testing.T) {
-	if os.Getenv("TEST_UNKNOWN_TEMPLATE") == "1" {
+func TestAddCmd_InvalidTypeReturnsError(t *testing.T) {
+	if os.Getenv("TEST_INVALID_TYPE") == "1" {
 		setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 			"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
 		}})
 		Cmd.SetArgs([]string{
 			"add",
 			"--title", "Fix: test",
-			"--template", "nonexistent",
+			"--type", "invalid.type",
 		})
 		_ = Cmd.Execute()
 		return
 	}
-	cmd := exec.Command(os.Args[0], "-test.run=TestAddCmd_UnknownTemplateReturnsError")
-	cmd.Env = append(os.Environ(), "TEST_UNKNOWN_TEMPLATE=1")
+	cmd := exec.Command(os.Args[0], "-test.run=TestAddCmd_InvalidTypeReturnsError")
+	cmd.Env = append(os.Environ(), "TEST_INVALID_TYPE=1")
 	err := cmd.Run()
 	if err == nil {
-		t.Fatal("expected non-zero exit for unknown template")
+		t.Fatal("expected non-zero exit for invalid type")
 	}
 }
 

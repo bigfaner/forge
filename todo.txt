@@ -237,10 +237,11 @@ internal/cmd/
 183、补充详细的架构说明、用户使用手册（包含环境配置）。
 184、把第一性原理内置到guide.md中。rejected
 185、自由专家要足够通用，领域不要太狭窄，不能只针对特定的proposal。doing
-186、forge surfaces detect 要忽略tests/。doing
+186、forge surfaces detect 要忽略tests/。done
 187、如果一个feature涉及多个surface，要分开生成journey、contract、script，分开执行script等。
   例如，同时存在frontend、backend的项目，针对frontend生成e2e测试、针对backend生成api测试。而且api测试在e2e测试之前。done
 188、评估哪些测试任务可以去掉。run-tests任务只是执行本feature新生成或相关journey的测试用例。doing
 189、auto.eval.{proposal,prd,ui-design,tech-design}，增加是否自动评估的配置项。doing
-190、检查justfile中的命令是否对应最新的实现，并且正确运行just test 和just unit-test。
-191、forge task add 的--template参数更改为--type，通过type来查找模板。 
+190、检查justfile中的命令是否对应最新的实现，并且正确运行just test 和just unit-test。doing
+191、forge task add 的--template参数更改为--type，通过type来查找模板。 done
+192、改动现有功能的提案，要列举受影响的点。doing

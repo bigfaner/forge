@@ -9,7 +9,6 @@ import (
 	forensicpkg "forge-cli/internal/cmd/forensic"
 	promptpkg "forge-cli/internal/cmd/prompt"
 	taskpkg "forge-cli/internal/cmd/task"
-	testpkg "forge-cli/internal/cmd/test"
 	worktreepkg "forge-cli/internal/cmd/worktree"
 
 	"github.com/spf13/cobra"
@@ -38,13 +37,11 @@ func init() {
 	forensicpkg.Register()
 	promptpkg.Register()
 	taskpkg.Register()
-	testpkg.Register()
 	worktreepkg.Register()
 
-	// Group parents (6)
+	// Group parents (5)
 	rootCmd.AddCommand(taskpkg.Cmd)
 	rootCmd.AddCommand(forensicpkg.Cmd)
-	rootCmd.AddCommand(testpkg.Cmd)
 	rootCmd.AddCommand(promptpkg.Cmd)
 	rootCmd.AddCommand(worktreepkg.Cmd)
 	rootCmd.AddCommand(factpkg.Cmd)
