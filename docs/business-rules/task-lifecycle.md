@@ -1,6 +1,6 @@
 ---
 title: "Task Lifecycle Rules"
-domains: [state-machine, transition, terminal, blocked, completed, pending, suspended, skipped, reopen, type-validation, system-types]
+domains: [state-machine, transition, terminal, blocked, completed, pending, suspended, skipped, reopen, type-validation, system-types, topological, ordering, claim-priority]
 ---
 
 # Task Lifecycle Rules
@@ -43,3 +43,11 @@ _Source: feature/forge-cli-v3_
 
 **Context**: Prevents Skills from accidentally assigning pipeline-managed types to business tasks, which would cause scheduling anomalies (wrong stage-gate routing, test pipeline misdetection). The blacklist approach avoids maintenance burden since system types form a stable closed set while business types grow.
 **Source**: feature/system-type-exclusion
+
+## Topological Ordering
+
+### BIZ-task-lifecycle-004: Topological Task Ordering
+
+**Rule**: `forge task list` and `forge task claim` use topological ordering (Kahn's algorithm) to sort tasks by dependency depth. `forge task list` defaults to topological order (`--sort topo`), with `--sort id` as fallback for natural ID ordering. `forge task claim` uses `computeTopoDepths()` to prefer claiming tasks with lower topological depth (closer to dependency roots) among eligible tasks, breaking ties by priority (P0 > P1 > P2), then by natural ID order. `forge task list --tree` renders an interactive TUI dependency tree. Wildcard dependencies (e.g., `1.x`) are expanded via `ResolveWildcardDep` before building the adjacency list. Cycle detection is built-in: tasks participating in dependency cycles are reported and excluded from ordering.
+**Context**: Topological ordering ensures that dependency-first execution is the default, preventing agents from claiming tasks whose dependencies haven't completed. This replaces the previous natural-ID-only ordering.
+**Source**: feature/task-list-topological-order [auto-specs]
