@@ -9,7 +9,7 @@ Rules for the run-tasks dispatcher to maintain codebase integrity across sequent
 
 ### TECH-dispatcher-quality-001: Monitor Compilation Diagnostics After Task Completion
 
-**Requirement**: After each task completes (Step 2b verify), the dispatcher MUST check for compilation errors in the IDE diagnostics or run `go build ./...` (for Go projects). If compilation errors exist, the dispatcher MUST create a `coding.fix` task targeting those errors before claiming the next feature task.
+**Requirement**: After each task completes (Step 2b verify), the dispatcher MUST check for compilation errors in the IDE diagnostics or run `just compile` (for projects with a justfile). If compilation errors exist, the dispatcher MUST create a `coding.fix` task targeting those errors before claiming the next feature task.
 
 **Scope**: [CROSS]
 
@@ -27,11 +27,12 @@ Rules for the run-tasks dispatcher to maintain codebase integrity across sequent
 - After Step 2b (`forge task status <ID>` returns completed), collect diagnostics
 - Filter to compilation errors only (undefined symbols, redeclared names, wrong arg counts)
 - If non-empty: `forge task add --type coding.fix --title "Fix compilation errors from task X.Y"`
+- For fmt/lint failures (non-breaking): use `coding.cleanup` task type instead
 - Fix task gets auto-claimed on next loop iteration (priority over feature tasks)
 
 ### TECH-dispatcher-quality-002: Quality Gate Must Run on Final Code State
 
-**Requirement**: When a task has `breaking: true`, the `forge task submit` quality gate MUST execute `go build ./...` and `go test ./...` against the **final state of all modified files**, not an intermediate snapshot. Test results from earlier in the execution session are stale and must not be used as the quality gate verdict.
+**Requirement**: When a task has `breaking: true`, the `forge task submit` quality gate MUST execute `just compile` and `just unit-test` against the **final state of all modified files**, not an intermediate snapshot. Test results from earlier in the execution session are stale and must not be used as the quality gate verdict.
 
 **Scope**: [CROSS]
 

@@ -393,8 +393,8 @@ Note: verify-task-done only validates status; it does not delete any files.
     └─────────────────┘
 ```
 
-**addFixTask()**: On failure at any gate/test step, auto-creates a P0 fix-task using
-the `fix-task` template. Extracts source files from error output, saves raw output
+**addFixTask()**: On failure at any gate/test step, auto-creates a P0 fix-task with
+type `coding.fix` (auto-discovers template). Extracts source files from error output, saves raw output
 to `tests/results/` (unit) or `tests/e2e/results/` (e2e), updates `.forge/state.json`,
 and prints a hook JSON block reason so the agent can `forge task claim` the fix.
 
@@ -810,7 +810,7 @@ Examples:
 
 **Auto-ID generation (max+1):**
 - Without template: scan existing tasks for `disc-*` keys → `disc-{max+1}`
-- With template: use template's `IDPrefix` (e.g. `fix-task` → `fix-{max+1}`)
+- With template: use template's `IDPrefix` (e.g. `coding.fix` → `fix-{max+1}`)
 - Returns max(existing prefix-N) + 1; starts from 1 when none exist
 
 **Flags:**
@@ -825,7 +825,7 @@ Examples:
 | `--breaking` | No | false | Triggers full test suite |
 | `--description` | No | - | Task body content |
 
-| `--template` | No | - | Template name (e.g. fix-task) |
+| `--type` | No | - | Task type, auto-discovers matching template (e.g. coding.fix) |
 | `--var` | No | - | Template variable (key=value, repeatable) |
 | `--source-task-id` | No | - | Source task ID for fix-tasks |
 
@@ -834,8 +834,9 @@ Examples:
 - Auto-adds new task as dependency of the source task (reverse dependency injection)
 - Template variable `{{SOURCE_TASK_ID}}` is auto-populated
 
-**Template defaults:**
-- `fix-task`: Priority=P0, Breaking=true, EstimatedTime=30min, IDPrefix=fix
+**Type-based template defaults (auto-discovered):**
+- `coding.fix`: Priority=P0, Breaking=true, EstimatedTime=30min, IDPrefix=fix
+- `coding.cleanup`: Priority=P0, Breaking=false, EstimatedTime=15min, IDPrefix=fix
 - Defaults are applied unless the corresponding flag is explicitly set
 
 ## 13. Fix-Task Lifecycle
@@ -847,7 +848,7 @@ Source task (in_progress)
 forge task status <id> blocked
          │
          ▼
-forge task add --template fix-task --source-task-id <id>
+forge task add --type coding.fix --source-task-id <id>
          │
          ▼  fix-N (P0, pending, auto-ID from template prefix)
    forge task claim → picks P0 first

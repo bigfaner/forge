@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/e2eprobe"
@@ -149,7 +150,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		fmt.Fprintln(os.Stderr,
 			"WARNING: feature test scripts exist but haven't been run or promoted.\n"+
 				"  Add T-test-run (run-test) to your task index,\n"+
-				"  or run /run-tests and forge test promote <journey> manually.")
+				"  or run /run-tests to promote and run test scripts manually.")
 	}
 
 	// Step 1: Quality gate (compile -> fmt -> lint)
@@ -168,7 +169,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5))
+		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5), fixTypeFromStep(step) == task.TypeCodingFix)
 	})
 	if gateBlockErr != nil {
 		os.Exit(0)
@@ -186,7 +187,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	if !unitPassed {
 		unitOutput := "" // output already written by runUnitTestStep
 		errorDocPath := "tests/results/unit-raw-output.txt"
-		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5)); err != nil {
+		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5), true); err != nil {
 			os.Exit(0)
 		}
 	}
@@ -199,13 +200,31 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 }
 
 // runTestRegression runs the full test regression suite when a justfile with
-// a test recipe is present. Uses early returns instead of nested flags.
+// a test recipe is present. When surfaces are configured in .forge/config.yaml,
+// it orchestrates per-surface lifecycle (dev→probe→test→teardown for web/api/mobile;
+// test→teardown for cli/tui). Falls back to legacy behavior when no surfaces configured.
 // Returns an error when a gate failure is detected, nil otherwise.
 func runTestRegression(projectRoot, featureSlug string) error {
 	if !just.HasJustfile(projectRoot) || !just.HasRecipe(projectRoot, "test") {
 		return nil
 	}
 
+	// Detect surface types from config.
+	surfaces, _ := forgeconfig.ReadSurfaces(projectRoot)
+	surfaceTypes := forgeconfig.SurfaceTypes(surfaces)
+
+	if len(surfaceTypes) == 0 {
+		// No surfaces configured — fall back to legacy behavior.
+		return runTestRegressionLegacy(projectRoot, featureSlug)
+	}
+
+	// Surface-aware orchestration: run lifecycle per surface type.
+	return runTestRegressionSurface(projectRoot, featureSlug, surfaceTypes)
+}
+
+// runTestRegressionLegacy is the pre-surface-aware test regression logic.
+// Runs test-setup (optional), e2eprobe health check, then just test.
+func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	// Optional setup step — skip regression on failure.
 	if just.HasRecipe(projectRoot, "test-setup") {
 		fmt.Fprintln(os.Stderr, "--- Ensuring test dependencies (just test-setup) ---")
@@ -246,16 +265,168 @@ func runTestRegression(projectRoot, featureSlug string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5))
+		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5), true)
 	}
 	return nil
+}
+
+// runTestRegressionSurface orchestrates per-surface-type lifecycle sequences.
+// For each unique surface type, runs the appropriate sequence:
+//   - web/api/mobile: dev → probe → test → teardown (full lifecycle)
+//   - cli/tui: test → teardown (simplified)
+//
+// Surfaces of the same type share a single lifecycle (dev/probe run once per type).
+// Teardown is mandatory regardless of prior step success/failure.
+func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []string) error {
+	var lastErr error
+	for _, surfaceType := range surfaceTypes {
+		fmt.Fprintf(os.Stderr, "--- Running surface orchestration for %s ---\n", surfaceType)
+		result := runSurfaceLifecycle(projectRoot, surfaceType)
+		if !result.success {
+			errorDocPath := "tests/e2e/results/raw-output.txt"
+			if result.output != "" {
+				if err := testrunner.WriteRegressionRawOutput(projectRoot, result.output); err != nil {
+					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
+				}
+			}
+			fixID, fixErr := addFixTask(projectRoot, featureSlug, "test", result.output, errorDocPath)
+			if fixErr != nil {
+				fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+			}
+			lastErr = handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(result.output, 5), true)
+		}
+	}
+	return lastErr
+}
+
+// lifecycleResult holds the result of a surface lifecycle execution.
+type lifecycleResult struct {
+	success bool
+	output  string
+}
+
+// needsFullLifecycle returns true for surface types that require dev→probe→test→teardown.
+// cli and tui surfaces use the simplified test→teardown sequence.
+func needsFullLifecycle(surfaceType string) bool {
+	return surfaceType == "web" || surfaceType == "api" || surfaceType == "mobile"
+}
+
+// resolveRecipe attempts to find a surface-specific recipe (e.g., "web-dev"),
+// falling back to the generic recipe (e.g., "dev") if not found.
+// Returns the recipe name to use, or empty string if neither exists.
+func resolveRecipe(projectRoot, surfaceType, genericRecipe string) string {
+	specificRecipe := surfaceType + "-" + genericRecipe
+	if just.HasRecipe(projectRoot, specificRecipe) {
+		return specificRecipe
+	}
+	if just.HasRecipe(projectRoot, genericRecipe) {
+		return genericRecipe
+	}
+	return ""
+}
+
+// runSurfaceLifecycle executes the per-surface lifecycle sequence.
+// For web/api/mobile: dev → probe → test → teardown
+// For cli/tui: test → teardown
+// Teardown always executes (via defer-like pattern).
+func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
+	full := needsFullLifecycle(surfaceType)
+
+	// Phase 1: Dev (full lifecycle only)
+	if full {
+		recipe := resolveRecipe(projectRoot, surfaceType, "dev")
+		if recipe != "" {
+			fmt.Fprintf(os.Stderr, "  Starting dev server (just %s)...\n", recipe)
+			output, success := just.RunCapture(projectRoot, "just", recipe)
+			if !success {
+				fmt.Fprintf(os.Stderr, "  ERROR: dev failed (just %s)\n", recipe)
+				runTeardown(projectRoot, surfaceType)
+				return lifecycleResult{success: false, output: output}
+			}
+		}
+	}
+
+	// Phase 2: Probe (full lifecycle only)
+	if full {
+		probeRecipe := resolveRecipe(projectRoot, surfaceType, "probe")
+		if !probeWithRetry(projectRoot, probeRecipe, 3, 5*time.Second) {
+			fmt.Fprintln(os.Stderr, "  ERROR: probe failed after retries")
+			runTeardown(projectRoot, surfaceType)
+			return lifecycleResult{success: false, output: "probe failed: server not responding after 3 retries"}
+		}
+	}
+
+	// Phase 3: Test
+	var result lifecycleResult
+	testRecipe := resolveRecipe(projectRoot, surfaceType, "test")
+	if testRecipe != "" {
+		fmt.Fprintf(os.Stderr, "  Running tests (just %s)...\n", testRecipe)
+		output, success := just.RunCapture(projectRoot, "just", testRecipe)
+		result = lifecycleResult{success: success, output: output}
+		if !success {
+			fmt.Fprintln(os.Stderr, "  ERROR: test failed")
+		}
+	} else {
+		result = lifecycleResult{success: true}
+	}
+
+	// Phase 4: Teardown (always)
+	runTeardown(projectRoot, surfaceType)
+
+	return result
+}
+
+// runTeardown executes the teardown recipe for a surface type.
+// Errors are logged but never fail the lifecycle — teardown is best-effort cleanup.
+func runTeardown(projectRoot, surfaceType string) {
+	recipe := resolveRecipe(projectRoot, surfaceType, "teardown")
+	if recipe != "" {
+		fmt.Fprintf(os.Stderr, "  Running teardown (just %s)...\n", recipe)
+		output, success := just.RunCapture(projectRoot, "just", recipe)
+		if !success {
+			fmt.Fprintf(os.Stderr, "  WARNING: teardown failed (just %s)\n", recipe)
+			if output != "" {
+				fmt.Fprintf(os.Stderr, "  %s\n", just.ExtractConciseError(output, 3))
+			}
+		}
+	}
+}
+
+// probeWithRetry runs the probe recipe with the specified number of retries.
+// Returns true if the probe succeeds within the retry count.
+// Returns true (skip) if the probe recipe doesn't exist.
+// interval is the delay between retries (0 for no delay, useful in tests).
+func probeWithRetry(projectRoot, probeRecipe string, maxRetries int, interval time.Duration) bool {
+	if probeRecipe == "" {
+		return true // no probe recipe — skip
+	}
+
+	// Verify the recipe actually exists before retrying.
+	if !just.HasRecipe(projectRoot, probeRecipe) {
+		return true // recipe not found — skip
+	}
+
+	for attempt := range maxRetries {
+		if attempt > 0 && interval > 0 {
+			fmt.Fprintf(os.Stderr, "  Probe retry %d/%d (waiting %v)...\n", attempt+1, maxRetries, interval)
+			time.Sleep(interval)
+		}
+		fmt.Fprintf(os.Stderr, "  Probing (just %s) attempt %d/%d...\n", probeRecipe, attempt+1, maxRetries)
+		_, success := just.RunCapture(projectRoot, "just", probeRecipe)
+		if success {
+			fmt.Fprintln(os.Stderr, "  Probe succeeded")
+			return true
+		}
+	}
+	return false
 }
 
 // handleGateFailure prints the hook JSON block reason and returns an error
 // signalling that the gate blocked. The caller (RunE handler) decides exit behavior.
 // fixID is the ID returned by addFixTask; empty means task creation failed.
-func handleGateFailure(step, errorDocPath, fixID, concise string) error {
-	action := "run `forge task add --template fix-task` to create one manually, then `forge task claim`"
+// breaking indicates whether the fix task blocks downstream tasks.
+func handleGateFailure(step, errorDocPath, fixID, concise string, breaking bool) error {
+	action := "run `forge task add --type coding.fix` to create one manually, then `forge task claim`"
 	if fixID != "" {
 		action = "run `forge task claim` to pick it up"
 	}
@@ -284,7 +455,7 @@ func handleGateFailure(step, errorDocPath, fixID, concise string) error {
 
 	var fixMsg string
 	if fixID != "" {
-		fixMsg = fmt.Sprintf("Fix task %s added (P0, breaking)", fixID)
+		fixMsg = fmt.Sprintf("Fix task %s added (P0, breaking=%v)", fixID, breaking)
 	} else {
 		fixMsg = "Failed to add fix task automatically"
 	}
@@ -336,31 +507,42 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 }
 
 // inferSurface attempts to determine the surface-key and surface-type for a
-// fix-task by querying forge surfaces with the first extracted source file path.
+// fix-task by querying forge surfaces with all extracted source file paths.
 // Returns ("", "") on any failure (no surfaces configured, no match, parse error)
 // — the caller falls back to empty values and fix-task creation proceeds unblocked.
+// Uses all source files (not just the first) to correctly handle multi-surface projects
+// where different files may belong to different surfaces.
 func inferSurface(projectRoot, sourceFiles string) (surfaceKey, surfaceType string) {
 	surfaces, err := forgeconfig.ReadSurfaces(projectRoot)
 	if err != nil || len(surfaces) == 0 {
 		return "", ""
 	}
 
-	// Extract the first source file path from the comma-separated list.
+	// Parse all source file paths from the comma-separated list.
 	// sourceFiles may be "See error output for affected files" when no files found.
 	if sourceFiles == "" || strings.HasPrefix(sourceFiles, "See error") {
 		return "", ""
 	}
-	parts := strings.SplitN(sourceFiles, ",", 2)
-	firstFile := strings.TrimSpace(parts[0])
-	if firstFile == "" {
+
+	var files []string
+	for _, part := range strings.Split(sourceFiles, ",") {
+		f := strings.TrimSpace(part)
+		if f != "" {
+			files = append(files, f)
+		}
+	}
+	if len(files) == 0 {
 		return "", ""
 	}
 
-	match, err := forgeconfig.MatchSurface(surfaces, firstFile)
-	if err != nil {
-		return "", ""
+	// Try each file until one matches a configured surface.
+	for _, file := range files {
+		match, err := forgeconfig.MatchSurface(surfaces, file)
+		if err == nil {
+			return match.Key, match.Type
+		}
 	}
-	return match.Key, match.Type
+	return "", ""
 }
 
 // sourceFileRe matches source file paths followed by :line or :line:col patterns.
@@ -433,11 +615,73 @@ func fixTypeFromStep(step string) string {
 	}
 }
 
-// addFixTask creates a fix task using the same internal API as `forge task add`.
+// addFixTask creates fix tasks grouped by test suite (directory) using the same
+// internal API as `forge task add`. Source files are extracted from the output and
+// grouped by directory. Each directory group becomes a separate fix-task, enabling
+// parallel execution and bounded scope. Returns the first task ID on success.
+// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
+func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {
+	sourceFiles := extractSourceFiles(output)
+
+	// Group source files by directory for parallel execution.
+	groups := groupFilesByDir(sourceFiles)
+
+	// If no meaningful groups (e.g. "See error output" fallback), create a single task.
+	if len(groups) == 0 {
+		return addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath)
+	}
+
+	// One task per directory group.
+	var firstID string
+	for _, group := range groups {
+		id, err := addSingleFixTask(projectRoot, featureSlug, step, group, output, errorDocPath)
+		if err != nil {
+			// If a group fails (e.g. cap reached), return the error.
+			// Already-created tasks remain in the index.
+			return firstID, err
+		}
+		if firstID == "" {
+			firstID = id
+		}
+	}
+	return firstID, nil
+}
+
+// groupFilesByDir splits comma-separated source files into groups by directory.
+// Files in the same directory stay in one group. Returns nil if files is empty
+// or the fallback message.
+func groupFilesByDir(files string) []string {
+	if files == "" || strings.HasPrefix(files, "See error") {
+		return nil
+	}
+
+	dirMap := make(map[string][]string)
+	for _, f := range strings.Split(files, ",") {
+		f = strings.TrimSpace(f)
+		if f == "" {
+			continue
+		}
+		dir := filepath.Dir(f)
+		dirMap[dir] = append(dirMap[dir], f)
+	}
+
+	if len(dirMap) <= 1 {
+		// All files in one directory (or no files) — single group.
+		return nil
+	}
+
+	var groups []string
+	for _, dirFiles := range dirMap {
+		groups = append(groups, strings.Join(dirFiles, ", "))
+	}
+	return groups
+}
+
+// addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
 // Returns (taskID, nil) on success.
 // Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
-func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (string, error) {
+func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string) (string, error) {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
 	// Check cap before creating a new fix-task.
@@ -452,8 +696,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 			return "", ErrMaxFixTasks
 		}
 	}
-
-	sourceFiles := extractSourceFiles(output)
 
 	// Infer surface-key/type from the first extracted source file path.
 	// Falls back to empty strings on any failure (no surfaces, no match, etc.)
@@ -470,23 +712,29 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		testScript, errorDocPath, just.ExtractConciseError(output, 10),
 	)
 
-	// Build opts — Priority/Breaking/EstimatedTime intentionally hardcoded
-	// (not read from template defaults) since this is a programmatic caller.
+	// Build opts — Priority/Breaking/EstimatedTime sourced from template defaults
+	// when available (dual-source truth: opts is authoritative, template provides defaults).
 	// SourceTaskID is deliberately empty (project-wide gate has no source task).
 	// Vars["SOURCE_TASK_ID"] is "N/A (project-wide gate)" for template rendering.
 	taskType := fixTypeFromStep(step)
-	tmplName := "fix-task"
-	if taskType == task.TypeCodingCleanup {
-		tmplName = "cleanup-task"
+
+	// Derive Breaking and EstimatedTime from template defaults (dual-source truth).
+	// For coding.cleanup (fmt/lint failures): Breaking=false, EstimatedTime="15min".
+	// For coding.fix (compile/test failures): Breaking=true, EstimatedTime="30min".
+	breaking := true
+	estimatedTime := "30min"
+	if defs, err := tmpl.GetDefaults(taskType); err == nil {
+		breaking = defs.Breaking
+		estimatedTime = defs.EstimatedTime
 	}
 
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      "P0",
-		EstimatedTime: "30min",
-		Breaking:      true,
+		EstimatedTime: estimatedTime,
+		Breaking:      breaking,
 		Description:   description,
-		Template:      tmplName,
+		Template:      taskType,
 		Type:          taskType,
 		SurfaceKey:    surfaceKey,
 		SurfaceType:   surfaceType,
@@ -522,6 +770,6 @@ func addFixTask(projectRoot, featureSlug, step, output, errorDocPath string) (st
 		fmt.Fprintf(os.Stderr, "WARNING: failed to update .forge/state.json: %v\n", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking)\n", id)
+	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking=%v)\n", id, breaking)
 	return id, nil
 }

@@ -7,9 +7,38 @@ description: Surface-key/type resolution via CLI instead of hardcoded path class
 
 This rule replaces the old `rules/scope-assignment.md` hardcoded path classification logic with dynamic CLI-based surface resolution.
 
-## Resolution Procedure
+## Two-Layer Resolution Strategy
 
-For each task, resolve `surface-key` and `surface-type` using `forge surfaces --json`:
+### Layer 1: Project-Level Shortcut (Single-Surface Projects)
+
+Run `forge surfaces --json` once with **no file argument** to get all configured surfaces for the project.
+
+```bash
+forge surfaces --json
+```
+
+If the result contains exactly **one surface** (array length 1):
+
+| Output | Meaning | Action |
+|--------|---------|--------|
+| `[{"key": ".", "type": "web"}]` | Scalar form (single surface) | All tasks get `surface-key: "."`, `surface-type: "web"` |
+| `[{"key": "admin-panel", "type": "web"}]` | Single named surface | All tasks get `surface-key: "admin-panel"`, `surface-type: "web"` |
+
+**Skip all per-file `forge surfaces` calls.** Set the resolved key+type on every task directly. This eliminates N*M redundant CLI invocations for single-surface projects.
+
+The `surface-type` must be non-empty (e.g., `"web"`, `"cli"`, `"api"`) — never leave it blank as a placeholder.
+
+### Layer 2: File-Level Query (Multi-Surface Projects)
+
+Only needed when Layer 1 returns **more than one surface**. For each task:
+
+1. **Path prefix matching first**: Compare the task's affected file paths against the surface directories from Layer 1. If all files match the same surface directory prefix, use that surface's key+type without any additional CLI call.
+2. **CLI query for ambiguous files**: Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous (matches zero or multiple surface directories).
+3. **Merge results**: single surface → use its key+type; mixed/no match → leave both empty.
+
+## Detailed Resolution Procedure
+
+For each task, resolve `surface-key` and `surface-type` using the two-layer strategy above. If Layer 1 was sufficient, skip this section.
 
 ### 1. Collect Affected File Paths
 
@@ -51,7 +80,7 @@ surface-type: "web"           # or "" for cross-surface / unknown
 Output to the agent's execution context:
 ```
 ERROR: forge surfaces --json failed with exit code <N>.
-Recovery: verify that forge-cli is built and installed (run `forge version`).
+Recovery: verify that forge-cli is built and installed (run `forge --version`).
 If the error persists, set surface-key and surface-type to empty strings and continue.
 ```
 

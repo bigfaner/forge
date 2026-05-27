@@ -82,7 +82,7 @@ forge --help
 
 **Git Worktree 并行开发** — `forge worktree start/remove/resume/status/push` 全生命周期管理。支持 `-i` 交互选择未完成的 feature、`--source-branch` 指定源分支、shell tab 补全，以及未推送 commit 自动检测阻止删除。
 
-**Journey-Contract 测试模型** — `gen-journeys` → `eval-journey` → `gen-contracts` → `eval-contract` → `gen-test-scripts` → `run-tests` → `forge test promote` 全链路测试生成与评估。`forge test verify` 自动检测契约断裂。
+**Journey-Contract 测试模型** — `gen-journeys` → `eval-journey` → `gen-contracts` → `eval-contract` → `gen-test-scripts` → `run-tests` 全链路测试生成与评估。标签晋升（`@feature` → `@regression`）由 `run-tests` skill 在流程中自动处理。
 
 **Two-layer 测试策略** — `just unit-test`（快速、无 `-race`）和 `just test`（完整、含 e2e），分层加速反馈循环。Quality Gate 按分层逐步执行。
 
@@ -107,7 +107,6 @@ forge --help
 | `forge surfaces` | 查询项目 surfaces 配置 |
 | `forge feature` | 设置或显示当前 feature 上下文 |
 | `forge task` | 任务生命周期管理 |
-| `forge test` | 测试工具集（promote / run-journey / verify） |
 | `forge prompt` | 生成 agent 执行提示词 |
 | `forge quality-gate` | 检查所有任务完成，运行回归测试 |
 | `forge fact` | 管理结构化系统事实表 |
@@ -149,9 +148,8 @@ forge --help
 | Flag | 用途 |
 |------|------|
 | `--title` | 任务标题（必填） |
-| `--type` | 任务类型（如 coding.feature, doc） |
+| `--type` | 任务类型（如 coding.feature, doc）；若匹配内置模板则自动加载模板默认值 |
 | `--priority` | 优先级：P0 / P1 / P2（默认 P1） |
-| `--template` | 模板名（读取 tasks/\_templates/\<name\>.md） |
 | `--description` | 任务描述（Markdown 正文） |
 | `--depends-on` | 逗号分隔的依赖任务 ID |
 | `--id` | 自定义任务 ID（缺省自动生成 disc-N） |
@@ -311,7 +309,7 @@ forge --help
 
 ### 测试生命周期
 
-`/gen-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `forge test promote` -> `/consolidate-specs`
+`/gen-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `/consolidate-specs`
 
 ### 执行
 

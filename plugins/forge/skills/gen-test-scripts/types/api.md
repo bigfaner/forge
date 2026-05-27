@@ -8,6 +8,8 @@ conventions:
 
 Type-specific Steps for **API** (HTTP/network endpoint) test script generation. Loaded by the dispatcher when interface detection identifies API-type test cases.
 
+**Test type**: API 功能测试 (API Functional Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@api-functional` tags, NOT `@e2e`.
+
 ## Classification Indicators
 
 Classify test cases as **API** when they involve any of:

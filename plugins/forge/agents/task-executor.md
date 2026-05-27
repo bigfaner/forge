@@ -103,7 +103,7 @@ Execute strategy step → error
 
 1. Run:
    ```
-   forge task add --template fix-task --title "Fix: <concise error>" --source-task-id <TASK_ID> --block-source --description "<error classification and summary>"
+   forge task add --type coding.fix --title "Fix: <concise error>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "<error classification and summary>"
    ```
 2. Output:
    ```

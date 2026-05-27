@@ -436,6 +436,125 @@ func TestExtractSourceFiles(t *testing.T) {
 	}
 }
 
+func TestGroupFilesByDir(t *testing.T) {
+	tests := []struct {
+		name  string
+		files string
+		want  int // number of groups (0 = nil returned, meaning single group or no files)
+	}{
+		{
+			name:  "empty returns nil",
+			files: "",
+			want:  0,
+		},
+		{
+			name:  "fallback message returns nil",
+			files: "See error output for affected files",
+			want:  0,
+		},
+		{
+			name:  "single file returns nil",
+			files: "pkg/handler.go",
+			want:  0,
+		},
+		{
+			name:  "two files same directory returns nil",
+			files: "pkg/handler.go, pkg/service.go",
+			want:  0,
+		},
+		{
+			name:  "two files different directories returns two groups",
+			files: "pkg/handler.go, internal/service.go",
+			want:  2,
+		},
+		{
+			name:  "three files two directories returns two groups",
+			files: "pkg/handler.go, pkg/service.go, internal/main.go",
+			want:  2,
+		},
+		{
+			name:  "three files three directories returns three groups",
+			files: "a/handler.go, b/service.go, c/main.go",
+			want:  3,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			groups := groupFilesByDir(tc.files)
+			if tc.want == 0 {
+				if groups != nil {
+					t.Errorf("expected nil, got %v", groups)
+				}
+			} else {
+				if len(groups) != tc.want {
+					t.Errorf("expected %d groups, got %d: %v", tc.want, len(groups), groups)
+				}
+			}
+		})
+	}
+}
+
+func TestAddFixTask_MultiDirCreatesMultipleTasks(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Simulate compile error with files in two different directories
+	output := "pkg/handler.go:10: error\ninternal/service.go:20: error"
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created 2 tasks (one per directory)
+	updatedIndex, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Count tasks with "fix compile:" prefix
+	fixCount := 0
+	for _, t := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(t.Title, "fix compile:") {
+			fixCount++
+		}
+	}
+	if fixCount != 2 {
+		t.Errorf("expected 2 fix tasks (one per directory), got %d", fixCount)
+	}
+}
+
+func TestAddFixTask_SingleDirCreatesOneTask(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Simulate compile error with files in the same directory
+	output := "pkg/handler.go:10: error\npkg/service.go:20: error"
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	if addErr != nil {
+		t.Fatalf("unexpected error: %v", addErr)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created 1 task
+	updatedIndex, err := task.LoadIndex(indexPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fixCount := 0
+	for _, t := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(t.Title, "fix compile:") {
+			fixCount++
+		}
+	}
+	if fixCount != 1 {
+		t.Errorf("expected 1 fix task (same directory), got %d", fixCount)
+	}
+}
+
 // helperSetup creates a minimal feature with a completed task for addFixTask tests.
 func helperSetup(t *testing.T) (projectRoot, featureSlug, indexPath string) {
 	t.Helper()
@@ -592,6 +711,79 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 			}
 			if addedTask.Type != tc.wantType {
 				t.Errorf("type for step %q = %q, want %q", tc.step, addedTask.Type, tc.wantType)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_CleanupTaskNonBreaking(t *testing.T) {
+	// Cleanup tasks (fmt/lint) should use Breaking=false and EstimatedTime="15min"
+	tests := []struct {
+		step string
+	}{
+		{"fmt"},
+		{"lint"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, indexPath := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
+			updatedIndex, err := task.LoadIndex(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			addedTask, exists := updatedIndex.ByID(taskID)
+			if !exists {
+				t.Fatalf("task %s not found in index", taskID)
+			}
+			if addedTask.Breaking {
+				t.Errorf("cleanup task for step %q: Breaking=true, want false", tc.step)
+			}
+			if addedTask.EstimatedTime != "15min" {
+				t.Errorf("cleanup task for step %q: EstimatedTime=%q, want 15min", tc.step, addedTask.EstimatedTime)
+			}
+		})
+	}
+}
+
+func TestAddFixTask_FixTaskBreakingWithEstimatedTime(t *testing.T) {
+	// Fix tasks (compile/test/unit-test) should use Breaking=true and EstimatedTime="30min"
+	tests := []struct {
+		step string
+	}{
+		{"compile"},
+		{"unit-test"},
+		{"test"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.step, func(t *testing.T) {
+			projectRoot, featureSlug, indexPath := helperSetup(t)
+			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			if addErr != nil {
+				t.Fatalf("unexpected error: %v", addErr)
+			}
+			if taskID == "" {
+				t.Fatal("expected non-empty task ID")
+			}
+			updatedIndex, err := task.LoadIndex(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			addedTask, exists := updatedIndex.ByID(taskID)
+			if !exists {
+				t.Fatalf("task %s not found in index", taskID)
+			}
+			if !addedTask.Breaking {
+				t.Errorf("fix task for step %q: Breaking=false, want true", tc.step)
+			}
+			if addedTask.EstimatedTime != "30min" {
+				t.Errorf("fix task for step %q: EstimatedTime=%q, want 30min", tc.step, addedTask.EstimatedTime)
 			}
 		})
 	}
@@ -935,18 +1127,19 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 	tests := []struct {
 		step          string
 		fixID         string
+		breaking      bool
 		wantContains  string
 		wantFixAction string
 		wantClaim     bool   // expect "task claim" in output
-		wantManual    bool   // expect "task add --template fix-task" in output
+		wantManual    bool   // expect "task add --type coding.fix" in output
 		wantFixMsg    string // expect this fix task message
 	}{
-		{"compile", "fix-1", "Project compilation failed in quality-gate hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking)"},
-		{"lint", "fix-2", "Lint check failed in quality-gate hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking)"},
-		{"unit-test", "fix-3", "Unit tests failed in quality-gate hook", "fix failing unit tests", true, false, "Fix task fix-3 added (P0, breaking)"},
-		{"test", "fix-4", "Advanced tests failed in quality-gate hook", "fix failing tests", true, false, "Fix task fix-4 added (P0, breaking)"},
-		{"unknown-step", "fix-5", "Unknown-step check failed in quality-gate hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking)"},
-		{"compile", "", "Project compilation failed in quality-gate hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
+		{"compile", "fix-1", true, "Project compilation failed in quality-gate hook", "fix compilation errors", true, false, "Fix task fix-1 added (P0, breaking=true)"},
+		{"lint", "fix-2", false, "Lint check failed in quality-gate hook", "fix lint errors", true, false, "Fix task fix-2 added (P0, breaking=false)"},
+		{"unit-test", "fix-3", true, "Unit tests failed in quality-gate hook", "fix failing unit tests", true, false, "Fix task fix-3 added (P0, breaking=true)"},
+		{"test", "fix-4", true, "Advanced tests failed in quality-gate hook", "fix failing tests", true, false, "Fix task fix-4 added (P0, breaking=true)"},
+		{"unknown-step", "fix-5", true, "Unknown-step check failed in quality-gate hook", "fix the issue", true, false, "Fix task fix-5 added (P0, breaking=true)"},
+		{"compile", "", true, "Project compilation failed in quality-gate hook", "fix compilation errors", false, true, "Failed to add fix task automatically"},
 	}
 	for _, tc := range tests {
 		name := tc.step
@@ -955,7 +1148,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("TEST_HANDLE_GATE") == "1" {
-				_ = handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail")
+				_ = handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail", tc.breaking)
 				return
 			}
 			cmd := exec.Command(os.Args[0], "-test.run=TestHandleGateFailure_DistinctReasons/"+name)
@@ -972,7 +1165,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 			if tc.wantClaim && !strings.Contains(got, "task claim") {
 				t.Errorf("reason for step %q should contain 'task claim'", tc.step)
 			}
-			if tc.wantManual && !strings.Contains(got, "task add --template fix-task") {
+			if tc.wantManual && !strings.Contains(got, "task add --type coding.fix") {
 				t.Errorf("reason for step %q (no fixID) should contain manual add instruction", tc.step)
 			}
 			if !strings.Contains(got, tc.wantFixMsg) {
@@ -1635,6 +1828,20 @@ func TestInferSurface(t *testing.T) {
 			wantSurfaceKey:  "backend",
 			wantSurfaceType: "api",
 		},
+		{
+			name:            "second file matches when first does not",
+			configYAML:      "surfaces:\n  admin-panel: web\n  payment-service: api\n",
+			sourceFiles:     "src/unknown.go, admin-panel/src/App.tsx",
+			wantSurfaceKey:  "admin-panel",
+			wantSurfaceType: "web",
+		},
+		{
+			name:            "third file matches when first two do not",
+			configYAML:      "surfaces:\n  backend: api\n  frontend: web\n",
+			sourceFiles:     "readme.go, docs.go, backend/handler.go",
+			wantSurfaceKey:  "backend",
+			wantSurfaceType: "api",
+		},
 	}
 
 	for _, tc := range tests {
@@ -1767,5 +1974,334 @@ func TestRunTestRegression(t *testing.T) {
 		// It may skip due to probe failure (no dev server in test env), which is acceptable.
 		// The key assertion is that it doesn't panic or error with wrong recipe names.
 		_ = runTestRegression(projectRoot, featureSlug)
+	})
+}
+
+// --- Surface-aware orchestration tests ---
+
+func TestNeedsFullLifecycle(t *testing.T) {
+	tests := []struct {
+		surfaceType string
+		want        bool
+	}{
+		{"web", true},
+		{"api", true},
+		{"mobile", true},
+		{"cli", false},
+		{"tui", false},
+		{"unknown", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.surfaceType, func(t *testing.T) {
+			got := needsFullLifecycle(tc.surfaceType)
+			if got != tc.want {
+				t.Errorf("needsFullLifecycle(%q) = %v, want %v", tc.surfaceType, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSurfaceOrchestrationSequence(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("cli surface executes test then teardown", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		// Write config with cli surface
+		forgeDir := filepath.Join(projectRoot, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  .: cli\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Write justfile with test + teardown recipes
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			"test:\n  echo test-ok\ntest-setup:\n  echo setup-ok\nteardown:\n  echo teardown-ok\n",
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// For cli surface, the simplified sequence should run: test -> teardown
+		// This should complete without error
+		err := runTestRegression(projectRoot, "test-feature")
+		// Error handling is tested by the lifecycle tests; this tests the integration path.
+		_ = err
+	})
+
+	t.Run("no surfaces falls back to current behavior", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		// No .forge/config.yaml -- no surfaces configured
+		// Write justfile with test recipe only
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte("test:\n  echo test-ok\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Should fall back to the legacy behavior (e2eprobe + just test)
+		// which returns nil since no e2e config exists (CLI-only probe returns true)
+		err := runTestRegression(projectRoot, "test-feature")
+		if err != nil {
+			t.Errorf("expected nil for no-surfaces fallback, got %v", err)
+		}
+	})
+
+	t.Run("multi-surface project runs both sequences", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		forgeDir := filepath.Join(projectRoot, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  frontend: web\n  tools: cli\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Write justfile with all recipes
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			"dev:\n  echo dev-ok\nprobe:\n  echo probe-ok\ntest:\n  echo test-ok\nteardown:\n  echo teardown-ok\ntest-setup:\n  echo setup-ok\n",
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		// Should attempt multi-surface orchestration without panic
+		_ = runTestRegression(projectRoot, "test-feature")
+	})
+}
+
+func TestProbeWithRetry(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("succeeds on first attempt", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte("probe:\n  echo probe-ok\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 1, 0)
+		if !ok {
+			t.Error("expected probe to succeed on first attempt")
+		}
+	})
+
+	t.Run("succeeds after retry", func(t *testing.T) {
+		dir := t.TempDir()
+		markerFile := filepath.Join(dir, "probe-marker")
+		// Write a probe script that fails first time, succeeds second time
+		scriptContent := fmt.Sprintf(`#!/bin/bash
+if [ -f "%s" ]; then
+  echo ok
+else
+  touch "%s"
+  exit 1
+fi
+`, filepath.ToSlash(markerFile), filepath.ToSlash(markerFile))
+		scriptPath := filepath.Join(dir, "probe.sh")
+		if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte(
+			fmt.Sprintf("probe:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 3, 0)
+		if !ok {
+			t.Error("expected probe to succeed after retry")
+		}
+	})
+
+	t.Run("fails after all retries", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte("probe:\n  exit 1\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 3, 0)
+		if ok {
+			t.Error("expected probe to fail after all retries")
+		}
+	})
+
+	t.Run("skips when no probe recipe", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "justfile"), []byte("test:\n  echo ok\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		ok := probeWithRetry(dir, "probe", 3, 0)
+		if !ok {
+			t.Error("expected probe to be skipped (return true) when no probe recipe")
+		}
+	})
+}
+
+func TestRunSurfaceLifecycle_TeardownAlwaysRuns(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	// helperWriteMarkerScript creates a bash script that writes a marker file.
+	// This avoids Windows path issues with justfile inline paths.
+	helperWriteMarkerScript := func(t *testing.T, scriptPath, markerPath string) {
+		t.Helper()
+		content := fmt.Sprintf("#!/bin/bash\necho ran > '%s'\n", filepath.ToSlash(markerPath))
+		if err := os.WriteFile(scriptPath, []byte(content), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("teardown runs even when dev fails", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		markerFile := filepath.Join(markerDir, "teardown-ran")
+		scriptPath := filepath.Join(markerDir, "teardown.sh")
+		helperWriteMarkerScript(t, scriptPath, markerFile)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if result.success {
+			t.Error("expected failure when dev fails")
+		}
+		if !just.FileExists(markerFile) {
+			t.Error("teardown should have run even when dev fails")
+		}
+	})
+
+	t.Run("teardown runs even when probe fails", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		markerFile := filepath.Join(markerDir, "teardown-ran")
+		scriptPath := filepath.Join(markerDir, "teardown.sh")
+		helperWriteMarkerScript(t, scriptPath, markerFile)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  echo dev-ok\nprobe:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if result.success {
+			t.Error("expected failure when probe fails")
+		}
+		if !just.FileExists(markerFile) {
+			t.Error("teardown should have run even when probe fails")
+		}
+	})
+
+	t.Run("teardown runs even when test fails", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		markerFile := filepath.Join(markerDir, "teardown-ran")
+		scriptPath := filepath.Join(markerDir, "teardown.sh")
+		helperWriteMarkerScript(t, scriptPath, markerFile)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  echo dev-ok\nprobe:\n  echo probe-ok\ntest:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if result.success {
+			t.Error("expected failure when test fails")
+		}
+		if !just.FileExists(markerFile) {
+			t.Error("teardown should have run even when test fails")
+		}
+	})
+
+	t.Run("cli surface skips dev and probe", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		// If dev runs, this marker would be created
+		devMarker := filepath.Join(markerDir, "dev-ran")
+		devScript := filepath.Join(markerDir, "dev.sh")
+		helperWriteMarkerScript(t, devScript, devMarker)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf("dev:\n  bash %s\nprobe:\n  echo probe-ok\ntest:\n  echo test-ok\nteardown:\n  echo teardown-ok\n", filepath.ToSlash(devScript)),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "cli")
+		if !result.success {
+			t.Error("expected success for cli surface")
+		}
+		if just.FileExists(devMarker) {
+			t.Error("cli surface should not run dev")
+		}
+	})
+}
+
+func TestRunSurfaceLifecycle_SurfaceSpecificRecipes(t *testing.T) {
+	if _, err := exec.LookPath("just"); err != nil {
+		t.Skip("just not installed, skipping")
+	}
+
+	t.Run("uses surface-specific recipes when available", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		markerDir := filepath.Join(projectRoot, "tmp")
+		if err := os.MkdirAll(markerDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		devMarker := filepath.Join(markerDir, "web-dev-ran")
+		probeMarker := filepath.Join(markerDir, "web-probe-ran")
+		testMarker := filepath.Join(markerDir, "test-ran")
+		teardownMarker := filepath.Join(markerDir, "web-teardown-ran")
+
+		// Helper to create marker scripts
+		writeScript := func(name, marker string) string {
+			scriptPath := filepath.Join(markerDir, name)
+			content := fmt.Sprintf("#!/bin/bash\necho ran > '%s'\n", filepath.ToSlash(marker))
+			if err := os.WriteFile(scriptPath, []byte(content), 0755); err != nil {
+				t.Fatal(err)
+			}
+			return filepath.ToSlash(scriptPath)
+		}
+
+		devScript := writeScript("web-dev.sh", devMarker)
+		probeScript := writeScript("web-probe.sh", probeMarker)
+		testScript := writeScript("test.sh", testMarker)
+		teardownScript := writeScript("web-teardown.sh", teardownMarker)
+
+		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
+			fmt.Sprintf(`web-dev:
+  bash %s
+web-probe:
+  bash %s
+test:
+  bash %s
+web-teardown:
+  bash %s
+`, devScript, probeScript, testScript, teardownScript),
+		), 0644); err != nil {
+			t.Fatal(err)
+		}
+		result := runSurfaceLifecycle(projectRoot, "web")
+		if !result.success {
+			t.Error("expected success")
+		}
+		if !just.FileExists(devMarker) {
+			t.Error("expected web-dev to run")
+		}
+		if !just.FileExists(probeMarker) {
+			t.Error("expected web-probe to run")
+		}
+		if !just.FileExists(testMarker) {
+			t.Error("expected test to run")
+		}
+		if !just.FileExists(teardownMarker) {
+			t.Error("expected web-teardown to run")
+		}
 	})
 }

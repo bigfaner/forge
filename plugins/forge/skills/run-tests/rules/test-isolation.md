@@ -1,11 +1,11 @@
 ---
 name: test-isolation
-description: Testing isolation conventions for unit and e2e tests -- every test must own its environment
+description: Testing isolation conventions for unit and surface tests -- every test must own its environment
 ---
 
 # Testing Isolation Conventions
 
-Every test — unit or e2e — must own its environment. No test may depend on the real project's filesystem state, git state, or `.forge/` state.
+Every test — unit or surface — must own its environment. No test may depend on the real project's filesystem state, git state, or `.forge/` state.
 
 ## General Rules
 
@@ -44,11 +44,11 @@ func TestMyFeature(t *testing.T) {
 
 **Source**: `gotcha-stale-state-json-feature-mismatch.md` — unit tests read real `.forge/state.json` when project root detection is not isolated.
 
-## E2E Tests
+## E2E CLI Tests
 
-### TEST-isolation-002: E2E CLI Tests Must Use `CLAUDE_PROJECT_DIR`
+### TEST-isolation-002: CLI Functional Tests Must Use `CLAUDE_PROJECT_DIR`
 
-**Requirement**: E2E tests that invoke `forge` CLI commands MUST pass `CLAUDE_PROJECT_DIR=<fixture-dir>` via `cmd.Env` to prevent the CLI from detecting the real project root.
+**Requirement**: CLI functional tests that invoke `forge` CLI commands MUST pass `CLAUDE_PROJECT_DIR=<fixture-dir>` via `cmd.Env` to prevent the CLI from detecting the real project root.
 
 **Why**: The same `FindRootInfoFrom` walk-up logic applies to the CLI binary. Without isolation, `forge feature`, `forge task claim`, etc. may resolve to the real project root and read/write real state.
 
@@ -68,9 +68,9 @@ func TestMyE2E(t *testing.T) {
 
 **Applies to**: All tests under `tests/e2e/` that spawn `forge` CLI commands.
 
-### TEST-isolation-003: E2E Test Fixtures Must Be Complete
+### TEST-isolation-003: CLI Functional Test Fixtures Must Be Complete
 
-**Requirement**: E2E test helpers that create project directories (e.g., `setupProjectDir`, `ensureFeatureDir`) MUST create all files required by the code under test — including `tasks/index.json`, `.forge/config.yaml`, and any other files the production code checks for.
+**Requirement**: CLI functional test helpers that create project directories (e.g., `setupProjectDir`, `ensureFeatureDir`) MUST create all files required by the code under test — including `tasks/index.json`, `.forge/config.yaml`, and any other files the production code checks for.
 
 **Why**: Production code validates feature directories by checking for `tasks/index.json`. A helper that creates directory structure without this file will cause false test failures that don't reproduce in production.
 
@@ -92,9 +92,9 @@ func ensureFeatureDir(t *testing.T, root, slug string) {
 
 **Source**: `disc-1` fix — `ensureFeatureDir` in `feature_set_command_cli_test.go` was missing `tasks/index.json`.
 
-### TEST-isolation-004: E2E Tests Should Compile a Dedicated Forge Binary
+### TEST-isolation-004: CLI Functional Tests Should Compile a Dedicated Forge Binary
 
-**Requirement**: E2E test files and suites that invoke forge CLI commands SHOULD compile a forge binary from the current source tree (via `go build`) and use that binary for all `exec.Command` invocations, rather than relying on the system-installed `forge` binary via `$PATH` resolution. New e2e test files MUST follow this pattern. Legacy tests using `exec.Command("forge", ...)` via `helpers_test.go` / `testkit/helpers.go` are acceptable but should be migrated when modified.
+**Requirement**: CLI functional test files and suites that invoke forge CLI commands SHOULD compile a forge binary from the current source tree (via `go build`) and use that binary for all `exec.Command` invocations, rather than relying on the system-installed `forge` binary via `$PATH` resolution. New CLI functional test files MUST follow this pattern. Legacy tests using `exec.Command("forge", ...)` via `helpers_test.go` / `testkit/helpers.go` are acceptable but should be migrated when modified.
 
 **Why**: The system-installed `forge` binary may come from a different branch (e.g., `main`). E2e tests that test branch-specific features or behavior changes will produce false failures (new commands missing, removed commands still present, modified output format unchanged). Building from source guarantees the binary matches the code under test. Additionally, using the production binary risks corrupting its state or confusing test results with real project operations.
 

@@ -17,7 +17,7 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 
 ## Surface Detection
 
-Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model used by downstream skills.
+Load: `gen-contracts/rules/journey-contract-model.md` (resolve relative to the skills parent directory) — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model used by downstream skills.
 
 Before processing PRD sources, determine the project's configured surface types via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
 
@@ -56,7 +56,7 @@ forge surfaces frontend/src
 
 # Path not configured
 forge surfaces unknown-dir
-# stderr: Error: no surface found for path "unknown-dir". Run `forge init` to configure surfaces.  (exit 1)
+# stderr: no surface found for path "unknown-dir"; run `forge init` to configure surfaces  (exit 1)
 ```
 
 ### Detection Flow

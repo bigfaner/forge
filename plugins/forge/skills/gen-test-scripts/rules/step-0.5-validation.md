@@ -17,7 +17,7 @@ forge surfaces
 
 | Result | Action |
 |--------|--------|
-| Surface type returned (e.g., `cli`, `tui`, `webui`, `mobile`, `api`) | Use this as the active surface type for generation |
+| Surface type returned (e.g., `cli`, `tui`, `web`, `mobile`, `api`) | Use this as the active surface type for generation |
 | No config file or field missing | Proceed to auto-detection (Step 0.5.2) |
 
 ## 0.5.2 Auto-Detection Fallback
@@ -34,7 +34,7 @@ The detected surface type determines the **test ratio strategy** for Step 3 gene
 |-------------|--------------------------|---------------------------|
 | CLI | >= 80% Contract | Subprocess execution model, binary isolation, environment hermeticity |
 | TUI | >= 80% Contract | Terminal I/O testing, non-interactive stdin pipe, ANSI sanitization |
-| WebUI | Balanced 50/50 | Convention-defined browser framework, session reuse, network interception |
+| Web | Balanced 50/50 | Convention-defined browser framework, session reuse, network interception |
 | API | Balanced 50/50 | HTTP client testing, status code coverage, content-type verification |
 | Mobile | Best-effort | Maestro YAML skeleton + deep link tests, complex scenarios marked `manual-only` |
 
@@ -63,7 +63,7 @@ Apply the surface type detected in Step 0.5 to constrain the generation plan. Ea
 - **Journey smoke tests**: Generate exactly 1 smoke test per Journey (happy path only)
 - **Ratio enforcement**: Same formula as CLI -- M Contract functions + 1 Journey smoke test
 
-### WebUI Surface (Balanced 50/50)
+### Web Surface (Balanced 50/50)
 
 - **Balanced approach**: Generate Contract tests for each Outcome AND enrich the Journey smoke test with multi-step verification
 - **Execution model**: Convention-defined browser framework (per `types/ui.md`)

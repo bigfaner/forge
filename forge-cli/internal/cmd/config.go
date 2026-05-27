@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/project"
@@ -99,6 +100,17 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	key := args[0]
 	projectRoot := resolveProjectRoot(cmd)
 
+	// Special case: "mode" key uses CLI-level mode detection, not config reflection
+	if key == "mode" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			return fmt.Errorf("detect mode: get working directory: %w", err)
+		}
+		mode := detectModeFromPath(cwd, projectRoot)
+		write(cmd.OutOrStdout(), "%s", mode)
+		return nil
+	}
+
 	value, err := forgeconfig.GetConfigValue(projectRoot, key)
 	if err != nil {
 		return err
@@ -106,6 +118,57 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 
 	write(cmd.OutOrStdout(), "%s", value)
 	return nil
+}
+
+// detectModeFromPath determines the pipeline mode by analyzing the working directory path.
+// Returns "quick" when inside a feature directory that contains proposal.md,
+// "full" when inside a feature directory without proposal.md,
+// "none" when not inside any feature directory.
+func detectModeFromPath(cwd, projectRoot string) string {
+	if cwd == "" || projectRoot == "" {
+		return "none"
+	}
+
+	// Resolve symlinks
+	resolved, err := filepath.EvalSymlinks(cwd)
+	if err != nil {
+		resolved = cwd
+	}
+
+	// Normalize to forward slashes for consistent matching
+	normalized := filepath.ToSlash(resolved)
+	featuresPattern := "/docs/features/"
+
+	// Find the last occurrence of the features pattern in the path
+	lastIdx := strings.LastIndex(normalized, featuresPattern)
+	if lastIdx < 0 {
+		return "none"
+	}
+
+	// Extract the slug: everything after "/docs/features/" up to the next "/" or end of path
+	afterPattern := normalized[lastIdx+len(featuresPattern):]
+	if afterPattern == "" {
+		return "none"
+	}
+
+	// The slug is the first path segment after "features/"
+	slashIdx := strings.Index(afterPattern, "/")
+	slug := afterPattern
+	if slashIdx >= 0 {
+		slug = afterPattern[:slashIdx]
+	}
+	if slug == "" {
+		return "none"
+	}
+
+	// Check if proposal.md exists in the feature directory
+	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
+	proposalPath := filepath.Join(featureDir, "proposal.md")
+	if _, err := os.Stat(proposalPath); err == nil {
+		return "quick"
+	}
+
+	return "full"
 }
 
 // runConfigInitHuh delegates to the huh TUI interactive config init path.

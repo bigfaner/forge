@@ -139,12 +139,12 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, auto)
 
-	// Should produce 8 tasks (gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts + run + verify-regression + consolidate)
-	if len(tasks) != 8 {
-		t.Fatalf("expected 8 tasks with defaults, got %d", len(tasks))
+	// Should produce 7 tasks (gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts + run + consolidate)
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks with defaults, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-test-verify-regression", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -167,7 +167,7 @@ func TestGetQuickTestTasks_DefaultsProduceNoE2ETasks(t *testing.T) {
 
 // --- Clean code task dependency wiring ---
 
-func TestGetBreakdownTestTasks_CleanCodeDependsOnVerifyRegression(t *testing.T) {
+func TestGetBreakdownTestTasks_CleanCodeDependsOnLastRunTest(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	auto.CleanCode.Full = true
 
@@ -255,15 +255,15 @@ func TestGetQuickTestTasks_OnlyConsolidateSpecs(t *testing.T) {
 
 // --- T-specs-consolidate dependency in breakdown mode when e2e tasks exist ---
 
-func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
+func TestGetBreakdownTestTasks_SpecsDependsOnLastRunTest(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, auto)
 
 	// Find T-specs-consolidate
 	for _, task := range tasks {
 		if task.ID == "T-specs-consolidate" {
-			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
-				t.Errorf("T-specs-consolidate deps = %v, want [T-test-verify-regression]", task.Dependencies)
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
+				t.Errorf("T-specs-consolidate deps = %v, want [T-test-run]", task.Dependencies)
 			}
 			return
 		}
@@ -271,15 +271,15 @@ func TestGetBreakdownTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
 	t.Error("T-specs-consolidate not found")
 }
 
-func TestGetQuickTestTasks_SpecsDependsOnVerifyRegression(t *testing.T) {
+func TestGetQuickTestTasks_DriftDependsOnLastRunTestInAutoConfig(t *testing.T) {
 	auto := allEnabledAuto
 	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, auto)
 
 	// Find T-quick-doc-drift
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
-			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-verify-regression" {
-				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-verify-regression]", task.Dependencies)
+			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
+				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-run]", task.Dependencies)
 			}
 			return
 		}

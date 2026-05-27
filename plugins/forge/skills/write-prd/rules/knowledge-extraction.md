@@ -19,7 +19,7 @@ The extraction routine identifies four knowledge types:
 
 | Type | Target | Format reference |
 |------|--------|-----------------|
-| Decision | `docs/decisions/<type>.md` | `decision-logging.md` Section 6 (row format), Section 7 (manifest update) |
+| Decision | `docs/decisions/<type>.md` | `learn/templates/decision-entry.md` Section 6 (row format), Section 7 (manifest update) |
 | Lesson | `docs/lessons/<slug>.md` | `learn/templates/lesson-entry.md` |
 | Convention | `docs/conventions/<topic>.md` | `/consolidate-specs` tech-specs entry format, with project-global ID |
 | Business Rule | `docs/business-rules/<domain>.md` | `/consolidate-specs` biz-specs entry format, with project-global ID |

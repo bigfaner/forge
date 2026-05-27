@@ -118,6 +118,28 @@ var ValidTypes = map[string]bool{
 	TypeCleanCode:            true,
 }
 
+// IsValidType checks whether a task type string is valid.
+// Returns true for:
+//   - Exact matches in ValidTypes (base types like "test.gen-scripts")
+//   - Surface-suffixed variants of system types (e.g. "test.gen-scripts.cli")
+//
+// Surface-suffixed types follow the pattern {base-type}.{surface-key} where
+// the base type (with the last dot-segment stripped) is a known system type.
+// Non-generated types (coding.*, doc without subtype) do NOT accept surface
+// suffixes — this preserves strict validation for user-authored task types.
+func IsValidType(typ string) bool {
+	if ValidTypes[typ] {
+		return true
+	}
+	// Surface-suffixed variant: strip last segment and check if base is a system type.
+	// Only system types (auto-generated) can have surface suffixes.
+	if idx := strings.LastIndex(typ, "."); idx >= 0 {
+		base := typ[:idx]
+		return SystemTypes[base]
+	}
+	return false
+}
+
 // SystemTypes is the set of auto-generated system task types (13 total).
 // These types are created by the forge pipeline, not by users.
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because
@@ -140,8 +162,48 @@ var SystemTypes = map[string]bool{
 
 // IsSystemType returns true if the given type is an auto-generated system type.
 // Business types and dual-identity types (doc.consolidate, doc.drift) return false.
+// Surface-specific variants (e.g. "test.gen-scripts.cli") are also recognized
+// by checking if the type with the last segment stripped matches a system type.
 func IsSystemType(typ string) bool {
-	return SystemTypes[typ]
+	if SystemTypes[typ] {
+		return true
+	}
+	// Check surface-specific variants: strip last ".xxx" segment and check base type
+	if idx := strings.LastIndex(typ, "."); idx >= 0 {
+		base := typ[:idx]
+		return SystemTypes[base]
+	}
+	return false
+}
+
+// TestTypeTitle returns the human-readable test type name for a given surface type.
+// Maps surface types to test type names per docs/reference/test-type-model.md.
+// Returns "Functional Test" as fallback for unknown or empty surface types.
+func TestTypeTitle(surfaceType string) string {
+	switch surfaceType {
+	case "cli":
+		return "CLI Functional Test"
+	case "tui":
+		return "Terminal Functional Test"
+	case "api":
+		return "API Functional Test"
+	case "web":
+		return "Web E2E Test"
+	case "mobile":
+		return "Mobile E2E Test"
+	default:
+		return "Functional Test"
+	}
+}
+
+// GenSurfaceTestType generates a surface-specific test type name by appending
+// the surface segment to the base type. Returns the base type unchanged when
+// surface is empty.
+func GenSurfaceTestType(baseType, surface string) string {
+	if surface == "" {
+		return baseType
+	}
+	return baseType + "." + surface
 }
 
 // FormatSystemTypes returns a comma-separated list of all system type names for error messages.
@@ -206,7 +268,6 @@ type TaskIndex struct { //nolint:revive // intentional naming for API clarity
 	tasks        map[string]Task
 	StatusEnum   []string
 	PriorityEnum []string
-	E2ERound     int // current fix-e2e round (0 = no failures yet)
 }
 
 // taskIndexJSON mirrors TaskIndex for JSON serialization.
@@ -220,7 +281,6 @@ type taskIndexJSON struct {
 	Tasks        map[string]Task `json:"tasks"`
 	StatusEnum   []string        `json:"statusEnum,omitempty"`
 	PriorityEnum []string        `json:"priorityEnum,omitempty"`
-	E2ERound     int             `json:"e2eRound,omitempty"`
 }
 
 // MarshalJSON serializes the TaskIndex to JSON.
@@ -235,7 +295,6 @@ func (ti TaskIndex) MarshalJSON() ([]byte, error) {
 		Tasks:        ti.tasks,
 		StatusEnum:   ti.StatusEnum,
 		PriorityEnum: ti.PriorityEnum,
-		E2ERound:     ti.E2ERound,
 	})
 }
 
@@ -254,7 +313,6 @@ func (ti *TaskIndex) UnmarshalJSON(data []byte) error {
 	ti.tasks = j.Tasks
 	ti.StatusEnum = j.StatusEnum
 	ti.PriorityEnum = j.PriorityEnum
-	ti.E2ERound = j.E2ERound
 	return nil
 }
 

@@ -24,7 +24,6 @@ var (
 	addEstimatedTime string
 	addBreaking      bool
 	addDescription   string
-	addTemplate      string
 	addVars          []string
 	addSourceTaskID  string
 	addBlockSource   bool
@@ -48,7 +47,6 @@ func init() {
 	addCmd.Flags().StringVar(&addEstimatedTime, "estimated-time", "", "Time estimate (e.g. \"1-2h\")")
 	addCmd.Flags().BoolVar(&addBreaking, "breaking", false, "Mark as breaking (triggers full test suite)")
 	addCmd.Flags().StringVar(&addDescription, "description", "", "Task description (markdown body)")
-	addCmd.Flags().StringVar(&addTemplate, "template", "", "Template name (reads from tasks/_templates/<name>.md)")
 	addCmd.Flags().StringArrayVar(&addVars, "var", nil, "Template variable in key=value format (repeatable)")
 	addCmd.Flags().StringVar(&addSourceTaskID, "source-task-id", "", "Source task ID: auto-resolves to root ancestor, injects {{SOURCE_TASK_ID}}, and adds this task as source dependency")
 	addCmd.Flags().BoolVar(&addBlockSource, "block-source", false, "Set source task to blocked (before resolution, preserves fix-chain)")
@@ -135,7 +133,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	}
 
 	// Validate type
-	if addType != "" && !task.ValidTypes[addType] {
+	if addType != "" && !task.IsValidType(addType) {
 		return nil, base.ErrNoInput(fmt.Sprintf("invalid type %q. Run 'forge list-types' to see valid types", addType))
 	}
 
@@ -157,36 +155,36 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		Dependencies:  deps,
 		Breaking:      addBreaking,
 		Description:   addDescription,
-		Template:      addTemplate,
 		Vars:          vars,
 		SourceTaskID:  addSourceTaskID,
 		BlockSource:   addBlockSource,
 		Type:          addType,
 	}
 
-	// Apply template defaults for fixed fields
-	if addTemplate != "" {
-		if _, err := tmpl.Get(addTemplate); err != nil {
-			return nil, base.ErrNoInput(fmt.Sprintf("template %q not found. Available: %v", addTemplate, tmpl.List()))
+	// When --type is specified, try to auto-discover a matching template file.
+	// If a template exists for this type value, load it and apply its defaults.
+	if addType != "" {
+		if _, err := tmpl.Get(addType); err == nil {
+			// Template found — set Template field and apply defaults
+			opts.Template = addType
+			defs, err := tmpl.GetDefaults(addType)
+			if err == nil {
+				changed := func(name string) bool { return cmd != nil && cmd.Flags().Changed(name) }
+				if !changed("priority") {
+					opts.Priority = defs.Priority
+				}
+				if !changed("breaking") {
+					opts.Breaking = defs.Breaking
+				}
+				if !changed("estimated-time") && defs.EstimatedTime != "" {
+					opts.EstimatedTime = defs.EstimatedTime
+				}
+				if !changed("id") && defs.IDPrefix != "" {
+					opts.IDPrefix = defs.IDPrefix
+				}
+			}
 		}
-		defs, err := tmpl.GetDefaults(addTemplate)
-		if err == nil {
-			if !cmd.Flags().Changed("priority") {
-				opts.Priority = defs.Priority
-			}
-			if !cmd.Flags().Changed("breaking") {
-				opts.Breaking = defs.Breaking
-			}
-			if !cmd.Flags().Changed("estimated-time") && defs.EstimatedTime != "" {
-				opts.EstimatedTime = defs.EstimatedTime
-			}
-			if !cmd.Flags().Changed("id") && defs.IDPrefix != "" {
-				opts.IDPrefix = defs.IDPrefix
-			}
-			if !cmd.Flags().Changed("type") && defs.Type != "" {
-				opts.Type = defs.Type
-			}
-		}
+		// No matching template: type field is set, no template applied — no error.
 	}
 
 	id, err := task.AddTask(indexPath, opts)

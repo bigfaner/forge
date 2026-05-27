@@ -21,7 +21,7 @@ When the thresholds are met, split the task into two sub-tasks by dependency lay
 
 - **Sub-ID**: `<seq>.<sub>a`
 - **`breaking: true`** — always, because the shared artifact's contract changes
-- **Scope**: apply scope assignment algorithm to affected files (typically `"backend"` or `"all"`)
+- **Surface**: resolve `surface-key` and `surface-type` via `forge surfaces --json` on affected files (see `rules/scope-to-surface-key.md`)
 - **Content**: Apply changes to the shared artifact, reconcile ALL downstream consumers so existing code compiles and tests pass. No new business logic — only signature changes + stubs/adapters.
 - **Dependencies**: same as the original unsplit task
 
@@ -29,7 +29,7 @@ When the thresholds are met, split the task into two sub-tasks by dependency lay
 
 - **Sub-ID**: `<seq>.<sub>b`
 - **`breaking`**: determined by the feature's own changes (not the shared artifact update)
-- **Scope**: apply scope assignment algorithm to new/modified feature files
+- **Surface**: resolve `surface-key` and `surface-type` via `forge surfaces --json` on new/modified feature files (see `rules/scope-to-surface-key.md`)
 - **Content**: Implement the actual feature logic using the updated shared artifact. Standard acceptance criteria from the design.
 - **Dependencies**: depends on `<seq>.<sub>a`
 
@@ -42,6 +42,6 @@ Purely additive new code (new files, new interfaces that nothing yet implements)
 This rule file depends on the following sections in the skeleton SKILL.md:
 
 - **Step 4a: Create Task Files** — task file creation, sub-ID conventions, breaking classification
-- **Step 5: Task Dependencies** — dependency wiring between sub-tasks
+- **Surface-Key/Type Assignment** — surface resolution for each sub-task
 
 If either of these sections changes in the skeleton, verify that the split procedure and sub-ID conventions in this file remain consistent.

@@ -1,6 +1,6 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
-SCOPE: {{SURFACE_KEY}}
+SURFACE_KEY: {{SURFACE_KEY}}
 
 You are a focused task executor recovering from a missing task record.
 

@@ -51,23 +51,23 @@ When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode tas
 
 **When SKIP_EVAL_GATE is NOT set** (Breakdown mode or manual `/gen-contracts` invocation): the eval report Blocker remains mandatory. Behavior is unchanged.
 
-## Step 0: Resolve Language and Interfaces
+## Step 0: Resolve Language and Surfaces
 
 Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model.
 
 1. Read `docs/conventions/testing/index.md` to discover available Convention files. Select the Convention matching the project's language/framework based on index descriptions and project context. Load the selected Convention from `docs/conventions/testing/<convention>.md`.
 2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
 3. On failure: ask user.
-4. **Detect interfaces**: Check `.forge/config.yaml`, `docs/conventions/`, project directory structure, and dependencies for interface types (cli, api, tui, web-ui, mobile).
+4. **Detect surfaces**: Check `.forge/config.yaml` `surfaces` field, `docs/conventions/`, project directory structure, and dependencies for surface types (cli, api, tui, web, mobile).
 
 <HARD-RULE>
-Do NOT silently default to any language or interface.
+Do NOT silently default to any language or surface.
 </HARD-RULE>
 
 ## Process Flow
 
 ```
-0. Resolve language + interfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
+0. Resolve language + surfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
 ```
 
 ### Step 1: Read Journey Documents
@@ -164,7 +164,7 @@ Surface-required Outcomes MUST be derived for every matching Step. They are not 
 - CLI: `not-found` (resource access Steps), `already-exists` (resource creation Steps)
 - API: `unauthorized` (authenticated endpoint Steps)
 - TUI: `timeout` (async Cmd Steps, per rules/tui-async.md)
-- WebUI: `validation-error` (form submission Steps), `session-expired` (session-dependent Steps)
+- Web: `validation-error` (form submission Steps), `session-expired` (session-dependent Steps)
 - Mobile: best-effort, no mandatory Outcomes
 </HARD-RULE>
 

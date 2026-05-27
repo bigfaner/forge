@@ -8,6 +8,8 @@ conventions:
 
 Type-specific Steps for **TUI** (terminal full-screen application) test script generation. Loaded by the dispatcher when interface detection identifies TUI-type test cases.
 
+**Test type**: 终端功能测试 (Terminal Functional Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@tui-functional` tags, NOT `@e2e`.
+
 ## Classification Indicators
 
 Classify test cases as **TUI** when they involve any of:

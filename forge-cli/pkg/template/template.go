@@ -13,7 +13,7 @@ import (
 var templateFS embed.FS
 
 // Defaults holds fixed field values from a template.
-// These are applied to AddTaskOpts when --template is used,
+// These are applied to AddTaskOpts when --type matches a template,
 // so callers don't need to pass them as flags.
 type Defaults struct {
 	Priority      string
@@ -24,17 +24,18 @@ type Defaults struct {
 }
 
 // templateDefaults defines the fixed values for each template.
+// Keys match the template filename (without .md extension), which is also the type value.
 var templateDefaults = map[string]Defaults{
-	"fix-task": {
+	"coding.fix": {
 		Priority:      "P0",
 		Breaking:      true,
 		EstimatedTime: "30min",
 		Type:          "coding.fix",
 		IDPrefix:      "fix",
 	},
-	"cleanup-task": {
+	"coding.cleanup": {
 		Priority:      "P0",
-		Breaking:      true,
+		Breaking:      false,
 		EstimatedTime: "15min",
 		Type:          "coding.cleanup",
 		IDPrefix:      "fix",

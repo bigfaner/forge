@@ -148,7 +148,7 @@ Invoke the run-tasks command:
 Skill(skill="forge:run-tasks")
 ```
 
-`run-tasks` reads `index.json`, claims tasks in dependency order, and dispatches to task-executor subagents. Quality gates (compile + fmt + lint + test) run for breaking tasks. Failures auto-create fix tasks with retry loops. On completion, run-tasks presents extracted knowledge for user confirmation and prints a summary. See `run-tasks` command for full behavior.
+`run-tasks` reads `index.json`, claims tasks in dependency order, and dispatches to task-executor subagents. Quality gates (compile + fmt + lint + test) run for breaking tasks. Failures auto-create fix tasks with retry loops. On completion, run-tasks prints a dispatch summary. See `run-tasks` command for full behavior.
 
 ## Error Handling
 
@@ -162,4 +162,4 @@ Skill(skill="forge:run-tasks")
 | run-tasks: MAIN_SESSION task fails | Follow task doc error section; if missing, fix-task + continue |
 | run-tasks: agent timeout | Mark blocked, increment failure counter, continue |
 | run-tasks: 3 consecutive failures | Pipeline stops, report summary |
-| run-tasks: loop ends (no tasks) | Pipeline completes, knowledge extraction runs |
+| run-tasks: loop ends (no tasks) | Pipeline completes, dispatch summary printed |

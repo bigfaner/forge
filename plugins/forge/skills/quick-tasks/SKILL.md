@@ -51,7 +51,7 @@ graph LR
 Do NOT silently default to any language.
 </HARD-RULE>
 
-Language info is used as context for task content (e.g., test framework selection). Test pipeline tasks are driven by the `interfaces` config field in `.forge/config.yaml`, not by language count.
+Language info is used as context for task content (e.g., test framework selection). Test pipeline tasks are driven by the `surfaces` config field in `.forge/config.yaml`, not by language count.
 
 
 ## Step 1: Read Proposal
@@ -76,7 +76,13 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 
 **Dependencies**: linear chain unless parallel work implied. Simple integer IDs: `1`, `2`, `3`.
 
-**Surface-Key/Type Inference**: For each task, query `forge surfaces --json <file-path>` on the task's affected files to resolve `surface-key` and `surface-type`. Merge results: single surface → use its key+type; mixed or no match → leave both empty. If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
+**Surface-Key/Type Inference**: Use the two-layer resolution strategy:
+
+1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set `surface-key` and `surface-type` on every task to the single surface's values.
+
+2. **File-level query** (multi-surface projects): For each task, examine the affected file paths. Use path prefix matching against known surface directories first (from the project-level result). Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface → use its key+type; mixed or no match → leave both empty.
+
+If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
 
 **Reference Files Generation**: For each derived task, generate precise section-level Reference Files instead of bare file paths.
 
@@ -102,7 +108,7 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 - `proposal.md#Key-Risks` — risk of agent ignoring IMPORTANT tags and mitigation strategy
 ```
 
-Replace the template placeholder `{{REFERENCE_FILES}}` (or the default `- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated section-level references.
+Replace the default Reference Files section content (`- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated section-level references. This is a content replacement instruction — there is no `{{REFERENCE_FILES}}` token in the template; the agent edits the `## Reference Files` section directly.
 
 **Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
 - P0: implements the core solution mechanism described in the proposal — without this, the feature doesn't work
@@ -113,6 +119,28 @@ Replace the template placeholder `{{REFERENCE_FILES}}` (or the default `- \`docs
 
 Read the appropriate template (see Template Selection below) for the task content structure. Create one task file per derived task in `docs/features/<slug>/tasks/`.
 
+### Task Template Placeholders
+
+Both `templates/task.md` and `templates/task-doc.md` use the following placeholders. The agent replaces each with a value derived from the proposal context:
+
+| Placeholder | Value Source |
+|-------------|-------------|
+| `{{ID}}` | Sequential integer (e.g., `1`, `2`) |
+| `{{TITLE}}` | Derived from the In Scope bullet — concise imperative title |
+| `{{PRIORITY}}` | P0 / P1 / P2 (see Priority below) |
+| `{{ESTIMATED_TIME}}` | Effort estimate (e.g., `"1h"`, `"2h"`) |
+| `{{DEPENDENCIES}}` | Comma-separated task IDs (e.g., `[1]` or `[1, 2]`); empty `[]` for first task |
+| `{{SLUG}}` | Feature slug (from proposal directory name) |
+| `{{DESCRIPTION}}` | Task description from Problem + Solution context |
+| `{{ACCEPTANCE_CRITERIA}}` | Derived from Success Criteria as `- [ ]` checklist items |
+| `{{HARD_RULES}}` | Critical constraints only; leave empty for normal tasks |
+| `{{NOTES}}` | Implementation notes from Key Risks |
+| `{{SURFACE_KEY}}` | Surface key from inference (coding tasks only; see Surface-Key/Type Inference below) |
+| `{{SURFACE_TYPE}}` | Surface type from inference (coding tasks only) |
+| `{{NEW_FILES}}` | New files to create (doc tasks only) |
+| `{{MODIFIED_FILES}}` | Files to modify (doc tasks only) |
+| `{{DELETED_FILES}}` | Files to delete (doc tasks only) |
+
 <HARD-RULE>
 Naming & ID conventions:
 - Business task: file `<seq>-<slug>.md`, ID `<seq>` (e.g., file `1-add-command.md`, ID `1`)
@@ -121,6 +149,20 @@ Naming & ID conventions:
 </HARD-RULE>
 
 For each task, fill from proposal context: Description (Problem + Solution), Acceptance Criteria (Success Criteria), Implementation Notes (Key Risks). Fill Hard Rules only for critical constraints (specific recipes, hidden env deps, scope restrictions). Set `breaking: true` for tasks modifying shared interfaces/models/APIs.
+
+### Breaking Task Integration Test Impact Assessment
+
+When setting `breaking: true` on a task, the task description MUST include an integration test impact assessment. This ensures fix-tasks are grouped correctly by test suite (directory) rather than by problem type.
+
+**Assessment format** (add to `## Implementation Notes`):
+```
+### Integration Test Impact
+- Affected test suite(s): <test directory paths>
+- Expected fixture changes: <which test fixtures need updating>
+- Risk level: low/medium/high
+```
+
+**Grouping rule**: fix-tasks for failures in the same test directory are merged into a single fix-task. Same directory = same task.
 
 ### Type Assignment
 
@@ -166,9 +208,9 @@ If `proposal.md` frontmatter has `intent` (e.g., `intent: cleanup`), use as defa
 
 ## Step 4: Test Tasks (auto-generated)
 
-Test tasks are auto-generated by `forge task index` based on the `interfaces` field in `.forge/config.yaml`. **Do NOT create test task `.md` files manually.**
+Test tasks are auto-generated by `forge task index` based on the `surfaces` field in `.forge/config.yaml`. **Do NOT create test task `.md` files manually.**
 
-To add a fix task for a failing test: `forge task add --template fix-task --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<root cause>"`
+To add a fix task for a failing test: `forge task add --type coding.fix --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<root cause>"`
 
 ## Step 5: Generate index.json via CLI
 
@@ -178,11 +220,17 @@ After all business task `.md` files (Step 3) are written, run:
 forge task index --feature <slug>
 ```
 
-This auto-generates stage-gate files, test task `.md` files, and `index.json` (runs validation automatically). Existing files are preserved on re-run.
+This auto-generates test task `.md` files (based on `surfaces` in `.forge/config.yaml`) and `index.json` (runs validation automatically). Existing files are preserved on re-run. Quick mode uses simple integer IDs — no stage-gate files are generated.
 
 ## Step 6: Create Manifest
 
-Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug>/manifest.md`. Replace `{{DATE}}` with today's date in `YYYY-MM-DD` format.
+Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug>/manifest.md`. Replace placeholders:
+
+| Placeholder | Value |
+|-------------|-------|
+| `{{SLUG}}` | Feature slug (from proposal directory name) |
+| `{{DATE}}` | Today's date in `YYYY-MM-DD` format |
+| `{{TASK_ROWS}}` | One row per task: `\| <ID> \| <title> \| pending \| <ID>-<slug>.md \|` |
 
 ## Step 7: Validate
 
@@ -209,7 +257,7 @@ Other uncommitted changes remain unstaged.
 
 - [ ] `docs/features/<slug>/tasks/` contains ≤15 coding task files + any number of doc task files
 - [ ] `index.json` valid per schema, `forge task validate-index` passes
-- [ ] Stage-gate files (`.summary.md`, `.gate.md`) auto-generated by `forge task index` for phases with >=2 business tasks (if using `<phase>.<sub>` IDs)
+- [ ] No stage-gate files expected (quick mode uses simple integer IDs, no `<phase>.<sub>` structure)
 - [ ] Every Success Criterion covered by ≥1 task
 - [ ] Dependency graph is a DAG (no cycles)
 - [ ] `docs/features/<slug>/manifest.md` written with `mode: quick`

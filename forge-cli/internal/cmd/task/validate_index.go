@@ -135,7 +135,7 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 		switch {
 		case t.Type == "":
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'type'", key))
-		case !task.ValidTypes[t.Type]:
+		case !task.IsValidType(t.Type):
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid type '%s'", key, t.Type))
 		}
 		// System type interception: non-auto-gen tasks must not use system types

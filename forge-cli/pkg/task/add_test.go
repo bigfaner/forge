@@ -505,7 +505,7 @@ func TestCreateTaskMarkdown_TemplateMode(t *testing.T) {
 		Title:       "Fix: login selector mismatch",
 		Priority:    "P0",
 		Description: "Selector [data-testid='submit-btn'] not found.",
-		Template:    "fix-task",
+		Template:    "coding.fix",
 		Vars: map[string]string{
 			"SOURCE_TASK_ID": "T-test-run",
 			"SOURCE_FILES":   "src/components/Login.tsx",

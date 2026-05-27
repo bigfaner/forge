@@ -34,7 +34,7 @@ flowchart TD
 
 ## Execution Loop
 
-**Failure tracking**: maintain `consecutive_failures` (starts at 0). Increment on: fix-task creation, record-missing dispatch, agent timeout. Reset to 0 on successful claim→dispatch→verify cycle. At 3: print summary and STOP.
+**Failure tracking**: maintain `consecutive_failures` (starts at 0). Increment on: fix-task creation, record-missing dispatch, agent timeout. Reset to 0 on successful claim→dispatch→verify cycle. At 3: print summary (see format below) and STOP.
 
 ### Step 0: Set Active Feature
 
@@ -51,7 +51,7 @@ forge task claim
 
 **Output**: `ACTION: CLAIMED` (new) | `ACTION: CONTINUE` (resume) | Error (no task, end loop).
 
-**Extract**: `TASK_ID`, `FILE`, `MAIN_SESSION`, `SCOPE` (defaults "all"), `FEATURE`.
+**Extract**: `TASK_ID`, `FILE`, `MAIN_SESSION`, `SURFACE_KEY` (defaults ""), `SURFACE_TYPE` (defaults ""), `FEATURE`.
 
 ### Step 1.5: Main Session Routing
 
@@ -61,13 +61,16 @@ If `MAIN_SESSION == "true"`:
 2. Follow instructions exactly (task document specifies skill, outcome, record logic).
 3. If section missing: report error, create fix task to block it, then continue to Step 3:
    ```bash
-   forge task add --template fix-task --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --description "MAIN_SESSION task missing Main Session Instructions section"
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "MAIN_SESSION task missing Main Session Instructions section"
    ```
 4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source`:
    ```bash
-   forge task add --template fix-task --title "Fix: MAIN_SESSION task failed" \
+   forge task add --type coding.fix --title "Fix: MAIN_SESSION task failed" \
      --source-task-id <TASK_ID> \
      --block-source \
+     --var SOURCE_FILES="<affected-files>" \
+     --var TEST_SCRIPT="<test-path>" \
+     --var TEST_RESULTS="<test-output>" \
      --description "Main session task <TASK_ID> failed — verify output and fix issues"
    ```
    `forge task add` automatically deduplicates — check output:
@@ -85,9 +88,12 @@ Else: proceed to Step 2.
 - **STATUS == "completed"**: proceed to Step 3 (Continue Loop).
 - **STATUS == "blocked"** (auto-downgraded): create fix task using `--block-source`:
   ```bash
-  forge task add --template fix-task --title "Fix: <failure>" \
+  forge task add --type coding.fix --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
+    --var SOURCE_FILES="<affected-files>" \
+    --var TEST_SCRIPT="<test-path>" \
+    --var TEST_RESULTS="<test-output>" \
     --description "Dispatched task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
   ```
   `forge task add` automatically deduplicates — check output:
@@ -106,17 +112,35 @@ Return to Step 1.
 
 | Situation | Action |
 |-----------|--------|
-| No available task | End loop, print summary |
-| Agent timeout | Mark blocked, continue |
+| No available task | End loop, print summary (see format below) |
+| Agent timeout | Create fix task to block the timed-out task, increment `consecutive_failures`, continue loop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Agent timed out after 30 minutes"` |
 | Record missing | Dispatch fix-record subagent (2c) |
 | 3 consecutive failures | STOP |
-| Main session fails | Follow task doc's error section; if missing, `forge task add --template fix-task --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --description "Main session task failed"` then continue |
+| Main session fails | Follow task doc's error section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Main session task failed"` then continue |
+
+### Summary Format
+
+When the loop ends (no available task or 3 consecutive failures), print:
+
+```
+## Dispatch Summary
+
+- Total claimed: <N>
+- Completed: <N>
+- Blocked: <N>
+- Failed (fix-task created): <N>
+- Consecutive failures at stop: <N>
+
+<If any blocked/failed tasks, list them:>
+- Task <ID>: <status> — <short reason>
+```
 
 ## Post-Completion
 
-After loop ends, print: "All tasks completed. T-test-run and T-test-verify-regression handle e2e verification and regression automatically."
+After loop ends, print a conditional completion message:
 
-If index lacks T-test-run, suggest: "Run `/run-tests` then `forge test promote <journey>`."
+- **Full pipeline mode** (tasks generated via `/breakdown-tasks`): "All tasks completed. T-test-run and T-test-verify-regression handle e2e verification and regression automatically." If index lacks T-test-run, suggest: "Run `/run-tests` to run and promote tests."
+- **Quick mode** (tasks generated via `/quick-tasks`): "All tasks completed. Test tasks generated by quick-tasks handle verification." If no test tasks exist in the index, suggest: "Run `/run-tests` to execute any available tests."
 
 Do NOT run e2e tests from the dispatcher.
 

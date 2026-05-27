@@ -1,0 +1,69 @@
+{
+  "feature": "remove-forge-test-command",
+  "proposal": "docs/proposals/remove-forge-test-command/proposal.md",
+  "created": "2026-05-26",
+  "tasks": {
+    "1-remove-forge-test-cli": {
+      "id": "1",
+      "title": "Delete forge test CLI commands and Go dependencies",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-remove-forge-test-cli.md",
+      "record": "records/1-remove-forge-test-cli.md",
+      "type": "coding.cleanup"
+    },
+    "2-clean-doc-references": {
+      "id": "2",
+      "title": "Clean documentation references to forge test commands",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-clean-doc-references.md",
+      "record": "records/2-clean-doc-references.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

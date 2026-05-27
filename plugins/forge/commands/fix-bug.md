@@ -138,12 +138,12 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 | API endpoint | `tests/e2e/features/<slug>/api.spec.ts` | fetch |
 | CLI command | `tests/e2e/features/<slug>/cli.spec.ts` | child_process |
 
-Bug fix tests go to the `features/` staging area, same as feature tests. This ensures `just test <slug>` can discover and run them.
+Bug fix tests go to the `features/` staging area, same as feature tests.
 
-Run `just test <slug>` — it **must fail** before the fix:
+Run `just test` — it **must fail** before the fix:
 
 ```bash
-just test <slug>
+just test
 ```
 
 ---
@@ -176,7 +176,7 @@ Strict sequential order. Stop at first failure. On failure: compile → fix & re
 Surface-level tests (if written in Step 3b):
 
 ```bash
-just test <slug>
+just test
 ```
 
 **Verification checklist:**
@@ -230,7 +230,7 @@ The extraction routine identifies four knowledge types:
 
 | Type | Target | Format reference |
 |------|--------|-----------------|
-| Decision | `docs/decisions/<type>.md` | `decision-logging.md` Section 6 (row format), Section 7 (manifest update) |
+| Decision | `docs/decisions/<type>.md` | `learn/templates/decision-entry.md` Section 6 (row format), Section 7 (manifest update) |
 | Lesson | `docs/lessons/<slug>.md` | `learn/templates/lesson-entry.md` |
 | Convention | `docs/conventions/<topic>.md` | `/consolidate-specs` tech-specs entry format, with project-global ID |
 | Business Rule | `docs/business-rules/<domain>.md` | `/consolidate-specs` biz-specs entry format, with project-global ID |

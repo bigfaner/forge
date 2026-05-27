@@ -39,11 +39,15 @@ All categories share these fields:
 You MUST read the category-specific format file before writing record.json.
 </HARD-RULE>
 
-The `TASK_CATEGORY` field is in your task prompt. Use that value to locate the format file:
+The `TASK_CATEGORY` field is in your task prompt. Use that value to locate the format file.
+
+The format files are located in the `data/` directory alongside this SKILL.md. Read the file at:
 
 ```
 data/record-format-{TASK_CATEGORY}.md
 ```
+
+This is a path **relative to this SKILL.md's directory** (`skills/submit-task/`). Claude resolves it from the skill file location, not from the project root.
 
 **Fallback:** If `TASK_CATEGORY` is not in your context, run `forge task query <TASK_ID>` to retrieve it. Do NOT skip reading a format file.
 
@@ -99,4 +103,4 @@ The original type in `index.json` is **not** changed.
 ## Recovery (when `forge task submit` fails)
 
 1. Fix `record.json` and re-run `forge task submit <TASK_ID> --data <path>`
-2. If stuck: `forge task add --template fix-task --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --description "Submit failed: <error>"`
+2. If stuck: `forge task add --type coding.fix --title "Fix: submit failed" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Submit failed: <error>"`

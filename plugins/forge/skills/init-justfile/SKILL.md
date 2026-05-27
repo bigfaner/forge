@@ -58,7 +58,7 @@ If version < 1.50.0: `cargo install just`
 | --------------------- | -------- | -------------------------------------------------------------------- |
 | `<key>-dev`           | No*      | Start dev server for surface (web/api/mobile only)                   |
 | `<key>-probe`         | No*      | Health check for surface (web/api/mobile only)                       |
-| `<key>-test`          | Yes      | Surface-level advanced tests (e2e/integration)                       |
+| `<key>-test`          | Yes      | Surface-level tests (functional for cli/tui/api, e2e for web/mobile) |
 | `<key>-teardown`      | Yes      | Stop services and cleanup                                            |
 | `<key>`               | No*      | Aggregate: dev->probe->test->teardown (web/api/mobile only)          |
 
@@ -459,7 +459,7 @@ Run `/forge:test-guide` to create a Convention file for consistent future genera
 - **Surface-aware recipes**: When `.forge/config.yaml` defines surfaces, the justfile gains per-surface dev/probe/test/teardown recipes with `[linux]`/`[windows]` dual-platform variants. Without surfaces, the justfile is identical to the pre-surface-aware version.
 - **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
 - **Convention-driven test recipes**: Recipes are generated from Convention content + surface rule files + LLM knowledge. No hardcoded framework templates.
-- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (advanced tests). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key.
+- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../../../../docs/reference/test-type-model.md).
 - **User-customized protection**: Recipes marked with `# user-customized` are never overwritten during re-generation. This allows users to customize surface recipes without fear of losing changes.
 - **Mixed project naming**: When multiple surfaces exist, recipes use the surface-key as prefix (e.g., `admin-panel-dev`, `payment-api-test`) to avoid collisions. Single-surface projects use the surface-type as prefix (e.g., `web-dev`).
 - **Targets invoked by forge skills**: `compile`, `unit-test`, `<key>-test`, `<key>-teardown`, `install`. The remaining targets are for manual use.
