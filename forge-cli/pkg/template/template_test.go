@@ -95,6 +95,37 @@ func TestGetDefaults_NotFound(t *testing.T) {
 	}
 }
 
+func TestGetDefaults_IndependentOfGet(t *testing.T) {
+	// bug: GetDefaults was gated behind Get in add.go — when Get failed
+	// (e.g. embedded file missing), defaults like IDPrefix were silently skipped.
+	// This test documents that the two functions must be independent.
+	for _, name := range []string{"coding.fix", "coding.cleanup"} {
+		defs, defsErr := GetDefaults(name)
+		if defsErr != nil {
+			t.Fatalf("GetDefaults(%q) failed: %v", name, defsErr)
+		}
+		if defs.IDPrefix == "" {
+			t.Errorf("GetDefaults(%q): IDPrefix is empty, defaults should always have a prefix", name)
+		}
+		if defs.Priority == "" {
+			t.Errorf("GetDefaults(%q): Priority is empty", name)
+		}
+	}
+	// Verify Get fails for a name that has no embedded file,
+	// while GetDefaults still works for real types (independence)
+	_, getErr := Get("nonexistent.type")
+	if getErr == nil {
+		t.Fatal("Get(nonexistent.type) should fail")
+	}
+	defs, defsErr := GetDefaults("coding.fix")
+	if defsErr != nil {
+		t.Fatalf("GetDefaults(coding.fix) should succeed even though Get(nonexistent) fails: %v", defsErr)
+	}
+	if defs.IDPrefix != "fix" {
+		t.Errorf("IDPrefix = %q, want fix", defs.IDPrefix)
+	}
+}
+
 func TestTemplateType_ValidTypes(t *testing.T) {
 	// Templates must use a type value that exists in ValidTypes.
 	// Historically, fix-task.md used bare "fix" instead of "coding.fix".

@@ -161,30 +161,29 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		Type:          addType,
 	}
 
-	// When --type is specified, try to auto-discover a matching template file.
-	// If a template exists for this type value, load it and apply its defaults.
+	// When --type is specified, apply template defaults independently of
+	// template file existence. Defaults (IDPrefix, Priority, etc.) live in
+	// a hardcoded map and should not depend on the embedded FS file being found.
 	if addType != "" {
-		if _, err := tmpl.Get(addType); err == nil {
-			// Template found — set Template field and apply defaults
-			opts.Template = addType
-			defs, err := tmpl.GetDefaults(addType)
-			if err == nil {
-				changed := func(name string) bool { return cmd != nil && cmd.Flags().Changed(name) }
-				if !changed("priority") {
-					opts.Priority = defs.Priority
-				}
-				if !changed("breaking") {
-					opts.Breaking = defs.Breaking
-				}
-				if !changed("estimated-time") && defs.EstimatedTime != "" {
-					opts.EstimatedTime = defs.EstimatedTime
-				}
-				if !changed("id") && defs.IDPrefix != "" {
-					opts.IDPrefix = defs.IDPrefix
-				}
+		if defs, err := tmpl.GetDefaults(addType); err == nil {
+			changed := func(name string) bool { return cmd != nil && cmd.Flags().Changed(name) }
+			if !changed("priority") {
+				opts.Priority = defs.Priority
+			}
+			if !changed("breaking") {
+				opts.Breaking = defs.Breaking
+			}
+			if !changed("estimated-time") && defs.EstimatedTime != "" {
+				opts.EstimatedTime = defs.EstimatedTime
+			}
+			if !changed("id") && defs.IDPrefix != "" {
+				opts.IDPrefix = defs.IDPrefix
 			}
 		}
-		// No matching template: type field is set, no template applied — no error.
+		// Template file is only needed for markdown generation
+		if _, err := tmpl.Get(addType); err == nil {
+			opts.Template = addType
+		}
 	}
 
 	id, err := task.AddTask(indexPath, opts)

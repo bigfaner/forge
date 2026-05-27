@@ -183,6 +183,45 @@ func TestAddCmd_DedupSkipsActiveFix(t *testing.T) {
 	}
 }
 
+func TestAddCmd_TypeDefaultsApplyIDPrefix(t *testing.T) {
+	// bug: when Get() failed (embedded file mismatch), GetDefaults() was never
+	// called, so IDPrefix was empty and task ID fell back to "disc-N".
+	// After fix: defaults are applied independently of template file existence.
+	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
+		"1.1": {ID: "1.1", Title: "Existing", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
+	}})
+
+	output, err := captureOutput(func() error {
+		Cmd.SetArgs([]string{
+			"add",
+			"--title", "Fix: prefix test",
+			"--type", "coding.fix",
+			"--source-task-id", "1.1",
+			"--var", "SOURCE_FILES=src/main.go",
+			"--var", "TEST_SCRIPT=tests/main_test.go",
+			"--var", "TEST_RESULTS=results/latest.md",
+		})
+		return Cmd.Execute()
+	})
+	if err != nil {
+		t.Fatalf("add command failed: %v", err)
+	}
+	if !strings.Contains(output, "ACTION: ADDED") {
+		t.Fatalf("expected ACTION: ADDED, got %q", output)
+	}
+	// IDPrefix "fix" from defaults should produce a task ID like "fix-1"
+	if !strings.Contains(output, "KEY: fix-") {
+		t.Errorf("expected task ID with 'fix-' prefix from IDPrefix, got %q", output)
+	}
+	// Template defaults: PRIORITY=P0, BREAKING=true
+	if !strings.Contains(output, "PRIORITY: P0") {
+		t.Errorf("expected PRIORITY: P0 from template defaults, got %q", output)
+	}
+	if !strings.Contains(output, "BREAKING: true") {
+		t.Errorf("expected BREAKING: true from template defaults, got %q", output)
+	}
+}
+
 func TestAddCmd_BlockSource(t *testing.T) {
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
 		"1.1": {ID: "1.1", Title: "Source", Priority: "P0", Status: "completed", File: "1.1.md", Record: "records/1.1.md"},
