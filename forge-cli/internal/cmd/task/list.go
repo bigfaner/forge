@@ -50,6 +50,7 @@ repository's index.json regardless of worktree existence.`,
 func init() {
 	listCmd.Flags().BoolVar(&listLocal, "local", false, "Read from main repo's index.json (ignore worktree)")
 	listCmd.Flags().String("sort", "topo", "Sort order: topo (topological) or id (natural ID)")
+	listCmd.Flags().Bool("tree", false, "Display tasks as interactive dependency tree (TUI)")
 }
 
 const titleMaxWidth = 50
@@ -109,6 +110,24 @@ func runList(cmd *cobra.Command, args []string) error {
 			base.Exit(base.ErrLegacyScope(scopeErr.Count))
 		}
 		return legacyErr
+	}
+
+	// --tree mode: build dependency tree and render
+	treeMode := false
+	if cmd != nil {
+		treeMode, _ = cmd.Flags().GetBool("tree")
+	}
+	if treeMode {
+		// Terminal capability detection before entering TUI
+		isTerminal := listIsTerminalFunc()
+		termEnv := os.Getenv("TERM")
+
+		if canUseTUI(isTerminal, termEnv) {
+			sortByID := sortMode == "id"
+			roots := buildForest(index, withSortByID(sortByID))
+			return runTreeTUI(roots)
+		}
+		// Non-TTY: silently fall back to table mode (continue below)
 	}
 
 	// Collect and sort task IDs

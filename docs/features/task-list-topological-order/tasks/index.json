@@ -50,7 +50,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-tui-tree-view.md",
       "record": "records/4-tui-tree-view.md",
       "surface-type": "cli",
