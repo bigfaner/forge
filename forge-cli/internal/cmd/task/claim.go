@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 
 	"forge-cli/pkg/feature"
@@ -23,8 +24,9 @@ var claimCmd = &cobra.Command{
 
 The task is selected based on:
 1. All dependencies must be met
-2. Priority (P0 > P1 > P2)
-3. Task ID (semantic version ordering)`,
+2. Topological order (shallower depth first)
+3. Priority as tiebreaker within same depth (P0 > P1 > P2)
+4. Task ID (semantic version ordering)`,
 	Args: cobra.NoArgs,
 	RunE: runClaim,
 }
@@ -210,7 +212,15 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	}
 
 	priorityOrder := map[string]int{"P0": 0, "P1": 1, "P2": 2}
+
+	// Compute topological depths for all tasks in the index.
+	depths := computeTopoDepths(index)
+
 	sort.Slice(eligibleTasks, func(i, j int) bool {
+		di, dj := depths[eligibleTasks[i].t.ID], depths[eligibleTasks[j].t.ID]
+		if di != dj {
+			return di < dj
+		}
 		pi, pj := priorityOrder[eligibleTasks[i].t.Priority], priorityOrder[eligibleTasks[j].t.Priority]
 		if pi != pj {
 			return pi < pj
@@ -298,4 +308,73 @@ func printNewTask(key string, t *task.Task, projectRoot, featureSlug string) {
 	base.PrintField("ACTION", "CLAIMED")
 	printTaskDetails(key, t, projectRoot, featureSlug)
 	base.PrintBlockEnd()
+}
+
+// computeTopoDepths computes the topological depth of each task in the index
+// using BFS (Kahn's algorithm style). Root tasks (no dependencies) have depth 0.
+// The returned map keys are task IDs (not map keys).
+// Tasks in dependency cycles receive a large depth value (they won't be eligible anyway).
+func computeTopoDepths(index *task.TaskIndex) map[string]int {
+	tasks := index.TasksMap()
+	depths := make(map[string]int, len(tasks))
+
+	// Build adjacency list: dep task ID -> dependent task IDs.
+	// Keys are task IDs, not map keys.
+	adj := make(map[string][]string)
+	inDeg := make(map[string]int)
+	for _, t := range tasks {
+		inDeg[t.ID] = 0
+	}
+
+	for _, t := range tasks {
+		for _, dep := range t.Dependencies {
+			if strings.HasSuffix(dep, ".x") {
+				matches, _ := task.ResolveWildcardDep(index, dep)
+				for _, m := range matches {
+					if m != t.ID { // skip self-edges
+						adj[m] = append(adj[m], t.ID)
+						inDeg[t.ID]++
+					}
+				}
+			} else {
+				if _, found := index.ByID(dep); found && dep != t.ID {
+					adj[dep] = append(adj[dep], t.ID)
+					inDeg[t.ID]++
+				}
+			}
+		}
+	}
+
+	// BFS from roots (in-degree 0).
+	var queue []string
+	for _, t := range tasks {
+		if inDeg[t.ID] == 0 {
+			depths[t.ID] = 0
+			queue = append(queue, t.ID)
+		}
+	}
+
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		for _, next := range adj[curr] {
+			d := depths[curr] + 1
+			if d > depths[next] {
+				depths[next] = d
+			}
+			inDeg[next]--
+			if inDeg[next] == 0 {
+				queue = append(queue, next)
+			}
+		}
+	}
+
+	// Tasks in cycles get a large depth (unreachable from BFS).
+	for _, t := range tasks {
+		if _, ok := depths[t.ID]; !ok {
+			depths[t.ID] = 99999
+		}
+	}
+
+	return depths
 }

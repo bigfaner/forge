@@ -36,7 +36,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-claim-topo-align.md",
       "record": "records/3-claim-topo-align.md",
       "surface-type": "cli",

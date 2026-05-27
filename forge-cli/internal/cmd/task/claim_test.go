@@ -1618,6 +1618,162 @@ func TestClaimNextTask_BlockSourceLifecycle(t *testing.T) {
 
 // --- Auto-downgrade scenario: task blocked -> dep completed -> claim auto-unblocks ---
 
+// --- Topological ordering tests ---
+
+func TestClaimNextTask_TopologicalOrder(t *testing.T) {
+	t.Run("multi-dependency graph respects topo order", func(t *testing.T) {
+		// Graph:
+		//   1 (pending, no deps)
+		//   2 (pending, depends on 1)
+		//   3 (pending, no deps)
+		//   4 (pending, depends on 2 and 3)
+		//
+		// Topo depths: 1→0, 2→1, 3→0, 4→2
+		// All have same priority, so claim order should follow topo depth then natural ID:
+		//   First claim: 1 (depth 0, ID 1 < 3)
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task2": {ID: "2", Title: "Task 2", Priority: "P0", Status: "pending", Dependencies: []string{"1"}},
+			"task3": {ID: "3", Title: "Task 3", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task4": {ID: "4", Title: "Task 4", Priority: "P0", Status: "pending", Dependencies: []string{"2", "3"}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		// Task 1 should be claimed first (depth 0, natural ID 1 < 3)
+		if key != "task1" {
+			t.Errorf("expected key 'task1' (topo-first), got key %q", key)
+		}
+	})
+
+	t.Run("diamond dependency graph", func(t *testing.T) {
+		// Diamond: 1 → 2, 1 → 3, 2 → 4, 3 → 4
+		// Depths: 1→0, 2→1, 3→1, 4→2
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Priority: "P0", Status: "pending", Dependencies: []string{}},
+			"task2": {ID: "2", Priority: "P0", Status: "pending", Dependencies: []string{"1"}},
+			"task3": {ID: "3", Priority: "P0", Status: "pending", Dependencies: []string{"1"}},
+			"task4": {ID: "4", Priority: "P0", Status: "pending", Dependencies: []string{"2", "3"}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task1" {
+			t.Errorf("expected key 'task1' (root), got key %q", key)
+		}
+	})
+
+	t.Run("deeper task not claimed before shallower", func(t *testing.T) {
+		// Task 1 (depth 0) completed. Task 2 (depth 1) and task 3 (depth 0) both pending.
+		// Task 2 depends on 1, task 3 has no deps. Both eligible.
+		// Task 3 has depth 0, task 2 has depth 1. Task 3 should be claimed.
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task2": {ID: "2", Priority: "P0", Status: "pending", Dependencies: []string{"1"}},
+			"task3": {ID: "3", Priority: "P0", Status: "pending", Dependencies: []string{}},
+		})
+
+		key, _, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		// Task 3 (depth 0) should be claimed before task 2 (depth 1)
+		if key != "task3" {
+			t.Errorf("expected key 'task3' (depth 0), got key %q", key)
+		}
+	})
+}
+
+func TestClaimNextTask_PriorityTiebreakerWithinTopoLevel(t *testing.T) {
+	t.Run("P0 claimed before P1 at same depth", func(t *testing.T) {
+		// Two tasks at depth 0: task-a (P1) and task-b (P0)
+		// P0 should win even though natural ID order might differ
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task-a": {ID: "1", Priority: "P1", Status: "pending", Dependencies: []string{}},
+			"task-b": {ID: "2", Priority: "P0", Status: "pending", Dependencies: []string{}},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task-b" {
+			t.Errorf("expected key 'task-b' (P0 at depth 0), got key %q", key)
+		}
+		if gotTask.Priority != "P0" {
+			t.Errorf("expected priority P0, got %s", gotTask.Priority)
+		}
+	})
+
+	t.Run("P0 beats P2 at same depth despite lower natural ID", func(t *testing.T) {
+		// Task with lower natural ID has lower priority
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task-a": {ID: "1", Priority: "P2", Status: "pending", Dependencies: []string{}},
+			"task-b": {ID: "2", Priority: "P0", Status: "pending", Dependencies: []string{}},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task-b" {
+			t.Errorf("expected key 'task-b' (P0 beats P2 at same depth), got key %q", key)
+		}
+		if gotTask.Priority != "P0" {
+			t.Errorf("expected priority P0, got %s", gotTask.Priority)
+		}
+	})
+
+	t.Run("shallower depth beats higher priority", func(t *testing.T) {
+		// task-a at depth 0 with P2 vs task-b at depth 1 with P0
+		// Depth wins over priority: task-a should be claimed
+		index := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task-0": {ID: "1", Priority: "P0", Status: "completed", Dependencies: []string{}},
+			"task-a": {ID: "2", Priority: "P2", Status: "pending", Dependencies: []string{}},
+			"task-b": {ID: "3", Priority: "P0", Status: "pending", Dependencies: []string{"1"}},
+		})
+
+		key, gotTask, err := claimNextTask(index)
+		if err != nil {
+			t.Fatalf("claimNextTask() error = %v", err)
+		}
+		if key != "task-a" {
+			t.Errorf("expected key 'task-a' (depth 0 P2 beats depth 1 P0), got key %q", key)
+		}
+		if gotTask.Priority != "P2" {
+			t.Errorf("expected priority P2, got %s", gotTask.Priority)
+		}
+	})
+}
+
 func TestClaimNextTask_AutoDowngradeUnblock(t *testing.T) {
 	t.Run("downgraded task auto-unblocked when dep completes", func(t *testing.T) {
 		// Task 2 was auto-downgraded to blocked (testsFailed). Its dep (task 1) is completed.
