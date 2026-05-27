@@ -24,7 +24,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-clean-forge-cli-artifacts.md",
       "record": "records/2-clean-forge-cli-artifacts.md",
       "surface-key": ".",
@@ -36,7 +36,7 @@
       "title": "Clean tests/ static-file grep and duplicate tests",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-clean-tests-static-duplicates.md",
       "record": "records/3-clean-tests-static-duplicates.md",
       "surface-key": ".",
@@ -66,7 +66,7 @@
         "3",
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-extend-tc004-scope.md",
       "record": "records/5-extend-tc004-scope.md",
       "type": "coding.feature"
@@ -89,7 +89,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "type": "doc.review"
