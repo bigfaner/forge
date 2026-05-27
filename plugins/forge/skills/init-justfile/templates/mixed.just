@@ -54,7 +54,7 @@ unit-test scope="":
       *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
     esac
 
-# test: surface-level advanced tests (e2e, integration, etc.)
+# test: surface-level advanced tests (functional, integration, e2e, etc.)
 test journey='':
     #!/usr/bin/env bash
     set -euo pipefail

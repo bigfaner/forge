@@ -11,7 +11,7 @@ Convention for generating Go test code using the standard `testing` package with
 - **name**: Go testing package + testify/assert
 - **version**: go1.18+
 - **language**: Go
-- **runner_command**: `go test -v -json -tags=e2e`
+- **runner_command**: `go test -v -json -tags=cli_functional`
 
 ## discovery
 

@@ -129,7 +129,7 @@
         "3",
         "4"
       ],
-      "status": "in_progress",
+      "status": "completed",
       "file": "5-rename-build-tags.md",
       "record": "records/5-rename-build-tags.md",
       "breaking": true,

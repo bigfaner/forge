@@ -15,7 +15,7 @@ This index lists all built-in testing conventions. LLM reads this file first, th
 - **File**: [go.md](go.md)
 - **Framework**: Go `testing` package + testify/assert
 - **Language**: Go
-- **Runner**: `go test -v -json -tags=e2e`
+- **Runner**: `go test -v -json -tags=cli_functional`
 - **When to use**: Go projects using the standard `testing` package with table-driven test patterns. Look for `*_test.go` files, `go.mod`, and `func TestXxx(t *testing.T)` signatures. Exclude if Ginkgo imports are present.
 
 ### Ginkgo
@@ -23,7 +23,7 @@ This index lists all built-in testing conventions. LLM reads this file first, th
 - **File**: [ginkgo.md](ginkgo.md)
 - **Framework**: Ginkgo v2 + Gomega
 - **Language**: Go
-- **Runner**: `ginkgo -v --json-report=report.json -tags=e2e`
+- **Runner**: `ginkgo -v --json-report=report.json -tags=cli_functional`
 - **When to use**: Go projects using the Ginkgo BDD framework. Look for `Describe`, `Context`, `It` patterns, and imports of `github.com/onsi/ginkgo/v2`.
 
 ### Vitest

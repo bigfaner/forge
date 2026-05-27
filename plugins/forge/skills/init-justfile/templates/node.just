@@ -16,7 +16,7 @@ dev:
 unit-test:
     npm test
 
-# test: surface-level advanced tests (e2e, integration, etc.)
+# test: surface-level advanced tests (functional, integration, e2e, etc.)
 test journey='':
     #!/usr/bin/env bash
     set -euo pipefail

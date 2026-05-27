@@ -96,8 +96,6 @@ mobile-test:
     set -euo pipefail
     echo "TODO: implement mobile-test" >&2; exit 1
 
-# DEPRECATED: removed after v3.2.0 — use mobile-test instead
-alias test-e2e := mobile-test
 
 # Clean up mobile test artifacts
 # user-customized

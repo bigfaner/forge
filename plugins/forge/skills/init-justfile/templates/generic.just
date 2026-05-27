@@ -16,7 +16,7 @@ dev:
 unit-test:
     @echo "Error: unit-test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 
-# test: surface-level advanced tests (e2e, integration, etc.)
+# test: surface-level advanced tests (functional, integration, e2e, etc.)
 test journey='':
     @echo "Error: test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 

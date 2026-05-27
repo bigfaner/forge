@@ -11,7 +11,7 @@ Convention for generating Go test code using the Ginkgo BDD framework with Gomeg
 - **name**: Ginkgo v2 + Gomega
 - **version**: ginkgo v2+
 - **language**: Go
-- **runner_command**: `ginkgo -v --json-report=report.json -tags=e2e`
+- **runner_command**: `ginkgo -v --json-report=report.json -tags=cli_functional`
 
 ## discovery
 

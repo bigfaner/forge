@@ -50,8 +50,6 @@ cli-test:
     set -euo pipefail
     echo "TODO: implement cli-test" >&2; exit 1
 
-# DEPRECATED: removed after v3.2.0 — use cli-test instead
-alias test-e2e := cli-test
 
 # Clean up CLI test artifacts
 # user-customized
