@@ -120,6 +120,38 @@ func runConfigGet(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+// resolveExistingPrefix resolves symlinks for the longest existing prefix of path.
+// EvalSymlinks fails when any path component doesn't exist on disk, so we walk
+// from the root upward, resolving only the portion that exists.
+func resolveExistingPrefix(path string) string {
+	resolved, err := filepath.EvalSymlinks(path)
+	if err == nil {
+		return resolved
+	}
+	// Walk up until we find a prefix that exists.
+	dir := path
+	tail := ""
+	for {
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			// Reached root without finding anything resolvable.
+			return path
+		}
+		resolved, err := filepath.EvalSymlinks(parent)
+		if err == nil {
+			if tail != "" {
+				return resolved + string(filepath.Separator) + tail
+			}
+			return resolved
+		}
+		tail = filepath.Base(dir) + string(filepath.Separator) + tail
+		if len(tail) > 0 {
+			tail = strings.TrimSuffix(tail, string(filepath.Separator))
+		}
+		dir = parent
+	}
+}
+
 // detectModeFromPath determines the pipeline mode by analyzing the working directory path.
 // Returns "quick" when inside a feature directory that contains proposal.md,
 // "full" when inside a feature directory without proposal.md,
@@ -129,13 +161,19 @@ func detectModeFromPath(cwd, projectRoot string) string {
 		return "none"
 	}
 
-	// Resolve symlinks
-	resolved, err := filepath.EvalSymlinks(cwd)
-	if err != nil {
-		resolved = cwd
-	}
+	// Normalize backslashes to the OS path separator so that filepath
+	// utilities (EvalSymlinks, Dir, etc.) work correctly regardless of
+	// whether the input uses Windows or POSIX separators.
+	cwd = strings.ReplaceAll(cwd, `\`, string(filepath.Separator))
 
-	// Normalize to forward slashes for consistent matching
+	// Resolve symlinks incrementally: EvalSymlinks requires the full path to
+	// exist. We walk the path components and resolve only the prefix that
+	// actually exists on disk, appending the remaining (non-existent) tail
+	// verbatim. This handles worktree-style symlinks where the cwd may point
+	// through a symlink into a feature directory's non-existent subdirectory.
+	resolved := resolveExistingPrefix(cwd)
+
+	// Normalize to forward slashes for consistent matching.
 	normalized := filepath.ToSlash(resolved)
 	featuresPattern := "/docs/features/"
 

@@ -11,7 +11,7 @@
       "dependencies": [
         "disc-1"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "1-rename-constants-paths.md",
       "record": "records/1-rename-constants-paths.md",
       "breaking": true,
@@ -175,7 +175,7 @@
       "id": "disc-1",
       "title": "Fix: pre-existing TestDetectModeFromPath failure",
       "priority": "P1",
-      "status": "pending",
+      "status": "completed",
       "file": "disc-1.md",
       "record": "records/disc-1.md",
       "sourceTaskID": "1",
