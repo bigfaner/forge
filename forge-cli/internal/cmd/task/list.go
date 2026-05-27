@@ -19,13 +19,26 @@ import (
 
 var listLocal bool
 
+// listIsTerminalFunc detects whether stdout is a terminal (TTY).
+// Overridable for testing.
+var listIsTerminalFunc = defaultListIsTerminal
+
+func defaultListIsTerminal() bool {
+	fi, err := os.Stdout.Stat()
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeCharDevice != 0
+}
+
 var listCmd = &cobra.Command{
 	Use:   "list [slug]",
 	Short: "List all tasks for the current feature",
 	Long: `List all tasks for the current feature in a table format.
 
 Displays task ID, type, title (truncated), status, breaking, and mainSession.
-Tasks are sorted by ID in natural order: numeric IDs first, then test/gate IDs.
+Tasks are sorted in topological order by default (dependencies before dependents).
+Use --sort id to restore natural ID ordering.
 
 When a slug is provided, lists tasks for that specific feature, reading from
 the worktree if one exists for that slug. Use --local to read from the main
@@ -36,11 +49,20 @@ repository's index.json regardless of worktree existence.`,
 
 func init() {
 	listCmd.Flags().BoolVar(&listLocal, "local", false, "Read from main repo's index.json (ignore worktree)")
+	listCmd.Flags().String("sort", "topo", "Sort order: topo (topological) or id (natural ID)")
 }
 
 const titleMaxWidth = 50
 
-func runList(_ *cobra.Command, args []string) error {
+func runList(cmd *cobra.Command, args []string) error {
+	sortMode := "topo"
+	if cmd != nil {
+		sortMode = cmd.Flags().Lookup("sort").Value.String()
+	}
+	if sortMode != "topo" && sortMode != "id" {
+		return fmt.Errorf("invalid --sort value %q: must be \"topo\" or \"id\"", sortMode)
+	}
+
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
 		base.Exit(base.ErrProjectNotFound())
@@ -91,11 +113,57 @@ func runList(_ *cobra.Command, args []string) error {
 
 	// Collect and sort task IDs
 	tasks := index.TasksMap()
-	ids := make([]string, 0, len(tasks))
-	for id := range tasks {
-		ids = append(ids, id)
+
+	var sortedIDs []string
+	var cycleSet map[string]bool
+	var missingForTask map[string][]string // task ID -> its missing deps
+
+	if sortMode == "topo" {
+		ordered, cycles, missing := task.TopologicalSort(index)
+		sortedIDs = ordered
+		// Append cycle nodes at the end so they still appear in the table
+		sortedIDs = append(sortedIDs, cycles...)
+
+		cycleSet = make(map[string]bool, len(cycles))
+		for _, c := range cycles {
+			cycleSet[c] = true
+		}
+
+		// Build missing-deps lookup per task
+		missingForTask = buildMissingPerTask(index, missing)
+	} else {
+		ids := make([]string, 0, len(tasks))
+		for id := range tasks {
+			ids = append(ids, id)
+		}
+		sortedIDs = naturalSortTaskIDs(ids)
 	}
-	sortedIDs := naturalSortTaskIDs(ids)
+
+	// Determine if color should be used (TTY only)
+	useColor := listIsTerminalFunc()
+
+	// Build display ID with optional marker for each task
+	displayID := func(id string) string {
+		var markers []string
+		if cycleSet != nil && cycleSet[id] {
+			markers = append(markers, "cycle")
+		}
+		if missingForTask != nil {
+			if missIDs := missingForTask[id]; len(missIDs) > 0 {
+				for _, mid := range missIDs {
+					markers = append(markers, "missing: "+mid)
+				}
+			}
+		}
+		if len(markers) == 0 {
+			return id
+		}
+		markerText := " [" + strings.Join(markers, ", ") + "]"
+		if useColor {
+			return id + "\033[33m" + markerText + "\033[0m"
+		}
+		return id + markerText
+	}
 
 	// Print header
 	fmt.Printf("%d found  (feature: %s)\n\n", len(sortedIDs), featureSlug)
@@ -117,8 +185,10 @@ func runList(_ *cobra.Command, args []string) error {
 
 	for _, id := range sortedIDs {
 		t := tasks[id]
-		if base.DisplayWidth(t.ID) > idCol {
-			idCol = base.DisplayWidth(t.ID)
+		// Use display ID width (includes marker text, but exclude ANSI codes)
+		displayW := displayWidthPlain(id, cycleSet, missingForTask)
+		if displayW > idCol {
+			idCol = displayW
 		}
 		if base.DisplayWidth(t.Type) > typeCol {
 			typeCol = base.DisplayWidth(t.Type)
@@ -166,8 +236,10 @@ func runList(_ *cobra.Command, args []string) error {
 	for _, id := range sortedIDs {
 		t := tasks[id]
 		title := base.TruncateSlug(t.Title, titleCol)
+		idDisplay := displayID(id)
+		idDisplayPadded := padRightPlain(idDisplay, idCol)
 		fmt.Printf("%s  %s  %s  %s  %s  %s\n",
-			base.PadRight(t.ID, idCol),
+			idDisplayPadded,
 			base.PadRight(t.Type, typeCol),
 			base.PadRight(title, titleCol),
 			base.PadRight(t.Status, statusCol),
@@ -177,6 +249,79 @@ func runList(_ *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// displayWidthPlain returns the display width of the ID column for a task,
+// accounting for marker text (e.g. " [cycle]", " [missing: 99]") but
+// excluding ANSI escape codes.
+func displayWidthPlain(id string, cycleSet map[string]bool, missingForTask map[string][]string) int {
+	w := base.DisplayWidth(id)
+	if cycleSet != nil && cycleSet[id] {
+		w += base.DisplayWidth(" [cycle]")
+	}
+	if missingForTask != nil {
+		for _, mid := range missingForTask[id] {
+			w += base.DisplayWidth(" [missing: " + mid + "]")
+		}
+	}
+	return w
+}
+
+// padRightPlain pads the display ID string to exactly n visible columns.
+// ANSI escape codes are not counted as visible width.
+func padRightPlain(displayID string, n int) string {
+	// Calculate visible width (excluding ANSI codes)
+	visibleWidth := 0
+	inEscape := false
+	for _, r := range displayID {
+		if r == '\033' {
+			inEscape = true
+			continue
+		}
+		if inEscape {
+			if r == 'm' {
+				inEscape = false
+			}
+			continue
+		}
+		visibleWidth += base.DisplayWidth(string(r))
+	}
+	if visibleWidth >= n {
+		return displayID
+	}
+	return displayID + strings.Repeat(" ", n-visibleWidth)
+}
+
+// buildMissingPerTask builds a map from task ID to the list of its missing deps
+// that are in the global missing list.
+func buildMissingPerTask(idx *task.TaskIndex, globalMissing []string) map[string][]string {
+	missingSet := make(map[string]bool, len(globalMissing))
+	for _, m := range globalMissing {
+		missingSet[m] = true
+	}
+
+	result := make(map[string][]string)
+	tasks := idx.TasksMap()
+	for id, t := range tasks {
+		for _, dep := range t.Dependencies {
+			switch {
+			case missingSet[dep]:
+				result[id] = append(result[id], dep)
+			case strings.HasSuffix(dep, ".x"):
+				// Wildcard: check if it resolved to nothing
+				matches, isWildcard := task.ResolveWildcardDep(idx, dep)
+				if isWildcard && len(matches) == 0 {
+					result[id] = append(result[id], "unresolved: "+dep)
+				}
+			default:
+				// Exact dep: check if it exists
+				if _, found := idx.ByID(dep); !found {
+					result[id] = append(result[id], dep)
+				}
+			}
+		}
+	}
+	return result
 }
 
 // resolveListIndexPath determines the index.json path for a feature slug.

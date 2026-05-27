@@ -10,6 +10,8 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
+
+	"github.com/spf13/cobra"
 )
 
 func TestListCmd_Metadata(t *testing.T) {
@@ -164,8 +166,11 @@ func TestListCmd_Sorting(t *testing.T) {
 		}
 		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
 
+		// Use --sort id for deterministic ordering (topo mode may produce
+		// different order for T-prefixed IDs due to CompareVersionIDs behavior).
+		cmd := helperListCmd("id")
 		output := captureStdout(func() {
-			err := runList(nil, []string{})
+			err := runList(cmd, []string{})
 			if err != nil {
 				t.Fatalf("runList returned error: %v", err)
 			}
@@ -181,7 +186,7 @@ func TestListCmd_Sorting(t *testing.T) {
 			}
 			// Skip header/separator lines
 			if strings.HasPrefix(trimmed, "---") || strings.HasPrefix(trimmed, "ID ") ||
-				strings.HasPrefix(trimmed, "──") || strings.Contains(trimmed, "found") {
+				strings.HasPrefix(trimmed, "---") || strings.Contains(trimmed, "found") {
 				continue
 			}
 			// Task data rows start with a number or T-
@@ -241,7 +246,7 @@ func TestListCmd_ColumnAlignment(t *testing.T) {
 		// ID column must accommodate the longest ID ("1.summary" = 9 chars)
 		idDashCount := len(strings.TrimRight(segments[0], " "))
 		if idDashCount < 9 {
-			t.Errorf("bug: ID column is %d chars wide but '1.summary' needs 9 — columns misalign\nseparator: %q\noutput:\n%s",
+			t.Errorf("bug: ID column is %d chars wide but '1.summary' needs 9 -- columns misalign\nseparator: %q\noutput:\n%s",
 				idDashCount, sepLine, output)
 		}
 
@@ -482,4 +487,278 @@ func TestNaturalSortTaskIDs(t *testing.T) {
 			}
 		})
 	}
+}
+
+// helperListCmd creates a cobra.Command with the --sort flag set to the given value.
+func helperListCmd(sortValue string) *cobra.Command {
+	cmd := &cobra.Command{}
+	cmd.Flags().String("sort", "topo", "Sort order: topo or id")
+	_ = cmd.Flags().Set("sort", sortValue)
+	return cmd
+}
+
+func TestListCmd_TopologicalSort(t *testing.T) {
+	t.Run("default topo sort orders by dependencies", func(t *testing.T) {
+		// 2 depends on 1, so 1 must come before 2
+		tasks := map[string]task.Task{
+			"2": {ID: "2", Title: "Second task", Type: "coding.enhancement", Status: "pending", Dependencies: []string{"1"}},
+			"1": {ID: "1", Title: "First task", Type: "coding.feature", Status: "completed", Dependencies: nil},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		// Task 1 (ID=1) must come before Task 2 (ID=2) in topo order
+		idx1 := strings.Index(output, "First task")
+		idx2 := strings.Index(output, "Second task")
+		if idx1 == -1 || idx2 == -1 {
+			t.Fatalf("missing task titles in output:\n%s", output)
+		}
+		if idx1 >= idx2 {
+			t.Errorf("task 1 should appear before task 2 in topo order, got:\n%s", output)
+		}
+	})
+
+	t.Run("--sort id restores natural ID ordering", func(t *testing.T) {
+		// Create tasks where topo order differs from ID order:
+		// ID order: 1, 2, 3; Topo order: 3, 1, 2 (3 has no deps, 1 depends on 3, 2 depends on 1)
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Depends on 3", Type: "coding.feature", Status: "pending", Dependencies: []string{"3"}},
+			"2": {ID: "2", Title: "Depends on 1", Type: "coding.feature", Status: "pending", Dependencies: []string{"1"}},
+			"3": {ID: "3", Title: "No deps", Type: "coding.feature", Status: "pending", Dependencies: nil},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		cmd := helperListCmd("id")
+		output := captureStdout(func() {
+			err := runList(cmd, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		// In --sort id mode, order should be 1, 2, 3
+		lines := strings.Split(output, "\n")
+		var taskLines []string
+		for _, line := range lines {
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "" || strings.HasPrefix(trimmed, "---") || strings.HasPrefix(trimmed, "ID ") ||
+				strings.Contains(trimmed, "found") {
+				continue
+			}
+			if len(trimmed) > 0 && trimmed[0] >= '0' && trimmed[0] <= '9' {
+				taskLines = append(taskLines, trimmed)
+			}
+		}
+
+		if len(taskLines) < 3 {
+			t.Fatalf("expected 3 task lines, got %d\noutput:\n%s", len(taskLines), output)
+		}
+
+		expectedOrder := []string{"1", "2", "3"}
+		for i, expectedID := range expectedOrder {
+			if !strings.HasPrefix(taskLines[i], expectedID) {
+				t.Errorf("task line %d: expected to start with %q, got %q\nfull output:\n%s", i, expectedID, taskLines[i], output)
+			}
+		}
+	})
+
+	t.Run("invalid --sort value returns error", func(t *testing.T) {
+		cmd := helperListCmd("invalid")
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Task", Type: "coding.feature", Status: "pending"},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		err := runList(cmd, []string{})
+		if err == nil {
+			t.Fatal("expected error for invalid --sort value, got nil")
+		}
+		if !strings.Contains(err.Error(), "invalid --sort value") {
+			t.Errorf("error should mention invalid sort value, got: %v", err)
+		}
+	})
+}
+
+func TestListCmd_CycleMarker(t *testing.T) {
+	t.Run("cycle nodes display [cycle] marker", func(t *testing.T) {
+		// 1 -> 2 -> 3 -> 1 (cycle)
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Cycle task 1", Type: "coding.feature", Status: "pending", Dependencies: []string{"3"}},
+			"2": {ID: "2", Title: "Cycle task 2", Type: "coding.feature", Status: "pending", Dependencies: []string{"1"}},
+			"3": {ID: "3", Title: "Cycle task 3", Type: "coding.feature", Status: "pending", Dependencies: []string{"2"}},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		// Force non-TTY mode for predictable output
+		orig := listIsTerminalFunc
+		listIsTerminalFunc = func() bool { return false }
+		defer func() { listIsTerminalFunc = orig }()
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "[cycle]") {
+			t.Errorf("output should contain [cycle] marker for cycle nodes, got:\n%s", output)
+		}
+	})
+
+	t.Run("cycle marker has no ANSI codes in non-TTY mode", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Cycle task", Type: "coding.feature", Status: "pending", Dependencies: []string{"1"}},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		orig := listIsTerminalFunc
+		listIsTerminalFunc = func() bool { return false }
+		defer func() { listIsTerminalFunc = orig }()
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if strings.Contains(output, "\033[") {
+			t.Errorf("non-TTY output should not contain ANSI escape codes, got:\n%s", output)
+		}
+		if !strings.Contains(output, "[cycle]") {
+			t.Errorf("non-TTY output should contain plain [cycle] marker, got:\n%s", output)
+		}
+	})
+
+	t.Run("cycle marker has ANSI codes in TTY mode", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Cycle task", Type: "coding.feature", Status: "pending", Dependencies: []string{"1"}},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		orig := listIsTerminalFunc
+		listIsTerminalFunc = func() bool { return true }
+		defer func() { listIsTerminalFunc = orig }()
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "\033[33m") {
+			t.Errorf("TTY output should contain ANSI color codes for markers, got:\n%s", output)
+		}
+		if !strings.Contains(output, "[cycle]") {
+			t.Errorf("TTY output should contain [cycle] text, got:\n%s", output)
+		}
+	})
+}
+
+func TestListCmd_MissingDepMarker(t *testing.T) {
+	t.Run("missing deps display [missing: id] marker", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Standalone task", Type: "coding.feature", Status: "pending", Dependencies: nil},
+			"2": {ID: "2", Title: "Task with missing dep", Type: "coding.feature", Status: "pending", Dependencies: []string{"1", "999"}},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		orig := listIsTerminalFunc
+		listIsTerminalFunc = func() bool { return false }
+		defer func() { listIsTerminalFunc = orig }()
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "[missing: 999]") {
+			t.Errorf("output should contain [missing: 999] marker, got:\n%s", output)
+		}
+	})
+}
+
+func TestListCmd_PipeModeColorSuppression(t *testing.T) {
+	t.Run("pipe mode suppresses color for all markers", func(t *testing.T) {
+		// Create tasks with both cycle and missing deps
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Self-cycle", Type: "coding.feature", Status: "pending", Dependencies: []string{"1"}},
+			"2": {ID: "2", Title: "Missing dep", Type: "coding.feature", Status: "pending", Dependencies: []string{"404"}},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		orig := listIsTerminalFunc
+		listIsTerminalFunc = func() bool { return false }
+		defer func() { listIsTerminalFunc = orig }()
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		if strings.Contains(output, "\033[") {
+			t.Errorf("pipe mode output should not contain ANSI codes, got:\n%s", output)
+		}
+		if !strings.Contains(output, "[cycle]") {
+			t.Errorf("output should contain [cycle], got:\n%s", output)
+		}
+		if !strings.Contains(output, "[missing: 404]") {
+			t.Errorf("output should contain [missing: 404], got:\n%s", output)
+		}
+	})
+}
+
+func TestListCmd_ColumnAlignmentWithMarkers(t *testing.T) {
+	t.Run("column alignment accounts for marker width", func(t *testing.T) {
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Task with missing dep", Type: "coding.feature", Status: "pending", Dependencies: []string{"999"}},
+			"2": {ID: "2", Title: "Normal task", Type: "coding.feature", Status: "completed"},
+		}
+		_ = setupFullProject(t, SetupOpts{Tasks: tasks})
+
+		orig := listIsTerminalFunc
+		listIsTerminalFunc = func() bool { return false }
+		defer func() { listIsTerminalFunc = orig }()
+
+		output := captureStdout(func() {
+			err := runList(nil, []string{})
+			if err != nil {
+				t.Fatalf("runList returned error: %v", err)
+			}
+		})
+
+		// Find the separator line to determine ID column width
+		lines := strings.Split(output, "\n")
+		var sepLine string
+		for _, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), "---") {
+				sepLine = line
+				break
+			}
+		}
+		if sepLine == "" {
+			t.Fatalf("separator line not found in output:\n%s", output)
+		}
+
+		segments := strings.Split(sepLine, "  ")
+		idDashCount := len(strings.TrimRight(segments[0], " "))
+
+		// "1 [missing: 999]" = 16 chars, ID column must be at least 16 wide
+		if idDashCount < 16 {
+			t.Errorf("ID column is %d chars wide but marker text needs 16 -- columns misalign\nseparator: %q\noutput:\n%s",
+				idDashCount, sepLine, output)
+		}
+	})
 }
