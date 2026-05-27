@@ -1,6 +1,6 @@
 ---
 name: test-pipeline-consistency-audit
-status: Draft
+status: Approved
 created: 2026-05-27
 supersedes: surface-test-type-model (recipe 命名部分：`test-<surface-type>-<scope>` → `<surface-key>-test`)
 ---
