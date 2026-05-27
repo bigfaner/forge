@@ -80,7 +80,28 @@ IF `rules/ui-placement.md` loaded, apply its UI Dependency Layer rules.
 
 **Dependencies**: same phase = parallel (unless conflicting). Cross-phase = depend on gate or last task. IF `rules/ui-placement.md` loaded, apply UI dependency principle.
 
-**Granularity**: 1-4h per task. Merge <1h. Split >4h by sub-responsibility.
+**Task Splitting Rules** (applied in order of priority):
+
+1. **Independently verifiable standard**: A design element maps to one task if all its outcomes can be verified together in a single review pass. If outcomes require separate verification contexts (different files, different test suites, different reviewers), split into separate tasks.
+2. **Multi-verb detection**: Task descriptions with connectors linking independent actions (e.g., "rename + flatten + confirm", "extract + migrate + validate") should be split by functional boundary. Each verb phrase becomes a separate task if it targets a different concern.
+3. **AC ceiling**: If a single design element produces >6 Acceptance Criteria, the scope is too large — split further by functional boundary until each task has ≤6 AC.
+
+<HARD-RULE>
+Maximum 6 Acceptance Criteria per task. If a task has >6 AC, its scope is too large — split further by functional boundary.
+</HARD-RULE>
+
+**Complexity判定** (assigned at task generation time):
+
+Default heuristic based on static metrics:
+- **low**: AC ≤ 3 AND no Hard Rules AND Reference Files ≤ 1
+- **high**: AC > 6 OR has Hard Rules
+- **medium**: everything else
+
+LLM judgment override: 如果静态指标与认知判断冲突（如 AC≤3 但涉及多文件架构变更），LLM 可根据认知判断覆盖默认 complexity 等级。Override 时须在 task Implementation Notes 中记录理由。
+
+**Note**: breakdown-tasks tasks may have naturally finer AC granularity due to tech-design decomposition; the same thresholds apply but LLM override is expected to be more common.
+
+Set the `complexity` field in task frontmatter accordingly.
 
 ## Step 4: Create Task Files
 
@@ -111,31 +132,36 @@ Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user
 
 **Hard Rules**: fill `{{HARD_RULES}}` only for critical constraints. Leave empty for normal tasks.
 
-#### Reference Files Population (Non-UI Tasks)
+#### Reference Files Generation (Non-UI Tasks)
 
-For each non-UI business task, populate `## Reference Files` with precise tech-design.md section references using this heuristic strategy:
+For each non-UI business task, populate `## Reference Files` with inline precise references instead of tech-design.md section pointers.
+
+**Inline format**: Each Reference File entry specifies a concrete file path and the specific change or requirement relevant to this task:
+```
+- <file-path>: <specific change description or requirement excerpt>
+```
 
 **Extraction heuristic** (for each task):
-
 1. Extract file paths from the task's `## Affected Files` section
 2. Search tech-design.md for sections that mention those file paths (scan headings and body text)
-3. Also find architecture decision sections whose topic matches the task description keywords
-4. Merge, deduplicate, keep the 2-5 most relevant sections
+3. For each relevant section, extract the specific requirement or change description, not just the section title
+4. Merge, deduplicate, keep the 2-5 most relevant entries
 
-**Format** (one entry per line):
-
+**Source traceability**: Each inline entry should include a source trace in parentheses indicating where in the tech design this requirement originates:
 ```
-`design/tech-design.md#Section-Title` — brief description of what the section defines
+- <file-path>: <specific change description> (source: design/tech-design.md#Section-Title)
 ```
 
-**Fallback**: for tasks without clear tech-design.md matches, reference the most relevant architecture overview section.
+**Maximum 5 entries per task**: Keep Reference Files concise. Each entry should be 1-2 lines.
+
+**Fallback**: for tasks without clear tech-design.md matches, include the most relevant architecture overview section with a description of what it defines.
 
 **Checklist** (verify before finalizing each task):
-- Every generated business task has >=1 design-level Reference File entry
-- Each entry uses section-level precision (not bare file paths without anchors)
+- Every generated business task has >=1 inline Reference File entry
+- Each entry uses inline format with source traceability
 - UI tasks use `rules/ui-placement.md` requirements instead — no overlap
 
-**Note**: This is heuristic guidance for LLM execution, not a deterministic algorithm. The agent performing breakdown-tasks uses judgment to select the most relevant sections.
+**Note**: breakdown-tasks reads from tech-design (not proposal), so Reference Files inline content will differ from quick-tasks in practice, but the generation rule format is identical.
 
 ### Surface-Key/Type Assignment
 See `rules/scope-to-surface-key.md` for the full resolution procedure. Uses a two-layer strategy:
