@@ -10,11 +10,11 @@ import (
 	"time"
 
 	"forge-cli/internal/cmd/base"
-	"forge-cli/pkg/e2eprobe"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/serverprobe"
 	"forge-cli/pkg/task"
 	tmpl "forge-cli/pkg/template"
 	"forge-cli/pkg/testrunner"
@@ -219,7 +219,7 @@ func runTestRegression(projectRoot, featureSlug string) error {
 }
 
 // runTestRegressionLegacy is the pre-surface-aware test regression logic.
-// Runs test-setup (optional), e2eprobe health check, then just test.
+// Runs test-setup (optional), serverprobe health check, then just test.
 func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	// Optional setup step — skip regression on failure.
 	if just.HasRecipe(projectRoot, "test-setup") {
@@ -240,7 +240,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	}
 
 	// Health check — skip regression if servers aren't ready.
-	if !e2eprobe.ProbeServers(projectRoot, "") {
+	if !serverprobe.ProbeServers(projectRoot, "") {
 		fmt.Fprintln(os.Stderr, "WARNING: server health check failed; skipping test regression")
 		fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test")
 		return nil

@@ -1,4 +1,4 @@
-package e2eprobe
+package serverprobe
 
 import (
 	"net/http"

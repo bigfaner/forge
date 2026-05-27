@@ -3,23 +3,6 @@
   "proposal": "docs/proposals/test-pipeline-consistency-audit/proposal.md",
   "created": "2026-05-27",
   "tasks": {
-    "1-rename-constants-paths": {
-      "id": "1",
-      "title": "重命名 E2E 常量为 surface-neutral 名称并扁平化 tests/ 目录",
-      "priority": "P0",
-      "estimatedTime": "2h",
-      "dependencies": [
-        "disc-1"
-      ],
-      "status": "pending",
-      "file": "1-rename-constants-paths.md",
-      "record": "records/1-rename-constants-paths.md",
-      "breaking": true,
-      "surface-key": ".",
-      "surface-type": "cli",
-      "type": "coding.refactor",
-      "blockedReason": "unit-test failed: TestDetectModeFromPath (Windows backslash and symlink cases) in forge-cli/internal/cmd/config_test.go — pre-existing failures unrelated to task 1's E2E constant rename scope"
-    },
     "10-fix-architecture-md": {
       "id": "10",
       "title": "修复 ARCHITECTURE.md 与实际代码的对齐",
@@ -60,15 +43,43 @@
       "record": "records/12-update-surface-test-type-model.md",
       "type": "doc"
     },
+    "1a-constants-paths": {
+      "id": "1a",
+      "title": "重命名 E2E 常量和路径函数为 surface-neutral 名称",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1a-constants-paths.md",
+      "record": "records/1a-constants-paths.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor"
+    },
+    "1b-flatten-test-dir": {
+      "id": "1b",
+      "title": "扁平化 tests/ 物理目录结构",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1a"
+      ],
+      "status": "pending",
+      "file": "1b-flatten-test-dir.md",
+      "record": "records/1b-flatten-test-dir.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
     "2-rename-e2eprobe-serverprobe": {
       "id": "2",
       "title": "重命名 e2eprobe 包为 serverprobe",
       "priority": "P0",
       "estimatedTime": "1h",
       "dependencies": [
-        "1"
+        "1a"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-rename-e2eprobe-serverprobe.md",
       "record": "records/2-rename-e2eprobe-serverprobe.md",
       "breaking": true,
@@ -82,7 +93,7 @@
       "priority": "P0",
       "estimatedTime": "2h",
       "dependencies": [
-        "1",
+        "1a",
         "2"
       ],
       "status": "pending",
@@ -99,7 +110,7 @@
       "priority": "P0",
       "estimatedTime": "2h",
       "dependencies": [
-        "1"
+        "1a"
       ],
       "status": "pending",
       "file": "4-cleanup-dead-code-types.md",
@@ -178,7 +189,7 @@
       "status": "completed",
       "file": "disc-1.md",
       "record": "records/disc-1.md",
-      "sourceTaskID": "1",
+      "sourceTaskID": "1a",
       "type": "coding.fix"
     },
     "quick-drift-detection": {

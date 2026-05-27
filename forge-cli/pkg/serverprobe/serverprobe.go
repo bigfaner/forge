@@ -1,14 +1,14 @@
-// Package e2eprobe provides end-to-end server health probing.
-package e2eprobe
+// Package serverprobe provides server health probing for functional and e2e tests.
+package serverprobe
 
 import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
+	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
 )
 
@@ -31,7 +31,7 @@ func ProbeServers(projectRoot, path string) bool {
 		path = "/health"
 	}
 
-	configPath := filepath.Join(projectRoot, "tests", "config.yaml")
+	configPath := feature.GetTestConfigPath(projectRoot)
 	if !just.FileExists(configPath) {
 		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
 		return true
