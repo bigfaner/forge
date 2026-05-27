@@ -1,6 +1,7 @@
 TASK_ID: {{TASK_ID}}
 TASK_FILE: {{TASK_FILE}}
 SURFACE_KEY: {{SURFACE_KEY}}
+COMPLEXITY: {{COMPLEXITY}}
 {{PHASE_SUMMARY}}
 
 <!--
@@ -60,6 +61,7 @@ If the task file contains ## Hard Rules with MUST/MUST NOT directives:
 - Do not rationalize bypassing a Hard Rule based on "I know a better way"
 </CRITICAL>
 
+<!-- IF NOT_LOW -->
 ### Step 1.5: Spec-Code Conflict Scan
 
 For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.
@@ -73,10 +75,11 @@ SPEC-CODE SCAN:
 - Naming conventions: [scanned | N/A] — [findings or "none found"]
 
 For each finding, output:
-  [spec §section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
+  [spec section: "key requirement"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]
     - If DIFFERS: describe the specific difference and state "WILL FOLLOW SPEC"
 
 If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
+<!-- END_IF -->
 
 ### Step 2: TDD Implementation
 

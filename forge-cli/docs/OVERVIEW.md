@@ -221,6 +221,7 @@ type Task struct {
     Type          string   `json:"type,omitempty"`          // Task execution type; required after migration
     BlockedReason string   `json:"blockedReason,omitempty"` // Why this task entered blocked state; written by run-tasks when task prompt fails
     Coverage      *int     `json:"coverage,omitempty"`      // Per-task coverage override from frontmatter; nil = use global default
+    Complexity    string   `json:"complexity,omitempty"`    // Task complexity level: "low", "medium", or "high"; empty defaults to "medium"
     Scope         string   `json:"scope,omitempty"`         // Legacy scope field (deprecated, retained for migration detection)
 }
 ```

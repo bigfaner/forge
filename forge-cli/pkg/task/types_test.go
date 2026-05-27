@@ -522,6 +522,86 @@ func TestTaskBlockedReasonFieldSerialization(t *testing.T) {
 	})
 }
 
+func TestTaskComplexityFieldSerialization(t *testing.T) {
+	t.Run("complexity field serializes when set", func(t *testing.T) {
+		task := Task{
+			ID:         "1.1",
+			Title:      "Complex Task",
+			Status:     "pending",
+			File:       "tasks/1.1.md",
+			Complexity: "low",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if !strings.Contains(got, `"complexity":"low"`) {
+			t.Errorf("JSON = %s, want to contain %q", got, `"complexity":"low"`)
+		}
+	})
+
+	t.Run("complexity field omitted when empty", func(t *testing.T) {
+		task := Task{
+			ID:     "1.1",
+			Title:  "Task Without Complexity",
+			Status: "pending",
+			File:   "tasks/1.1.md",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		got := string(data)
+		if strings.Contains(got, `"complexity"`) {
+			t.Errorf("JSON = %s, should NOT contain complexity field when empty", got)
+		}
+	})
+
+	t.Run("complexity field deserializes from JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"High Task","complexity":"high","status":"pending","file":"tasks/1.1.md"}`
+		var task Task
+		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if task.Complexity != "high" {
+			t.Errorf("Complexity = %q, want %q", task.Complexity, "high")
+		}
+	})
+
+	t.Run("complexity defaults to empty when missing in JSON", func(t *testing.T) {
+		jsonStr := `{"id":"1.1","title":"No Complexity Task","status":"pending","file":"tasks/1.1.md"}`
+		var task Task
+		if err := json.Unmarshal([]byte(jsonStr), &task); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if task.Complexity != "" {
+			t.Errorf("Complexity = %q, want empty string when missing", task.Complexity)
+		}
+	})
+
+	t.Run("complexity roundtrip preserves value", func(t *testing.T) {
+		task := Task{
+			ID:         "2.1",
+			Title:      "Medium Task",
+			Status:     "pending",
+			File:       "tasks/2.1.md",
+			Complexity: "medium",
+		}
+		data, err := json.Marshal(task)
+		if err != nil {
+			t.Fatalf("json.Marshal failed: %v", err)
+		}
+		var unmarshaled Task
+		if err := json.Unmarshal(data, &unmarshaled); err != nil {
+			t.Fatalf("json.Unmarshal failed: %v", err)
+		}
+		if unmarshaled.Complexity != task.Complexity {
+			t.Errorf("Complexity = %q, want %q", unmarshaled.Complexity, task.Complexity)
+		}
+	})
+}
+
 func TestTaskStateTypeFieldSerialization(t *testing.T) {
 	t.Run("TaskState type field serializes when set", func(t *testing.T) {
 		state := &TaskState{

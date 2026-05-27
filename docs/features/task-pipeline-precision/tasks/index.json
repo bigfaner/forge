@@ -8,7 +8,7 @@
       "title": "Add complexity data pipeline and conditional template rendering",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-complexity-data-pipeline.md",
       "record": "records/1-complexity-data-pipeline.md",
       "breaking": true,

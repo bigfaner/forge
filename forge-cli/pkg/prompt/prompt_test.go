@@ -1691,3 +1691,253 @@ func TestDocReviewPromptTemplate_Step1ExplicitNoScanDirective(t *testing.T) {
 		t.Error("doc-review prompt Step 1 should explicitly instruct NOT to scan tasks directory")
 	}
 }
+
+// --- Complexity field tests ---
+
+func TestSynthesize_ComplexityPlaceholder_DefaultsToMedium(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Task without complexity",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingEnhancement,
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Task without complexity field should default to "medium"
+	if !strings.Contains(result, "medium") {
+		t.Error("task without complexity should default to 'medium'")
+	}
+	if strings.Contains(result, "{{COMPLEXITY}}") {
+		t.Error("result should not contain unreplaced {{COMPLEXITY}} placeholder")
+	}
+}
+
+func TestSynthesize_ComplexityPlaceholder_ExplicitLow(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:         "1.1",
+			Title:      "Simple task",
+			Status:     "pending",
+			File:       "1.1.md",
+			Record:     "records/1.1.md",
+			Type:       task.TypeCodingEnhancement,
+			Complexity: "low",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "low") {
+		t.Error("task with complexity=low should produce 'low' in output")
+	}
+	if strings.Contains(result, "{{COMPLEXITY}}") {
+		t.Error("result should not contain unreplaced {{COMPLEXITY}} placeholder")
+	}
+}
+
+func TestSynthesize_ComplexityPlaceholder_ExplicitHigh(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:         "1.1",
+			Title:      "Complex task",
+			Status:     "pending",
+			File:       "1.1.md",
+			Record:     "records/1.1.md",
+			Type:       task.TypeCodingEnhancement,
+			Complexity: "high",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "high") {
+		t.Error("task with complexity=high should produce 'high' in output")
+	}
+}
+
+// --- cleanTemplateOutput conditional paragraph tests ---
+
+func TestCleanTemplateOutput_ConditionalParagraph_LowRemovesBlock(t *testing.T) {
+	input := `Step 1: Read Task
+
+<!-- IF NOT_LOW -->
+### Step 1.5: Spec-Code Conflict Scan
+
+For each Reference File loaded in Step 1, scan existing code.
+<!-- END_IF -->
+
+### Step 2: TDD Implementation`
+
+	result := cleanTemplateOutput(input, "low")
+
+	if strings.Contains(result, "Step 1.5") {
+		t.Error("complexity=low should remove the Step 1.5 conditional block")
+	}
+	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
+		t.Error("complexity=low should remove the IF NOT_LOW marker")
+	}
+	if strings.Contains(result, "<!-- END_IF -->") {
+		t.Error("complexity=low should remove the END_IF marker")
+	}
+	if !strings.Contains(result, "Step 1: Read Task") {
+		t.Error("Step 1 should be preserved")
+	}
+	if !strings.Contains(result, "Step 2: TDD Implementation") {
+		t.Error("Step 2 should be preserved")
+	}
+}
+
+func TestCleanTemplateOutput_ConditionalParagraph_MediumKeepsContent(t *testing.T) {
+	input := `Step 1: Read Task
+
+<!-- IF NOT_LOW -->
+### Step 1.5: Spec-Code Conflict Scan
+
+For each Reference File loaded in Step 1, scan existing code.
+<!-- END_IF -->
+
+### Step 2: TDD Implementation`
+
+	result := cleanTemplateOutput(input, "medium")
+
+	if !strings.Contains(result, "Step 1.5") {
+		t.Error("complexity=medium should keep the Step 1.5 content")
+	}
+	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
+		t.Error("complexity=medium should strip the IF NOT_LOW marker")
+	}
+	if strings.Contains(result, "<!-- END_IF -->") {
+		t.Error("complexity=medium should strip the END_IF marker")
+	}
+}
+
+func TestCleanTemplateOutput_ConditionalParagraph_HighKeepsContent(t *testing.T) {
+	input := `Step 1: Read Task
+
+<!-- IF NOT_LOW -->
+### Step 1.5: Spec-Code Conflict Scan
+<!-- END_IF -->
+
+### Step 2: TDD Implementation`
+
+	result := cleanTemplateOutput(input, "high")
+
+	if !strings.Contains(result, "Step 1.5") {
+		t.Error("complexity=high should keep the Step 1.5 content")
+	}
+	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
+		t.Error("complexity=high should strip the IF NOT_LOW marker")
+	}
+}
+
+func TestCleanTemplateOutput_ConditionalParagraph_NoMarkersUnchanged(t *testing.T) {
+	input := `Step 1: Read Task
+
+### Step 2: TDD Implementation`
+
+	result := cleanTemplateOutput(input, "low")
+
+	if result != input {
+		t.Errorf("template without markers should be unchanged, got:\n%s", result)
+	}
+}
+
+func TestCleanTemplateOutput_ConditionalParagraph_MultipleBlocks(t *testing.T) {
+	input := `<!-- IF NOT_LOW -->Block A<!-- END_IF -->
+Kept content
+<!-- IF NOT_LOW -->Block B<!-- END_IF -->`
+
+	result := cleanTemplateOutput(input, "low")
+
+	if strings.Contains(result, "Block A") {
+		t.Error("complexity=low should remove Block A")
+	}
+	if strings.Contains(result, "Block B") {
+		t.Error("complexity=low should remove Block B")
+	}
+	if !strings.Contains(result, "Kept content") {
+		t.Error("non-conditional content should be preserved")
+	}
+}
+
+func TestSynthesize_LowComplexity_SkipsStep15(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:         "1.1",
+			Title:      "Low complexity task",
+			Status:     "pending",
+			File:       "1.1.md",
+			Record:     "records/1.1.md",
+			Type:       task.TypeCodingEnhancement,
+			Complexity: "low",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Step 1.5 section should be removed for low complexity
+	if strings.Contains(result, "Step 1.5") {
+		t.Error("complexity=low should not contain Step 1.5 spec-code scan section")
+	}
+	// The conditional markers should be fully removed
+	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
+		t.Error("complexity=low should not contain IF NOT_LOW marker")
+	}
+	if strings.Contains(result, "<!-- END_IF -->") {
+		t.Error("complexity=low should not contain END_IF marker")
+	}
+	// Step 2 should still be present
+	if !strings.Contains(result, "Step 2") {
+		t.Error("Step 2 should be preserved for low complexity")
+	}
+}
+
+func TestSynthesize_MediumComplexity_IncludesStep15(t *testing.T) {
+	dir := t.TempDir()
+	tasks := map[string]task.Task{
+		"1.1": {
+			ID:     "1.1",
+			Title:  "Medium complexity task",
+			Status: "pending",
+			File:   "1.1.md",
+			Record: "records/1.1.md",
+			Type:   task.TypeCodingEnhancement,
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{ProjectRoot: dir, FeatureSlug: "test-feature", TaskID: "1.1"}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Default (medium) should include Step 1.5
+	if !strings.Contains(result, "Step 1.5") {
+		t.Error("complexity=medium (default) should include Step 1.5 spec-code scan section")
+	}
+}

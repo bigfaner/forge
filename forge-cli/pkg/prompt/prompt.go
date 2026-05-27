@@ -110,6 +110,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 //	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
 //	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
 //	{{TEST_TYPE_ARG}}   — " --type <surfaceType>" or empty (for per-type gen-scripts)
+//	{{COMPLEXITY}}      — task complexity level ("low", "medium", or "high"; defaults to "medium")
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
@@ -155,7 +156,14 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	result = strings.ReplaceAll(result, "{{COVERAGE_STRATEGY}}", coverageStrategy)
 	result = strings.ReplaceAll(result, "{{COVERAGE_TARGET}}", coverageTarget)
 
-	result = cleanTemplateOutput(result)
+	// Inject complexity field (defaults to "medium" when empty for backward compatibility).
+	complexity := t.Complexity
+	if complexity == "" {
+		complexity = "medium"
+	}
+	result = strings.ReplaceAll(result, "{{COMPLEXITY}}", complexity)
+
+	result = cleanTemplateOutput(result, complexity)
 
 	return result, nil
 }
@@ -241,7 +249,32 @@ func InferType(id string) string {
 //     (e.g. "If “ is non-empty, ...") are removed entirely.
 //  3. Trailing whitespace on "just <cmd> " lines is stripped.
 //  4. Collapsed consecutive blank lines are reduced to a single blank line.
-func cleanTemplateOutput(s string) string {
+//  5. Conditional paragraphs wrapped in <!-- IF NOT_LOW -->...<!-- END_IF --> markers
+//     are removed when complexity is "low". This allows templates to include sections
+//     (e.g., Step 1.5 spec-code scan) that are conditionally omitted for low-complexity tasks.
+//     The marker format is: <!-- IF NOT_LOW --> before the paragraph and <!-- END_IF --> after it.
+func cleanTemplateOutput(s string, complexity string) string {
+	// Process conditional paragraph blocks first, before line-level cleanup.
+	// This handles <!-- IF NOT_LOW -->...<!-- END_IF --> markers.
+	if complexity == "low" {
+		for {
+			start := strings.Index(s, "<!-- IF NOT_LOW -->")
+			if start == -1 {
+				break
+			}
+			end := strings.Index(s, "<!-- END_IF -->")
+			if end == -1 {
+				break
+			}
+			// Remove the entire block from start marker to end of END_IF marker
+			s = s[:start] + s[end+len("<!-- END_IF -->"):]
+		}
+	} else {
+		// For non-low complexity, just strip the markers themselves (keep content)
+		s = strings.ReplaceAll(s, "<!-- IF NOT_LOW -->", "")
+		s = strings.ReplaceAll(s, "<!-- END_IF -->", "")
+	}
+
 	lines := strings.Split(s, "\n")
 	var out []string
 

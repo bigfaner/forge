@@ -246,6 +246,10 @@ type Task struct {
 	// nil means use the global coverage config default for the task type.
 	// Non-nil (including 0) means the task has an explicit coverage target.
 	Coverage *int `json:"coverage,omitempty"`
+	// Complexity is the task complexity level: "low", "medium", or "high".
+	// Empty value defaults to "medium" at runtime (backward compatible).
+	// Set from task frontmatter during BuildIndex.
+	Complexity string `json:"complexity,omitempty"`
 	// Scope is the legacy scope field (deprecated, replaced by SurfaceKey/SurfaceType).
 	// Retained solely for migration detection via CheckLegacyScope.
 	// Loaded from both index.json (json tag) and task frontmatter (yaml tag).

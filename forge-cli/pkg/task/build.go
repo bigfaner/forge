@@ -131,6 +131,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			MainSession:   fm.MainSession,
 			Type:          taskType,
 			Coverage:      fm.Coverage,
+			Complexity:    fm.Complexity,
 		}
 
 		// Merge with existing
@@ -303,6 +304,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 				MainSession:   fm.MainSession,
 				Type:          taskType,
 				Coverage:      fm.Coverage,
+				Complexity:    fm.Complexity,
 			}
 			// Preserve runtime state if task already exists in index
 			if existing, found := index.ByID(fm.ID); found {

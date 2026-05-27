@@ -244,6 +244,75 @@ Body`
 	})
 }
 
+func TestParseFrontmatter_ComplexityField(t *testing.T) {
+	t.Run("complexity present", func(t *testing.T) {
+		input := `---
+id: "1"
+title: "Task"
+type: "coding.feature"
+complexity: low
+---
+
+Body`
+		fm, _, err := ParseFrontmatter([]byte(input))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if fm.Complexity != "low" {
+			t.Errorf("Complexity = %q, want %q", fm.Complexity, "low")
+		}
+	})
+
+	t.Run("complexity absent is empty", func(t *testing.T) {
+		input := `---
+id: "1"
+title: "Task"
+type: "coding.feature"
+---
+
+Body`
+		fm, _, err := ParseFrontmatter([]byte(input))
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if fm.Complexity != "" {
+			t.Errorf("expected Complexity empty, got %q", fm.Complexity)
+		}
+	})
+
+	t.Run("complexity roundtrip", func(t *testing.T) {
+		dir := t.TempDir()
+		path := dir + "/roundtrip.md"
+
+		original := FrontmatterData{
+			ID:         "2.1",
+			Title:      "Complex Task",
+			Priority:   "P1",
+			Type:       "coding.feature",
+			Complexity: "high",
+		}
+		body := []byte("\n## Description\n\nImplement the feature.\n")
+
+		if err := WriteFrontmatter(path, original, body); err != nil {
+			t.Fatalf("WriteFrontmatter failed: %v", err)
+		}
+
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("ReadFile failed: %v", err)
+		}
+
+		parsed, _, err := ParseFrontmatter(data)
+		if err != nil {
+			t.Fatalf("ParseFrontmatter failed: %v", err)
+		}
+
+		if parsed.Complexity != original.Complexity {
+			t.Errorf("Complexity roundtrip = %q, want %q", parsed.Complexity, original.Complexity)
+		}
+	})
+}
+
 func TestParseFrontmatter(t *testing.T) {
 	tests := []struct {
 		name      string

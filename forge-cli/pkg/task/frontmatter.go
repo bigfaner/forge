@@ -22,7 +22,10 @@ type FrontmatterData struct {
 	MainSession   bool     `yaml:"mainSession"`
 	Type          string   `yaml:"type"`
 	Coverage      *int     `yaml:"coverage"`
-	Scope         string   `yaml:"scope"`
+	// Complexity is the task complexity level: "low", "medium", or "high".
+	// Empty value defaults to "medium" at runtime.
+	Complexity string `yaml:"complexity,omitempty"`
+	Scope      string `yaml:"scope"`
 }
 
 // ParseFrontmatter extracts YAML frontmatter from a markdown file.
