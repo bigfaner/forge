@@ -36,3 +36,17 @@ teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。
 | 标签 | 匹配规则 |
 |------|---------|
 | `@tui` | 精确匹配 |
+
+## Per-Journey 执行
+
+TUI surface 的 test 步骤按 journey 逐个执行：
+
+```
+for each journey in JOURNEYS:
+    just tui-test <journey>
+    record results
+    on failure: just tui-teardown, exit
+just tui-teardown
+```
+
+测试配方调用格式为 `just tui-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。

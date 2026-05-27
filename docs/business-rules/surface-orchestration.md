@@ -11,7 +11,7 @@ _Source: feature/surface-aware-justfile_
 
 ### BIZ-surface-orchestration-001: Surface Type Fixed Enumeration
 
-**Rule**: Forge recognizes exactly 5 surface types: `web`, `api`, `cli`, `tui`, `mobile`. Surface-type determines the orchestration strategy (e.g., web/api require dev->probe->test->teardown; cli/tui use build->dev->test). Surface-key names are user-defined in `.forge/config.yaml` surfaces field; surface-type values are constrained to this fixed set.
+**Rule**: Forge recognizes exactly 5 surface types: `web`, `api`, `cli`, `tui`, `mobile`. Surface-type determines the orchestration strategy (e.g., web/api/mobile require dev->probe->[per-journey test]->teardown; cli/tui use [per-journey test]->teardown). Surface-key names are user-defined in `.forge/config.yaml` surfaces field; surface-type values are constrained to this fixed set.
 **Context**: Establishes the type-system that maps user-defined surface keys to orchestration strategies. Without fixed types, skills cannot determine the correct execution sequence.
 **Source**: feature/surface-aware-justfile BIZ-001
 
@@ -19,25 +19,25 @@ _Source: feature/surface-aware-justfile_
 
 ### BIZ-surface-orchestration-002: Surface Orchestration Sequence Table
 
-**Rule**: Each surface type has a fixed orchestration sequence:
+**Rule**: Each surface type has a fixed orchestration sequence with per-journey test loops:
 
 | Surface | Sequence | Key Differences |
 |---------|----------|-----------------|
-| web | dev(background) -> probe -> test -> teardown | probe checks page root path |
-| api | dev(background) -> probe -> test -> teardown | probe checks /healthz |
-| cli | build -> dev -> test | no service start, no probe |
-| tui | build -> dev -> test | no service start, no probe |
-| mobile | test-setup -> dev -> test -> teardown | test-setup prepares emulator |
+| web | dev -> probe -> [per-journey test] -> teardown | probe checks page root path; dev/probe once, test loops per journey |
+| api | dev -> probe -> [per-journey test] -> teardown | probe checks /healthz; dev/probe once, test loops per journey |
+| cli | [per-journey test] -> teardown | no dev, no probe, no build; test loops per journey |
+| tui | [per-journey test] -> teardown | no dev, no probe, no build; test loops per journey |
+| mobile | dev -> probe -> [per-journey test] -> teardown | dev/probe once, test loops per journey |
 
-Dev server failures MUST NOT proceed to subsequent steps -- immediately teardown and exit.
-**Context**: Defines the complete execution sequence per surface type, consumed by run-tests skill via surface rule files.
+Dev server failures MUST NOT proceed to subsequent steps -- immediately teardown and exit. Test recipe format is `just <surface>-test <journey>` where `<journey>` is a directory name from `docs/features/<slug>/testing/`.
+**Context**: Defines the complete execution sequence per surface type, consumed by run-tests skill via surface rule files. Journey isolation means dev/probe execute once, then test runs per-journey sequentially, then teardown once.
 **Source**: feature/surface-aware-justfile BIZ-002
 
 ## Probe Behavior
 
 ### BIZ-surface-orchestration-003: Probe Retry Parameters
 
-**Rule**: Probe checks use unified retry parameters: max 3 retries, 30-second interval between retries, 90-second total timeout (max-retries x interval). Failure behavior: teardown + abort. Log format: `[probe] [retry <current>/<max>] <url> -- <reason>`.
+**Rule**: Probe checks use unified retry parameters: max 3 retries, 5-second interval between retries. Failure behavior: teardown + abort. All 3 retries failing is treated as retryable failure (exit code 1).
 **Context**: Ensures consistent probe behavior across all surface types that require health checks (web, api, mobile).
 **Source**: feature/surface-aware-justfile BIZ-003
 
