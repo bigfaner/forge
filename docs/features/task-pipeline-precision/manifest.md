@@ -1,7 +1,7 @@
 ---
 feature: "task-pipeline-precision"
 created: "2026-05-27"
-status: tasks
+status: completed
 mode: quick
 ---
 
