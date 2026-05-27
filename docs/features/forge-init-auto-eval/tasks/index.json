@@ -57,7 +57,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-config-test-update.md",
       "record": "records/4-config-test-update.md",
       "surface-key": ".",
