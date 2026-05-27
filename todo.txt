@@ -245,3 +245,7 @@ internal/cmd/
 190、检查justfile中的命令是否对应最新的实现，并且正确运行just test 和just unit-test。doing
 191、forge task add 的--template参数更改为--type，通过type来查找模板。 done
 192、改动现有功能的提案，要列举受影响的点。doing
+193、forge init 支持auto.eval.*。除了auto.eval.proposal.*之外，其它只支持full模式，不支持quick模式。doing
+194、优化cli内置的Claude.md模板，要对齐forge cli现状。
+195、forge task list 按照依赖顺序从上到下依次排列。DAG图。doing
+196、slim 任务prompt模板，去掉冗余的描述信息。doing
