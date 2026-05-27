@@ -43,9 +43,9 @@ Combine all reconnaissance into a single Fact Table with source citations:
 |-----|-------|--------|
 | CLI_TASK_CLAIM_OUTPUT | claimed task <task_id> | internal/cmd/claim.go:42 |
 | CLI_FEATURE_CREATE_OUTPUT | Feature <slug> created successfully | internal/cmd/feature.go:45 |
-| TEST_FRAMEWORK | go-testing | tests/e2e/step1_test.go (import analysis) |
-| TEST_ASSERTION_LIB | testify/assert | tests/e2e/step1_test.go:3 (import) |
-| TEST_BUILD_TAG | //go:build e2e | tests/e2e/step1_test.go:1 |
+| TEST_FRAMEWORK | go-testing | tests/<journey>/step1_test.go (import analysis) |
+| TEST_ASSERTION_LIB | testify/assert | tests/<journey>/step1_test.go:3 (import) |
+| TEST_BUILD_TAG | //go:build e2e | tests/<journey>/step1_test.go:1 |
 ```
 
 <HARD-RULE>

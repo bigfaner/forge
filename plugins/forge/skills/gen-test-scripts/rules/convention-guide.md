@@ -95,7 +95,7 @@ Users can add these sections to improve generation quality. See [Growth Path](#g
 
 | Section | Purpose |
 |---------|---------|
-| Import Patterns | Standard import blocks for e2e tests |
+| Import Patterns | Standard import blocks for test files |
 | Code Style | Test naming, table-driven patterns, traceability conventions |
 | Anti-patterns | Framework-specific forbidden patterns with replacements |
 | Helpers | Common helper functions in the project's test infrastructure |

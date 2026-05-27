@@ -5,7 +5,7 @@ description: Core concepts of the Journey-Contract test model, directory convent
 
 # Journey-Contract Test Model
 
-Forge 的 e2e 测试管道以用户工作流（Journey）为组织单元，通过 Contract 六维声明定义预期行为，由 Tag-Based Promotion 管理测试生命周期。
+Forge 测试管道以用户工作流（Journey）为组织单元，通过 Contract 六维声明定义预期行为，由 Tag-Based Promotion 管理测试生命周期。
 
 ## Core Concepts
 
