@@ -81,6 +81,8 @@ For each finding, output:
 If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions as guide" and skip the per-dimension checklist.
 <!-- END_IF -->
 
+在修改任何文件前，先用 Grep/Glob 搜索所有需要修改的位置，收集完整清单后再执行修改。禁止边搜边改。
+
 ### Step 2: TDD Implementation
 
 Apply SPEC-CODE SCAN results — for any DIFFERS finding, follow spec over existing code. Reference Files from Step 1 are authoritative.
