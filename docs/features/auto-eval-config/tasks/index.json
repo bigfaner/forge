@@ -1,0 +1,113 @@
+{
+  "feature": "auto-eval-config",
+  "proposal": "docs/proposals/auto-eval-config/proposal.md",
+  "created": "2026-05-26",
+  "tasks": {
+    "1-rewrite-config-routing": {
+      "id": "1",
+      "title": "Rewrite config key resolution with reflection",
+      "priority": "P0",
+      "estimatedTime": "2.5h",
+      "status": "completed",
+      "file": "1-rewrite-config-routing.md",
+      "record": "records/1-rewrite-config-routing.md",
+      "breaking": true,
+      "type": "coding.feature"
+    },
+    "2-generalize-parseAutoRaw-evalconfig": {
+      "id": "2",
+      "title": "Generalize parseAutoRaw and add EvalConfig struct",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-generalize-parseAutoRaw-evalconfig.md",
+      "record": "records/2-generalize-parseAutoRaw-evalconfig.md",
+      "type": "coding.feature"
+    },
+    "3-mode-detection-api": {
+      "id": "3",
+      "title": "Add mode detection API",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-mode-detection-api.md",
+      "record": "records/3-mode-detection-api.md",
+      "type": "coding.feature"
+    },
+    "4-unit-tests": {
+      "id": "4",
+      "title": "Unit tests for generic routing and eval config",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-unit-tests.md",
+      "record": "records/4-unit-tests.md",
+      "type": "coding.feature"
+    },
+    "5-skill-config-check": {
+      "id": "5",
+      "title": "Update 4 skill files with config check bash template",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "5-skill-config-check.md",
+      "record": "records/5-skill-config-check.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift",
+      "scope": "all"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review",
+      "scope": "all"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

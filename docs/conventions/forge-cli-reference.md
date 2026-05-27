@@ -75,7 +75,7 @@ domains: [cli, commands, reference, skills, task-list]
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge config get <key>` | 获取配置值（纯文本输出） | `config.go` |
+| `forge config get <key>` | 获取配置值（纯文本输出）；特殊 key `mode` 返回管道模式 `quick`/`full`/`none` | `config.go` |
 | `forge config set <key> <value>` | 设置配置值（支持 dot-notation 嵌套键） | `config.go` |
 | `forge config init` | 交互式初始化 .forge/config.yaml | `config.go` |
 

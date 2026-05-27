@@ -133,11 +133,35 @@ Use `templates/manifest-update-ui.md` for the update pattern.
 
 ## Step 7: Auto Eval UI Design
 
-Automatically invoke `/eval-ui` to evaluate `ui-design.md`. Default: 950 points / 3 rounds.
+<EXTREMELY-IMPORTANT>
+Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-Invoke via `Skill` tool: `eval-ui`
+Run the following config check sequence via Bash tool:
 
-eval-ui runs its own score → gate → revise loop and produces a report at `docs/features/<slug>/ui/eval/report.md`.
+```bash
+# Eval auto-run check (uiDesign)
+MODE=$(forge config get mode 2>/dev/null)
+if [ $? -ne 0 ]; then
+  echo "FALLBACK_ASK"
+else
+  EVAL_ENABLED=$(forge config get auto.eval.uiDesign.$MODE 2>/dev/null)
+  if [ "$EVAL_ENABLED" = "true" ]; then
+    echo "AUTO_RUN"
+  elif [ "$EVAL_ENABLED" = "false" ]; then
+    echo "SKIP"
+  else
+    echo "FALLBACK_ASK"
+  fi
+fi
+```
+
+Based on the output:
+- **AUTO_RUN** → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
+- **SKIP** → skip eval, output "eval-ui 已通过配置跳过", proceed to Step 8 (prototype generation)
+- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
+  - **Yes** → invoke `/eval-ui` via `Skill` tool
+  - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
+  - **No** → proceed to Step 8 (prototype generation)
 
 After eval-ui completes, check the final score:
 
@@ -147,6 +171,7 @@ After eval-ui completes, check the final score:
 | Score < 950 | Report to user and ask: "UI design score is {{SCORE}}/1000, below the 950 threshold. Continue revising?" — if yes, re-invoke eval-ui with additional iterations; if no, proceed to prototype anyway |
 
 The eval report is attached at `docs/features/<slug>/ui/eval/report.md` for reference.
+</EXTREMELY-IMPORTANT>
 
 ## Step 8: Generate Prototype
 
