@@ -9,6 +9,7 @@ journey: test-suite-health
 ## Given
 - Forge project source tree
 - E2E test suite in tests/e2e/ and tests/*/ directories
+- Integration tests in forge-cli/tests/ directory
 - gen-journeys skill with SKILL.md and templates
 
 ## When
@@ -18,7 +19,7 @@ journey: test-suite-health
 ## Then
 - Deleted test files and functions do not exist
 - E2E test suite compiles with `go build -tags=e2e ./...`
-- Zero unconditional t.Skip() calls
+- Zero unconditional t.Skip() calls in both tests/ and forge-cli/tests/ directories
 - Zero recursive `exec.Command("go", "test")` calls
 - No static file text-grep tests remain
 - No duplicate test files between root and features/ directories
