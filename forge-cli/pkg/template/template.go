@@ -2,15 +2,33 @@
 package template
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"io/fs"
 	"sort"
 	"strings"
+	"text/template"
 )
 
 //go:embed data/*.md
 var templateFS embed.FS
+
+// TaskTemplateData holds the data for rendering task creation templates.
+type TaskTemplateData struct {
+	ID               string // task ID
+	Title            string // task title
+	Priority         string // task priority (P0, P1, P2)
+	EstimatedTime    string // estimated time (e.g. "30min")
+	Description      string // task description / root cause
+	SourceTaskID     string // source task ID
+	SurfaceKey       string // surface key, empty string → omit field + omit Surface Inference section
+	SurfaceType      string // surface type, empty string → omit field
+	SourceFiles      string // source files (from Vars)
+	TestScript       string // test script (from Vars)
+	TestResults      string // test results path (from Vars)
+	ScopeDescription string // task-level scope description (from Vars)
+}
 
 // Defaults holds fixed field values from a template.
 // These are applied to AddTaskOpts when --type matches a template,
@@ -58,6 +76,26 @@ func GetDefaults(name string) (Defaults, error) {
 		return Defaults{}, fmt.Errorf("no defaults for template %q", name)
 	}
 	return defs, nil
+}
+
+// Execute renders the named template with the given data using text/template.
+// It uses missingkey=error to catch typos at render time.
+func Execute(name string, data TaskTemplateData) (string, error) {
+	raw, err := Get(name)
+	if err != nil {
+		return "", err
+	}
+
+	tmpl, err := template.New(name).Option("missingkey=error").Parse(raw)
+	if err != nil {
+		return "", fmt.Errorf("parse template %q: %w", name, err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("execute template %q: %w", name, err)
+	}
+	return buf.String(), nil
 }
 
 // List returns all available template names (without .md extension).

@@ -28,13 +28,13 @@ func TestGet_FixTask(t *testing.T) {
 		t.Fatalf("Get(coding.fix) error: %v", err)
 	}
 	checks := []string{
-		"{{ID}}",
-		"{{TITLE}}",
-		"{{DESCRIPTION}}",
-		"{{SOURCE_TASK_ID}}",
-		"{{SOURCE_FILES}}",
-		"{{TEST_SCRIPT}}",
-		"{{TEST_RESULTS}}",
+		"{{.ID}}",
+		"{{.Title}}",
+		"{{.Description}}",
+		"{{.SourceTaskID}}",
+		"{{.SourceFiles}}",
+		"{{.TestScript}}",
+		"{{.TestResults}}",
 		"## Reference Files",
 		"## Verification",
 		"targeted tests",

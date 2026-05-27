@@ -54,7 +54,7 @@
       "title": "迁移 pkg/template 任务创建层到 text/template",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-task-creation-template.md",
       "record": "records/4-task-creation-template.md",
       "breaking": true,
