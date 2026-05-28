@@ -23,9 +23,54 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "2-slim-prompt-templates.md",
       "record": "records/2-slim-prompt-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "2a-verify-coding-templates": {
+      "id": "2a",
+      "title": "Verify and finalize coding-* template edits",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2a-verify-coding-templates.md",
+      "record": "records/2a-verify-coding-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "2b-verify-gate-doc-templates": {
+      "id": "2b",
+      "title": "Verify and finalize gate/doc/validation template edits",
+      "priority": "P0",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2b-verify-gate-doc-templates.md",
+      "record": "records/2b-verify-gate-doc-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "2c-verify-test-templates": {
+      "id": "2c",
+      "title": "Verify and finalize test/code-quality template edits",
+      "priority": "P1",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2c-verify-test-templates.md",
+      "record": "records/2c-verify-test-templates.md",
       "surface-key": ".",
       "surface-type": "cli",
       "type": "coding.enhancement"
