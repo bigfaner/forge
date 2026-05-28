@@ -34,7 +34,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-remove-ei-redundancy.md",
       "record": "records/3-remove-ei-redundancy.md",
       "type": "doc"

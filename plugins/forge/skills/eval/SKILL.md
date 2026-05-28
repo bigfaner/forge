@@ -96,9 +96,7 @@ flowchart TD
 ## Orchestrator Iron Laws
 
 <EXTREMELY-IMPORTANT>
-- Main session owns the loop. NEVER delegate the full eval to a single agent.
-- Per iteration: score (subagent) → gate (main session) → revise (subagent).
-- Scorer and reviser are ALWAYS invoked via Agent tool, never inline.
+- Main session owns the loop: score (subagent) → gate (main session) → revise (subagent). NEVER delegate the full eval to a single agent; scorer and reviser are ALWAYS invoked via Agent tool, never inline.
 </EXTREMELY-IMPORTANT>
 
 ## Step 1: Resolve Type, Rubric, and Locate Documents

@@ -110,12 +110,7 @@ Do NOT commit automatically. Present the report and let the user review first.
 
 ## Report Structure
 
-See `templates/research-report.md` for the full template. Key points:
-
-- **Overview section** must contain a one-line conclusion — the reader should get the answer without reading further
-- **Comparison mode** includes a horizontal comparison matrix table
-- **Project adaptation assessment** is optional (only when Q5 = yes)
-- All factual claims must cite sources (URL or document name)
+See `templates/research-report.md` for the full template.
 
 ## Common Mistakes
 

@@ -456,11 +456,8 @@ Run `/forge:test-guide` to create a Convention file for consistent future genera
 ## Notes
 
 - **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
-- **Surface-aware recipes**: When `.forge/config.yaml` defines surfaces, the justfile gains per-surface dev/probe/test/teardown recipes with `[linux]`/`[windows]` dual-platform variants. Without surfaces, the justfile is identical to the pre-surface-aware version.
 - **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
-- **Convention-driven test recipes**: Recipes are generated from Convention content + surface rule files + LLM knowledge. No hardcoded framework templates.
 - **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../../../../docs/reference/test-type-model.md).
-- **User-customized protection**: Recipes marked with `# user-customized` are never overwritten during re-generation. This allows users to customize surface recipes without fear of losing changes.
 - **Mixed project naming**: When multiple surfaces exist, recipes use the surface-key as prefix (e.g., `admin-panel-dev`, `payment-api-test`) to avoid collisions. Single-surface projects use the surface-type as prefix (e.g., `web-dev`).
 - **Targets invoked by forge skills**: `compile`, `unit-test`, `<key>-test`, `<key>-teardown`, `install`. The remaining targets are for manual use.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.
