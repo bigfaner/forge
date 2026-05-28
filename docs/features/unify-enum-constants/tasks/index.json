@@ -76,7 +76,7 @@
         "2.1",
         "2.2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.summary.md",
       "record": "records/2.summary.md",
       "type": "doc.summary"
