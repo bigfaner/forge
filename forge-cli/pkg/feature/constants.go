@@ -1,6 +1,8 @@
 // Package feature provides feature-related utilities.
 package feature
 
+import "forge-cli/pkg/types"
+
 // Path constants for the features-based directory structure.
 const (
 	// FeaturesDir is the base directory for all features
@@ -68,20 +70,28 @@ const (
 	ProposalFileName = "proposal.md"
 )
 
-// Task status values
+// Status is a type alias for types.Status, ensuring feature.Status and
+// types.Status are the same type.
+type Status = types.Status
+
+// Priority is a type alias for types.Priority, ensuring feature.Priority and
+// types.Priority are the same type.
+type Priority = types.Priority
+
+// Task status constants — re-exported from pkg/types.
 const (
-	StatusPending    = "pending"
-	StatusInProgress = "in_progress"
-	StatusCompleted  = "completed"
-	StatusBlocked    = "blocked"
-	StatusSuspended  = "suspended"
-	StatusSkipped    = "skipped"
-	StatusRejected   = "rejected"
+	StatusPending    Status = types.StatusPending
+	StatusInProgress Status = types.StatusInProgress
+	StatusCompleted  Status = types.StatusCompleted
+	StatusBlocked    Status = types.StatusBlocked
+	StatusSuspended  Status = types.StatusSuspended
+	StatusSkipped    Status = types.StatusSkipped
+	StatusRejected   Status = types.StatusRejected
 )
 
-// Priority values
+// Priority values — re-exported from pkg/types.
 const (
-	PriorityP0 = "P0"
-	PriorityP1 = "P1"
-	PriorityP2 = "P2"
+	PriorityP0 Priority = types.PriorityP0
+	PriorityP1 Priority = types.PriorityP1
+	PriorityP2 Priority = types.PriorityP2
 )
