@@ -330,6 +330,39 @@ func TestBuildIndex_FrontmatterUpdate(t *testing.T) {
 	}
 }
 
+func TestBuildIndex_DependenciesUpdateFromMD(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
+
+	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
+	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar", []string{"1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+	}
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("first build: %v", err)
+	}
+
+	// Update 2-bar.md: change dependencies from ["1"] to ["1a", "1b"]
+	writeTaskMD(t, tasksDir, "2-bar.md", "2", "Bar", []string{"1a", "1b"})
+
+	if _, err := BuildIndex(opts); err != nil {
+		t.Fatalf("rebuild: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	got := idx.Tasks["2-bar"].Dependencies
+	if len(got) != 2 || got[0] != "1a" || got[1] != "1b" {
+		t.Errorf("dependencies = %v, want [1a 1b]", got)
+	}
+}
+
 func TestBuildIndex_OrphanCleanup(t *testing.T) {
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "")
 

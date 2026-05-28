@@ -12,10 +12,10 @@ func TestPreserveRuntimeFields(t *testing.T) {
 		expected Task
 	}{
 		{
-			name:     "preserves all runtime fields including Dependencies",
+			name:     "preserves runtime fields, does not preserve Dependencies",
 			existing: &Task{Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review", Dependencies: []string{"fix-1"}},
-			newTask:  Task{ID: "1", Title: "Test", Status: "pending"},
-			expected: Task{ID: "1", Title: "Test", Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review", Dependencies: []string{"fix-1"}},
+			newTask:  Task{ID: "1", Title: "Test", Status: "pending", Dependencies: []string{"2", "3"}},
+			expected: Task{ID: "1", Title: "Test", Status: "in_progress", SourceTaskID: "source-1", BlockedReason: "waiting for review", Dependencies: []string{"2", "3"}},
 		},
 		{
 			name:     "nil existing does nothing",
