@@ -293,7 +293,7 @@ func runFeatureStatus(_ *cobra.Command, args []string) error {
 		if err := json.Unmarshal(data, &idx); err == nil {
 			taskStats = make(map[string]int)
 			for _, t := range idx.TasksMap() {
-				taskStats[t.Status]++
+				taskStats[string(t.Status)]++
 				total++
 			}
 		}

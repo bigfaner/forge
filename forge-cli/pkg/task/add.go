@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	indexPkg "forge-cli/pkg/index"
+	"forge-cli/pkg/types"
 )
 
 // AddTaskOpts holds options for adding a new task.
@@ -53,7 +54,7 @@ func (e *ActiveFixExistsError) Error() string {
 func hasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 	var active []string
 	for _, t := range index.tasks {
-		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
+		if t.SourceTaskID == sourceTaskID && !terminalStatuses[string(t.Status)] {
 			active = append(active, t.ID)
 		}
 	}
@@ -201,10 +202,10 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		index.SetTask(opts.ID, Task{
 			ID:            opts.ID,
 			Title:         opts.Title,
-			Priority:      opts.Priority,
+			Priority:      types.Priority(opts.Priority),
 			EstimatedTime: opts.EstimatedTime,
 			Dependencies:  opts.Dependencies,
-			Status:        opts.Status,
+			Status:        types.Status(opts.Status),
 			File:          fileName,
 			Record:        recordPath,
 			Breaking:      opts.Breaking,

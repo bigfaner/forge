@@ -48,13 +48,13 @@ func GetUnmetDeps(index *TaskIndex, selfID string, deps []string) []string {
 					continue
 				}
 				t, found := index.ByID(matchID)
-				if !found || !IsDepSatisfied(t.Status) {
+				if !found || !IsDepSatisfied(string(t.Status)) {
 					unmet = append(unmet, matchID)
 				}
 			}
 		} else {
 			t, found := index.ByID(dep)
-			if !found || !IsDepSatisfied(t.Status) {
+			if !found || !IsDepSatisfied(string(t.Status)) {
 				unmet = append(unmet, dep)
 			}
 		}

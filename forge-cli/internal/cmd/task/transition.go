@@ -9,6 +9,7 @@ import (
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -82,9 +83,9 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	}
 
 	// Validate via state machine (RoleManual enables blocked -> pending)
-	if transitionErr := task.ValidateTransition(t.Status, targetStatus, task.RoleManual); transitionErr != nil {
+	if transitionErr := task.ValidateTransition(t.Status, types.Status(targetStatus), task.RoleManual); transitionErr != nil {
 		te := transitionErr.(*task.TransitionError)
-		return base.NewErrInvalidTransition(t.Status, targetStatus, te.Msg)
+		return base.NewErrInvalidTransition(string(t.Status), targetStatus, te.Msg)
 	}
 
 	// Validate target status against index enum
@@ -99,7 +100,7 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 		return base.ErrInvalidStatus(targetStatus, index.StatusEnum)
 	}
 
-	t.Status = targetStatus
+	t.Status = types.Status(targetStatus)
 	if targetStatus == "blocked" || targetStatus == "suspended" {
 		t.BlockedReason = transitionReason
 	}
@@ -112,7 +113,7 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 
 	base.PrintBlockStart()
 	base.PrintField("TASK_ID", t.ID)
-	base.PrintField("STATUS", t.Status)
+	base.PrintField("STATUS", string(t.Status))
 	base.PrintField("REASON", transitionReason)
 	base.PrintBlockEnd()
 	return nil

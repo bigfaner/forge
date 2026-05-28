@@ -136,7 +136,7 @@ func executeClaim() (*ClaimResult, error) {
 		TaskID:        t.ID,
 		Key:           key,
 		Title:         t.Title,
-		Priority:      t.Priority,
+		Priority:      string(t.Priority),
 		EstimatedTime: t.EstimatedTime,
 		Dependencies:  t.Dependencies,
 		File:          t.File,
@@ -221,7 +221,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 		if di != dj {
 			return di < dj
 		}
-		pi, pj := priorityOrder[eligibleTasks[i].t.Priority], priorityOrder[eligibleTasks[j].t.Priority]
+		pi, pj := priorityOrder[string(eligibleTasks[i].t.Priority)], priorityOrder[string(eligibleTasks[j].t.Priority)]
 		if pi != pj {
 			return pi < pj
 		}

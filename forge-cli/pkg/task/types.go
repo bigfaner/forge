@@ -6,6 +6,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"forge-cli/pkg/types"
 )
 
 // Task ID suffix constants used for special task roles.
@@ -214,15 +216,15 @@ func FormatSystemTypes() string {
 
 // Task represents a single task in the feature index.
 type Task struct {
-	ID            string   `json:"id"`
-	Title         string   `json:"title"`
-	Priority      string   `json:"priority"`
-	EstimatedTime string   `json:"estimatedTime,omitempty"`
-	Dependencies  []string `json:"dependencies,omitempty"`
-	Status        string   `json:"status"`
-	File          string   `json:"file"`
-	Record        string   `json:"record"`
-	Breaking      bool     `json:"breaking,omitempty"`
+	ID            string         `json:"id"`
+	Title         string         `json:"title"`
+	Priority      types.Priority `json:"priority"`
+	EstimatedTime string         `json:"estimatedTime,omitempty"`
+	Dependencies  []string       `json:"dependencies,omitempty"`
+	Status        types.Status   `json:"status"`
+	File          string         `json:"file"`
+	Record        string         `json:"record"`
+	Breaking      bool           `json:"breaking,omitempty"`
 	// SurfaceKey is the user-defined surface identifier (e.g. "admin-panel").
 	// Empty value means cross-surface (no specific surface).
 	SurfaceKey string `json:"surface-key,omitempty"`

@@ -14,6 +14,7 @@ import (
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -146,7 +147,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	if targetStatus == "completed" {
 		if transitionErr := task.ValidateTransition(t.Status, "completed", task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return base.NewErrInvalidTransition(t.Status, "completed", te.Msg)
+			return base.NewErrInvalidTransition(string(t.Status), "completed", te.Msg)
 		}
 	}
 
@@ -162,7 +163,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 		// Auto-downgrade: validate the blocked transition
 		if transitionErr := task.ValidateTransition(t.Status, "blocked", task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return base.NewErrInvalidTransition(t.Status, "blocked", te.Msg)
+			return base.NewErrInvalidTransition(string(t.Status), "blocked", te.Msg)
 		}
 	}
 
@@ -199,7 +200,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	}
 
 	// Update task status in index
-	t.Status = rd.Status
+	t.Status = types.Status(rd.Status)
 
 	// Set BlockedReason on auto-downgrade
 	if rd.Status == "blocked" && targetStatus == "completed" {

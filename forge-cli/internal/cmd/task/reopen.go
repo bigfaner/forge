@@ -69,7 +69,7 @@ func doReopen(indexPath, taskIDArg string) error {
 	// Validate transition using state machine (RoleReopen, target always pending)
 	if transitionErr := task.ValidateTransition(t.Status, "pending", task.RoleReopen); transitionErr != nil {
 		te := transitionErr.(*task.TransitionError)
-		return base.NewErrInvalidTransition(t.Status, "pending", te.Msg)
+		return base.NewErrInvalidTransition(string(t.Status), "pending", te.Msg)
 	}
 
 	t.Status = "pending"
@@ -81,7 +81,7 @@ func doReopen(indexPath, taskIDArg string) error {
 
 	base.PrintBlockStart()
 	base.PrintField("TASK_ID", t.ID)
-	base.PrintField("STATUS", t.Status)
+	base.PrintField("STATUS", string(t.Status))
 	base.PrintBlockEnd()
 	return nil
 }

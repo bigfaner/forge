@@ -126,10 +126,10 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 		if t.File == "" {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'file'", key))
 		}
-		if t.Status != "" && !validStatus[t.Status] {
+		if t.Status != "" && !validStatus[string(t.Status)] {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid status '%s'", key, t.Status))
 		}
-		if t.Priority != "" && !validPriority[t.Priority] {
+		if t.Priority != "" && !validPriority[string(t.Priority)] {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid priority '%s'", key, t.Priority))
 		}
 		switch {
@@ -468,7 +468,7 @@ func (v *validator) validateLiveness(index *task.TaskIndex) {
 						continue
 					}
 					other, _ := index.ByID(matchID)
-					if !task.IsDepSatisfied(other.Status) {
+					if !task.IsDepSatisfied(string(other.Status)) {
 						allDepsCompleted = false
 						if other.Status == "pending" || other.Status == "in_progress" {
 							hasActiveDep = true
@@ -484,7 +484,7 @@ func (v *validator) validateLiveness(index *task.TaskIndex) {
 				allDepsCompleted = false
 				continue
 			}
-			if task.IsDepSatisfied(depTask.Status) {
+			if task.IsDepSatisfied(string(depTask.Status)) {
 				continue
 			}
 			allDepsCompleted = false

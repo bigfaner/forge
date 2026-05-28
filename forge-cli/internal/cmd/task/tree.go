@@ -259,7 +259,7 @@ func renderTreePlain(roots []*treeNode) string {
 	items := flattenTree(roots, true)
 	for _, item := range items {
 		indent := strings.Repeat("  ", item.Depth)
-		sym := statusSymbol(item.Node.Task.Status)
+		sym := statusSymbol(string(item.Node.Task.Status))
 		title := item.Node.Task.Title
 		id := item.Node.Task.ID
 		fmt.Fprintf(&sb, "%s%s %s: %s\n", indent, sym, id, title)
@@ -384,7 +384,7 @@ func (m treeModel) View() string {
 	for i := start; i < end; i++ {
 		item := m.items[i]
 		indent := strings.Repeat("  ", item.Depth)
-		sym := statusSymbol(item.Node.Task.Status)
+		sym := statusSymbol(string(item.Node.Task.Status))
 		id := item.Node.Task.ID
 		title := item.Node.Task.Title
 
@@ -407,7 +407,7 @@ func (m treeModel) View() string {
 		line := fmt.Sprintf("%s %s%s %s %s", cursor, indent, expandChar, sym, formatNodeLine(id, title))
 
 		if m.useColor {
-			color := statusColor(item.Node.Task.Status)
+			color := statusColor(string(item.Node.Task.Status))
 			styled := lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(sym+" "+id) + ": " + title
 			line = fmt.Sprintf("%s %s%s %s", cursor, indent, expandChar, styled)
 		}
@@ -473,7 +473,7 @@ func renderTreeFallback(roots []*treeNode, featureSlug string) string {
 
 	for _, item := range items {
 		indent := strings.Repeat("  ", item.Depth)
-		sym := statusSymbol(item.Node.Task.Status)
+		sym := statusSymbol(string(item.Node.Task.Status))
 		id := item.Node.Task.ID
 		title := base.TruncateSlug(item.Node.Task.Title, 50)
 		status := item.Node.Task.Status

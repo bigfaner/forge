@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"forge-cli/pkg/index"
+	"forge-cli/pkg/types"
 )
 
 // LoadState loads the task state from the given file path.
@@ -69,21 +70,21 @@ func CheckExistingTaskState(_ string, index *TaskIndex, statePath string) (bool,
 	}
 
 	switch t.Status {
-	case "in_progress":
+	case types.StatusInProgress:
 		return true, false, nil
-	case "completed":
+	case types.StatusCompleted:
 		fmt.Printf("Previous task '%s' is completed. Claiming new task...\n", t.Title)
 		_ = DeleteState(statePath)
 		return false, false, nil
-	case "blocked":
+	case types.StatusBlocked:
 		fmt.Printf("Previous task '%s' is blocked. Claiming new task...\n", t.Title)
 		_ = DeleteState(statePath)
 		return false, false, nil
-	case "suspended":
+	case types.StatusSuspended:
 		fmt.Printf("Previous task '%s' is suspended. Claiming new task...\n", t.Title)
 		_ = DeleteState(statePath)
 		return false, false, nil
-	case "rejected":
+	case types.StatusRejected:
 		fmt.Printf("Previous task '%s' was rejected. Claiming new task...\n", t.Title)
 		_ = DeleteState(statePath)
 		return false, false, nil

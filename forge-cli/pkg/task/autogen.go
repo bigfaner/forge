@@ -11,6 +11,7 @@ import (
 	"text/template"
 
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/types"
 )
 
 //go:embed templates/*.md
@@ -979,10 +980,10 @@ func (d AutoGenTaskDef) TaskFromFile() Task {
 	return Task{
 		ID:            d.ID,
 		Title:         d.Title,
-		Priority:      d.Priority,
+		Priority:      types.Priority(d.Priority),
 		EstimatedTime: d.EstimatedTime,
 		Dependencies:  d.Dependencies,
-		Status:        "pending",
+		Status:        types.StatusPending,
 		File:          fileName,
 		Record:        path.Join("records", fileName),
 		Breaking:      d.Breaking,

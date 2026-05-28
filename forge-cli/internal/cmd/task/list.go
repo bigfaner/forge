@@ -218,8 +218,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		if titleLen > titleCol {
 			titleCol = titleLen
 		}
-		if base.DisplayWidth(t.Status) > statusCol {
-			statusCol = base.DisplayWidth(t.Status)
+		if base.DisplayWidth(string(t.Status)) > statusCol {
+			statusCol = base.DisplayWidth(string(t.Status))
 		}
 		if base.DisplayWidth(boolStr(t.Breaking)) > breakingCol {
 			breakingCol = base.DisplayWidth(boolStr(t.Breaking))
@@ -260,7 +260,7 @@ func runList(cmd *cobra.Command, args []string) error {
 			idDisplayPadded,
 			base.PadRight(t.Type, typeCol),
 			base.PadRight(title, titleCol),
-			base.PadRight(t.Status, statusCol),
+			base.PadRight(string(t.Status), statusCol),
 			base.PadRight(boolStr(t.Breaking), breakingCol),
 			base.PadRight(boolStr(t.MainSession), mainSessCol),
 		)
