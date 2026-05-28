@@ -37,26 +37,6 @@ Then route to the appropriate extraction section:
 
 For **mobile** and **tui** platform-specific extraction details, follow the rules in `rules/platform-routing.md`.
 
-### Mobile Extraction Overview
-
-When `--platform mobile`, reuse the web extraction pipeline (Layers 1-5) with a mobile User-Agent viewport context, then add mobile-specific analysis:
-
-- **Responsive breakpoint analysis**: Scan CSS for `@media` queries targeting common mobile breakpoints: 320px (iPhone SE), 375px (iPhone 12/13/14), 414px (iPhone Plus/Pro Max), 768px (iPad)
-- **Touch target estimation**: Check interactive element sizes against the 44x44pt minimum touch target guideline; mark unspecified values as `(estimated)`
-- **Safe area handling**: Check for `safe-area-inset` CSS env usage and `viewport meta` tag with `viewport-fit=cover`
-- **Limitation**: Mobile extraction depends on the target URL serving responsive CSS. Sites without responsive stylesheets produce web-equivalent results with mobile sections marked `(estimated)`
-
-### TUI Extraction Overview
-
-When `--platform tui`, the input must be a **local file path** to a terminal screenshot. AI vision reverse-engineers design tokens from the screenshot, marking **ALL values as `(estimated)`**:
-
-- **ANSI color palette**: Map observed colors to xterm-256 palette entries (0-255)
-- **Character set**: Identify box-drawing characters, block elements, pure ASCII, or a mix
-- **Panel layout dimensions**: Estimate terminal grid size (rows/columns) and panel boundaries
-- **Key bindings**: Extract key-to-action mappings from status bar or help legend
-
-Match against built-in TUI themes: **modern-dark-tui** (dark, 256-color, box-drawing + block elements) or **minimal-ascii-tui** (default terminal, 16-color, pure ASCII).
-
 ## Step 1: Get URL
 
 Extract the target URL from command arguments or user message. If not provided, use `AskUserQuestion`:

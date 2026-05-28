@@ -5,8 +5,6 @@ allowed-tools: Bash Read
 argument-hint: "[scope]"
 ---
 
-Create a git commit following Conventional Commits specification.
-
 ## Atomic Commits
 
 Group high-related changes; split unrelated changes.

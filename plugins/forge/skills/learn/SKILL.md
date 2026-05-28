@@ -6,8 +6,6 @@ argument-hint: "[decision|lesson|convention topic description]"
 
 # /learn
 
-Unified knowledge accumulation skill. Captures decisions, lessons, conventions, and business rules from a single entry point.
-
 **Core principle**: Write knowledge immediately, report for review after. No confirmation gate before writing -- the user reviews what was written in the final report and corrects if needed.
 
 ## When to Use

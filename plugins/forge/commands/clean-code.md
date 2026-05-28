@@ -4,8 +4,6 @@ description: Simplify and clean up code. Supports scoped cleanup (git diff, file
 allowed-tools: Bash Read Edit Write Glob Grep
 ---
 
-Simplify and clean up code. Supports optional paths to scope cleanup to specific files or directories.
-
 Without arguments, scope is determined automatically (git diff or feature context).
 
 Invoke the skill:

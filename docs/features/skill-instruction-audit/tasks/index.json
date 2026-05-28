@@ -47,7 +47,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-remove-other-redundancy.md",
       "record": "records/4-remove-other-redundancy.md",
       "type": "doc"

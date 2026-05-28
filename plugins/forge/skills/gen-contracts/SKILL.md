@@ -5,9 +5,7 @@ description: Generate Contract specifications (six dimensions + semantic descrip
 
 # Gen Contracts
 
-Generate Contract specifications from Journey documents, enriched with code reconnaissance (Fact Table).
-
-**Core principle**: Every Step gets a Contract with six dimensions. gen-contracts uses *semantic descriptors* (natural language) -- precise regex is deferred to gen-test-scripts. This skill is the most technically complex in the pipeline because it bridges narrative Journeys with verifiable Contracts using code reconnaissance.
+**Core principle**: Every Step gets a Contract with six dimensions. gen-contracts uses *semantic descriptors* (natural language) -- precise regex is deferred to gen-test-scripts.
 
 **Risk-driven density**: Outcome count per Step and total test count per Journey are driven by the Journey's `risk_level` field (set by gen-journeys). Density targets are defined in `rules/risk-density.md`. Boundary/error Outcomes are auto-derived from surface rules' required_outcomes and the project Fact Table.
 

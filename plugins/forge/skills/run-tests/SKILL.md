@@ -5,8 +5,6 @@ description: Execute test orchestration based on surface type. Dispatcher mode: 
 
 # Run Tests
 
-Surface-aware test orchestration. Detects the project's surface type, loads the corresponding orchestration rules, and executes the just recipe sequence.
-
 **Core principle**: A dispatcher that detects surface type, loads orchestration rules, and executes just recipes in sequence. Does NOT read `test.execution` from config.yaml.
 
 <HARD-GATE>

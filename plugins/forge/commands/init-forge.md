@@ -6,8 +6,6 @@ allowed-tools: Bash Read
 
 # /init-forge
 
-Build and install the forge CLI tool.
-
 ## Process
 
 1. Detect operating system (Windows/Linux/macOS)
