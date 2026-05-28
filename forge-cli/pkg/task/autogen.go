@@ -228,7 +228,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
 				Title: fmt.Sprintf("Generate %s Scripts", TestTypeTitle(typ)), Priority: "P1", EstimatedTime: "1-2h",
-				Type: GenSurfaceTestType(TypeTestGenScripts, typ), SurfaceType: typ,
+				Type: TypeTestGenScripts, SurfaceType: typ,
 				StrategyKind: "generate",
 			})
 		}
@@ -241,7 +241,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "run-test", ID: "T-test-run",
 				Title: runTestTitle(singleType), Priority: "P1", EstimatedTime: "30min-1h",
-				Type:         GenSurfaceTestType(TypeTestRun, singleType),
+				Type:         TypeTestRun,
 				StrategyKind: "run",
 				SurfaceType:  singleType,
 			})
@@ -252,7 +252,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 				tasks = append(tasks, AutoGenTaskDef{
 					Key: "run-test-" + key, ID: "T-test-run-" + key,
 					Title: runTestTitle(surfaceType), Priority: "P1", EstimatedTime: "30min-1h",
-					Type:         GenSurfaceTestType(TypeTestRun, key),
+					Type:         TypeTestRun,
 					SurfaceKey:   key,
 					SurfaceType:  surfaceType,
 					StrategyKind: "run",
@@ -345,7 +345,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "run-test", ID: "T-test-run",
 				Title: runTestTitle(singleType), Priority: "P1", EstimatedTime: "30min-1h",
-				Type:         GenSurfaceTestType(TypeTestRun, singleType),
+				Type:         TypeTestRun,
 				StrategyKind: "run",
 				SurfaceType:  singleType,
 			})
@@ -356,7 +356,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 				tasks = append(tasks, AutoGenTaskDef{
 					Key: "run-test-" + key, ID: "T-test-run-" + key,
 					Title: runTestTitle(surfaceType), Priority: "P1", EstimatedTime: "30min-1h",
-					Type:         GenSurfaceTestType(TypeTestRun, key),
+					Type:         TypeTestRun,
 					SurfaceKey:   key,
 					SurfaceType:  surfaceType,
 					StrategyKind: "run",
@@ -618,18 +618,18 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 		// Wire run-test task(s)
 		lastRunID = wireRunTestChain(tasks, surfaceTypes, surfaces, executionOrder)
 	}
-	// T-validate-code depends on last run-test (if e2e tasks exist)
+
+	// Downstream tasks depend on last run-test
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
 	if validateIdx >= 0 && auto.Test.Full && lastRunID != "" {
 		tasks[validateIdx].Dependencies = []string{lastRunID}
 	}
-	// T-validate-ux depends on last run-test (if e2e tasks exist)
 	uxIdx := findTaskIndex(tasks, "T-validate-ux")
 	if uxIdx >= 0 && auto.Test.Full && lastRunID != "" {
 		tasks[uxIdx].Dependencies = []string{lastRunID}
 	}
 
-	// T-specs-consolidate depends on last run-test (if e2e tasks exist) or nothing
+	// T-specs-consolidate depends on last run-test
 	if auto.ConsolidateSpecs.Full {
 		specsIdx := findTaskIndex(tasks, "T-specs-consolidate")
 		if specsIdx >= 0 && auto.Test.Full && lastRunID != "" {
@@ -658,20 +658,19 @@ func resolveQuickDeps(tasks []AutoGenTaskDef, _ []string, surfaces map[string]st
 		lastRunID = wireQuickRunTestChain(tasks, surfaces, executionOrder)
 	}
 
-	// T-validate-code depends on last run-test (if e2e tasks exist) or nothing
+	// Downstream tasks depend on last run-test
 	if auto.Validation.Quick {
 		validateIdx := findTaskIndex(tasks, "T-validate-code")
 		if validateIdx >= 0 && auto.Test.Quick && lastRunID != "" {
 			tasks[validateIdx].Dependencies = []string{lastRunID}
 		}
-		// T-validate-ux depends on last run-test (if e2e tasks exist) or nothing
 		uxIdx := findTaskIndex(tasks, "T-validate-ux")
 		if uxIdx >= 0 && auto.Test.Quick && lastRunID != "" {
 			tasks[uxIdx].Dependencies = []string{lastRunID}
 		}
 	}
 
-	// T-quick-doc-drift depends on last run-test (if e2e tasks exist) or nothing
+	// T-quick-doc-drift depends on last run-test
 	if auto.ConsolidateSpecs.Quick {
 		idx := findTaskIndex(tasks, "T-quick-doc-drift")
 		if idx >= 0 && auto.Test.Quick && lastRunID != "" {
