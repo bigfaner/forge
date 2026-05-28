@@ -91,6 +91,67 @@
       "record": "records/7-fix-remaining-ambiguity.md",
       "type": "doc"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: T-review-doc blocked — gen-contracts description and section refs",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-review-doc",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: pre-existing lint failures block quality gate (types.go stutter warnings)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "in_progress",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "fix-1",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: pre-existing docsync test failures block quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "blocked",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "fix-2",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: 3 pre-existing TestAddFixTask_* failures in internal/cmd block quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "fix-3",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "7"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
     "review-doc": {
       "id": "T-review-doc",
       "title": "Review Documentation Quality",
