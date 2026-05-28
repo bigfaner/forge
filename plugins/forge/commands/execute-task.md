@@ -22,12 +22,12 @@ forge task claim
 - Error → No available task, stop
 
 **Extract from claim output**:
-- `TASK_ID` (e.g., "2.1")
-- `FILE` (e.g., full absolute path to task file)
-- `MAIN_SESSION` (e.g., "true" or absent)
-- `SURFACE_KEY` (e.g., "admin-panel" or "" — defaults to "" if absent)
-- `SURFACE_TYPE` (e.g., "web", "cli", "api" or "" — defaults to "" if absent)
-- `FEATURE` (e.g., "my-feature" — feature slug from claim output)
+- `TASK_ID`
+- `FILE`
+- `MAIN_SESSION`
+- `SURFACE_KEY`
+- `SURFACE_TYPE`
+- `FEATURE`
 
 ## Step 1.5: Main Session Routing
 
@@ -58,8 +58,6 @@ Agent(
 )
 ```
 
-The subagent internally runs `forge prompt get-by-task-id <TASK_ID>` to get the execution strategy.
-
 **Timeout**: 30 minutes
 
 ### 2b. Verify Record
@@ -81,9 +79,6 @@ forge task status <TASK_ID>
     --var TEST_RESULTS="<test-output>" \
     --description "Task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
   ```
-  `forge task add` automatically deduplicates — check output:
-  - `ACTION: ADDED` → new fix task created
-  - `ACTION: SKIPPED` → active fix task already exists
   Proceed to Step 3 (STOP).
 - **STATUS == `"in_progress"`** (record missing): proceed to 2c.
 
@@ -97,8 +92,6 @@ Agent(
   prompt="Fix record for task <TASK_ID>"
 )
 ```
-
-The subagent's Execution Protocol detects the "Fix record for" prefix and calls `forge prompt get-by-task-id <TASK_ID> --fix-record-missed` internally.
 
 ## Step 3: STOP
 

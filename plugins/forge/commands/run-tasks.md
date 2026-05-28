@@ -51,7 +51,7 @@ forge task claim
 
 **Output**: `ACTION: CLAIMED` (new) | `ACTION: CONTINUE` (resume) | Error (no task, end loop).
 
-**Extract**: `TASK_ID`, `FILE`, `MAIN_SESSION`, `SURFACE_KEY` (defaults ""), `SURFACE_TYPE` (defaults ""), `FEATURE`.
+**Extract**: `TASK_ID`, `FILE`, `MAIN_SESSION`, `SURFACE_KEY`, `SURFACE_TYPE`, `FEATURE`.
 
 ### Step 1.5: Main Session Routing
 
@@ -73,16 +73,13 @@ If `MAIN_SESSION == "true"`:
      --var TEST_RESULTS="<test-output>" \
      --description "Main session task <TASK_ID> failed — verify output and fix issues"
    ```
-   `forge task add` automatically deduplicates — check output:
-   - `ACTION: ADDED` → new fix task created
-   - `ACTION: SKIPPED` → active fix task already exists
 5. Skip to Step 3.
 
 Else: proceed to Step 2.
 
 ### Step 2: Dispatch + Verify
 
-**2a. Dispatch** — `Agent(subagent_type="forge:task-executor", prompt="Execute task <TASK_ID>")`. Subagent calls `forge prompt get-by-task-id` internally. **Timeout**: 30 min. NO `run_in_background` — wait for Agent return.
+**2a. Dispatch** — `Agent(subagent_type="forge:task-executor", prompt="Execute task <TASK_ID>")`. **Timeout**: 30 min. NO `run_in_background` — wait for Agent return.
 
 **2b. Verify Record** — Run `forge task status <TASK_ID>`:
 - **STATUS == "completed"**: proceed to Step 3 (Continue Loop).
@@ -96,13 +93,10 @@ Else: proceed to Step 2.
     --var TEST_RESULTS="<test-output>" \
     --description "Dispatched task <TASK_ID> was auto-downgraded to blocked — test failures or record issues"
   ```
-  `forge task add` automatically deduplicates — check output:
-  - `ACTION: ADDED` → new fix task created
-  - `ACTION: SKIPPED` → active fix task already exists
   Continue loop.
 - **STATUS == "in_progress"** (no record created): proceed to 2c.
 
-**2c. Record-Missing Recovery** — `Agent(subagent_type="forge:task-executor", prompt="Fix record for task <TASK_ID>")`. Subagent detects "Fix record for" prefix and calls `forge prompt get-by-task-id <TASK_ID> --fix-record-missed` internally. After 2c, re-verify via 2b logic.
+**2c. Record-Missing Recovery** — `Agent(subagent_type="forge:task-executor", prompt="Fix record for task <TASK_ID>")`. After 2c, re-verify via 2b logic.
 
 ### Step 3: Continue Loop
 

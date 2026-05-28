@@ -8,7 +8,7 @@
       "title": "Delete CLI behavior descriptions from pipeline skills/commands",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-delete-cli-descriptions-pipeline.md",
       "record": "records/1-delete-cli-descriptions-pipeline.md",
       "type": "doc"

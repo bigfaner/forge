@@ -78,12 +78,6 @@ ONLY ALLOWED PATH: `docs/features/<slug>/tasks/process/record.json`
 | `forge task status <id> completed` | Use `forge task submit` to complete|
 | Wrong record.json path             | CLI only reads from `process/`     |
 
-## What `forge task submit` Does
-
-Generates the execution record and updates task status. After running, check STATUS:
-- `STATUS: completed` → recorded successfully, proceed to commit
-- `STATUS: blocked` → auto-downgraded (e.g. test failures), **do NOT commit**
-
 ## Type Reclassification
 
 When the assigned type doesn't match the actual work, process according to the **actual type** and include a `typeReclassification` block:
