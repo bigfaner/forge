@@ -255,4 +255,32 @@ internal/cmd/
 199、run-tests等CLI自动生成的任务，要根据forge的规范调整任务模板，指定当前feature的journey、contract、test-scripts等路径。
   如docs/features/<slug>/testing/journeys/<journey>/contracts
 200、梳理并重组forge cli的代码包，输出规范。
-201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。
+201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。doing
+202、全面查核forge cli自动添加任务的能力，最近出现好几起bug。
+   Z:\project\ai\forge> forge task list skill-instruction-audit
+8 found  (feature: skill-instruction-audit)
+
+ID            TYPE        TITLE                                               STATUS       BREAKING  MAIN_SESS
+------------  ----------  --------------------------------------------------  -----------  --------  ---------
+1             doc         Delete CLI behavior descriptions from pipeline ...  completed    false     false    
+2             doc         Delete CLI behavior descriptions from remaining...  completed    false     false    
+3             doc         Remove EXTREMELY-IMPORTANT redundancy from skills   completed    false     false    
+4             doc         Remove frontmatter duplication and rule preview...  completed    false     false    
+5             doc         Fix numbering/reference errors in skills            completed    false     false    
+6             doc         Fix ambiguity and logic issues in pipeline comm...  completed    false     false    
+7             doc         Fix ambiguity and logic issues in remaining ski...  completed    false     false    
+T-review-doc  doc.review  Review Documentation Quality                        in_progress  false     false    
+PS Z:\project\ai\forge> forge task list skill-instruction-audit
+9 found  (feature: skill-instruction-audit)
+
+ID                 TYPE        TITLE                                               STATUS       BREAKING  MAIN_SESS
+-----------------  ----------  --------------------------------------------------  -----------  --------  ---------
+1                  doc         Delete CLI behavior descriptions from pipeline ...  completed    false     false    
+2                  doc         Delete CLI behavior descriptions from remaining...  completed    false     false    
+3                  doc         Remove EXTREMELY-IMPORTANT redundancy from skills   completed    false     false    
+4                  doc         Remove frontmatter duplication and rule preview...  completed    false     false    
+5                  doc         Fix numbering/reference errors in skills            completed    false     false    
+6                  doc         Fix ambiguity and logic issues in pipeline comm...  completed    false     false    
+7                  doc         Fix ambiguity and logic issues in remaining ski...  completed    false     false     
+T-quick-doc-drift  doc.drift   Detect Spec Drift                                   pending      false     false    
+T-review-doc       doc.review  Review Documentation Quality                        pending      false     false
