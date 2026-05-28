@@ -17,10 +17,10 @@ func TopologicalSort(idx *TaskIndex) (ordered []string, cycles []string, missing
 		return nil, nil, nil
 	}
 
-	// Collect all task IDs.
+	// Use Task.ID as canonical key (map key may differ from Task.ID).
 	allIDs := make([]string, 0, len(tasks))
-	for id := range tasks {
-		allIDs = append(allIDs, id)
+	for _, t := range tasks {
+		allIDs = append(allIDs, t.ID)
 	}
 
 	// Build adjacency list and compute in-degrees.
@@ -35,8 +35,8 @@ func TopologicalSort(idx *TaskIndex) (ordered []string, cycles []string, missing
 	missingSet := make(map[string]bool)
 
 	for _, id := range allIDs {
-		task := tasks[id]
-		expandedDeps := expandDeps(idx, task.Dependencies, id, missingSet)
+		t, _ := idx.ByID(id)
+		expandedDeps := expandDeps(idx, t.Dependencies, id, missingSet)
 		for _, dep := range expandedDeps {
 			adjacency[dep] = append(adjacency[dep], id)
 			inDegree[id]++

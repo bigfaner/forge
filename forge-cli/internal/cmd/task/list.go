@@ -151,8 +151,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		missingForTask = buildMissingPerTask(index, missing)
 	} else {
 		ids := make([]string, 0, len(tasks))
-		for id := range tasks {
-			ids = append(ids, id)
+		for _, t := range tasks {
+			ids = append(ids, t.ID)
 		}
 		sortedIDs = naturalSortTaskIDs(ids)
 	}
@@ -202,7 +202,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	for _, id := range sortedIDs {
-		t := tasks[id]
+		t, _ := index.ByID(id)
 		// Use display ID width (includes marker text, but exclude ANSI codes)
 		displayW := displayWidthPlain(id, cycleSet, missingForTask)
 		if displayW > idCol {
@@ -252,7 +252,7 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	// Print task rows
 	for _, id := range sortedIDs {
-		t := tasks[id]
+		t, _ := index.ByID(id)
 		title := base.TruncateSlug(t.Title, titleCol)
 		idDisplay := displayID(id)
 		idDisplayPadded := padRightPlain(idDisplay, idCol)

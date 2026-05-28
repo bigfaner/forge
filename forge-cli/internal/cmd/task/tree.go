@@ -53,28 +53,29 @@ func buildForest(idx *task.TaskIndex, opts ...forestOptionFunc) []*treeNode {
 
 	tasks := idx.TasksMap()
 
+	// Use Task.ID as the canonical key throughout (map key may differ from Task.ID).
+	// Build node map keyed by Task.ID.
+	nodeMap := make(map[string]*treeNode, len(tasks))
+	for _, t := range tasks {
+		nodeMap[t.ID] = &treeNode{Task: t}
+	}
+
 	// Expand all dependencies (handle wildcards, missing).
-	// Build a child -> parent mapping.
+	// Build a child -> parent mapping using Task.ID keys.
 	childToParents := make(map[string][]string)
 	allIDs := make([]string, 0, len(tasks))
-	for id := range tasks {
-		allIDs = append(allIDs, id)
+	for _, t := range tasks {
+		allIDs = append(allIDs, t.ID)
 	}
 
 	for _, id := range allIDs {
-		t := tasks[id]
+		t, _ := idx.ByID(id)
 		deps := expandDepsForTree(idx, t.Dependencies, id)
 		for _, dep := range deps {
 			if _, found := idx.ByID(dep); found {
 				childToParents[id] = append(childToParents[id], dep)
 			}
 		}
-	}
-
-	// Build nodes map.
-	nodeMap := make(map[string]*treeNode, len(tasks))
-	for id, t := range tasks {
-		nodeMap[id] = &treeNode{Task: t}
 	}
 
 	// Attach children to parents.
@@ -94,7 +95,7 @@ func buildForest(idx *task.TaskIndex, opts ...forestOptionFunc) []*treeNode {
 	}
 
 	// Detect cycle nodes: tasks in cycles have no reachable root.
-	// Use TopologicalSort to find cycles.
+	// Use TopologicalSort to find cycles (returns Task.ID values).
 	_, cycles, _ := task.TopologicalSort(idx)
 	cycleSet := make(map[string]bool, len(cycles))
 	for _, c := range cycles {

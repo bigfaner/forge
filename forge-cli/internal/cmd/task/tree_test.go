@@ -226,6 +226,47 @@ func TestRenderTreePlain_Indentation(t *testing.T) {
 	assert.True(t, strings.HasPrefix(grandchildLine, "    "), "grandchild is more indented")
 }
 
+func TestBuildForest_MapKeyDiffersFromTaskID(t *testing.T) {
+	// Regression: when the map key in index.json differs from Task.ID,
+	// buildForest used map keys for nodeMap but Task.ID values for dependency
+	// lookups, causing nil pointer dereference on parent.Children.
+	idx := task.NewTestIndex("test", map[string]task.Task{
+		"1-setup-env":   {ID: "1", Dependencies: nil},
+		"2-write-tests": {ID: "2", Dependencies: []string{"1"}},
+		"3-run-tests":   {ID: "3", Dependencies: []string{"2"}},
+	})
+
+	roots := buildForest(idx)
+	assert.Len(t, roots, 1, "single root (task 1)")
+	assert.Equal(t, "1", roots[0].Task.ID)
+	assert.Len(t, roots[0].Children, 1, "task 1 has child 2")
+	assert.Equal(t, "2", roots[0].Children[0].Task.ID)
+	assert.Len(t, roots[0].Children[0].Children, 1, "task 2 has child 3")
+	assert.Equal(t, "3", roots[0].Children[0].Children[0].Task.ID)
+}
+
+func TestBuildForest_MapKeyDiffersFromTaskID_WildcardDeps(t *testing.T) {
+	// Wildcard deps resolve to Task.ID values which may differ from map keys.
+	idx := task.NewTestIndex("test", map[string]task.Task{
+		"1-impl":   {ID: "1.1", Dependencies: nil},
+		"1-gate":   {ID: "1.2", Dependencies: nil},
+		"2-review": {ID: "2", Dependencies: []string{"1.x"}},
+	})
+
+	roots := buildForest(idx)
+	// 1.1 and 1.2 are roots, 2 is child of both
+	assert.Len(t, roots, 2)
+	found2 := false
+	for _, r := range roots {
+		for _, c := range r.Children {
+			if c.Task.ID == "2" {
+				found2 = true
+			}
+		}
+	}
+	assert.True(t, found2, "task 2 should be a child of one of the roots")
+}
+
 func TestBuildForest_WildcardDeps(t *testing.T) {
 	idx := task.NewTestIndex("test", map[string]task.Task{
 		"1.1": {ID: "1.1", Dependencies: nil},
