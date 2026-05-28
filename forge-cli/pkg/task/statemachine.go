@@ -182,15 +182,10 @@ func isActiveFixTask(t Task) bool {
 	if !isFixType(t.Type) {
 		return false
 	}
-	return !isTerminalStatus(t.Status)
+	return !types.IsTerminalStatus(t.Status)
 }
 
 // isFixType checks if a task type indicates a fix task.
 func isFixType(typ string) bool {
 	return typ == TypeCodingFix || strings.HasPrefix(typ, "coding.fix")
-}
-
-// isTerminalStatus checks if a status is terminal (completed, skipped, rejected).
-func isTerminalStatus(status types.Status) bool {
-	return types.IsTerminalStatus(status)
 }

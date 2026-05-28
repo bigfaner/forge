@@ -32,13 +32,6 @@ type AddTaskOpts struct {
 	SurfaceType   string            // Surface type inherited from source task
 }
 
-// terminalStatuses are task statuses that indicate the task is done.
-var terminalStatuses = map[types.Status]bool{
-	types.StatusCompleted: true,
-	types.StatusSkipped:   true,
-	types.StatusRejected:  true,
-}
-
 // ActiveFixExistsError is returned by AddTask when active fix tasks already exist
 // for the specified source task, making the new addition redundant.
 type ActiveFixExistsError struct {
@@ -54,7 +47,7 @@ func (e *ActiveFixExistsError) Error() string {
 func hasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 	var active []string
 	for _, t := range index.tasks {
-		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
+		if t.SourceTaskID == sourceTaskID && !types.IsTerminalStatus(t.Status) {
 			active = append(active, t.ID)
 		}
 	}
