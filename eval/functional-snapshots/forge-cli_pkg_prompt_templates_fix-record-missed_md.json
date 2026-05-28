@@ -1,0 +1,115 @@
+{
+  "type": "prompt",
+  "nodeCount": 17,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "You are a focused task executor recovering from a missing task record.",
+      "sourceLine": 16
+    },
+    {
+      "id": 5,
+      "category": "format",
+      "summary": "## Context",
+      "sourceLine": 18
+    },
+    {
+      "id": 6,
+      "category": "instruction",
+      "summary": "The previous execution of task {{.TaskID}} completed its implementation work but did NOT call `forge:submit-task`. This ",
+      "sourceLine": 20
+    },
+    {
+      "id": 7,
+      "category": "format",
+      "summary": "## Task-Specific Rules",
+      "sourceLine": 22
+    },
+    {
+      "id": 8,
+      "category": "constraint",
+      "summary": "<EXTREMELY-IMPORTANT> block (4 lines)",
+      "sourceLine": 24
+    },
+    {
+      "id": 9,
+      "category": "format",
+      "summary": "## Workflow (1 Step)",
+      "sourceLine": 29
+    },
+    {
+      "id": 10,
+      "category": "format",
+      "summary": "### Step 1: Verify Implementation",
+      "sourceLine": 31
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand what was supposed to be implemented.",
+      "sourceLine": 33
+    },
+    {
+      "id": 12,
+      "category": "constraint",
+      "summary": "Verify the implementation exists by checking the files listed in the task's \"Files Created/Modified\" section. If these f",
+      "sourceLine": 35
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "Execute in strict sequential order — stop at first failure:",
+      "sourceLine": 37
+    },
+    {
+      "id": 14,
+      "category": "format",
+      "summary": "```bash\njust compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust lin",
+      "sourceLine": 39
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "All must pass.",
+      "sourceLine": 46
+    },
+    {
+      "id": 16,
+      "category": "format",
+      "summary": "| Failed step | Action |\n|---|---|\n| `compile` | Set status to blocked via `forge task transition {{.TaskID}} blocked --",
+      "sourceLine": 48
+    },
+    {
+      "id": 17,
+      "category": "format",
+      "summary": "Output: `Step 1/1: Verifying implementation... DONE`",
+      "sourceLine": 55
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 6,
+    "constraint": 2,
+    "example": 0,
+    "format": 7,
+    "metadata": 2
+  }
+}

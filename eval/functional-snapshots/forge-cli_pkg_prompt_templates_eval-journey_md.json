@@ -1,0 +1,169 @@
+{
+  "type": "prompt",
+  "nodeCount": 26,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor running a quality evaluation task.",
+      "sourceLine": 17
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "## Task Constraints",
+      "sourceLine": 19
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "<TASK-CONSTRAINTS>",
+      "sourceLine": 21
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "- MUST invoke `Skill(skill=\"forge:eval\", args=\"--type journey --target 850\")` to evaluate quality",
+      "sourceLine": 22
+    },
+    {
+      "id": 9,
+      "category": "constraint",
+      "summary": "- MUST NOT modify the files being evaluated",
+      "sourceLine": 23
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "</TASK-CONSTRAINTS>",
+      "sourceLine": 24
+    },
+    {
+      "id": 11,
+      "category": "format",
+      "summary": "## Workflow (2 Steps)",
+      "sourceLine": 26
+    },
+    {
+      "id": 12,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 28
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand what to evaluate.",
+      "sourceLine": 30
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}",
+      "sourceLine": 32
+    },
+    {
+      "id": 15,
+      "category": "format",
+      "summary": "Output: `Step 1/2: Reading task definition... DONE`",
+      "sourceLine": 34
+    },
+    {
+      "id": 16,
+      "category": "format",
+      "summary": "### Step 2: Run Evaluation",
+      "sourceLine": 36
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "Invoke the skill:",
+      "sourceLine": 38
+    },
+    {
+      "id": 18,
+      "category": "format",
+      "summary": "```\nSkill(skill=\"forge:eval\", args=\"--type journey --target 850\")\n```",
+      "sourceLine": 40
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "This runs a quality evaluation using rubric scoring against the target threshold. The eval skill handles scoring, findin",
+      "sourceLine": 44
+    },
+    {
+      "id": 20,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 46
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 48
+    },
+    {
+      "id": 22,
+      "category": "metadata",
+      "summary": "- **score**: eval score (0-1000)",
+      "sourceLine": 49
+    },
+    {
+      "id": 23,
+      "category": "metadata",
+      "summary": "- **findings**: list of issues found during evaluation",
+      "sourceLine": 50
+    },
+    {
+      "id": 24,
+      "category": "metadata",
+      "summary": "- **severity**: overall severity level (critical/major/minor)",
+      "sourceLine": 51
+    },
+    {
+      "id": 25,
+      "category": "metadata",
+      "summary": "- **passed**: whether the evaluation passed the quality gate",
+      "sourceLine": 52
+    },
+    {
+      "id": 26,
+      "category": "format",
+      "summary": "Output: `Step 2/2: Running evaluation... DONE`",
+      "sourceLine": 54
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 11,
+    "constraint": 1,
+    "example": 0,
+    "format": 8,
+    "metadata": 6
+  }
+}

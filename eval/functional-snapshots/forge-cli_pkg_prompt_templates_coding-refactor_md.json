@@ -1,0 +1,763 @@
+{
+  "type": "prompt",
+  "nodeCount": 125,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 17
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 18
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 19
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 20
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor restructuring code without changing its external behavior.",
+      "sourceLine": 22
+    },
+    {
+      "id": 6,
+      "category": "instruction",
+      "summary": "External behavior = function signatures, return types, observable output (stdout, stderr, exit codes, HTTP responses), a",
+      "sourceLine": 24
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "<CODING_PRINCIPLES>",
+      "sourceLine": 26
+    },
+    {
+      "id": 8,
+      "category": "constraint",
+      "summary": "- Surgical Changes: Touch only what the refactoring scope explicitly requires. Do not \"improve,\" rename, or reformat cod",
+      "sourceLine": 27
+    },
+    {
+      "id": 9,
+      "category": "constraint",
+      "summary": "- Scope Limits: Limit each change to the symbols listed in the Impact Map (Step 2). If you notice unrelated issues durin",
+      "sourceLine": 28
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "</CODING_PRINCIPLES>",
+      "sourceLine": 29
+    },
+    {
+      "id": 11,
+      "category": "format",
+      "summary": "## Pre-check",
+      "sourceLine": 31
+    },
+    {
+      "id": 12,
+      "category": "instruction",
+      "summary": "Before starting, verify all three conditions:",
+      "sourceLine": 33
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "1. `git status` is clean (no uncommitted changes) — refactoring requires a clean starting state for safe rollback",
+      "sourceLine": 34
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "2. Targeted tests pass — run the project's test command on affected packages/modules. Refactoring on a red test suite is",
+      "sourceLine": 35
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "3. If current branch is main/trunk, output a warning but allow (team conventions vary)",
+      "sourceLine": 36
+    },
+    {
+      "id": 16,
+      "category": "constraint",
+      "summary": "If check 1 or 2 fails, set the task status to blocked via `forge task transition {{.TaskID}} blocked --reason \"refactor ",
+      "sourceLine": 38
+    },
+    {
+      "id": 17,
+      "category": "format",
+      "summary": "## Workflow (5 Steps)",
+      "sourceLine": 40
+    },
+    {
+      "id": 18,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 42
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.",
+      "sourceLine": 44
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "Read each file's YAML frontmatter `domains` field to determine relevance.",
+      "sourceLine": 45
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "Load files whose domains match `{{.SurfaceKey}}` or keywords from `{{.TaskFile}}`.",
+      "sourceLine": 46
+    },
+    {
+      "id": 22,
+      "category": "instruction",
+      "summary": "If no files match, skip — no matching convention files for this task.",
+      "sourceLine": 47
+    },
+    {
+      "id": 23,
+      "category": "instruction",
+      "summary": "Then read the task file at `{{.TaskFile}}`.",
+      "sourceLine": 49
+    },
+    {
+      "id": 24,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for key decisions and conventions from the pr",
+      "sourceLine": 51
+    },
+    {
+      "id": 25,
+      "category": "format",
+      "summary": "Output: `Step 1/5: Reading task definition... DONE`",
+      "sourceLine": 53
+    },
+    {
+      "id": 26,
+      "category": "constraint",
+      "summary": "<CRITICAL> block (19 lines)",
+      "sourceLine": 55
+    },
+    {
+      "id": 27,
+      "category": "constraint",
+      "summary": "<CRITICAL> block (6 lines)",
+      "sourceLine": 75
+    },
+    {
+      "id": 28,
+      "category": "instruction",
+      "summary": "{{if ne .Complexity \"low\"}}### Step 1.5: Spec-Code Conflict Scan",
+      "sourceLine": 82
+    },
+    {
+      "id": 29,
+      "category": "instruction",
+      "summary": "For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.",
+      "sourceLine": 84
+    },
+    {
+      "id": 30,
+      "category": "instruction",
+      "summary": "Read the code files that implement the requirements described in each Reference File, then output a per-dimension checkl",
+      "sourceLine": 86
+    },
+    {
+      "id": 31,
+      "category": "instruction",
+      "summary": "SPEC-CODE SCAN:",
+      "sourceLine": 87
+    },
+    {
+      "id": 32,
+      "category": "instruction",
+      "summary": "- MUST/SHALL directives: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 88
+    },
+    {
+      "id": 33,
+      "category": "instruction",
+      "summary": "- Architecture decisions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 89
+    },
+    {
+      "id": 34,
+      "category": "instruction",
+      "summary": "- Data flow patterns: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 90
+    },
+    {
+      "id": 35,
+      "category": "instruction",
+      "summary": "- Interface contracts: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 91
+    },
+    {
+      "id": 36,
+      "category": "instruction",
+      "summary": "- Naming conventions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 92
+    },
+    {
+      "id": 37,
+      "category": "instruction",
+      "summary": "For each finding, output:",
+      "sourceLine": 94
+    },
+    {
+      "id": 38,
+      "category": "instruction",
+      "summary": "[spec section: \"key requirement\"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]",
+      "sourceLine": 95
+    },
+    {
+      "id": 39,
+      "category": "instruction",
+      "summary": "- If DIFFERS: describe the specific difference and state \"WILL FOLLOW SPEC\"",
+      "sourceLine": 96
+    },
+    {
+      "id": 40,
+      "category": "instruction",
+      "summary": "If no Reference Files were loaded: output \"SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions ",
+      "sourceLine": 98
+    },
+    {
+      "id": 41,
+      "category": "instruction",
+      "summary": "**Simplified scan**: if Reference Files were loaded but none mention the files or modules being refactored, output \"SPEC",
+      "sourceLine": 100
+    },
+    {
+      "id": 42,
+      "category": "instruction",
+      "summary": "{{end}}",
+      "sourceLine": 101
+    },
+    {
+      "id": 43,
+      "category": "instruction",
+      "summary": "在修改任何文件前，先用 Grep/Glob 搜索所有需要修改的位置，收集完整清单后再执行修改。禁止边搜边改。",
+      "sourceLine": 103
+    },
+    {
+      "id": 44,
+      "category": "format",
+      "summary": "### Step 2: Impact Mapping",
+      "sourceLine": 105
+    },
+    {
+      "id": 45,
+      "category": "instruction",
+      "summary": "Apply SPEC-CODE SCAN results — for any DIFFERS finding, follow spec over existing code. Reference Files from Step 1 are ",
+      "sourceLine": 107
+    },
+    {
+      "id": 46,
+      "category": "instruction",
+      "summary": "Before writing any code, determine the full scope of changes.",
+      "sourceLine": 109
+    },
+    {
+      "id": 47,
+      "category": "instruction",
+      "summary": "1. **Classify the refactor** — per sub-operation:\n   - **Structural**: rename, move, re-export, signature change, consta",
+      "sourceLine": 111
+    },
+    {
+      "id": 48,
+      "category": "instruction",
+      "summary": "2. **Map the impact**:\n   - Use `grep -rl` to list ALL files referencing the symbols being changed\n   - Identify affecte",
+      "sourceLine": 116
+    },
+    {
+      "id": 49,
+      "category": "instruction",
+      "summary": "3. **For behavioral refactors**: list the functions to modify and their callers. Impact is typically local.",
+      "sourceLine": 126
+    },
+    {
+      "id": 50,
+      "category": "instruction",
+      "summary": "4. **Dynamic coupling scan** — before any refactor, detect non-obvious coupling that breaks silently:\n   - Reflection or",
+      "sourceLine": 128
+    },
+    {
+      "id": 51,
+      "category": "instruction",
+      "summary": "5. **Sanity check** — assess whether this refactor is worth doing:\n   - Is it likely to reduce total lines of code or co",
+      "sourceLine": 135
+    },
+    {
+      "id": 52,
+      "category": "instruction",
+      "summary": "6. **Impact Declaration** — before any code changes, classify every affected test as PRESERVE or EVOLVE:",
+      "sourceLine": 140
+    },
+    {
+      "id": 53,
+      "category": "instruction",
+      "summary": "Analyze the tests identified in step 2 (syntactic layers 3-4: test data structures, test assertions). For each test that",
+      "sourceLine": 142
+    },
+    {
+      "id": 54,
+      "category": "instruction",
+      "summary": "Output a structured declaration:",
+      "sourceLine": 144
+    },
+    {
+      "id": 55,
+      "category": "format",
+      "summary": "```\n   IMPACT_DECLARATION:\n   - test: <fully qualified test function name>\n     classification: PRESERVE | EVOLVE\n     r",
+      "sourceLine": 146
+    },
+    {
+      "id": 56,
+      "category": "instruction",
+      "summary": "**Classification rules:**",
+      "sourceLine": 154
+    },
+    {
+      "id": 57,
+      "category": "metadata",
+      "summary": "- **PRESERVE**: Test verifies behavior that must remain unchanged by this refactor. Failure means regression.",
+      "sourceLine": 155
+    },
+    {
+      "id": 58,
+      "category": "metadata",
+      "summary": "- **EVOLVE**: Test verifies behavior that this refactor intentionally changes. Failure is expected; update test assertio",
+      "sourceLine": 156
+    },
+    {
+      "id": 59,
+      "category": "instruction",
+      "summary": "**EVOLVE validation:**",
+      "sourceLine": 158
+    },
+    {
+      "id": 60,
+      "category": "instruction",
+      "summary": "- Every EVOLVE entry MUST have both `reason` and `expected_change` filled in.",
+      "sourceLine": 159
+    },
+    {
+      "id": 61,
+      "category": "instruction",
+      "summary": "- If reason is empty, vague (e.g., \"test needs update\"), or expected_change is missing: reclassify as PRESERVE.",
+      "sourceLine": 160
+    },
+    {
+      "id": 62,
+      "category": "constraint",
+      "summary": "- Over-declaring EVOLVE to avoid pauses is a misuse — EVOLVE is for intentional behavioral shifts only.",
+      "sourceLine": 161
+    },
+    {
+      "id": 63,
+      "category": "example",
+      "summary": "**Example declaration:**",
+      "sourceLine": 163
+    },
+    {
+      "id": 64,
+      "category": "format",
+      "summary": "```\n   IMPACT_DECLARATION:\n   - test: TestAddCmd_BlockSource\n     classification: EVOLVE\n     reason: Removing SourceTas",
+      "sourceLine": 164
+    },
+    {
+      "id": 65,
+      "category": "instruction",
+      "summary": "**No tests affected?** Output: `IMPACT_DECLARATION: no tests in scope — all changes are non-behavioral`",
+      "sourceLine": 176
+    },
+    {
+      "id": 66,
+      "category": "format",
+      "summary": "Output: `Step 2/5: Impact mapping... DONE (type: <structural|behavioral>, files: N, layers: <list>, dynamic_coupling: <n",
+      "sourceLine": 178
+    },
+    {
+      "id": 67,
+      "category": "format",
+      "summary": "### Step 3: Refactor",
+      "sourceLine": 180
+    },
+    {
+      "id": 68,
+      "category": "instruction",
+      "summary": "{{if .CoverageStrategy}}<IMPORTANT>",
+      "sourceLine": 182
+    },
+    {
+      "id": 69,
+      "category": "constraint",
+      "summary": "Coverage strategy: maintain existing coverage, no new tests required. {{.CoverageStrategy}} — {{.CoverageTarget}} applie",
+      "sourceLine": 183
+    },
+    {
+      "id": 70,
+      "category": "instruction",
+      "summary": "Incremental compile strategy: After modifying one file, run `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` imme",
+      "sourceLine": 184
+    },
+    {
+      "id": 71,
+      "category": "instruction",
+      "summary": "</IMPORTANT>",
+      "sourceLine": 185
+    },
+    {
+      "id": 72,
+      "category": "instruction",
+      "summary": "{{end}}",
+      "sourceLine": 186
+    },
+    {
+      "id": 73,
+      "category": "instruction",
+      "summary": "**Universal constraints:**",
+      "sourceLine": 187
+    },
+    {
+      "id": 74,
+      "category": "instruction",
+      "summary": "- External behavior must remain unchanged (except for EVOLVE-classified tests)",
+      "sourceLine": 188
+    },
+    {
+      "id": 75,
+      "category": "instruction",
+      "summary": "- If a test assertion needs changes:\n  1. Check the IMPACT_DECLARATION from Step 2\n  2. If the test is classified as **E",
+      "sourceLine": 189
+    },
+    {
+      "id": 76,
+      "category": "constraint",
+      "summary": "- Do not write new failing tests — refactoring is verified by existing tests staying green (PRESERVE) or updated asserti",
+      "sourceLine": 193
+    },
+    {
+      "id": 77,
+      "category": "format",
+      "summary": "#### Structural Refactors: Add -> Migrate -> Remove",
+      "sourceLine": 195
+    },
+    {
+      "id": 78,
+      "category": "constraint",
+      "summary": "The goal is to keep the codebase compilable at every intermediate step. Never delete the old name until all callers are ",
+      "sourceLine": 197
+    },
+    {
+      "id": 79,
+      "category": "instruction",
+      "summary": "**Phase A — Add new alongside old:**",
+      "sourceLine": 199
+    },
+    {
+      "id": 80,
+      "category": "instruction",
+      "summary": "- Add the new constant/type/function",
+      "sourceLine": 200
+    },
+    {
+      "id": 81,
+      "category": "instruction",
+      "summary": "- Create an alias: old name -> new name (e.g., Go: `const OldName = NewName`, TS: `export { New as Old }`, Python: `OldN",
+      "sourceLine": 201
+    },
+    {
+      "id": 82,
+      "category": "instruction",
+      "summary": "- Before adding alias, check for circular dependency and module-boundary issues:\n  - If old and new are in different mod",
+      "sourceLine": 202
+    },
+    {
+      "id": 83,
+      "category": "instruction",
+      "summary": "- If circular dependency detected: place alias in a thin shim module, or skip alias and migrate all callers in one batch",
+      "sourceLine": 206
+    },
+    {
+      "id": 84,
+      "category": "instruction",
+      "summary": "- Run quick verification: `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` and run targeted tests on affected pac",
+      "sourceLine": 207
+    },
+    {
+      "id": 85,
+      "category": "instruction",
+      "summary": "- All tests must pass — old code is untouched, new code coexists",
+      "sourceLine": 208
+    },
+    {
+      "id": 86,
+      "category": "instruction",
+      "summary": "**Phase B — Migrate callers in small batches:**",
+      "sourceLine": 210
+    },
+    {
+      "id": 87,
+      "category": "instruction",
+      "summary": "- Group affected files into batches (see batch sizing below)",
+      "sourceLine": 211
+    },
+    {
+      "id": 88,
+      "category": "instruction",
+      "summary": "- Per batch: update references from old name to new name across all syntactic layers in those files",
+      "sourceLine": 212
+    },
+    {
+      "id": 89,
+      "category": "instruction",
+      "summary": "- After each batch: `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` and run targeted tests on affected packages/",
+      "sourceLine": 213
+    },
+    {
+      "id": 90,
+      "category": "instruction",
+      "summary": "- If a batch fails: fix within the batch and retry. Max 3 retries per batch.",
+      "sourceLine": 214
+    },
+    {
+      "id": 91,
+      "category": "instruction",
+      "summary": "- Continue to next batch only after current batch passes",
+      "sourceLine": 215
+    },
+    {
+      "id": 92,
+      "category": "instruction",
+      "summary": "**Batch sizing (adaptive):**",
+      "sourceLine": 217
+    },
+    {
+      "id": 93,
+      "category": "instruction",
+      "summary": "- Total affected files <= 10: batch all in one group",
+      "sourceLine": 218
+    },
+    {
+      "id": 94,
+      "category": "instruction",
+      "summary": "- Total > 10 and all changes are simple text replacements (no dynamic coupling): batch 15-20 files",
+      "sourceLine": 219
+    },
+    {
+      "id": 95,
+      "category": "instruction",
+      "summary": "- Otherwise: batch 3-5 files",
+      "sourceLine": 220
+    },
+    {
+      "id": 96,
+      "category": "instruction",
+      "summary": "**Phase B failure recovery:**",
+      "sourceLine": 222
+    },
+    {
+      "id": 97,
+      "category": "instruction",
+      "summary": "If max retries exhausted at batch N:",
+      "sourceLine": 223
+    },
+    {
+      "id": 98,
+      "category": "instruction",
+      "summary": "1. Run `git diff --stat` to assess scope of changes",
+      "sourceLine": 224
+    },
+    {
+      "id": 99,
+      "category": "instruction",
+      "summary": "2. If partial migration compiles (`just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` passes) -> report as \"partiall",
+      "sourceLine": 225
+    },
+    {
+      "id": 100,
+      "category": "instruction",
+      "summary": "3. If partial migration has broken imports -> `git checkout` the failed batch files and report as \"blocked at batch N\" w",
+      "sourceLine": 226
+    },
+    {
+      "id": 101,
+      "category": "instruction",
+      "summary": "Replacement order within each file: longest identifier first -> shortest last (avoids partial matches).",
+      "sourceLine": 228
+    },
+    {
+      "id": 102,
+      "category": "instruction",
+      "summary": "**Phase C — Remove old aliases:**",
+      "sourceLine": 230
+    },
+    {
+      "id": 103,
+      "category": "instruction",
+      "summary": "- Once all callers are migrated, delete the old alias/redirect",
+      "sourceLine": 231
+    },
+    {
+      "id": 104,
+      "category": "instruction",
+      "summary": "- Run `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` to confirm no remaining references",
+      "sourceLine": 232
+    },
+    {
+      "id": 105,
+      "category": "instruction",
+      "summary": "- If compile fails: grep for old name, fix remaining references, retry",
+      "sourceLine": 233
+    },
+    {
+      "id": 106,
+      "category": "format",
+      "summary": "#### Behavioral Refactors",
+      "sourceLine": 236
+    },
+    {
+      "id": 107,
+      "category": "instruction",
+      "summary": "Proceed incrementally — make one change, verify, make the next.",
+      "sourceLine": 238
+    },
+    {
+      "id": 108,
+      "category": "instruction",
+      "summary": "- After each logical change: `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` and run targeted tests on affected ",
+      "sourceLine": 239
+    },
+    {
+      "id": 109,
+      "category": "instruction",
+      "summary": "- Max 3 retries per failure. If still failing, stop and report.",
+      "sourceLine": 240
+    },
+    {
+      "id": 110,
+      "category": "format",
+      "summary": "Output: `Step 3/5: Refactoring... DONE`",
+      "sourceLine": 242
+    },
+    {
+      "id": 111,
+      "category": "format",
+      "summary": "### Step 4: Static Checks + Targeted Tests",
+      "sourceLine": 244
+    },
+    {
+      "id": 112,
+      "category": "instruction",
+      "summary": "<IMPORTANT> block (9 lines)",
+      "sourceLine": 246
+    },
+    {
+      "id": 113,
+      "category": "instruction",
+      "summary": "Run the final quality checks:",
+      "sourceLine": 256
+    },
+    {
+      "id": 114,
+      "category": "instruction",
+      "summary": "**Static checks** — execute in strict sequential order:",
+      "sourceLine": 258
+    },
+    {
+      "id": 115,
+      "category": "format",
+      "summary": "```bash\njust compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust lin",
+      "sourceLine": 260
+    },
+    {
+      "id": 116,
+      "category": "instruction",
+      "summary": "**Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-nati",
+      "sourceLine": 266
+    },
+    {
+      "id": 117,
+      "category": "instruction",
+      "summary": "> **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.",
+      "sourceLine": 268
+    },
+    {
+      "id": 118,
+      "category": "constraint",
+      "summary": "| Failed step | Action |\n|---|---|\n| `compile` | Grep for remaining old references, fix, retry (max 3 times) |\n| `fmt` |",
+      "sourceLine": 270
+    },
+    {
+      "id": 119,
+      "category": "constraint",
+      "summary": "Coverage is informational for refactoring — output the number but do not gate on it. If coverage drops >2%, investigate ",
+      "sourceLine": 277
+    },
+    {
+      "id": 120,
+      "category": "instruction",
+      "summary": "Max 3 retries at this step. If still failing after 3 attempts, stop and report the task as blocked with details of the l",
+      "sourceLine": 279
+    },
+    {
+      "id": 121,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 281
+    },
+    {
+      "id": 122,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 283
+    },
+    {
+      "id": 123,
+      "category": "metadata",
+      "summary": "- **testsPassed** / **testsFailed**: number of tests that passed/failed",
+      "sourceLine": 284
+    },
+    {
+      "id": 124,
+      "category": "metadata",
+      "summary": "- **coverage**: test coverage percentage (e.g. 80.0)",
+      "sourceLine": 285
+    },
+    {
+      "id": 125,
+      "category": "format",
+      "summary": "Output: `Step 4/5: Verifying... DONE (coverage: N%)`",
+      "sourceLine": 287
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 91,
+    "constraint": 11,
+    "example": 1,
+    "format": 16,
+    "metadata": 6
+  }
+}

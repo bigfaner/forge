@@ -1,0 +1,118 @@
+{
+  "forge-cli/pkg/prompt/templates/code-quality-simplify.md": {
+    "tokens": 310,
+    "lines": 46,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/coding-cleanup.md": {
+    "tokens": 1806,
+    "lines": 148,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/coding-enhancement.md": {
+    "tokens": 1846,
+    "lines": 160,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/coding-feature.md": {
+    "tokens": 1772,
+    "lines": 151,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/coding-fix.md": {
+    "tokens": 1782,
+    "lines": 156,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/coding-refactor.md": {
+    "tokens": 3898,
+    "lines": 287,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/doc-consolidate.md": {
+    "tokens": 395,
+    "lines": 46,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/doc-drift.md": {
+    "tokens": 424,
+    "lines": 46,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/doc-review.md": {
+    "tokens": 1207,
+    "lines": 117,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/doc-summary.md": {
+    "tokens": 411,
+    "lines": 51,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/doc.md": {
+    "tokens": 1104,
+    "lines": 105,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/eval-contract.md": {
+    "tokens": 373,
+    "lines": 54,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/eval-journey.md": {
+    "tokens": 374,
+    "lines": 54,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/fix-record-missed.md": {
+    "tokens": 457,
+    "lines": 55,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/gate.md": {
+    "tokens": 1794,
+    "lines": 160,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/test-gen-contracts.md": {
+    "tokens": 326,
+    "lines": 52,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/test-gen-journeys.md": {
+    "tokens": 329,
+    "lines": 52,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/test-gen-scripts.md": {
+    "tokens": 351,
+    "lines": 53,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/test-run.md": {
+    "tokens": 390,
+    "lines": 55,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/validation-code.md": {
+    "tokens": 1462,
+    "lines": 131,
+    "category": "prompt"
+  },
+  "forge-cli/pkg/prompt/templates/validation-ux.md": {
+    "tokens": 1247,
+    "lines": 111,
+    "category": "prompt"
+  },
+  "plugins/forge/agents/task-executor.md": {
+    "tokens": 1417,
+    "lines": 120,
+    "category": "agent"
+  },
+  "_summary": {
+    "totalTokens": 23475,
+    "totalLines": 2210,
+    "fileCount": 22,
+    "tokenizer": "cl100k_base"
+  }
+}

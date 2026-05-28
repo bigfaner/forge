@@ -1,0 +1,325 @@
+{
+  "type": "prompt",
+  "nodeCount": 52,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "metadata",
+      "summary": "SURFACE_KEY: {{.SurfaceKey}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "You are a focused task executor running a documentation review task.",
+      "sourceLine": 16
+    },
+    {
+      "id": 5,
+      "category": "format",
+      "summary": "## Workflow (4 Steps)",
+      "sourceLine": 18
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "### Step 1: Load Pre-extracted AC",
+      "sourceLine": 20
+    },
+    {
+      "id": 7,
+      "category": "constraint",
+      "summary": "Read the task file at `{{.TaskFile}}`. The Acceptance Criteria Summary section is pre-extracted from all doc tasks — use",
+      "sourceLine": 22
+    },
+    {
+      "id": 8,
+      "category": "format",
+      "summary": "Output: `Step 1/4: Loading pre-extracted acceptance criteria... DONE`",
+      "sourceLine": 24
+    },
+    {
+      "id": 9,
+      "category": "instruction",
+      "summary": "<CRITICAL> block (17 lines)",
+      "sourceLine": 26
+    },
+    {
+      "id": 10,
+      "category": "format",
+      "summary": "### Step 1.5: Spec-Code Conflict Scan",
+      "sourceLine": 44
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "For each Reference File loaded in Step 1, scan existing documents against spec requirements across four dimensions.",
+      "sourceLine": 46
+    },
+    {
+      "id": 12,
+      "category": "instruction",
+      "summary": "Read the documents that address the requirements in each Reference File, then output a per-dimension checklist:",
+      "sourceLine": 48
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "SPEC-CODE SCAN:",
+      "sourceLine": 49
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "- Required document structure: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 50
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "- Mandatory sections: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 51
+    },
+    {
+      "id": 16,
+      "category": "instruction",
+      "summary": "- Naming conventions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 52
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "- Content constraints: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 53
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "For each finding, output:",
+      "sourceLine": 55
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "[spec section: \"key requirement\"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]",
+      "sourceLine": 56
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "- If DIFFERS: describe the specific difference and state \"WILL FOLLOW SPEC\"",
+      "sourceLine": 57
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "If no Reference Files were loaded: output \"SPEC-CODE SCAN: skipped — no spec sources loaded\" and skip the per-dimension ",
+      "sourceLine": 59
+    },
+    {
+      "id": 22,
+      "category": "format",
+      "summary": "### Step 2: Discover Target Documents",
+      "sourceLine": 61
+    },
+    {
+      "id": 23,
+      "category": "instruction",
+      "summary": "Use Reference Files from Step 1 as the authoritative structure and content guide.",
+      "sourceLine": 63
+    },
+    {
+      "id": 24,
+      "category": "instruction",
+      "summary": "Discover target documents using an allowlist strategy — only scan the following directories for .md files:",
+      "sourceLine": 65
+    },
+    {
+      "id": 25,
+      "category": "instruction",
+      "summary": "- docs/features/{{.FeatureSlug}}/ and all subdirectories (prd/, design/, testing/, etc.)",
+      "sourceLine": 66
+    },
+    {
+      "id": 26,
+      "category": "instruction",
+      "summary": "- docs/proposals/{{.FeatureSlug}}/",
+      "sourceLine": 67
+    },
+    {
+      "id": 27,
+      "category": "constraint",
+      "summary": "Do NOT scan the tasks/ directory, tasks/records/ directory, or any non-docs paths.",
+      "sourceLine": 69
+    },
+    {
+      "id": 28,
+      "category": "instruction",
+      "summary": "For each target document found:",
+      "sourceLine": 71
+    },
+    {
+      "id": 29,
+      "category": "instruction",
+      "summary": "1. Read the document content",
+      "sourceLine": 72
+    },
+    {
+      "id": 30,
+      "category": "instruction",
+      "summary": "2. Cross-reference against the pre-extracted AC from Step 1",
+      "sourceLine": 73
+    },
+    {
+      "id": 31,
+      "category": "instruction",
+      "summary": "3. List each AC item for verification",
+      "sourceLine": 74
+    },
+    {
+      "id": 32,
+      "category": "format",
+      "summary": "Output: `Step 2/4: Discovering target documents and matching AC... DONE`",
+      "sourceLine": 76
+    },
+    {
+      "id": 33,
+      "category": "format",
+      "summary": "### Step 3: Review and Fix",
+      "sourceLine": 78
+    },
+    {
+      "id": 34,
+      "category": "instruction",
+      "summary": "For each acceptance criterion from the pre-extracted AC:",
+      "sourceLine": 80
+    },
+    {
+      "id": 35,
+      "category": "instruction",
+      "summary": "1. Check whether the deliverable meets the AC",
+      "sourceLine": 81
+    },
+    {
+      "id": 36,
+      "category": "instruction",
+      "summary": "2. If not met: directly modify the document to fix the non-conformance",
+      "sourceLine": 82
+    },
+    {
+      "id": 37,
+      "category": "instruction",
+      "summary": "3. Record the result (pass or fixed)",
+      "sourceLine": 83
+    },
+    {
+      "id": 38,
+      "category": "constraint",
+      "summary": "Do not add content beyond what the AC requires. Fix only the specific gaps identified.",
+      "sourceLine": 85
+    },
+    {
+      "id": 39,
+      "category": "constraint",
+      "summary": "<IMPORTANT> block (3 lines)",
+      "sourceLine": 87
+    },
+    {
+      "id": 40,
+      "category": "format",
+      "summary": "Output: `Step 3/4: Checking acceptance criteria and fixing non-conformances... DONE`",
+      "sourceLine": 91
+    },
+    {
+      "id": 41,
+      "category": "format",
+      "summary": "### Step 4: Report Summary",
+      "sourceLine": 93
+    },
+    {
+      "id": 42,
+      "category": "instruction",
+      "summary": "<IMPORTANT> block (9 lines)",
+      "sourceLine": 95
+    },
+    {
+      "id": 43,
+      "category": "instruction",
+      "summary": "Produce a summary report:",
+      "sourceLine": 105
+    },
+    {
+      "id": 44,
+      "category": "instruction",
+      "summary": "- Which ACs passed without changes",
+      "sourceLine": 106
+    },
+    {
+      "id": 45,
+      "category": "instruction",
+      "summary": "- Which ACs required fixes (and what was changed)",
+      "sourceLine": 107
+    },
+    {
+      "id": 46,
+      "category": "instruction",
+      "summary": "- Final status per doc task",
+      "sourceLine": 108
+    },
+    {
+      "id": 47,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 110
+    },
+    {
+      "id": 48,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 112
+    },
+    {
+      "id": 49,
+      "category": "metadata",
+      "summary": "- **referencedDocs**: list of documentation files reviewed (must only contain docs/ paths)",
+      "sourceLine": 113
+    },
+    {
+      "id": 50,
+      "category": "metadata",
+      "summary": "- **reviewStatus**: review outcome (e.g. \"all-passed\", \"fixes-applied\")",
+      "sourceLine": 114
+    },
+    {
+      "id": 51,
+      "category": "metadata",
+      "summary": "- **docMetrics**: summary of AC results (pass/fail counts per doc task)",
+      "sourceLine": 115
+    },
+    {
+      "id": 52,
+      "category": "format",
+      "summary": "Output: `Step 4/4: Review summary... DONE`",
+      "sourceLine": 117
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 31,
+    "constraint": 4,
+    "example": 0,
+    "format": 11,
+    "metadata": 6
+  }
+}
