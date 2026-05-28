@@ -900,6 +900,28 @@ func findHighestGateOrSummary(tasks map[string]Task) string {
 	return bestID
 }
 
+// ResolveDriftFallbackDep sets drift/consolidate task dependencies on the last business task
+// when test pipeline is disabled and these tasks have no dependencies.
+// Root cause: resolveQuickDeps/resolveBreakdownDeps only set drift deps when test pipeline is
+// enabled (lastRunID != ""). Without this fallback, drift tasks have depth=0 and get claimed
+// before business tasks.
+func ResolveDriftFallbackDep(index *TaskIndex) {
+	lastBiz := findMaxBusinessTaskID(index.TasksMap())
+	if lastBiz == "" {
+		return
+	}
+
+	driftIDs := []string{"T-quick-doc-drift", "T-specs-consolidate"}
+	for _, driftID := range driftIDs {
+		for key, t := range index.TasksMap() {
+			if t.ID == driftID && len(t.Dependencies) == 0 {
+				t.Dependencies = []string{lastBiz}
+				index.SetTask(key, t)
+			}
+		}
+	}
+}
+
 // findMaxBusinessTaskID finds the business task with the highest numeric ID.
 func findMaxBusinessTaskID(tasks map[string]Task) string {
 	maxN := 0

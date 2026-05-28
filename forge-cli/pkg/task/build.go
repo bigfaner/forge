@@ -407,6 +407,9 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
+	// 7.6 Resolve drift/consolidate fallback deps (when test pipeline is disabled)
+	ResolveDriftFallbackDep(index)
+
 	// 8. Normalize task files (remove empty ## Hard Rules sections)
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {

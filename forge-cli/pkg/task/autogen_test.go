@@ -1809,6 +1809,67 @@ func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 	}
 }
 
+func TestResolveDriftFallbackDep(t *testing.T) {
+	t.Run("quick drift with no deps falls back to last business task", func(t *testing.T) {
+		index := NewTaskIndex("test-feature")
+		index.SetTasks(map[string]Task{
+			"1-foo": {ID: "1", Title: "Foo", Priority: "P1", Status: "pending", Dependencies: []string{}, Type: TypeCodingFeature},
+			"drift": {ID: "T-quick-doc-drift", Title: "Drift", Priority: "P2", Status: "pending", Dependencies: nil, Type: TypeDocDrift},
+		})
+
+		ResolveDriftFallbackDep(index)
+
+		driftTask, _ := index.ByID("T-quick-doc-drift")
+		if len(driftTask.Dependencies) != 1 || driftTask.Dependencies[0] != "1" {
+			t.Errorf("drift deps = %v, want [1]", driftTask.Dependencies)
+		}
+	})
+
+	t.Run("breakdown consolidate with no deps falls back to last business task", func(t *testing.T) {
+		index := NewTaskIndex("test-feature")
+		index.SetTasks(map[string]Task{
+			"2-bar":       {ID: "2", Title: "Bar", Priority: "P1", Status: "pending", Dependencies: []string{}, Type: TypeCodingFeature},
+			"consolidate": {ID: "T-specs-consolidate", Title: "Consolidate", Priority: "P2", Status: "pending", Dependencies: nil, Type: TypeDocConsolidate},
+		})
+
+		ResolveDriftFallbackDep(index)
+
+		ct, _ := index.ByID("T-specs-consolidate")
+		if len(ct.Dependencies) != 1 || ct.Dependencies[0] != "2" {
+			t.Errorf("consolidate deps = %v, want [2]", ct.Dependencies)
+		}
+	})
+
+	t.Run("no-op when drift already has deps", func(t *testing.T) {
+		index := NewTaskIndex("test-feature")
+		index.SetTasks(map[string]Task{
+			"1-foo": {ID: "1", Title: "Foo", Priority: "P1", Status: "pending", Dependencies: []string{}, Type: TypeCodingFeature},
+			"drift": {ID: "T-quick-doc-drift", Title: "Drift", Priority: "P2", Status: "pending", Dependencies: []string{"T-test-run"}, Type: TypeDocDrift},
+		})
+
+		ResolveDriftFallbackDep(index)
+
+		dt, _ := index.ByID("T-quick-doc-drift")
+		if len(dt.Dependencies) != 1 || dt.Dependencies[0] != "T-test-run" {
+			t.Errorf("existing deps should be preserved, got %v", dt.Dependencies)
+		}
+	})
+
+	t.Run("no-op when no business tasks", func(t *testing.T) {
+		index := NewTaskIndex("test-feature")
+		index.SetTasks(map[string]Task{
+			"drift": {ID: "T-quick-doc-drift", Title: "Drift", Priority: "P2", Status: "pending", Dependencies: nil, Type: TypeDocDrift},
+		})
+
+		ResolveDriftFallbackDep(index)
+
+		dt, _ := index.ByID("T-quick-doc-drift")
+		if len(dt.Dependencies) != 0 {
+			t.Errorf("drift should have no deps when no business tasks, got %v", dt.Dependencies)
+		}
+	})
+}
+
 // --- {{DOC_TASK_AC}} rendering tests ---
 
 func TestRenderBody_DocTaskAC_Populated(t *testing.T) {
