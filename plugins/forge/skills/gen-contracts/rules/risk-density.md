@@ -53,7 +53,7 @@ gen-contracts reads the surface type's required_outcomes from the corresponding 
 | CLI     | `rules/surface-cli.md` | `not-found`, `already-exists` |
 | API     | `rules/surface-api.md` | `unauthorized` (for authenticated endpoints) |
 | TUI     | `rules/surface-tui.md` | `timeout` (for async Cmds) |
-| Web   | `rules/surface-web.md` | `validation-error`, `session-expired` |
+| WebUI   | `rules/surface-web.md` | `validation-error`, `session-expired` |
 | Mobile  | `rules/surface-mobile.md` | (best-effort, no mandatory Outcomes) |
 
 ### Derivation Rules
