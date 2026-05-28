@@ -344,6 +344,7 @@ variables:
   - `forge-cli/pkg/prompt/metadata_test.go`（单元测试）
 - task-executor agent 位于 `plugins/forge/agents/task-executor.md`
 - **行格式不变性约束**：`TASK_FILE`、`TASK_ID`、`SURFACE_KEY` 行在模板正文中的格式（`KEY: {{.Value}}`）和位置（正文首行区域）不可变更——`prompt.go` 使用 `strings.Replace` 对这些行做字符串替换，格式变更将导致静默失败（不报错但变量未被替换）
+- **`forge task index` 兼容性约束**：`forge task index` 通过 `task/frontmatter.go` 的 `ParseFrontmatter()` 解析 task .md 文件（rendered frontmatter），读取 `FrontmatterData` 结构体字段（id, title, type, surface-key 等）生成 index.json。本提案的 frontmatter 重构仅影响模板文件的 **metadata frontmatter**（第一个 `---` 块，渲染前被 `parseMetadataFrontmatter` 剥离），不影响 task/record 模板的 **rendered frontmatter**（第二个 `---` 块，由 `forge task index` 消费）。两套 frontmatter 解析路径完全独立：metadata frontmatter 由 `prompt/metadata.go` 解析，rendered frontmatter 由 `task/frontmatter.go` 解析（使用 `gopkg.in/yaml.v3`）。本提案不修改 `FrontmatterData` 结构体、`ParseFrontmatter()` 函数、或 `build.go` 的 `BuildIndex()` 逻辑
 
 ## Alternatives & Industry Benchmarking
 
