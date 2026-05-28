@@ -12,6 +12,7 @@ conditional:
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
+FEATURE_SLUG: {{.FeatureSlug}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
 {{if .PhaseSummary}}
 ## PhaseSummary
