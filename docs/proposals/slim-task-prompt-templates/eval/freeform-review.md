@@ -1,110 +1,158 @@
 ---
-reviewer: "Expert System Design & Prompt Architecture Strategist"
+reviewer: "Template Engine Migration & Rendering Pipeline Architect"
 proposal: "docs/proposals/slim-task-prompt-templates/proposal.md"
-date: "2026-05-27"
+date: "2026-05-28"
 review_type: "freeform"
 ---
 
-# Freeform Expert Review: 精简任务 Prompt 模板
+# Freeform Expert Review: 精简任务 Prompt 模板 + Frontmatter 元数据结构重构
 
 ## Background Assessment
 
-本提案解决的是一个真实且可量化的工程问题：Forge 的 15 个任务 prompt 模板中存在大量非指令内容——HTML 注释、角色描述中的自然语言段落、AC 验证块的展开说明、CODING_PRINCIPLES 中的举例解释、以及 Record Fields 的引导性描述。提案给出了七个类别的量化分析，保守估计每个 coding.* 模板包含约 80-100 行冗余，以每日 10-20 个 coding.* task 计，日 token 浪费达 12K-30K。
+本提案解决 Forge 插件中两个相互独立但同时推进的技术债务：第一，15 个 prompt 模板和 task-executor agent 中累积的约 190 行非指令性内容导致每次 task 执行浪费约 1200-1500 tokens（输入侧），日积月累形成可观的 token 消耗；第二，41 个模板的 metadata frontmatter 采用扁平 `variables` list，未区分元数据字段和内容字段的语义角色，导致 frontmatter 作为机器可校验契约的效力不足。
 
-核心方案是"就地精简"：不抽取公共模块、不修改 Go 代码、不改变现有分类体系，仅逐个编辑 .md 文件删除非指令内容。这个路线选择是务实的——对于 15 个低频变更的模板文件，引入 DSL 或分层组合架构的成本远高于收益。方案的工程直觉正确。
+内容精简的核心方案是"就地精简"——逐文件删减非指令内容，不引入架构变更。Frontmatter 重构的核心方案是将扁平 `variables` list 改为 `identity`/`context`/`conditional`/`variables` 四分组结构，同时将 PhaseSummary 从 frontmatter 移至正文独立 section。
 
-提案的核心设计哲学是"prompt 是指令，不是文档"——删掉所有不能直接指导 agent 行动的文字。这个原则提炼得简洁有力，但在我作为 prompt 系统架构师的视角下，它隐含着两个关键假设需要审视：
+从渲染管线角度审视，当前流程是：`embed.FS` 加载模板 -> `placeholderReplacer` 将 `{{X}}` 转为 `{{.X}}` -> `stripMetadataFrontmatter` 剥离 metadata frontmatter -> `text/template` 执行渲染 -> `strings.Replace` 注入 TASK_CATEGORY -> `collapseBlankLines` 后处理。Frontmatter 重构只修改 `parseMetadataFrontmatter` 的解析逻辑和 `validateMetadataVariables` 的校验逻辑，理论上不触碰渲染管线本身。但"理论上"和"实际上"之间有几个关键缝隙，以下逐一分析。
 
-第一条假设："冗余"与"功能"之间有清晰的、可操作的边界。提案通过 AC 验证块逐行分析表（~12 行 → ~4 行）、CODING_PRINCIPLES 逐原则分析（~50 行 → ~20 行）、Record Fields 逐字段分析（~3 行 → ~1 行）来尝试划定这条边界。这三张表是提案中方法论最扎实的部分。
-
-第二条假设：prompt 中的结构性元素（章节头、标记符、格式装饰）不携带语义信息，可以安全压缩。这个假设是含蓄的——提案的压缩策略专注于"文字内容"的删减，但未考虑结构性元素对 LLM 注意力分配、信息层级识别、以及跨模板格式一致性的隐性影响。在下文中我会沿着这条线展开分析。
-
-提案的 Success Criteria 设计采用了"保留率门禁 + 行数指标"的双层结构，SC2 的行为等价性检测协议包含 2+2 次 trial run 和轨迹一致性 ≥ 90% 的阈值。这比最初版本已有显著进步。但从 prompt 架构的原则出发，几个关键问题尚未触及。
+提案的一个核心假设是"prompt 中被删除的内容不直接影响 agent 执行行为"，验证手段是功能快照清单的 100% 保留率和轨迹对比的 90% 一致性。另一个核心假设是"frontmatter 重构对渲染输出无影响"，依赖 `stripMetadataFrontmatter` 在渲染前剥离 frontmatter 的机制。
 
 ## Key Risks
 
-风险：提案的"行"作为计量单位掩盖了 prompt 结构性压缩的真实影响——行数不等同于信息密度，而信息密度变化对 LLM 行为的影响是提案未分析的盲区。
+提案在 frontmatter 重构的技术实现细节上存在若干风险，以下从渲染管线架构的角度逐一分析。
 
-> "每行 markdown 平均 ~15 tokens" (第 28 行)
+风险：`parseMetadataFrontmatter` 的行级 YAML 解析器扩展复杂度被低估——当前实现是一个无状态的手工行扫描器，新增分组支持需要引入有状态的分组上下文跟踪。
 
-这个估算假定了所有行在信息密度上是均匀的。但实际经验中，删除一行角色描述和删除一行 AC:REQUIRED 指令对模型行为的影响完全不同。更关键的是：压缩后的模板信息密度会显著提高——同样 15 tokens 的行，原来可能是"解释性说明"（低信息密度），现在变成了"祈使句指令"（高信息密度）。信息密度的跃升意味着 LLM 的注意力分配会变化：在高密度 prompt 中，模型对每行文字的"权重"分配更为平均，可能导致某些关键行在注意力瀑布中被稀释；在低密度 prompt 中，关键指令因为周围有大量"空白文字"（解释和说明）反而获得更强的对比度，更易被模型捕获。这是一个反直觉的风险：精简不一定让指令更清晰，可能让所有行获得同等注意力，反而降低了关键指令的显著性。提案完全没有讨论信息密度变化对 LLM 注意力分布的影响。
+> "`parseMetadataFrontmatter` 是单文件内的行级 YAML 解析器，扩展分组支持复杂度低。" — Feasibility Assessment, Technical Feasibility
 
-问题："prompt 是指令，不是文档"这一核心原则在区分"什么是指令"时依赖的分类标准未明确定义。
+当前 metadata.go 第 54-77 行的实现是一个逐行 `strings.HasPrefix` 匹配器，唯一的"状态"是 `meta.Variables != nil` 用来判断是否处于变量列表模式。提案要求新增 `identity:`、`context:`、`conditional:` 三个分组，每个分组下有 `key: true` 形式的键值对。这意味着解析器必须跟踪"当前所在的分组"——遇到 `identity:` 行时进入 identity 分组模式，后续的 `taskID: true` 行应被解析为 identity 分组下的字段；遇到 `context:` 或空行时切换或退出分组。这需要引入 `currentSection string` 状态变量和对应的分支逻辑。虽然确实是"单文件范围内"的改动，但行级解析器在处理边缘情况时容易出错：空行是否重置分组状态？缩进不一致的行（如 `  identity:` 有前导空格）是否能正确匹配？注释行 `# identity:` 是否会误触发分组切换？提案没有讨论这些边缘情况。更稳健的替代方案是引入 `gopkg.in/yaml.v3` 标准库替代手工解析器，但提案没有评估这个选项。
 
-> "删掉所有不能直接指导 agent 行动的文字" (第 45 行)
+问题：分组字段的 PascalCase vs camelCase 命名规则存在内在矛盾，可能导致反射校验失败。
 
-这个定义在表面上是清晰的，但在实践中面临分类歧义：一条"边界说明"（如"这个原则在 X 场景下不适用"）是否"指导 agent 行动"？它不直接告诉 agent 做什么，但它告诉 agent 不做什么——这恰恰是指令的一种形式（负面约束）。同样，一个"场景举例"是否"指导 agent 行动"？它通过示范而非命令来影响行为，在 prompt engineering 中被广泛验证为有效的指令形式。提案的 CODING_PRINCIPLES 逐原则分析中已经自我发现了这个张力——"约束边界演示——非核心指令，但可能作为 few-shot 约束模型行为"（第 104 行）——但并未将其升级为方法论层面的风险。如果"指令"的定义是主观的，那么"冗余"的判定也是主观的，整个精简操作的基础就不稳固。它依赖执行者的个人判断，而不同执行者可能对同一行文字做出不同分类。
+> "YAML 使用 camelCase 但与 Go struct 的 PascalCase 字段名不同" — Key Risks 表
+> "分组内的字段名使用 Go struct 的原始 PascalCase 名（用于反射校验）" — SC-FM-5
 
-风险：CODING_PRINCIPLES 中的举例删除可能破坏原则之间的结构边界，导致原则混叠——这是一个比"丢失 few-shot 示范"更隐蔽但更危险的风险。
+提案在 Key Risks 表和 SC-FM-5 中对字段命名有看似矛盾的说法。Key Risks 表提到"YAML 使用 camelCase"，但 SC-FM-5 要求"分组内的字段名使用 Go struct 的原始 PascalCase 名"。查看提案的示例（Scenario 6），frontmatter 中 identity 分组使用了 `taskID: true`（camelCase），而 `validateMetadataVariables` 通过 `reflect.Type.FieldByName`（metadata.go 第 119 行）校验字段名——这是一个大小写敏感的操作。Go struct `promptTemplateData` 中的字段名是 `TaskID`（PascalCase）。如果 frontmatter 写 `taskID` 但 Go struct 的字段名是 `TaskID`，`FieldByName("taskID")` 将返回 false，校验失败。提案在 Key Risks 表的 Mitigation 中提到"分组声明中的 key 使用 camelCase 仅当 key 是分组 label，不用于反射校验"——但这句话含义模糊。如果分组内的字段不参与反射校验，那新增分组的校验意义何在？如果参与校验，则必须使用 PascalCase。提案需要明确统一命名规范并消除这个矛盾。
 
-> "原则 1: 行为示例/边界说明 — 2-5 行 — 约束边界演示" (第 104 行)
+风险：PhaseSummary 迁移引入的条件块格式变更与当前渲染逻辑生成的值格式不兼容。
 
-在长文本 prompt 中，多个原则并列时，原则之间的举例和说明文字客观上起到了"视觉分隔"和"注意力重置"的作用。当我分析大量 LLM 行为轨迹时发现：当一系列原则以密集的纯指令行连续排列时，模型容易在后半段原则中"跳读"或"忽略"——因为模型的注意力在持续的高密度指令输入中衰减。举例和说明文字虽然不直接携带指令语义，但它们提供了注意力喘息空间，让模型在阅读下一条原则时重新集中注意力。这类似于文档排版中的段落间距——去掉所有间距不会改变文字内容，但会显著降低阅读效率和信息吸收率。将 ~50 行压缩到 ~20 行，每原则只剩 1 行指令 + 1 行边界概括，意味着去掉了所有"自然段落间距"。提案在 SC3 中承诺"每原则至少保留 1 行指令 + 1 行边界概括"但未评估这种高密度排列对模型实际遵循率的影响。更关键的是，SC2 的轨迹一致性检测对此类注意力漂移不敏感——轨迹对比检测的是"做了什么"而非"决策过程中考虑了哪些原则"，注意力衰减带来的影响可能表现为微妙的决策质量下降而非行为路径偏移。
+> "在所有 21 个 prompt 模板正文中添加 `## PhaseSummary` 独立 section" — Scope, Frontmatter 重构
+> "`phaseSummaryLine = 'PHASE_SUMMARY: ' + phaseSummaryPath`" — prompt.go 第 189 行
 
-风险：提案的隐式 schema contract 分析缺失——模板的结构性特征（章节标题、标记前缀、格式约定）在整个 prompt 组装链路中可能承担协议角色，精简后可能导致组装链路断裂。
+当前模板中 PhaseSummary 的渲染是 `{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}`（见 coding-feature.md 第 20 行），渲染结果为单行文本如 `PHASE_SUMMARY: path/to/summary.md`。提案要求改为 `{{if .PhaseSummary}}\n## PhaseSummary\n{{.PhaseSummary}}\n{{end}}`（多行条件块）。但 `renderTemplate` 函数（prompt.go 第 187-191 行）生成的 PhaseSummary 值是 `"PHASE_SUMMARY: " + phaseSummaryPath` 形式的单行文本。如果新格式在其前面加了 `## PhaseSummary` 标题行，输出将变为：
 
-> "修改模板不影响 Go 代码，只需修改 .md 文件" (第 128 行)
+```
+## PhaseSummary
+PHASE_SUMMARY: path/to/summary.md
+```
 
-这个论断只在"编译加载"层面成立——Go 的 embed FS 确实不关心 .md 文件的内容。但在"运行时组装"层面存在更隐蔽的依赖。task-executor agent 在组装最终 prompt 时，可能依赖特定的章节标题来定位插入位置（如 `## Acceptance Criteria`、`## Hard Rules`），依赖特定的标记前缀来解析约束块（如 `CRITICAL:`、`AC:REQUIRED`），依赖特定的格式约定来区分指令和上下文。提案的 In Scope 明确保留了"不改动 Spec Authority Enforcement 逻辑结构"和"不改动 Hard Rules / CRITICAL 块的逻辑"，但对于其他结构性元素（如章节标题的格式、原则编号方式、AC 验证块的标记体系）没有声明保留策略。如果有任何一个 agent 或解析逻辑以字符串匹配方式依赖这些结构性元素，精简后可能导致运行时行为异常——这不是"模板编译错误"而是"协议不匹配"，后者更难诊断。提案没有审计整个系统中哪些组件读取或解析这些模板的结构性特征。
+这产生了语义重复：一个 Markdown 二级标题 `## PhaseSummary` 后面跟着的仍然是带 `PHASE_SUMMARY:` 前缀的旧格式文本行。标题和前缀在语义上是冗余的。更关键的是，提案声明"不修改 `prompt.go` 渲染逻辑（`Synthesize()` 等）"为 Out of Scope（Scope 章节），但 PhaseSummary 格式的一致性恰恰需要修改 `renderTemplate` 中 `phaseSummaryLine` 的生成逻辑。如果保持 `phaseSummaryLine` 不变，新的 section 格式在语义上就是冗余的；如果修改 `phaseSummaryLine`，就违反了 Out of Scope 约束。这是一个提案尚未意识到的自相矛盾。
 
-问题：Execution Protocol 步骤合并（11 步 → 8 步）的技术分析充分但缺失了"步骤粒度对 agent 认知负载"的影响分析。
+风险：`validateMetadataVariables` 校验范围的扩展未匹配不同模板类型的 Go struct。
 
-> "Steps 4-6 构成严格顺序链，合并后错误恢复路径不变，合并安全" (第 84 行)
+> "`validateMetadataVariables`（或新的 `validateGroupedMetadata`）校验所有分组（`Identity`/`Context`/`Conditional`/`Variables`）中的字段名集合均存在于对应的 Go struct 中" — SC-FM-3
 
-提案对 Steps 4-6 的错误恢复分析是扎实的——确认了 Step 4 失败不可恢复、Step 5 可降级、Step 6 无独立失败场景，得出了合并安全的结论。但 prompt 工程中步骤的粒度不仅服务于错误处理，还服务于 agent 的认知分段。在大模型驱动的 agent 中，每一步骤的标题和描述起到了"认知边界标记"的作用——它们告诉模型"这一步结束了，下一步是不同的事情"。合并步骤意味着模型需要在同一步骤内完成多个子任务，这可能降低模型对步骤之间逻辑转换的清晰感知。这不是错误处理问题，而是认知心理学问题。一个在错误处理上安全的合并，在认知处理上不一定安全。提案没有区分这两个维度。
+当前 `validateMetadataVariables`（metadata.go 第 93-109 行）只校验 `Variables` 列表中的字段名是否存在于指定的 struct 中。调用点是 `ValidatePromptTemplates`（prompt.go 第 76-120 行），它只遍历 `task.ValidTypes` 并统一使用 `promptTemplateData` 进行校验。task 模板和 record 模板不在该函数的校验范围内——它们有不同的 Go struct（task 模板使用 `task.Task` 的字段，record 模板使用 `RecordTemplateData` 的字段）。提案要求校验扩展到所有分组，但没有说明：(1) task 模板和 record 模板的 frontmatter 应该使用哪个 struct 校验？(2) 是否需要新增 `ValidateTaskTemplates` 和 `ValidateRecordTemplates` 校验函数？(3) 如果不新增校验函数，那 task 和 record 模板中新增的分组字段如何被验证？缺乏这些定义意味着 frontmatter 重构可能引入未校验的字段名拼写错误，而启动时的 `ValidatePromptTemplates` 不会捕获这些错误。
 
-风险：Token 节省估算的误差边界和验证方法缺失，可能导致投入产出比误判。
+问题：41 个模板的分组层级差异（prompt 三组、task 两组、record 一组）缺乏明确的判定规则。
 
-> "每行 markdown 平均 ~15 tokens（以 Claude Sonnet tokenizer 为参考）" (第 28 行)
+> "21 个 prompt 模板：添加 `identity`/`context`/`conditional` 分组；14 个 task 模板：添加 `identity`/`context` 分组；6 个 record 模板：添加 `identity` 分组" — Scope, Frontmatter 重构
 
-这个估算是粗糙的。不同类型的 markdown 行有不同的 token 密度：空行和分隔线 ~1 token，纯文本指令行 ~8-12 tokens，带代码块的约束行 ~15-25 tokens，结构化 JSON 示例行 ~20-40 tokens。使用 15 tokens/line 的单一均值来估算整个模板集的 token 节省，误差范围可能达到 ±40%。更重要的是：这个数字标注了"以 Claude Sonnet tokenizer 为参考"但没有说明是输入 token 还是输出 token——对于 prompt 精简，影响的主要是输入 token（context window 占用），但精简单个模板后，模型输出的 token 数可能因指令更密集而增加（模型需要更详细地阐述压缩后的指令），形成 token 节省的抵消效应。提案声称"月度约 250K-600K tokens"但这是未考虑抵消效应的毛节省。
+提案为三类模板预设了不同的分组层级，但未解释判定依据。为什么 task 模板不需要 `conditional` 分组？查看 task 模板示例（coding.cleanup.md），其 frontmatter 中确实有 `SurfaceKey`、`SurfaceType` 等字段，这些在模板正文中以 `{{if .SurfaceKey}}` 条件块使用——按提案的分组语义，这些应该是 `conditional` 类型。但提案没有为 task 模板分配 `conditional` 分组。同样，record 模板中 `TypeReclassification` 字段在正文中以条件块使用（`{{if .TypeReclassification}}`），但没有被归入 `conditional` 分组。缺乏明确的分组判定规则意味着实施时遇到边界情况没有决策依据。
 
-问题：SC2 的"典型 task 选取"规则缺乏覆盖面保证——1 个 task 可能只激活模板功能节点的 50%，90% 轨迹一致性的有效覆盖率仅 45%。
+风险：向后兼容性的语义映射未定义——新格式的四分组字段并集与旧格式 variables 列表的等价关系不明。
 
-> "对每模板选取 1 个典型 task，该 task 必须至少覆盖该模板功能快照清单中 80% 的 instruction/constraint 类别节点" (第 198 行)
+> "`parseMetadataFrontmatter` 保持容错：优先解析分组字段，若无分组则 fallback 到旧 variables list 解析。测试覆盖新旧两种格式。" — Key Risks 表
 
-这个设计意图是好的——通过覆盖率约束来提高 SC2 的有效性。但在实践中，一个单一天然 task 要覆盖 80% 的功能节点是非常困难的。以 coding-feature 模板为例，其功能节点可能包括 AC 验证、compile、fmt、lint、test、输出格式约束、多文件修改规则、回滚策略等。单个 task（如"添加登录页表单验证"）可能覆盖 AC 验证、test，但可能不涉及 lint 或回滚。要达到 80% 覆盖率，可能需要对每个模板设计"合成 task"——一个已知能触发所有约束节点的人造输入。合成 task 的设计本身就是一个工程工作，它的设计质量直接影响 SC2 的可信度。提案没有讨论合成 task 的设计责任和验证流程。更重要的是：即使 SC2 通过了，它验证的是"在这 1 个 task 上行为等价"，而非"在所有可能 task 上行为等价"。这是一个根本性的抽样限制。
+SC-FM-2 要求"旧格式的模板文件能被正确解析"和"解析结果中的 `Variables` 字段与旧解析器一致"。但这只覆盖了"旧格式模板在新解析器下正常工作"的方向。反向的语义等价问题没有定义：新格式中 `identity.taskID: true` + `variables: [TaskFile, ...]` 的组合，在旧代码视角下等价于什么？`TemplateMetadata.Variables` 列表应该只包含 `variables` 分组下的字段，还是应该包含所有分组字段的并集？如果只包含 `variables` 分组的字段，那旧代码中依赖 `Variables` 列表包含完整字段集的逻辑（例如用于模板完整性检查）将失效。提案没有定义新格式的 `TemplateMetadata` 结构体应该如何表示分组信息——是保持扁平的 `Variables []string` 并新增 `Identity map[string]bool` 等字段，还是将所有分组的字段合并到统一的 `Variables` 列表中？这个数据结构决策直接影响向后兼容性的实现方式。
 
-风险：提案的风险缓解措施中"功能快照清单"（功能快照清单）定义不完整——它是整个验证体系的核心制品但格式、创建者、创建时机均未明确，形成级联风险。
+问题：SC-FM-1 的迁移检测逻辑存在逻辑矛盾——将"设计上不需要 identity 的模板"也判定为"未迁移"。
 
-> "每模板建立'功能快照清单'——JSON 格式节点台账，每个节点包含：{id, category, type, content_snippet, role}。创建时机：修改前由修改者按模板逐行标注，reviewer 签署确认。" (第 193 行)
+> "若重构后模板的 frontmatter 不含 `identity:` 键则算作未迁移（包括那些确实无需 identity 字段的模板——如空 frontmatter 的模板）" — SC-FM-1
 
-这个清单是 Risk 1 缓解、Risk 3 缓解、SC1 验证三个环节共同依赖的基础制品。它的格式定义（JSON 台账）和字段（id/category/type/content_snippet/role）是清晰的，但以下关键要素未定义：(1) 节点的粒度——一条 CODING_PRINCIPLES 的完整条目是一个节点，还是条目中的每句话各为一个节点？粒度不同，台账的节点数和验证严格度完全不同。(2) category 和 type 的分类枚举——提案提到了 category 为 instruction/constraint/example/format 之一，type 进一步细分为 hard-rule/critical/ac-required/ac-explanation/role-desc/record-field——但这些枚举是暗示性的而非明确定义的。没有明确的分类枚举意味着不同修改者可能做出不同的分类，导致清单不可比较。(3) 签署确认的标准——reviewer 如何确认清单的正确性？需要另一份独立的逐行标注作为对照吗？这些未定义项导致"全部 pass 方可合并"的标准缺乏客观依据。对于一个被标为 Low Likelihood / High Impact 的风险，其缓解措施本身的严谨性应该更高。
+SC-FM-1 使用 `identity:` 键的存在性作为"已迁移"的唯一判据，但同时承认"包括那些确实无需 identity 字段的模板"。这产生了逻辑矛盾：如果一个模板根据设计确实不需要 identity 分组，它会被错误地标记为"未迁移"。正确的做法是按模板类型分别定义迁移标准：prompt 模板必须有 `identity` + `context` + `conditional`，task 模板必须有 `identity` + `context`，record 模板必须有 `identity`。统一用 `identity:` 存在性做检测过于粗糙。
+
+风险：renderTemplate 中 TASK_CATEGORY 的 `strings.Replace` 注入依赖精确字符串匹配，内容精简可能破坏这个隐式协议。
+
+> "`result = strings.Replace(result, "TASK_FILE: "+td.TaskFile, "TASK_FILE: "+td.TaskFile+"\nTASK_CATEGORY: "+td.TaskCategory, 1)`" — prompt.go 第 251-252 行
+> "不修改 `prompt.go` 渲染逻辑（`Synthesize()` 等）" — Scope, Out of Scope
+
+当前 `renderTemplate` 通过 `strings.Replace` 在渲染后的输出中查找 `"TASK_FILE: " + taskFile` 字符串，并在其后注入 `TASK_CATEGORY:` 行。这个替换依赖精确匹配 TASK_FILE 行的格式。如果内容精简修改了 `TASK_FILE:` 行的格式（例如改变缩进、在行尾添加空格、将 TASK_FILE 行与其他行合并），`strings.Replace` 将静默失败——不会报错，只是不注入 TASK_CATEGORY 行，导致 task-executor 收到的 prompt 缺少 TASK_CATEGORY 信息。提案声明"不修改 `prompt.go` 渲染逻辑"为 Out of Scope，但没有将"保持 TASK_FILE 行格式不变"列为显式约束。
+
+风险：内容精简的"功能快照清单"是验证体系的核心依赖但创建时机、粒度标准、分类字典均未定义。
+
+> "功能约束保留率 **100%**——每个模板修改后，对照功能快照清单逐项比对，所有指令/约束/格式节点保留率为 100% 方可合并。" — SC1
+
+SC1 要求 100% 的功能保留率，但"功能快照清单"本身的创建标准是模糊的。提案没有在 Scope 或 Next Steps 中定义谁在何时创建这个快照清单，清单中每个"节点"的粒度是什么（一条完整的原则是一个节点，还是原则中的每句话各是一个节点？），以及 `category`/`type` 的分类枚举是什么。如果不同创建者对粒度和分类有不同的理解，100% 的保留率就没有可比性。对于被标为 Low Likelihood / High Impact 的核心风险，其缓解措施的严谨性应该更高。
+
+问题：task-executor Execution Protocol 步骤合并的具体操作定义不充分。
+
+> "步骤 4/5/6 处理 prompt 获取逻辑可合并为 1 步" — 内容精简场景，Key Scenarios
+> "Execution Protocol 步骤数从 11 步减少到 <=8 步" — SC7
+
+提案只提到"步骤 4/5/6 可合并"，但没有给出合并后的步骤定义。从 11 步到 <=8 步需要减少 3 步——步骤 4/5/6 合并为 1 步省 2 步，那第 3 步的减少来自哪里？另外，Retry Strategy 与 Complex Error Pause Flow 的"去重合并"具体如何操作？提案中提到这两处可以合并但没有展开。实施者缺乏足够的操作指导。
 
 ## Improvement Suggestions
 
-建议：在精简前对所有修改范围内的模板执行一次"隐性结构依赖审计"，识别所有可能依赖模板结构性特征的消费方。
+建议：引入 `gopkg.in/yaml.v3` 标准库替代手工行级解析器解析 metadata frontmatter。
 
-Addresses: 风险（隐式 schema contract 分析缺失）。
+Addresses: 行级 YAML 解析器扩展复杂度被低估。
 
-具体操作：创建一份"结构依赖矩阵"，行是每个模板的结构性特征（章节标题、标记前缀、格式约定如 `## Output\n{...}`），列是所有可能消费这些特征的组件（task-executor agent、其他 agents、prompt.go 中的解析逻辑、测试脚本、CI 检查工具）。对每个交叉点回答：(1) 是否以字符串匹配方式依赖该特征？(2) 精简后该特征是否消失或变形？(3) 若消失，影响范围是什么？在确认所有依赖都被覆盖后，再执行修改。采纳后，模板修改的风险范围从"未知"缩小到"已知"，避免了"运行时 prompt 组装断裂"的最坏场景。这个审计过程本身就是有价值的架构文档。
+> What changes: 将 `parseMetadataFrontmatter` 中的手工行解析替换为标准 YAML 库的 `yaml.Unmarshal`。先提取 `---` 之间的内容（保留当前的 `---` 分隔符检测逻辑），然后用 YAML 库解析到新的 `TemplateMetadata` 结构体。新结构体定义为：
 
-建议：在精简 CODING_PRINCIPLES 时保留原则之间的"结构间距"——不将举例全部删除，而是从中选择 1 个最具代表性的保留作为自然分段。
+```go
+type TemplateMetadata struct {
+    Type       string            `yaml:"type"`
+    Category   string            `yaml:"category"`
+    Identity   map[string]bool   `yaml:"identity,omitempty"`
+    Context    map[string]bool   `yaml:"context,omitempty"`
+    Conditional map[string]bool  `yaml:"conditional,omitempty"`
+    Variables  []string          `yaml:"variables,omitempty"`
+}
+```
 
-Addresses: 风险（CODING_PRINCIPLES 举例删除可能导致原则混叠和注意力衰减）。
+这样可以避免手工维护分组状态机的各种边缘情况，同时让解析逻辑更健壮、更易扩展。Go 生态中 `gopkg.in/yaml.v3` 已被广泛使用，直接引入即可。向后兼容性通过 `yaml:",omitempty"` 自然实现——旧格式只有 `variables` 字段，新格式有分组字段，两者都能正确解析。
 
-将 CODING_PRINCIPLES 的精简策略从"每原则 1 行指令 + 1 行边界概括"调整为"每原则 1 行指令 + 1 行边界概括 + 1 个代表性示例（可选，视为分段锚点）"。提案的逐原则分析中已经提到"若 SC2 轨迹一致性 < 90%，每原则保留 1 个代表性示例"——这是一个回退条件。更稳健的做法是：在初始精简时就有选择性地保留示例，而不是先全部删除再根据失败回退。因为 SC2 对注意力衰减不敏感（前面已分析），"轨迹一致性 >= 90%"的条件可能无法触发回退。采纳后，CODING_PRINCIPLES 的压缩率从 ~60%（50→20）调整为 ~50%（50→25），token 节省略有降低但结构安全性显著提升——代价（约 5 行/原则 × 5 个 coding-* = 25 行）远低于收益。
+建议：统一字段命名为 PascalCase，与 Go struct 保持一致，消除命名矛盾。
 
-建议：为 SC2 的"典型 task"增加覆盖率验证步骤——要求 task 执行后的实际调用链与功能快照清单做交集比对。
+Addresses: PascalCase vs camelCase 命名矛盾。
 
-Addresses: 问题（SC2 典型 task 覆盖率的抽样限制）。
+> What changes: 在 frontmatter 的所有分组中，字段名一律使用 Go struct 的 PascalCase 原始名（如 `TaskID` 而非 `taskID`）。分组容器标签名（`identity`、`context`、`conditional`）使用 lowercase，但这些是分组的元名，不参与反射校验。提案应在显式约束中声明这一规则："frontmatter 分组内的字段名必须与 Go struct 的导出字段名完全一致（PascalCase），因为校验逻辑使用 `reflect.Type.FieldByName` 做大小写敏感匹配。"采纳后，SC-FM-5 的验证标准也相应明确化。
 
-在 SC2 协议中增加一步：在执行 task 后，从 agent 轨迹中提取实际触发的指令/约束类型，与功能快照清单做交集运算，计算实际覆盖率。如果实际覆盖率 < 80%，则该 task 作为验证载体不充分，选择或设计新 task 重新执行。提案已经描述了"由修改者从现有 task 库中选取，reviewer 确认覆盖率"的流程，但确认覆盖率需要对执行轨迹的审计而非简单的"看起来合适"。将覆盖率验证从"选取时预估"改为"执行后核定"后——如果实际触发覆盖率仍不足 80% 但模板中未覆盖的节点为静态约束（如"输出格式必须是 JSON"这类在任意 task 中均适用的约束），则可判定该节点无需 task 触发验证，降低覆盖率要求。采纳后，SC2 的抽样风险从未知降低到已知且可控，同时避免了为每个模板设计合成 task 的额外工程开销。
+建议：将 PhaseSummary 迁移涉及的 Go 代码修改纳入 In Scope，修改 `phaseSummaryLine` 的生成逻辑以匹配新格式。
 
-建议：将 token 节省估算从单点估算改为范围估算，并设定验证方法为"精简后实际 token 计数"。
+Addresses: PhaseSummary 条件块格式变更与旧格式不等价、Out of Scope 约束的自相矛盾。
 
-Addresses: 风险（Token 节省估算误差边界和验证方法缺失）。
+> What changes: 将 `renderTemplate` 中 `phaseSummaryLine` 的生成从 `"PHASE_SUMMARY: " + phaseSummaryPath` 修改为纯路径 `phaseSummaryPath`，同时将正文 section 模板改为 `## PhaseSummary\nRead: {{.PhaseSummary}}`。这样 section 标题提供上下文，内容只包含路径，语义清晰无冗余。同时将"不修改 `prompt.go` 渲染逻辑"从 Out of Scope 中移除，替换为"仅修改 `phaseSummaryLine` 的格式前缀"这一受控变更。采纳后，PhaseSummary section 的格式自洽且无语义重复，同时提案的 Scope 不再包含自相矛盾。
 
-在提案中增加一行声明：token 节省的估算范围为 8K-22K tokens/日（而非 12K-30K），下限对应以低 token 密度冗余（空行、分隔线）为主的模板，上限对应高 token 密度冗余（代码块、结构化示例）为主的模板。SC6 的线数指标保留为工程进度指标，但增加一个 SC8：在精简后对每个模板执行实际 tokenize（使用 Claude tokenizer），将 tokens/行、总 token 节省、每日 token 节省三个数字作为正式指标报告。这些数字对未来的 prompt 优化决策比线数更有参考价值。采纳后，提案的投入产出比从"估计值"变为"可验证值"，且后续优化工作有了更精确的基线。
+建议：为三类模板分别定义校验 struct 和分组规则，扩展启动时校验覆盖范围。
 
-建议：在功能快照清单的格式定义中补充节点粒度规则和分类枚举的明确字典。
+Addresses: `validateMetadataVariables` 校验范围变更未充分设计、41 个模板分组归属规则不明确。
 
-Addresses: 风险（功能快照清单定义不完整导致的级联风险）。
+> What changes: 提案增加一个"分组规则表"：
 
-为功能快照清单补充两个定义：(1) 节点粒度原则——以"最小不可拆分语义单位"为粒度，例如 AC:REQUIRED 块中的"验证所有 AC 条目"和"每个 AC 必须附带测试"是两个节点，而非一个。给出标尺：如果删除该内容后需要补充一条新指令来维持语义完整性，则它是一个节点。(2) 分类枚举字典——明确列出所有允许的 category 值（instruction/constraint/example/format/separator）和 type 值（hard-rule/critical/ac-required/ac-explanation/role-desc/record-field/principle-core/principle-boundary/step-header/format-marker），并为每个值给出清晰的定义和正反示例。采纳后，不同修改者的分类一致性从"靠默契"提升为"靠规范"，功能快照清单的可比性和可审计性从根本上得到保障。
+| 模板类型 | 校验 struct | 分配分组 | 判定规则 |
+|---------|-----------|---------|---------|
+| prompt | `promptTemplateData` | identity + context + conditional + variables | identity: 唯一标识模板渲染的键字段（TaskID）；context: 描述运行时上下文的字段（SurfaceKey, FeatureSlug 等）；conditional: 控制正文条件块显示的字段（CoverageStrategy, PhaseSummary 等） |
+| task | `task.Task` 对应的 struct | identity + context + variables | identity: 唯一标识任务实例的字段（ID, Title）；context: 任务执行上下文字段（SurfaceKey, SurfaceType） |
+| record | `RecordTemplateData` | identity + variables | identity: 唯一标识记录实例的字段（TaskID, TaskTitle, Status） |
 
-建议：评估 Execution Protocol 合并对 agent 认知分段的影响——在合并前后对比 agent 对步骤转换的感知清晰度。
+同时新增 `ValidateTaskTemplates` 和 `ValidateRecordTemplates` 校验函数，或在现有 `ValidatePromptTemplates` 中扩展校验循环覆盖三类模板。分组判定的核心规则应该是：identity 字段 = 唯一标识实例的字段（删除后无法定位具体实例），context 字段 = 影响行为但不控制条件渲染的字段，conditional 字段 = 在正文中以 `{{if .X}}` 控制段落显示的字段。采纳后，所有模板的分组有明确的判定依据，且所有分组的字段都能在启动时被校验。
 
-Addresses: 问题（Execution Protocol 步骤合并缺失认知负载分析）。
+建议：在 Constraints 章节中增加"TASK_FILE 行格式稳定性"约束。
 
-在合并前，对 task-executor 的每个步骤绘制"认知边界标识"——每个步骤标题和描述中告诉 agent"这个步骤完成了"和"下一步做什么"的过渡语句。合并后检查：合并后的步骤是否提供了同等清晰的边界标识？如果没有，需要在合并后的步骤描述中有意保留或重建这些过渡语句。推荐的做法不是简单地将 3 个步骤的文本拼接，而是撰写一个新的步骤描述，明确告诉 agent "这一步包含三个子任务：(a)... (b)... (c)..."，并设定子任务之间的流转条件。采纳后，步骤合并的风险从"错误恢复路径分析覆盖"扩展到"认知分段分析也覆盖"，合并的安全论证更加完整。
+Addresses: renderTemplate 中 TASK_CATEGORY 注入的字符串替换依赖。
+
+> What changes: 在 Constraints & Dependencies 中增加一条约束："内容精简不得改变 `TASK_ID:`、`TASK_FILE:`、`SURFACE_KEY:` 行的格式（包括缩进、空格数量、行尾字符），因为 `renderTemplate` 的 `strings.Replace` 后处理依赖精确字符串匹配。"同时在 Success Criteria 中增加验证标准：精简后所有 prompt 模板中 `TASK_FILE:` 行的格式与精简前完全一致，通过 `git diff` 确认。更长期地，建议将 TASK_CATEGORY 注入从 `strings.Replace` 后处理迁移到模板正文中的 `{{.TaskCategory}}` 占位符，彻底消除这个隐式依赖。
+
+建议：定义功能快照清单的创建标准和分类字典。
+
+Addresses: 功能快照清单的粒度标准和分类字典未定义。
+
+> What changes: 在提案 Scope 中增加前置工作项："在内容精简开始前，为每个模板创建功能快照清单。"同时定义：(1) 节点粒度规则——以"最小不可拆分语义单位"为粒度，判断标尺是"如果删除该内容后需要补充一条新指令来维持语义完整性，则它是一个节点"；(2) 分类枚举字典——明确定义所有允许的 `category` 值（instruction / constraint / example / format / separator）和 `type` 值（hard-rule / critical / ac-required / ac-explanation / role-desc / record-field / principle-core / principle-boundary / step-header / format-marker），每个值附带正反示例。采纳后，快照清单的创建有客观标准，不同创建者的分类一致性从"靠默契"提升为"靠规范"。
+
+建议：为向后兼容性定义新格式与旧格式的语义映射规范。
+
+Addresses: 向后兼容性的语义映射未定义。
+
+> What changes: 在提案中增加"迁移语义映射"章节，明确定义：新格式的 `identity` + `context` + `conditional` + `variables` 四个分组的字段并集，应等于旧格式的 `variables` 列表。`TemplateMetadata` 结构体应提供 `AllFields()` 方法返回所有分组字段的并集，供需要完整字段列表的消费方使用。测试用例应覆盖三个场景：(1) 新格式模板——所有分组字段 + variables 字段都能通过校验；(2) 旧格式模板——Variables 列表照常校验；(3) 验证 `AllFields()` 的返回值与旧格式 Variables 列表的等价性。采纳后，向后兼容性有了完整的语义定义和验证标准。
