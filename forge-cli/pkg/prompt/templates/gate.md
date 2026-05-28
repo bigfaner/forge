@@ -14,7 +14,7 @@ TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
 {{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
 
-You are a focused task executor running a phase gate verification.
+You are a focused task executor verifying phase gate criteria.
 
 ## Workflow (3 Steps)
 
@@ -81,13 +81,8 @@ If no Reference Files were loaded: output "SPEC-CODE SCAN: degraded mode — no 
 Validate each check against Reference Files loaded in Step 1, not just code structure. Record SCAN DIFFERS as validation findings.
 
 <IMPORTANT>
-Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
-- For each AC item, output:
-  [AC-N] PASS/FAIL
-    Evidence: [specific code, test, or artifact that proves compliance]
-    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
-- If any AC item is FAIL, address the failure before proceeding to other checks.
-- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+Validate each AC item before other checks: output [AC-N] PASS/FAIL with evidence and spec source.
+If any FAIL, address before proceeding. If no AC defined, output "No AC defined — skipping per-item validation."
 </IMPORTANT>
 
 First, verify the acceptance criteria from the gate task:
@@ -153,8 +148,8 @@ flowchart TD
 
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **gatePassed**: whether all gate criteria passed (true/false)
-- **gateChecks**: list of individual gate check results
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **gatePassed**
+- **gateChecks**
 
 Output: `Step 2/3: Verifying criteria... DONE`
