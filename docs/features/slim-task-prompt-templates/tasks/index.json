@@ -13,7 +13,8 @@
       "record": "records/1-create-baseline.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.feature"
+      "type": "coding.feature",
+      "complexity": "medium"
     },
     "2-slim-prompt-templates": {
       "id": "2",
@@ -28,7 +29,8 @@
       "record": "records/2-slim-prompt-templates.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "high"
     },
     "2a-verify-coding-templates": {
       "id": "2a",
@@ -43,7 +45,8 @@
       "record": "records/2a-verify-coding-templates.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "high"
     },
     "2b-verify-gate-doc-templates": {
       "id": "2b",
@@ -58,7 +61,8 @@
       "record": "records/2b-verify-gate-doc-templates.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "medium"
     },
     "2c-verify-test-templates": {
       "id": "2c",
@@ -73,7 +77,8 @@
       "record": "records/2c-verify-test-templates.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "medium"
     },
     "3-slim-task-executor": {
       "id": "3",
@@ -88,7 +93,8 @@
       "record": "records/3-slim-task-executor.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "medium"
     },
     "4-refactor-metadata-parsing": {
       "id": "4",
@@ -107,7 +113,8 @@
       "breaking": true,
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "high"
     },
     "5-migrate-frontmatters": {
       "id": "5",
@@ -122,14 +129,15 @@
       "record": "records/5-migrate-frontmatters.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "coding.enhancement"
+      "type": "coding.enhancement",
+      "complexity": "medium"
     },
     "fix-1": {
       "id": "fix-1",
       "title": "fix test: just test failure in quality gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "skipped",
       "file": "fix-1.md",
       "record": "records/fix-1.md",
       "breaking": true,
@@ -142,12 +150,23 @@
       "title": "fix test: just test failure in quality gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "skipped",
       "file": "fix-2.md",
       "record": "records/fix-2.md",
       "breaking": true,
       "surface-key": ".",
       "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: automated-test-orchestration TestTC_034",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
       "type": "coding.fix"
     },
     "quick-drift-detection": {
