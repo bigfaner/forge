@@ -174,18 +174,13 @@ Run the following config check sequence via Bash tool:
 
 ```bash
 # Eval auto-run check (techDesign)
-MODE=$(forge config get mode 2>/dev/null)
-if [ $? -ne 0 ]; then
-  echo "FALLBACK_ASK"
+EVAL_ENABLED=$(forge config get auto.eval.techDesign 2>/dev/null)
+if [ "$EVAL_ENABLED" = "true" ]; then
+  echo "AUTO_RUN"
+elif [ "$EVAL_ENABLED" = "false" ]; then
+  echo "SKIP"
 else
-  EVAL_ENABLED=$(forge config get auto.eval.techDesign.$MODE 2>/dev/null)
-  if [ "$EVAL_ENABLED" = "true" ]; then
-    echo "AUTO_RUN"
-  elif [ "$EVAL_ENABLED" = "false" ]; then
-    echo "SKIP"
-  else
-    echo "FALLBACK_ASK"
-  fi
+  echo "FALLBACK_ASK"
 fi
 ```
 

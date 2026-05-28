@@ -29,14 +29,63 @@ type ModeToggle struct {
 }
 
 // EvalConfig controls which eval skills auto-run after document generation.
-// Each field is a ModeToggle controlling quick/full pipeline behavior.
+// Each field is a bool: true means auto-eval is enabled, false means disabled.
 //
 //nolint:revive // UiDesign matches YAML key convention (camelCase)
 type EvalConfig struct {
-	Proposal   ModeToggle `yaml:"proposal"`
-	Prd        ModeToggle `yaml:"prd"`
-	UiDesign   ModeToggle `yaml:"uiDesign"`
-	TechDesign ModeToggle `yaml:"techDesign"`
+	Proposal   bool `yaml:"proposal"`
+	Prd        bool `yaml:"prd"`
+	UiDesign   bool `yaml:"uiDesign"`
+	TechDesign bool `yaml:"techDesign"`
+}
+
+// UnmarshalYAML implements custom YAML unmarshaling for EvalConfig.
+// Supports backward compatibility: if a field receives a map value (old ModeToggle format),
+// it extracts the "full" sub-key as the bool value.
+func (e *EvalConfig) UnmarshalYAML(value *yaml.Node) error {
+	// Use a temporary map to capture raw YAML
+	var raw map[string]interface{}
+	if err := value.Decode(&raw); err != nil {
+		return err
+	}
+
+	//nolint:revive // UiDesign matches YAML key convention (camelCase)
+	type aliases struct {
+		Proposal   interface{} `yaml:"proposal"`
+		Prd        interface{} `yaml:"prd"`
+		UiDesign   interface{} `yaml:"uiDesign"`
+		TechDesign interface{} `yaml:"techDesign"`
+	}
+	var a aliases
+	if err := value.Decode(&a); err != nil {
+		return err
+	}
+
+	e.Proposal = toBoolWithCompat(a.Proposal)
+	e.Prd = toBoolWithCompat(a.Prd)
+	e.UiDesign = toBoolWithCompat(a.UiDesign)
+	e.TechDesign = toBoolWithCompat(a.TechDesign)
+	return nil
+}
+
+// toBoolWithCompat converts a YAML value to bool, handling backward compatibility
+// with the old ModeToggle map format. If the value is a map, it extracts the "full"
+// sub-key. Otherwise, it interprets the value as a bool.
+func toBoolWithCompat(v interface{}) bool {
+	switch val := v.(type) {
+	case bool:
+		return val
+	case map[string]interface{}:
+		// Old ModeToggle format: extract "full" sub-key
+		if full, ok := val["full"]; ok {
+			if b, ok := full.(bool); ok {
+				return b
+			}
+		}
+		return false
+	default:
+		return false
+	}
 }
 
 // AutoConfig controls which auto-generated tasks are produced by `forge task index`.
@@ -59,6 +108,7 @@ type AutoConfig struct {
 // AutoConfigDefaults returns an AutoConfig with backward-compatible defaults:
 // test: quick=false, full=true; consolidateSpecs: quick=true, full=true;
 // cleanCode=false, validation=false, gitPush=false.
+// Eval: proposal=true, prd=false, uiDesign=true, techDesign=false.
 func AutoConfigDefaults() AutoConfig {
 	return AutoConfig{
 		Test:             ModeToggle{Quick: false, Full: true},
@@ -69,10 +119,10 @@ func AutoConfigDefaults() AutoConfig {
 		GitPush:          false,
 		KnowledgeSave:    ModeToggle{Quick: true, Full: false},
 		Eval: EvalConfig{
-			Proposal:   ModeToggle{Quick: true, Full: true},
-			Prd:        ModeToggle{Quick: false, Full: false},
-			UiDesign:   ModeToggle{Quick: true, Full: true},
-			TechDesign: ModeToggle{Quick: false, Full: false},
+			Proposal:   true,
+			Prd:        false,
+			UiDesign:   true,
+			TechDesign: false,
 		},
 	}
 }
@@ -228,7 +278,7 @@ func (s SurfacesMap) MarshalYAML() (interface{}, error) {
 type Config struct {
 	Version        string          `yaml:"version,omitempty"`
 	ProjectType    string          `yaml:"project-type,omitempty"`
-	Auto           *AutoConfig     `yaml:"auto,omitempty"`
+	Auto           *AutoConfig     `yaml:"auto"`
 	Worktree       *WorktreeConfig `yaml:"worktree,omitempty"`
 	Coverage       *CoverageConfig `yaml:"coverage,omitempty"`
 	TestFramework  string          `yaml:"test-framework,omitempty"`
@@ -410,6 +460,8 @@ func parseAutoRaw(data []byte) (map[string]map[string]bool, error) {
 
 // scanMappingNode recursively scans a YAML mapping node for ModeToggle-like
 // sub-fields (quick/full), building flat-path keys.
+// For eval sub-fields (under "eval" prefix), it also tracks scalar (bool) values
+// to support the new flat bool format alongside the old ModeToggle map format.
 func scanMappingNode(node *yaml.Node, prefix string, result map[string]map[string]bool) {
 	if node.Kind != yaml.MappingNode {
 		return
@@ -442,6 +494,12 @@ func scanMappingNode(node *yaml.Node, prefix string, result map[string]map[strin
 				// Recurse into nested struct (e.g. "eval")
 				scanMappingNode(valNode, flatKey, result)
 			}
+		} else if valNode.Kind == yaml.ScalarNode && prefix == "eval" {
+			// Eval sub-field in new bool format: track its presence
+			if _, exists := result[flatKey]; !exists {
+				result[flatKey] = make(map[string]bool)
+			}
+			result[flatKey]["set"] = true
 		}
 	}
 }
@@ -500,11 +558,22 @@ func (a *AutoConfig) applyDefaults() {
 	applyModeDefault(&a.RunTasks, a.raw, "runTasks", d.RunTasks)
 	applyModeDefault(&a.KnowledgeSave, a.raw, "knowledgeSave", d.KnowledgeSave)
 
-	// Eval sub-fields
-	applyModeDefault(&a.Eval.Proposal, a.raw, "eval.proposal", d.Eval.Proposal)
-	applyModeDefault(&a.Eval.Prd, a.raw, "eval.prd", d.Eval.Prd)
-	applyModeDefault(&a.Eval.UiDesign, a.raw, "eval.uiDesign", d.Eval.UiDesign)
-	applyModeDefault(&a.Eval.TechDesign, a.raw, "eval.techDesign", d.Eval.TechDesign)
+	// Eval sub-fields: simple bool defaults (no ModeToggle)
+	applyBoolDefault(&a.Eval.Proposal, a.raw, "eval.proposal", d.Eval.Proposal)
+	applyBoolDefault(&a.Eval.Prd, a.raw, "eval.prd", d.Eval.Prd)
+	applyBoolDefault(&a.Eval.UiDesign, a.raw, "eval.uiDesign", d.Eval.UiDesign)
+	applyBoolDefault(&a.Eval.TechDesign, a.raw, "eval.techDesign", d.Eval.TechDesign)
+}
+
+// applyBoolDefault sets a default bool value for a field that was not explicitly set in YAML.
+// The raw map tracks whether the field was present in the YAML; if absent, the default is applied.
+func applyBoolDefault(field *bool, raw map[string]map[string]bool, key string, defaults bool) {
+	_, exists := raw[key]
+	if !exists {
+		*field = defaults
+		return
+	}
+	// Field was explicitly set in YAML — keep the value set by UnmarshalYAML
 }
 
 // applyModeDefault sets default values for a ModeToggle field using per-mode defaults.
@@ -739,12 +808,15 @@ func formatValue(v reflect.Value) (string, error) {
 		return "", errKeyNotFound
 	}
 
-	// Check for custom YAML types that reflect routing cannot handle
-	if implementsYAMLUnmarshaler(v) {
+	kind := v.Kind()
+
+	// Check for custom YAML types that reflect routing cannot handle.
+	// Only applies to non-struct types (e.g. SurfacesMap as map type).
+	// Structs that implement yaml.Unmarshaler (like EvalConfig for compat)
+	// are handled by the struct formatting path below.
+	if kind != reflect.Struct && implementsYAMLUnmarshaler(v) {
 		return "", errUnsupportedType
 	}
-
-	kind := v.Kind()
 
 	switch kind {
 	case reflect.Bool:

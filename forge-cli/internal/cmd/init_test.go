@@ -695,6 +695,127 @@ func TestAutoBehaviorPrompts_NoE2EReferences(t *testing.T) {
 	})
 }
 
+func TestAutoBehaviorPrompts_EvalPrompts(t *testing.T) {
+	t.Run("includes 4 eval prompts", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		var evalPrompts []autoBehaviorPrompt
+		for _, p := range prompts {
+			lower := strings.ToLower(p.title)
+			if strings.Contains(lower, "evaluat") {
+				evalPrompts = append(evalPrompts, p)
+			}
+		}
+
+		if len(evalPrompts) != 4 {
+			t.Fatalf("expected 4 eval prompts, got %d: %+v", len(evalPrompts), evalPrompts)
+		}
+	})
+
+	t.Run("eval prompt titles cover proposal/prd/uiDesign/techDesign", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		expected := []string{"proposal", "prd", "ui design", "tech design"}
+		for _, keyword := range expected {
+			found := false
+			for _, p := range prompts {
+				if strings.Contains(strings.ToLower(p.title), keyword) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("no eval prompt found for keyword %q", keyword)
+			}
+		}
+	})
+
+	t.Run("eval prompts have correct defaults", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		expectedDefaults := map[string]bool{
+			"proposal":    true,
+			"prd":         false,
+			"ui design":   true,
+			"tech design": false,
+		}
+
+		for keyword, wantDefault := range expectedDefaults {
+			found := false
+			for _, p := range prompts {
+				if strings.Contains(strings.ToLower(p.title), keyword) {
+					if p.def != wantDefault {
+						t.Errorf("eval prompt for %q: expected default %v, got %v", keyword, wantDefault, p.def)
+					}
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("no eval prompt found for keyword %q", keyword)
+			}
+		}
+	})
+
+	t.Run("eval prompts are before gitPush", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		var evalIndices []int
+		gitPushIndex := -1
+		for i, p := range prompts {
+			lower := strings.ToLower(p.title)
+			if strings.Contains(lower, "git push") {
+				gitPushIndex = i
+			}
+			if strings.Contains(lower, "evaluat") {
+				evalIndices = append(evalIndices, i)
+			}
+		}
+
+		if gitPushIndex < 0 {
+			t.Fatal("gitPush prompt not found")
+		}
+		if len(evalIndices) == 0 {
+			t.Fatal("no eval prompts found")
+		}
+
+		lastEval := evalIndices[len(evalIndices)-1]
+		if lastEval >= gitPushIndex {
+			t.Errorf("all eval prompts should be before gitPush: last eval at %d, gitPush at %d", lastEval, gitPushIndex)
+		}
+	})
+
+	t.Run("eval prompts set correct AutoConfig fields", func(t *testing.T) {
+		defaults := forgeconfig.AutoConfigDefaults()
+		prompts := autoBehaviorPrompts(defaults)
+
+		auto := &forgeconfig.AutoConfig{}
+		// Apply each eval prompt with value true
+		for _, p := range prompts {
+			if strings.Contains(strings.ToLower(p.title), "evaluat") {
+				p.set(auto, true)
+			}
+		}
+
+		if !auto.Eval.Proposal {
+			t.Error("expected Eval.Proposal to be true after setting")
+		}
+		if !auto.Eval.Prd {
+			t.Error("expected Eval.Prd to be true after setting")
+		}
+		if !auto.Eval.UiDesign {
+			t.Error("expected Eval.UiDesign to be true after setting")
+		}
+		if !auto.Eval.TechDesign {
+			t.Error("expected Eval.TechDesign to be true after setting")
+		}
+	})
+}
+
 func TestWorktreeConfigRoundTrip(t *testing.T) {
 	t.Run("worktree config round-trips through YAML", func(t *testing.T) {
 		dir := t.TempDir()

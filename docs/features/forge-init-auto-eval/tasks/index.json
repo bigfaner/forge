@@ -1,0 +1,93 @@
+{
+  "feature": "forge-init-auto-eval",
+  "proposal": "docs/proposals/forge-init-auto-eval/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-evalconfig-bool": {
+      "id": "1",
+      "title": "EvalConfig 扁平化为 bool 并简化默认值",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-evalconfig-bool.md",
+      "record": "records/1-evalconfig-bool.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "2-init-eval-prompts": {
+      "id": "2",
+      "title": "autoBehaviorPrompts 新增 4 个 eval 提示",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-init-eval-prompts.md",
+      "record": "records/2-init-eval-prompts.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "3-skill-eval-adapt": {
+      "id": "3",
+      "title": "SKILL.md eval 检查统一适配",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-skill-eval-adapt.md",
+      "record": "records/3-skill-eval-adapt.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "low"
+    },
+    "4-config-test-update": {
+      "id": "4",
+      "title": "config_test.go 更新适配 bool 格式",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-config-test-update.md",
+      "record": "records/4-config-test-update.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
