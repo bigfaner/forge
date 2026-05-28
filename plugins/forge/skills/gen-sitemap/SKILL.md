@@ -31,7 +31,7 @@ npx agent-browser@latest install
 If install also fails (network error, permission denied, incompatible Node version), proceed without agent-browser: skip Steps 3-4 link crawling and dynamic state exploration. Build sitemap from router registry only (Step 2a) and notify user: "agent-browser unavailable. Sitemap built from static route analysis only — dynamic states and SPA client-side routes may be incomplete."
 
 <HARD-RULE>
-Always use a version-qualified `npx agent-browser@latest` invocation. Do not use bare `npx agent-browser` (unpinned) — it may pull breaking changes between runs. For CI reproducibility, consider pinning to a specific version (e.g. `agent-browser@0.4.x`) in your environment.
+Always use a version-qualified `npx agent-browser@latest` invocation. Do not use bare `npx agent-browser` (unpinned) — it may pull breaking changes between runs. If CI reproducibility requires a pinned version, set it in the environment (e.g. `npm install -g agent-browser@0.4.x`) and use `agent-browser` directly; otherwise use `@latest` for interactive sessions.
 </HARD-RULE>
 
 After installation, re-run this command.

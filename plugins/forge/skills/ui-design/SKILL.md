@@ -112,7 +112,8 @@ Output file naming:
 |----------|------------|
 | Web only | `ui/ui-design.md` |
 | TUI only | `ui/ui-design-tui.md` |
-| Mobile only | `ui/ui-design.md` |
+| Mobile only | `ui/ui-design-mobile.md` |
+| Web + mobile | `ui/ui-design.md` (web) + `ui/ui-design-mobile.md` (mobile) |
 | Multi-platform (web + tui) | `ui/ui-design-web.md` + `ui/ui-design-tui.md` |
 
 The Design System section references the style selected in Step 3 (inline core tokens, no external file references).
@@ -138,11 +139,11 @@ Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
 Run `forge config get auto.eval.uiDesign`. Based on the result:
 - `true` → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
-- `false` → skip eval, output "eval-ui 已通过配置跳过", proceed to Step 8 (prototype generation)
+- `false` → skip eval, output "eval-ui skipped (auto.eval.uiDesign = false)", proceed to Step 8 (prototype generation)
 - unset (exit code non-zero) → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
   - **Yes** → invoke `/eval-ui` via `Skill` tool
   - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
-  - **No** → proceed to Step 8 (prototype generation)
+  - **Skip eval-ui** → proceed to Step 8 (prototype generation)
 
 After eval-ui completes, check the final score:
 

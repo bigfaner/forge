@@ -86,7 +86,7 @@
       "dependencies": [
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-fix-remaining-ambiguity.md",
       "record": "records/7-fix-remaining-ambiguity.md",
       "type": "doc"

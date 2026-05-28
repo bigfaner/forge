@@ -56,9 +56,13 @@ If no arguments and on a feature branch:
 git diff --name-only main
 ```
 
-If the base branch is not `main`, detect it:
+If the base branch is not `main`, detect it. Prefer offline detection first; fall back to remote query only if offline methods fail:
 
 ```bash
+# Offline: check common base branch names
+(git rev-parse --verify main >/dev/null 2>&1 && echo main) || \
+(git rev-parse --verify master >/dev/null 2>&1 && echo master) || \
+# Fallback: remote query (requires network)
 git remote show origin | grep 'HEAD branch' | awk '{print $NF}'
 ```
 
@@ -72,7 +76,7 @@ cat docs/features/<slug>/tasks/index.json | grep -o '"file":"[^"]*"' | cut -d'"'
 
 ### Scope Validation
 
-Filter out non-code files (`.md`, `.txt`, `.json` unless they are configs, etc.). If scope is empty after filtering:
+Filter out non-code files (`.md`, `.txt`, `.json` unless they are config files — i.e. files that configure tooling, CI, or build behavior such as `tsconfig.json`, `.eslintrc.json`, `jest.config.json`, `justfile`, `Makefile`, `.github/workflows/*.yml`). If scope is empty after filtering:
 
 ```
 No code files in scope. Nothing to clean up.

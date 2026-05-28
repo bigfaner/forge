@@ -29,6 +29,8 @@ examples/    → Full use cases, edge cases
 
 If no argument provided, ask user which skill to refactor.
 
+This command targets **user-authored** skills and commands (in the project's `.claude/` directory). It does NOT operate on plugin-distributed skills (under `plugins/forge/skills/`), which follow a different distribution model.
+
 Target locations:
 - Skills: `.claude/skills/<name>/SKILL.md`
 - Commands: `.claude/commands/<name>.md`

@@ -64,7 +64,7 @@ Use `AskUserQuestion` for all questions. Maximum 2 rounds, 4 questions per round
 
 | # | Question | Format |
 |---|----------|--------|
-| Q4 | Select research dimensions to cover (multiSelect) — present the relevant dimension set from `rules/research-dimensions.md`, core dimensions pre-selected | AskUserQuestion with multiSelect |
+| Q4 | Select research dimensions to cover (multiSelect) — present the dimension set matching the research mode from `rules/research-dimensions.md` (use `single-tech` dimensions for deep dive mode, `comparison` dimensions for comparison mode). Core dimensions (marked with `*` in `rules/research-dimensions.md`) are pre-selected. | AskUserQuestion with multiSelect |
 | Q5 | Include project adaptation assessment? (scan current codebase for impact analysis) | AskUserQuestion single select |
 
 After Phase 1, you should have a clear research plan: mode, scope, dimensions, and whether project context is needed.
@@ -102,7 +102,8 @@ For comparison mode specifically:
 1. Read `templates/research-report.md` for the report structure.
 2. Write the report to `docs/research/<slug>.md` where `<slug>` is a kebab-case derivation of the topic.
 3. Present the report to the user.
-4. Ask: **"是否要将本次调研结合其他需求，转为提案？如需要，可运行 /brainstorm"**
+4. **Wait for the user to review the report and respond.** Do not proceed to the conversion question until the user has acknowledged or commented on the report content.
+5. After the user has reviewed, ask: **"是否要将本次调研结合其他需求，转为提案？如需要，可运行 /brainstorm"**
 
 <HARD-RULE>
 Do NOT commit automatically. Present the report and let the user review first.
