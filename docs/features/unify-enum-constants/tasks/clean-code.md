@@ -3,7 +3,7 @@ id: "T-clean-code"
 title: "Simplify and Clean Code"
 priority: "P2"
 estimated_time: "20min"
-dependencies: []
+dependencies: ["5.1"]
 type: "code-quality.simplify"
 surface-key: ""
 surface-type: ""

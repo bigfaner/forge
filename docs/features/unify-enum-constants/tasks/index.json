@@ -26,7 +26,7 @@
       "dependencies": [
         "1.1"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "2.1-migrate-task-core.md",
       "record": "records/2.1-migrate-task-core.md",
       "breaking": true,
@@ -182,7 +182,8 @@
       "status": "pending",
       "file": "clean-code.md",
       "record": "records/clean-code.md",
-      "type": "code-quality.simplify"
+      "type": "code-quality.simplify",
+      "blockedReason": "Auto-generated quality gate; should run after all business tasks complete"
     },
     "consolidate-specs": {
       "id": "T-specs-consolidate",
