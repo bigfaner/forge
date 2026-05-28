@@ -65,7 +65,9 @@ Explore context → Check proposal → Assess scope → Ask questions → Propos
 8. **Write User Stories** — save to `docs/features/<slug>/prd/prd-user-stories.md`
 9. **Write UI Functions** (mandatory for UI features) — save to `docs/features/<slug>/prd/prd-ui-functions.md`
 10. **Create Manifest** — save to `docs/features/<slug>/manifest.md`
-11. **Commit** — commit all documents
+11. **Self-Check** — verify PRD passes checks
+12. **Review & Commit** — commit all documents
+13. **Adversarial Eval** — run eval-prd if configured
 
 ## Output Documents
 
@@ -191,11 +193,11 @@ Create `manifest.md` at the feature root using `templates/manifest.md`:
 - Set status to `prd`
 - Include UI Functions row only if `prd/prd-ui-functions.md` was created
 
-## Step 9.5: Self-Check
+## Step 10: Self-Check
 
 Before presenting to the user, verify the PRD passes all checks in `rules/self-check.md`.
 
-## Step 10: Review & Commit
+## Step 11: Review & Commit
 
 <HARD-RULE>
 Do NOT commit documents automatically. Present all generated documents to the user for review and wait for explicit approval before committing.
@@ -210,7 +212,7 @@ git add docs/features/<slug>/
 git commit -m "docs: add PRD for <slug>"
 ```
 
-## Step 11: Adversarial Eval Prompt
+## Step 12: Adversarial Eval Prompt
 
 <EXTREMELY-IMPORTANT>
 Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
@@ -238,9 +240,9 @@ Based on the output:
   - **No** → proceed to `/ui-design` (if PRD has UI functions) or `/tech-design`
 </EXTREMELY-IMPORTANT>
 
-## Step 12: Knowledge Review
+## Step 13: Knowledge Review
 
-After Step 11 (Adversarial Eval Prompt) completes, run knowledge auto-extraction from the PRD.
+After Step 12 (Adversarial Eval Prompt) completes, run knowledge auto-extraction from the PRD.
 
 Full extraction flow, knowledge type definitions, notable-knowledge heuristics, and deduplication rules — see `rules/knowledge-extraction.md`.
 

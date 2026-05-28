@@ -235,7 +235,7 @@ Follow the same failure handling rules for test and teardown as 4a.
 
 ### Step 5: Parse Results
 
-Parse test results based on the Convention loaded in Step 0 (if applicable) or auto-detected format. Note: Step 0 is Stale State Recovery; Convention is loaded from `docs/conventions/testing/<convention>.md` discovered during the gen-test-scripts pipeline (not during run-tests).
+Parse test results based on the test runner's output format (auto-detected). Convention files (`docs/conventions/testing/<convention>.md`) are referenced by test scripts generated during the `/gen-test-scripts` pipeline — they are not loaded during run-tests.
 
 Read `rules/result-parsing.md` for parsing strategies.
 

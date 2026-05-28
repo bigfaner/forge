@@ -60,7 +60,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-fix-numbering-references.md",
       "record": "records/5-fix-numbering-references.md",
       "type": "doc"

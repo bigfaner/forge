@@ -250,9 +250,9 @@ See `rules/validation.md` for the complete error handling table.
 
 The authoritative model definition is at `docs/features/<slug>/design/model-and-directory-spec.md` (if it exists in the project). Key concepts used by this skill:
 
-- **Contract**: Six-dimension verification mechanism for Journey Steps (Section 1.3)
-- **Outcome**: A complete set of dimension declarations for a specific scenario (Section 1.4)
-- **Semantic Descriptors**: Natural-language descriptions used in gen-contracts, converted to regex by gen-test-scripts (Section 1.5)
-- **TUI Await Semantics**: Async Cmd wait specification with fail-fast timeout (Section 6)
-- **State Verification Levels**: Full / partial / deferred degradation path (Section 2.3)
-- **Batch Processing**: Auto-split when Contracts > 15 or tokens > 50k (Section 5.3)
+- **Contract**: Six-dimension verification mechanism for Journey Steps
+- **Outcome**: A complete set of dimension declarations for a specific scenario
+- **Semantic Descriptors**: Natural-language descriptions used in gen-contracts, converted to regex by gen-test-scripts
+- **TUI Await Semantics**: Async Cmd wait specification with fail-fast timeout
+- **State Verification Levels**: Full / partial / deferred degradation path
+- **Batch Processing**: Auto-split when Contracts > 15 or tokens > 50k
