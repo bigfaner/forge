@@ -34,6 +34,7 @@ pkg/types      → (无内部依赖，叶包)
 ┌─────────────────────────────────────────────────────┐
 │                   internal/cmd/*                     │
 │   (submit, claim, validate_index, quality_gate, ...) │
+│   surfaces.go (重导出 KnownSurfaceTypes)              │
 │         使用 types.Status / types.SurfaceType         │
 │              / types.Priority                         │
 └────────────┬──────────────┬──────────────┬───────────┘
@@ -41,10 +42,12 @@ pkg/types      → (无内部依赖，叶包)
              ▼              ▼              ▼
 ┌─────────────────┐ ┌──────────────┐ ┌──────────────┐
 │   pkg/task/     │ │pkg/forgeconfig│ │ pkg/feature/ │
-│ statemachine    │ │ detect_surface│ │ constants.go │
-│ add, state,     │ │ detect,       │ │ (重导出)      │
-│ deps, build,    │ │ execution_    │ │              │
-│ autogen, types  │ │ order         │ │              │
+│ statemachine    │ │ detect.go     │ │ constants.go │
+│ add, state,     │ │ (KnownSurface │ │ (重导出)      │
+│ deps, build,    │ │  Types 定义)  │ │              │
+│ autogen, types  │ │ detect_surface│ │              │
+│                 │ │ execution_    │ │              │
+│                 │ │ order         │ │              │
 └────────┬────────┘ └──────┬───────┘ └──────┬───────┘
          │                 │                │
          ▼                 ▼                ▼
@@ -81,6 +84,8 @@ const (
 func AllStatuses() []Status
 func IsTerminalStatus(s Status) bool
 ```
+
+> **行为变更声明**：`IsTerminalStatus` 包含 `completed`、`skipped`、`rejected` 三种终态，与业务规则 `BIZ-task-lifecycle-001` 一致。但当前 `statemachine.go` 中的私有函数 `isTerminalStatus` 仅检查 `completed` 和 `rejected`（不含 `skipped`）。`add.go` 中的 `terminalStatuses` map 则包含全部三种。迁移后统一为 `types.IsTerminalStatus()`，将 `skipped` 纳入终态，影响 `isActiveFixTask`/`canAutoUnblock` 逻辑——`skipped` 的 fix-task 将被视为非活跃。这是**对齐业务规则的 bug 修复**，不是纯重构。需在 Phase 3 单独编写测试验证 `canAutoUnblock` 在 source task 为 skipped 时的行为。
 
 ### Interface 2: SurfaceType Type
 
@@ -121,10 +126,17 @@ func AllPriorities() []Priority
 type Status = types.Status
 type Priority = types.Priority
 
-var (
+const (
     StatusPending    = types.StatusPending
     StatusInProgress = types.StatusInProgress
-    // ... 其余 Status 常量
+    StatusCompleted  = types.StatusCompleted
+    StatusBlocked    = types.StatusBlocked
+    StatusSuspended  = types.StatusSuspended
+    StatusSkipped    = types.StatusSkipped
+    StatusRejected   = types.StatusRejected
+)
+
+const (
     PriorityP0 = types.PriorityP0
     PriorityP1 = types.PriorityP1
     PriorityP2 = types.PriorityP2
@@ -139,21 +151,29 @@ db-schema: no — 无数据库变更。
 
 ### Model 1: Status State Machine
 
-状态转移表中的 `From`/`To` 字段类型从 `string` 升级为 `types.Status`：
+`statemachine.go` 中 `TransitionRule` 结构体的 `From`/`To` 字段类型从 `string` 升级为 `types.Status`：
 
 ```go
-// Before
-type Transition struct {
-    From string
-    To   string
+// Before (pkg/task/statemachine.go)
+type TransitionRule struct {
+    From     string         // current status; "*" matches any
+    To       string         // target status; "*" matches any
+    Role     TransitionRole // required role; "" matches any
+    Allowed  bool
+    GuardMsg string
 }
 
 // After
-type Transition struct {
-    From types.Status
-    To   types.Status
+type TransitionRule struct {
+    From     types.Status   // current status; "*" matches any
+    To       types.Status   // target status; "*" matches any
+    Role     TransitionRole // required role; "" matches any
+    Allowed  bool
+    GuardMsg string
 }
 ```
+
+> **注**：通配符 `"*"` 是 `transitionTable` 中的特殊值，需保留为 `types.Status("*")` 或定义常量 `StatusAny`。`matchRule` 函数需同步调整比较逻辑。
 
 ### Model 2: Task Struct Fields
 
@@ -189,7 +209,16 @@ defaultExecutionOrder []types.SurfaceType
 
 ### Propagation Strategy
 
-不适用。重构不改变错误处理逻辑。
+`TransitionError` 结构体（`statemachine.go`）持有 `From string` 和 `To string` 字段。迁移后这两个字段将变为 `From types.Status` 和 `To types.Status`。由于 `type Status string`，`fmt.Sprintf("... %s -> %s ...", e.From, e.To, ...)` 的输出格式不变——`%s` 格式化仍输出原始字符串值。
+
+但需注意：现有测试中若有 `assert.Contains(t, err.Error(), "completed -> pending")` 之类的字符串断言，由于 `TransitionError.From`/`To` 字段类型变更，赋值方式从字面量变为常量，值不变但编译器类型检查更严格。建议在 Phase 3 迁移 `statemachine.go` 后立即运行 `go test ./pkg/task/...` 验证错误格式兼容性。
+
+### Error Structs Holding Enum Values
+
+| Struct | File | Fields | Impact |
+|--------|------|--------|--------|
+| `TransitionError` | `pkg/task/statemachine.go` | `From string`, `To string` | 字段类型变为 `types.Status`；`Error()` 输出格式不变 |
+| `ActiveFixExistsError` | `pkg/task/add.go` | `SourceTaskID string` | 不涉及枚举字段，无影响 |
 
 ## Cross-Layer Data Map
 
@@ -237,7 +266,7 @@ No existing-page integrations — 不适用（纯后端重构）。
 | PRD Requirement / AC | Design Component | Interface / Model |
 |----------------------|------------------|-------------------|
 | US1: typed Status constants 防止拼写错误 | `pkg/types/status.go` | Interface 1: Status |
-| US1: statemachine.go 使用 types.StatusXxx | `pkg/task/statemachine.go` 签名升级 | Model 1: Transition |
+| US1: statemachine.go 使用 types.StatusXxx | `pkg/task/statemachine.go` 签名升级 | Model 1: TransitionRule |
 | US2: SurfaceType 集中定义 | `pkg/types/surface.go` | Interface 2: SurfaceType |
 | US2: 新增 Surface Type 只改一处 | `AllSurfaceTypes()` + 常量定义 | Interface 2 |
 | US3: go build 验证枚举引用完整性 | 全局编译 | Testing Strategy |
@@ -249,16 +278,21 @@ No existing-page integrations — 不适用（纯后端重构）。
 
 ## Migration Plan
 
-按 package 分批，每个文件只修改一次：
+按 package 分批，每个文件只修改一次。**每个 Phase 完成后必须通过验证关卡再进入下一 Phase**。
 
 | Phase | Package | Files | Changes |
 |-------|---------|-------|---------|
 | 1 | `pkg/types/` | 3 新文件 | 定义 typed constants + helpers |
+| **Gate** | | | `go build ./pkg/types/... && go test ./pkg/types/...` |
 | 2 | `pkg/feature/` | constants.go | 移除原始定义，添加重导出 |
+| **Gate** | | | `go build ./pkg/feature/... && go test ./pkg/feature/...` |
 | 3 | `pkg/task/` | statemachine.go, add.go, state.go, deps.go, build.go, autogen.go, types.go, record.go, index.go, tasktemplate.go | Status + Priority + SurfaceType 魔法值替换 + 签名升级 |
+| **Gate** | | | `go build ./pkg/task/... && go test ./pkg/task/...` |
 | 4 | `pkg/forgeconfig/` | detect_surface.go, detect.go, execution_order.go | SurfaceType 魔法值替换 + 签名升级 |
-| 5 | `internal/cmd/` | task/submit.go, task/claim.go, task/validate_index.go, task/add.go, task/reopen.go, task/transition.go, task/tree.go, task/migrate.go, quality_gate.go, cleanup.go, verify_task_done.go, feature/feature.go, feature/feature_complete.go, worktree/helpers.go | Status + Priority + SurfaceType 魔法值替换 + 签名升级 |
-| 6 | 验证 | 全局 | go build + go test |
+| **Gate** | | | `go build ./pkg/forgeconfig/... && go test ./pkg/forgeconfig/...` |
+| 5 | `internal/cmd/` | task/submit.go, task/claim.go, task/validate_index.go, task/add.go, task/reopen.go, task/transition.go, task/tree.go, task/migrate.go, quality_gate.go, cleanup.go, verify_task_done.go, feature/feature.go, feature/feature_complete.go, worktree/helpers.go, **surfaces.go** | Status + Priority + SurfaceType 魔法值替换 + 签名升级。**surfaces.go** 重导出 `KnownSurfaceTypes = forgeconfig.KnownSurfaceTypes`，map key 类型从 `string` 变为 `types.SurfaceType`，需同步更新 `runSurfacesTypes` 中的 lookup 逻辑（`KnownSurfaceTypes[typ]` 的 `typ` 需转换为 `types.SurfaceType`） |
+| **Gate** | | | `go build ./internal/cmd/... && go test ./internal/cmd/...` |
+| 6 | 全局验证 | 全局 | `go build ./... && go test -race -cover ./... && go vet ./...` |
 
 ## Open Questions
 
