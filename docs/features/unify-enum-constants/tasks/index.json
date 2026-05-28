@@ -89,7 +89,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3.1-migrate-forgeconfig.md",
       "record": "records/3.1-migrate-forgeconfig.md",
       "breaking": true,

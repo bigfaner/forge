@@ -4,16 +4,18 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
+
+	"forge-cli/pkg/types"
 )
 
 // KnownSurfaceTypes is the set of valid surface type values.
 // Unknown types are ignored with a warning during ValidateSurfaceTypes.
-var KnownSurfaceTypes = map[string]bool{
-	"web":    true,
-	"mobile": true,
-	"api":    true,
-	"cli":    true,
-	"tui":    true,
+var KnownSurfaceTypes = map[types.SurfaceType]bool{
+	types.SurfaceWeb:    true,
+	types.SurfaceMobile: true,
+	types.SurfaceAPI:    true,
+	types.SurfaceCLI:    true,
+	types.SurfaceTUI:    true,
 }
 
 // ReadSurfaces reads the surfaces field from .forge/config.yaml.
@@ -35,18 +37,18 @@ func SurfaceTypes(surfaces map[string]string) []string {
 		return nil
 	}
 	seen := make(map[string]bool)
-	var types []string
+	var result []string
 	for _, typ := range surfaces {
-		if !KnownSurfaceTypes[typ] {
+		if !KnownSurfaceTypes[types.SurfaceType(typ)] {
 			continue // skip unknown types
 		}
 		if !seen[typ] {
 			seen[typ] = true
-			types = append(types, typ)
+			result = append(result, typ)
 		}
 	}
-	sort.Strings(types)
-	return types
+	sort.Strings(result)
+	return result
 }
 
 // ReadExecutionOrder reads the execution-order field from .forge/config.yaml.
@@ -68,7 +70,7 @@ func ValidateSurfaceTypes(surfaces map[string]string) []string {
 	}
 	var warnings []string
 	for path, typ := range surfaces {
-		if !KnownSurfaceTypes[typ] {
+		if !KnownSurfaceTypes[types.SurfaceType(typ)] {
 			msg := fmt.Sprintf("unknown surface type ignored: type=%q path=%q", typ, path)
 			slog.Warn("unknown surface type ignored", "type", typ, "path", path)
 			warnings = append(warnings, msg)

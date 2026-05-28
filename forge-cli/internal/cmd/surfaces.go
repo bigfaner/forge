@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -193,31 +194,31 @@ func runSurfacesTypes(cmd *cobra.Command, surfaces map[string]string) error {
 	}
 
 	seen := make(map[string]bool)
-	var types []string
+	var surfaceTypes []string
 	for _, typ := range surfaces {
 		if seen[typ] {
 			continue
 		}
-		if !KnownSurfaceTypes[typ] {
+		if !KnownSurfaceTypes[types.SurfaceType(typ)] {
 			continue
 		}
 		seen[typ] = true
-		types = append(types, typ)
+		surfaceTypes = append(surfaceTypes, typ)
 	}
 
-	if len(types) == 0 {
+	if len(surfaceTypes) == 0 {
 		if surfacesJSONFlag {
 			return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string][]string{"types": {}})
 		}
 		return nil
 	}
 
-	sort.Strings(types)
+	sort.Strings(surfaceTypes)
 
 	if surfacesJSONFlag {
-		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string][]string{"types": types})
+		return json.NewEncoder(cmd.OutOrStdout()).Encode(map[string][]string{"types": surfaceTypes})
 	}
 
-	write(cmd.OutOrStdout(), "%s\n", strings.Join(types, " "))
+	write(cmd.OutOrStdout(), "%s\n", strings.Join(surfaceTypes, " "))
 	return nil
 }
