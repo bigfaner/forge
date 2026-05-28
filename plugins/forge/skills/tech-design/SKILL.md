@@ -45,7 +45,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 ## Process Flow
 
 ```
-0. Detect test language → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize → 11. Auto-extract knowledge
+0. Detect test language → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize → 9. Update Manifest → 10. Adversarial Eval Prompt → 11. Auto-extract Knowledge
 ```
 
 ## Step 0: Detect Test Language

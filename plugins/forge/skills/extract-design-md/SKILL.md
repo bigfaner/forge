@@ -37,25 +37,25 @@ Then route to the appropriate extraction section:
 
 For **mobile** and **tui** platform-specific extraction details, follow the rules in `rules/platform-routing.md`.
 
-### Mobile Extraction Overview
+### Mobile Extraction Summary
 
-When `--platform mobile`, reuse the web extraction pipeline (Layers 1-5) with a mobile User-Agent viewport context, then add mobile-specific analysis:
+When `--platform mobile`, reuse the web extraction pipeline (Layers 1-5) with a mobile User-Agent and viewport context (viewport width: 375px), then add mobile-specific analysis:
 
-- **Responsive breakpoint analysis**: Scan CSS for `@media` queries targeting common mobile breakpoints: 320px (iPhone SE), 375px (iPhone 12/13/14), 414px (iPhone Plus/Pro Max), 768px (iPad)
-- **Touch target estimation**: Check interactive element sizes against the 44x44pt minimum touch target guideline; mark unspecified values as `(estimated)`
-- **Safe area handling**: Check for `safe-area-inset` CSS env usage and `viewport meta` tag with `viewport-fit=cover`
-- **Limitation**: Mobile extraction depends on the target URL serving responsive CSS. Sites without responsive stylesheets produce web-equivalent results with mobile sections marked `(estimated)`
+- **Responsive breakpoint analysis**: Scan CSS for `@media` queries targeting common mobile breakpoints: 320px (small phone / iPhone SE), 375px (standard phone), 414px (large phone), 768px (tablet). Record which breakpoints the target site uses.
+- **Touch target estimation**: Analyze interactive elements for minimum size compliance against the 44x44pt touch target guideline. Flag elements below minimum. Mark values as `(estimated)` if not directly specified.
+- **Safe area handling**: Check CSS for `env(safe-area-inset-*)` usage and HTML `<meta name="viewport">` for `viewport-fit=cover`. Note safe-area results.
+- **Responsive CSS limitation**: Mobile extraction depends on the target URL serving responsive CSS (responsive stylesheet with media queries). Sites without responsive stylesheets produce web-equivalent results with mobile sections marked `(estimated)`.
 
-### TUI Extraction Overview
+### TUI Extraction Summary
 
-When `--platform tui`, the input must be a **local file path** to a terminal screenshot. AI vision reverse-engineers design tokens from the screenshot, marking **ALL values as `(estimated)`**:
+When `--platform tui`, input must be a **local file path** to a terminal screenshot (not a URL). AI vision analyzes the screenshot to reverse-engineer design tokens:
 
-- **ANSI color palette**: Map observed colors to xterm-256 palette entries (0-255)
-- **Character set**: Identify box-drawing characters, block elements, pure ASCII, or a mix
-- **Panel layout dimensions**: Estimate terminal grid size (rows/columns) and panel boundaries
-- **Key bindings**: Extract key-to-action mappings from status bar or help legend
-
-Match against built-in TUI themes: **modern-dark-tui** (dark, 256-color, box-drawing + block elements) or **minimal-ascii-tui** (default terminal, 16-color, pure ASCII).
+- **ANSI color palette**: Identify xterm-256 color numbers used. Map observed colors to closest xterm-256 palette entries (0-255). All values `(estimated)`.
+- **Character set**: Determine whether the TUI uses box-drawing characters, block elements, pure ASCII, or a mix. Identify specific characters for borders, dividers, indicators, bar charts, and progress bars.
+- **Panel layout dimensions**: Estimate terminal rows and columns. Identify panel boundaries and their dimensions.
+- **Key bindings**: Extract key-to-action mappings from visible status bar or help panel.
+- **Built-in TUI themes**: Match against `modern-dark-tui` (dark background, 256-color, box-drawing + block elements) or `minimal-ascii-tui` (default background, 16-color, pure ASCII).
+- **Screenshot quality check**: Reject blurry, low-resolution, or unreadable screenshots.
 
 ## Step 1: Get URL
 

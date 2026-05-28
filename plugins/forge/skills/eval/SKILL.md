@@ -96,9 +96,7 @@ flowchart TD
 ## Orchestrator Iron Laws
 
 <EXTREMELY-IMPORTANT>
-- Main session owns the loop. NEVER delegate the full eval to a single agent.
-- Per iteration: score (subagent) → gate (main session) → revise (subagent).
-- Scorer and reviser are ALWAYS invoked via Agent tool, never inline.
+- Main session owns the loop: score (subagent) → gate (main session) → revise (subagent). NEVER delegate the full eval to a single agent; scorer and reviser are ALWAYS invoked via Agent tool, never inline.
 </EXTREMELY-IMPORTANT>
 
 ## Step 1: Resolve Type, Rubric, and Locate Documents
@@ -190,7 +188,7 @@ Compose scorer prompts per `rules/scorer-composition.md`: read scorer protocol, 
 
 ### 2.2 Spawn Scorer Agents
 
-Spawn each composed prompt as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
+Spawn scorer agent (model: "sonnet").
 
 - **Single-expert types**: spawn one agent.
 - **Multi-expert types** (e.g., `prd` → `[pm, qa]`): spawn multiple agents **in parallel** (multiple Agent tool calls in a single message). Each agent receives its own composed prompt and writes to its own report path.
@@ -234,7 +232,7 @@ Compose reviser prompt per `rules/reviser-composition.md`: read reviser protocol
 
 ### 4.2 Spawn Reviser Agent
 
-Spawn as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
+Spawn reviser agent (model: "sonnet").
 
 Inputs: `DOC_DIR`, `EVAL_REPORT_PATH`, `ATTACK_POINTS` (merged).
 

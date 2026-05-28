@@ -37,8 +37,6 @@ Invoke the brainstorm skill:
 Skill(skill="forge:brainstorm")
 ```
 
-brainstorm runs its full interactive flow: structured dialogue, user commit approval, and an optional eval-proposal step. When it completes, `docs/proposals/<slug>/proposal.md` is committed.
-
 After brainstorm completes, extract the feature slug from the proposal directory path. Each downstream skill (quick-tasks, run-tasks) derives the slug independently from the filesystem — no explicit passing needed.
 
 ## Step 2: Task Generation Gate
@@ -60,7 +58,7 @@ Capture stdout (trimmed) and exit code. Output format is plain text key:value pa
 |-----------|-------------------------------|--------|
 | 0 | Yes | **Skip the confirmation gate entirely.** Update proposal status `Draft → Approved` (see Status Transition below), then proceed directly to Step 3. |
 | 0 | No (or `quick:false`) | Present the confirmation gate (full Step 2 flow below). |
-| Non-zero (config missing/read error) | — | **Fallback: skip the confirmation gate** (same as `quick: true`). This preserves quick mode's streamlined nature. |
+| Non-zero (config missing/read error) | — | **Fallback: show the confirmation gate** (same as `quick: false`). When config state is uncertain, the conservative default is to let the user review before proceeding. |
 
 This check MUST happen at Step 2 entry — not during brainstorm, not after the summary is shown. The gate logic below is preserved but conditionally bypassed based on this config value.
 </EXTREMELY-IMPORTANT>
@@ -140,7 +138,7 @@ Invoke the run-tasks command:
 Skill(skill="forge:run-tasks")
 ```
 
-`run-tasks` reads `index.json`, claims tasks in dependency order, and dispatches to task-executor subagents. Quality gates (compile + fmt + lint + test) run for breaking tasks. Failures auto-create fix tasks with retry loops. On completion, run-tasks prints a dispatch summary. See `run-tasks` command for full behavior.
+See `run-tasks` command for full behavior.
 
 ## Error Handling
 

@@ -5,8 +5,6 @@ allowed-tools: Bash Read
 argument-hint: "[source-branch]"
 ---
 
-Pull the latest source branch, create a new branch from it, and switch to it. Optionally accepts a parameter $ARGUMENTS to specify the source branch (defaults to main).
-
 Steps:
 
 1. Determine the source branch:

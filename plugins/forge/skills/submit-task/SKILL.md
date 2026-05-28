@@ -78,15 +78,20 @@ ONLY ALLOWED PATH: `docs/features/<slug>/tasks/process/record.json`
 | `forge task status <id> completed` | Use `forge task submit` to complete|
 | Wrong record.json path             | CLI only reads from `process/`     |
 
-## What `forge task submit` Does
-
-Generates the execution record and updates task status. After running, check STATUS:
-- `STATUS: completed` → recorded successfully, proceed to commit
-- `STATUS: blocked` → auto-downgraded (e.g. test failures), **do NOT commit**
-
 ## Type Reclassification
 
-When the assigned type doesn't match the actual work, process according to the **actual type** and include a `typeReclassification` block:
+Reclassify **only** when the task's recorded type in `index.json` objectively mismatches the work performed. The following concrete conditions warrant reclassification:
+
+| Condition | Example | Reclassify to |
+|-----------|---------|---------------|
+| Task type is `coding` but all changes are documentation-only (no source code files modified) | Task typed `coding` but only `.md` files were changed | `doc` |
+| Task type is `doc` but the work required and produced code changes | Task typed `doc` but implementation revealed a code fix was needed | `coding` (or `coding.fix` if a fix task) |
+| Task type is `coding.fix` but the root cause was not a code bug (e.g., config error, environment issue) | Fix task resolved by updating `settings.json` | `coding.cleanup` or the appropriate actual type |
+| Task type implies testing but no test files were created or modified | — | Do NOT reclassify — report as `blocked` instead |
+
+**Do NOT reclassify** for: minor scope differences, subjective quality judgments, or "the work was easier than expected." Reclassification is for category-level mismatches, not granularity differences.
+
+When reclassifying, process according to the **actual type** and include a `typeReclassification` block:
 
 ```json
 {

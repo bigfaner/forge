@@ -1,13 +1,11 @@
 ---
 name: gen-contracts
-description: Generate Contract specifications (six dimensions + semantic descriptors + multi-Outcome + Invariants) from Journey documents and code reconnaissance (Fact Table). Formalizes TUI async Cmd await semantics. Risk-driven Outcome density based on Journey risk_level, auto-derived boundary/error Outcomes from surface rules and Fact Table.
+description: Generate Contract specifications (six dimensions, semantic descriptors, risk-driven Outcomes) from Journey documents and code reconnaissance.
 ---
 
 # Gen Contracts
 
-Generate Contract specifications from Journey documents, enriched with code reconnaissance (Fact Table).
-
-**Core principle**: Every Step gets a Contract with six dimensions. gen-contracts uses *semantic descriptors* (natural language) -- precise regex is deferred to gen-test-scripts. This skill is the most technically complex in the pipeline because it bridges narrative Journeys with verifiable Contracts using code reconnaissance.
+**Core principle**: Every Step gets a Contract with six dimensions. gen-contracts uses *semantic descriptors* (natural language) -- precise regex is deferred to gen-test-scripts.
 
 **Risk-driven density**: Outcome count per Step and total test count per Journey are driven by the Journey's `risk_level` field (set by gen-journeys). Density targets are defined in `rules/risk-density.md`. Boundary/error Outcomes are auto-derived from surface rules' required_outcomes and the project Fact Table.
 
@@ -252,9 +250,9 @@ See `rules/validation.md` for the complete error handling table.
 
 The authoritative model definition is at `docs/features/<slug>/design/model-and-directory-spec.md` (if it exists in the project). Key concepts used by this skill:
 
-- **Contract**: Six-dimension verification mechanism for Journey Steps (Section 1.3)
-- **Outcome**: A complete set of dimension declarations for a specific scenario (Section 1.4)
-- **Semantic Descriptors**: Natural-language descriptions used in gen-contracts, converted to regex by gen-test-scripts (Section 1.5)
-- **TUI Await Semantics**: Async Cmd wait specification with fail-fast timeout (Section 6)
-- **State Verification Levels**: Full / partial / deferred degradation path (Section 2.3)
-- **Batch Processing**: Auto-split when Contracts > 15 or tokens > 50k (Section 5.3)
+- **Contract**: Six-dimension verification mechanism for Journey Steps
+- **Outcome**: A complete set of dimension declarations for a specific scenario
+- **Semantic Descriptors**: Natural-language descriptions used in gen-contracts, converted to regex by gen-test-scripts
+- **TUI Await Semantics**: Async Cmd wait specification with fail-fast timeout
+- **State Verification Levels**: Full / partial / deferred degradation path
+- **Batch Processing**: Auto-split when Contracts > 15 or tokens > 50k

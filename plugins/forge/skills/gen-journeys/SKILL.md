@@ -36,29 +36,6 @@ forge surfaces <path>
 | 0 | Surface types found. stdout contains one surface type per line (e.g., `web`, `api`). For monorepo configs, each configured surface appears on its own line. | Parse stdout to collect all surface type strings. Proceed to rule loading. |
 | 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
 
-**Examples**:
-
-```bash
-# Single-surface project (scalar form): any path returns the same type
-forge surfaces .
-# stdout: api  (exit 0)
-
-# Multi-surface project: all configured surfaces are listed
-forge surfaces .
-# stdout:
-# web
-# api
-# (exit 0)
-
-# Monorepo with path-level surfaces: query specific path
-forge surfaces frontend/src
-# stdout: web  (exit 0)
-
-# Path not configured
-forge surfaces unknown-dir
-# stderr: no surface found for path "unknown-dir"; run `forge init` to configure surfaces  (exit 1)
-```
-
 ### Detection Flow
 
 1. Run `forge surfaces .` (or the relevant source path for the feature being tested)
@@ -167,7 +144,7 @@ When both PRD files (`prd-user-stories.md` and `prd-spec.md`) do not exist, gen-
 
 If either mandatory field is missing, abort immediately and output the diagnostic message. Do NOT attempt to generate Journeys.
 
-**Proposal Mode quality degradation**: When `## Key Scenarios` section is missing from proposal.md, generate smoke-level Journeys (happy path only) and annotate each Journey file with `quality: low` in frontmatter. Include a warning in the generated Journey:
+**Proposal Mode quality degradation**: When `## Key Scenarios` section (or any heading matching `key scenarios`, case-insensitive, with or without `##` / `###` prefix) is missing from proposal.md, generate smoke-level Journeys (happy path only) and annotate each Journey file with `quality: low` in frontmatter. Include a warning in the generated Journey:
 
 ```
 > **Quality Notice**: This Journey was generated without Key Scenarios from the proposal.

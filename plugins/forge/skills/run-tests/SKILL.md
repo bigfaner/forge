@@ -5,8 +5,6 @@ description: Execute test orchestration based on surface type. Dispatcher mode: 
 
 # Run Tests
 
-Surface-aware test orchestration. Detects the project's surface type, loads the corresponding orchestration rules, and executes the just recipe sequence.
-
 **Core principle**: A dispatcher that detects surface type, loads orchestration rules, and executes just recipes in sequence. Does NOT read `test.execution` from config.yaml.
 
 <HARD-GATE>
@@ -66,7 +64,7 @@ Read the current task file (from `forge task status` or known task path). Extrac
 forge surfaces --json <source-directory-path>
 ```
 
-Use the task's source file directory path (not the task file path). `forge surfaces --json` expects source directory paths and uses segment prefix matching. If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
+Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
 Parse JSON response to extract the `type` field.
 
@@ -237,7 +235,7 @@ Follow the same failure handling rules for test and teardown as 4a.
 
 ### Step 5: Parse Results
 
-Parse test results based on the Convention loaded in Step 0 (if applicable) or auto-detected format. Note: Step 0 is Stale State Recovery; Convention is loaded from `docs/conventions/testing/<convention>.md` discovered during the gen-test-scripts pipeline (not during run-tests).
+Parse test results based on the test runner's output format (auto-detected). Convention files (`docs/conventions/testing/<convention>.md`) are referenced by test scripts generated during the `/gen-test-scripts` pipeline — they are not loaded during run-tests.
 
 Read `rules/result-parsing.md` for parsing strategies.
 

@@ -140,7 +140,7 @@ When running under `/run-tasks` dispatcher (no user present), skip interactive r
 4. Auto-write `review-choices.md` with all CROSS items listed as "Approved for Integration"
 5. Proceed directly to Step 7
 
-This mode is safe because spec errors have no runtime risk and git revert provides perfect rollback. The `[auto-specs]` commit tag (Step 11) enables easy identification and batch revert.
+This mode is safe because spec errors have no runtime risk (specs are documentation, not executable code) and git revert provides perfect rollback. The `[auto-specs]` commit tag (Step 11) enables easy identification and batch revert.
 
 ### Interactive Mode
 
@@ -211,7 +211,11 @@ Update `docs/features/<slug>/manifest.md` to reference the integrated specs.
 
 ## Step 9: Detect Drift in Project-Level Specs
 
-Read all project-level spec files, validate each rule against the current codebase, and classify as `current`, `drifted`, or `orphaned`. If no drift is found, skip Steps 10-11 and proceed to Step 12.
+Read all project-level spec files from two directories, validate each rule against the current codebase, and classify as `current`, `drifted`, or `orphaned`. If no drift is found, skip Steps 10-11 and proceed to Step 12.
+
+**Scan directories:**
+- `docs/business-rules/` — all `.md` files (business rule specs)
+- `docs/conventions/` — all `.md` files (technical convention specs)
 
 **Drift-only mode**: If no PRD/design files exist, start here and skip Steps 1-8 entirely.
 

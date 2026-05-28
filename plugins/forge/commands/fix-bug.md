@@ -26,6 +26,13 @@ Core principle: never touch production code until a failing test proves the bug 
 | `--scope` | auto | Affected module/package path (auto-detected if omitted) |
 | `--skip-e2e` | false | Skip e2e tests (use when no UI/API surface is affected) |
 
+**Argument parsing**: The `argument-hint` is `[error-msg] [scope]`. When the user invokes `/fix-bug <args>`, parse `<args>` as follows:
+- If `<args>` is empty: `--issue` is derived from Step 1 investigation (user provides details interactively)
+- If `<args>` contains a quoted string or unquoted text: that text becomes `--issue` (bug description)
+- If `<args>` contains a path-like segment (contains `/` or `.\`): that segment becomes `--scope`
+- If a single path-like segment is provided with no issue description: `--scope` is set, `--issue` is derived interactively
+- Examples: `/fix-bug "login throws 500"` → `--issue "login throws 500"`; `/fix-bug src/auth/` → `--scope src/auth/`; `/fix-bug "null pointer" pkg/handler/` → both set
+
 ## Workflow
 
 ```
@@ -35,7 +42,6 @@ Core principle: never touch production code until a failing test proves the bug 
 <EXTREMELY-IMPORTANT>
 - Never touch production code until a failing test proves the bug exists (Step 3 before Step 4)
 - Tests and fix must be committed together in a single atomic commit
-- If the bug cannot be reproduced (Step 2), STOP and report — do not write tests or fix code for an unconfirmed bug
 - All quality gate checks must pass before committing (Step 5)
 </EXTREMELY-IMPORTANT>
 

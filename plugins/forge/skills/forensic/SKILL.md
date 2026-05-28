@@ -37,7 +37,7 @@ effort: max
 forge forensic --help
 ```
 
-If missing, build and install: `cd forge-cli && go build -o ~/.zcode-forge-cli/task ./cmd/task/`
+If missing, ensure the `forge` CLI is installed (see project setup instructions).
 
 ## Architecture
 
@@ -93,6 +93,16 @@ forge forensic extract ~/.claude/projects/<project-hash>/<SESSION_ID>.jsonl --ou
 # Or use --slug shorthand: forge forensic extract <path>.jsonl --slug <slug>
 ```
 
+**Finding `<project-hash>`**: The project hash is a directory name under `~/.claude/projects/`. To discover it:
+
+```bash
+# List all project directories to find the relevant one
+ls ~/.claude/projects/
+# Or derive it: hash the project root path (replace path separators with --)
+# Example: Z:\project\ai\forge -> Z:--project-ai-forge
+ls ~/.claude/projects/ | grep -i "forge"
+```
+
 Then check for subagent transcripts:
 
 ```bash
@@ -116,6 +126,14 @@ From the evidence's `skillsUsed` field (or user's `--skill` parameter), read the
 ```
 <skill-name>/SKILL.md (resolve relative to the skills parent directory)
 ```
+
+**Resolving "skills parent directory"**: Check these locations in order:
+1. `plugins/forge/skills/<skill-name>/SKILL.md` — plugin-distributed skills
+2. `.claude/skills/<skill-name>/SKILL.md` — user-authored project skills
+
+For commands, check:
+1. `plugins/forge/commands/<command-name>.md` — plugin-distributed commands
+2. `.claude/commands/<command-name>.md` — user-authored project commands
 
 Extract the rules that the agent should have followed:
 - `<HARD-RULE>` blocks — mandatory constraints

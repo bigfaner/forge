@@ -8,7 +8,7 @@ allowed-tools: Bash Read Edit Write Glob Grep
 
 Code cleanup applying five refinement principles. Supports three scope modes: user-specified paths, git diff, or full feature scope.
 
-**Core principle**: Only modify code within the determined scope. Never change what the code does — only how it does it.
+**Core principle**: Only modify code within the determined scope. Never change what the code does — only how it does it. Every edit must trace back to the scope file list.
 
 ## When to Use
 
@@ -56,9 +56,13 @@ If no arguments and on a feature branch:
 git diff --name-only main
 ```
 
-If the base branch is not `main`, detect it:
+If the base branch is not `main`, detect it. Prefer offline detection first; fall back to remote query only if offline methods fail:
 
 ```bash
+# Offline: check common base branch names
+(git rev-parse --verify main >/dev/null 2>&1 && echo main) || \
+(git rev-parse --verify master >/dev/null 2>&1 && echo master) || \
+# Fallback: remote query (requires network)
 git remote show origin | grep 'HEAD branch' | awk '{print $NF}'
 ```
 
@@ -72,11 +76,7 @@ cat docs/features/<slug>/tasks/index.json | grep -o '"file":"[^"]*"' | cut -d'"'
 
 ### Scope Validation
 
-<HARD-RULE>
-**Only modify files within the scope file list produced by this step.** Never touch files outside the list. If a file is not in the list, do not edit it — even if it has obvious cleanup opportunities.
-</HARD-RULE>
-
-Filter out non-code files (`.md`, `.txt`, `.json` unless they are configs, etc.). If scope is empty after filtering:
+Filter out non-code files (`.md`, `.txt`, `.json` unless they are config files — i.e. files that configure tooling, CI, or build behavior such as `tsconfig.json`, `.eslintrc.json`, `jest.config.json`, `justfile`, `Makefile`, `.github/workflows/*.yml`). If scope is empty after filtering:
 
 ```
 No code files in scope. Nothing to clean up.
@@ -92,7 +92,7 @@ Output: `Step 1/4: Scope detection... DONE (N files in scope, source: <user-spec
 
 Read each file in scope and apply the five refinement principles. Only edit files where cleanup opportunities exist — if a file is already clean, skip it.
 
-### The Five Principles
+### The Principles
 
 1. **Preserve Functionality**: Never change what the code does — only how it does it. All original features, outputs, behaviors, and side effects must remain intact. If unsure whether a change preserves behavior, do not make it.
 
@@ -112,8 +112,6 @@ Read each file in scope and apply the five refinement principles. Only edit file
    - Remove helpful abstractions that improve code organization
    - Prioritize fewer lines over readability (e.g., dense one-liners, nested ternaries)
 
-5. **Focus Scope**: Only refine code that is within the resolved scope. Do not touch adjacent code, even if it has obvious issues. Do not refactor things that are not broken. Every changed line should trace directly to the scope.
-
 ### What to Clean Up
 
 - Dead code (unused imports, unreachable branches, commented-out code)
@@ -130,10 +128,6 @@ Read each file in scope and apply the five refinement principles. Only edit file
 - Working abstractions that serve a purpose
 - Comments explaining *why* (domain knowledge, non-obvious constraints)
 - Error handling for real edge cases
-
-<HARD-RULE>
-**Every edit must correspond to a file in the resolved scope.** If you cannot trace a changed line back to the scope, do not change it.
-</HARD-RULE>
 
 Output: `Step 2/4: Code cleanup... DONE (M files modified, K files skipped)`
 
