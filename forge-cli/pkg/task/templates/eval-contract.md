@@ -14,6 +14,14 @@ context:
 ---
 Evaluate Contract quality for the {{.FeatureSlug}} feature using the 6-dimension rubric (1000-point scale).
 
+## Feature Paths
+
+Discover the feature's testing directory layout before starting:
+```bash
+ls docs/features/{{.FeatureSlug}}/testing/                                 # journeys
+ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # contracts
+```
+
 ## Discovery Strategy
 Scan `tests/<journey>/_contracts/` for all Contract files per Journey.
 
