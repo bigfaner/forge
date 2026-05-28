@@ -8,7 +8,7 @@
       "title": "Embed 模板添加 ## Feature Paths 区域",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-feature-paths-embed.md",
       "record": "records/1-add-feature-paths-embed.md",
       "type": "doc"
