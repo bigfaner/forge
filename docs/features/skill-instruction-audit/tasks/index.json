@@ -1,0 +1,128 @@
+{
+  "feature": "skill-instruction-audit",
+  "proposal": "docs/proposals/skill-instruction-audit/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-delete-cli-descriptions-pipeline": {
+      "id": "1",
+      "title": "Delete CLI behavior descriptions from pipeline skills/commands",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-delete-cli-descriptions-pipeline.md",
+      "record": "records/1-delete-cli-descriptions-pipeline.md",
+      "type": "doc"
+    },
+    "2-delete-cli-descriptions-remaining": {
+      "id": "2",
+      "title": "Delete CLI behavior descriptions from remaining skills/commands",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-delete-cli-descriptions-remaining.md",
+      "record": "records/2-delete-cli-descriptions-remaining.md",
+      "type": "doc"
+    },
+    "3-remove-ei-redundancy": {
+      "id": "3",
+      "title": "Remove EXTREMELY-IMPORTANT redundancy from skills",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-remove-ei-redundancy.md",
+      "record": "records/3-remove-ei-redundancy.md",
+      "type": "doc"
+    },
+    "4-remove-other-redundancy": {
+      "id": "4",
+      "title": "Remove frontmatter duplication and rule preview redundancy",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-remove-other-redundancy.md",
+      "record": "records/4-remove-other-redundancy.md",
+      "type": "doc"
+    },
+    "5-fix-numbering-references": {
+      "id": "5",
+      "title": "Fix numbering/reference errors in skills",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-fix-numbering-references.md",
+      "record": "records/5-fix-numbering-references.md",
+      "type": "doc"
+    },
+    "6-fix-pipeline-ambiguity": {
+      "id": "6",
+      "title": "Fix ambiguity and logic issues in pipeline commands/skills",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-fix-pipeline-ambiguity.md",
+      "record": "records/6-fix-pipeline-ambiguity.md",
+      "type": "doc"
+    },
+    "7-fix-remaining-ambiguity": {
+      "id": "7",
+      "title": "Fix ambiguity and logic issues in remaining skills/commands",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "pending",
+      "file": "7-fix-remaining-ambiguity.md",
+      "record": "records/7-fix-remaining-ambiguity.md",
+      "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
