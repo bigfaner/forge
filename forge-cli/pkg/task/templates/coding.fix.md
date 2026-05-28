@@ -1,13 +1,14 @@
 ---
 type: coding.fix
 category: coding
-variables:
+identity:
   - ID
   - Title
   - Priority
   - EstimatedTime
   - Description
   - SourceTaskID
+context:
   - SurfaceKey
   - SurfaceType
   - SourceFiles

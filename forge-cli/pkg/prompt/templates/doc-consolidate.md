@@ -1,20 +1,23 @@
 ---
 type: doc.consolidate
 category: doc
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 SURFACE_KEY: {{.SurfaceKey}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a spec consolidation task in non-interactive (pipeline) mode. You are running under `/run-tasks` dispatcher — no user is present. The consolidate-specs skill will auto-integrate all CROSS items and commit with `[auto-specs]` tag. Do NOT wait for user confirmation. Proceed without stopping.
+
+You are a focused task executor consolidating specs in non-interactive mode. Do NOT wait for user confirmation. Proceed without stopping.
 
 ## Workflow (2 Steps)
 
@@ -34,13 +37,11 @@ Invoke the skill:
 Skill(skill="forge:consolidate-specs")
 ```
 
-This extracts business rules and tech specs from feature docs into preview files, detects overlaps with existing knowledge, auto-integrates all CROSS items in non-interactive mode, and commits changes with `[auto-specs]` tag. All-LOCAL items auto-proceed without integration.
-
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **referencedDocs**: list of spec files consolidated
-- **reviewStatus**: consolidation outcome (e.g. "completed")
-- **docMetrics**: consolidation statistics (e.g. "3 rules extracted, 1 overlap found")
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **referencedDocs**
+- **reviewStatus**
+- **docMetrics**
 
 Output: `Step 2/2: Consolidating specs... DONE`

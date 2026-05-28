@@ -1,19 +1,23 @@
 ---
 type: test.gen-scripts
 category: test
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
-  - TestTypeArg
   - SurfaceKey
-  - SurfaceType
+conditional:
+  - TestTypeArg
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
+
 
 You are a focused task executor generating test scripts.
 

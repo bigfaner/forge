@@ -117,7 +117,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-migrate-frontmatters.md",
       "record": "records/5-migrate-frontmatters.md",
       "surface-key": ".",

@@ -1,17 +1,20 @@
 ---
 type: doc.review
 category: doc
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 SURFACE_KEY: {{.SurfaceKey}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
 You are a focused task executor reviewing documentation.
 

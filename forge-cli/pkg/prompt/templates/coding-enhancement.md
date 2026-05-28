@@ -1,24 +1,29 @@
 ---
 type: coding.enhancement
 category: coding
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - TaskCategory
   - FeatureSlug
-  - PhaseSummary
-  - CoverageStrategy
-  - CoverageTarget
-  - TestTypeArg
   - SurfaceKey
   - SurfaceType
   - Complexity
+conditional:
+  - CoverageStrategy
+  - CoverageTarget
+  - TestTypeArg
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
 COMPLEXITY: {{.Complexity}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
+
 
 You are a focused task executor enhancing an existing feature.
 

@@ -1,20 +1,23 @@
 ---
 type: eval.contract
 category: eval
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a quality evaluation task.
+
+You are a focused task executor evaluating quality.
 
 ## Task Constraints
 
@@ -41,14 +44,12 @@ Invoke the skill:
 Skill(skill="forge:eval", args="--type contract --target 850")
 ```
 
-This runs a quality evaluation using rubric scoring against the target threshold. The eval skill handles scoring, findings collection, and severity assessment internally.
-
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **score**: eval score (0-1000)
-- **findings**: list of issues found during evaluation
-- **severity**: overall severity level (critical/major/minor)
-- **passed**: whether the evaluation passed the quality gate
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **score**
+- **findings**
+- **severity**
+- **passed**
 
 Output: `Step 2/2: Running evaluation... DONE`

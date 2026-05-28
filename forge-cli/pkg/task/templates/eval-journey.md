@@ -1,16 +1,16 @@
 ---
 type: eval.journey
 category: eval
-variables:
+identity:
   - TaskID
   - TaskType
   - FeatureSlug
+context:
   - Mode
   - SurfaceKey
   - SurfaceType
   - SurfaceTypes
   - AcceptanceCriteria
-  - DocTaskCriteria
 ---
 Evaluate Journey quality for the {{.FeatureSlug}} feature using the 6-dimension rubric (1000-point scale).
 
