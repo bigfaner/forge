@@ -58,7 +58,7 @@ Capture stdout (trimmed) and exit code. Output format is plain text key:value pa
 |-----------|-------------------------------|--------|
 | 0 | Yes | **Skip the confirmation gate entirely.** Update proposal status `Draft → Approved` (see Status Transition below), then proceed directly to Step 3. |
 | 0 | No (or `quick:false`) | Present the confirmation gate (full Step 2 flow below). |
-| Non-zero (config missing/read error) | — | **Fallback: skip the confirmation gate** (same as `quick: true`). This preserves quick mode's streamlined nature. |
+| Non-zero (config missing/read error) | — | **Fallback: show the confirmation gate** (same as `quick: false`). When config state is uncertain, the conservative default is to let the user review before proceeding. |
 
 This check MUST happen at Step 2 entry — not during brainstorm, not after the summary is shown. The gate logic below is preserved but conditionally bypassed based on this config value.
 </EXTREMELY-IMPORTANT>

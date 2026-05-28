@@ -144,7 +144,7 @@ When both PRD files (`prd-user-stories.md` and `prd-spec.md`) do not exist, gen-
 
 If either mandatory field is missing, abort immediately and output the diagnostic message. Do NOT attempt to generate Journeys.
 
-**Proposal Mode quality degradation**: When `## Key Scenarios` section is missing from proposal.md, generate smoke-level Journeys (happy path only) and annotate each Journey file with `quality: low` in frontmatter. Include a warning in the generated Journey:
+**Proposal Mode quality degradation**: When `## Key Scenarios` section (or any heading matching `key scenarios`, case-insensitive, with or without `##` / `###` prefix) is missing from proposal.md, generate smoke-level Journeys (happy path only) and annotate each Journey file with `quality: low` in frontmatter. Include a warning in the generated Journey:
 
 ```
 > **Quality Notice**: This Journey was generated without Key Scenarios from the proposal.

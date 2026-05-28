@@ -22,16 +22,16 @@ forge task claim
 - Error → No available task, stop
 
 **Extract from claim output**:
-- `TASK_ID`
-- `FILE`
-- `MAIN_SESSION`
+- `TASK_ID` — the claimed task's numeric ID
+- `FILE` — absolute path to the task Markdown file
+- `MAIN_SESSION` — `"true"` if the task must run in the main agent session (not a subagent); `"false"` or absent otherwise
 - `SURFACE_KEY`
 - `SURFACE_TYPE`
 - `FEATURE`
 
 ## Step 1.5: Main Session Routing
 
-If `MAIN_SESSION == "true"`:
+If `MAIN_SESSION == "true"` (the claim output sets this field to the string `"true"`):
 
 1. Read the task file at the FILE path extracted from claim output and find the `## Main Session Instructions` section.
 2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.

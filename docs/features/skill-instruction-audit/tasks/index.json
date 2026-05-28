@@ -73,7 +73,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-fix-pipeline-ambiguity.md",
       "record": "records/6-fix-pipeline-ambiguity.md",
       "type": "doc"
