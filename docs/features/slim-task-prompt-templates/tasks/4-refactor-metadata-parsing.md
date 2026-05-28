@@ -4,7 +4,7 @@ title: "Refactor Go metadata parsing for grouped frontmatter"
 priority: "P0"
 estimated_time: "2h"
 complexity: "high"
-dependencies: [2, 3]
+dependencies: ["2a", "2b", "2c", 3]
 surface-key: "."
 surface-type: "cli"
 breaking: true

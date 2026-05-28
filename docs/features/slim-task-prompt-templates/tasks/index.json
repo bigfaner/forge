@@ -101,7 +101,7 @@
         "2c",
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-refactor-metadata-parsing.md",
       "record": "records/4-refactor-metadata-parsing.md",
       "breaking": true,
