@@ -136,24 +136,10 @@ Use `templates/manifest-update-ui.md` for the update pattern.
 <EXTREMELY-IMPORTANT>
 Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-Run the following config check sequence via Bash tool:
-
-```bash
-# Eval auto-run check (uiDesign)
-EVAL_ENABLED=$(forge config get auto.eval.uiDesign 2>/dev/null)
-if [ "$EVAL_ENABLED" = "true" ]; then
-  echo "AUTO_RUN"
-elif [ "$EVAL_ENABLED" = "false" ]; then
-  echo "SKIP"
-else
-  echo "FALLBACK_ASK"
-fi
-```
-
-Based on the output:
-- **AUTO_RUN** → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
-- **SKIP** → skip eval, output "eval-ui 已通过配置跳过", proceed to Step 8 (prototype generation)
-- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
+Run `forge config get auto.eval.uiDesign`. Based on the result:
+- `true` → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
+- `false` → skip eval, output "eval-ui 已通过配置跳过", proceed to Step 8 (prototype generation)
+- unset (exit code non-zero) → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
   - **Yes** → invoke `/eval-ui` via `Skill` tool
   - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
   - **No** → proceed to Step 8 (prototype generation)

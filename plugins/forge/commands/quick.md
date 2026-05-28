@@ -37,8 +37,6 @@ Invoke the brainstorm skill:
 Skill(skill="forge:brainstorm")
 ```
 
-brainstorm runs its full interactive flow: structured dialogue, user commit approval, and an optional eval-proposal step. When it completes, `docs/proposals/<slug>/proposal.md` is committed.
-
 After brainstorm completes, extract the feature slug from the proposal directory path. Each downstream skill (quick-tasks, run-tasks) derives the slug independently from the filesystem — no explicit passing needed.
 
 ## Step 2: Task Generation Gate
@@ -140,7 +138,7 @@ Invoke the run-tasks command:
 Skill(skill="forge:run-tasks")
 ```
 
-`run-tasks` reads `index.json`, claims tasks in dependency order, and dispatches to task-executor subagents. Quality gates (compile + fmt + lint + test) run for breaking tasks. Failures auto-create fix tasks with retry loops. On completion, run-tasks prints a dispatch summary. See `run-tasks` command for full behavior.
+See `run-tasks` command for full behavior.
 
 ## Error Handling
 

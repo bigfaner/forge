@@ -66,7 +66,7 @@ Read the current task file (from `forge task status` or known task path). Extrac
 forge surfaces --json <source-directory-path>
 ```
 
-Use the task's source file directory path (not the task file path). `forge surfaces --json` expects source directory paths and uses segment prefix matching. If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
+Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
 Parse JSON response to extract the `type` field.
 

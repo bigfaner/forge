@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-delete-cli-descriptions-remaining.md",
       "record": "records/2-delete-cli-descriptions-remaining.md",
       "type": "doc"

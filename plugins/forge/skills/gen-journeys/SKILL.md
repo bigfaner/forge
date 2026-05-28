@@ -36,29 +36,6 @@ forge surfaces <path>
 | 0 | Surface types found. stdout contains one surface type per line (e.g., `web`, `api`). For monorepo configs, each configured surface appears on its own line. | Parse stdout to collect all surface type strings. Proceed to rule loading. |
 | 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
 
-**Examples**:
-
-```bash
-# Single-surface project (scalar form): any path returns the same type
-forge surfaces .
-# stdout: api  (exit 0)
-
-# Multi-surface project: all configured surfaces are listed
-forge surfaces .
-# stdout:
-# web
-# api
-# (exit 0)
-
-# Monorepo with path-level surfaces: query specific path
-forge surfaces frontend/src
-# stdout: web  (exit 0)
-
-# Path not configured
-forge surfaces unknown-dir
-# stderr: no surface found for path "unknown-dir"; run `forge init` to configure surfaces  (exit 1)
-```
-
 ### Detection Flow
 
 1. Run `forge surfaces .` (or the relevant source path for the feature being tested)

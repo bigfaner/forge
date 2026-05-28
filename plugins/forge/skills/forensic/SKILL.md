@@ -37,7 +37,7 @@ effort: max
 forge forensic --help
 ```
 
-If missing, build and install: `cd forge-cli && go build -o ~/.zcode-forge-cli/task ./cmd/task/`
+If missing, ensure the `forge` CLI is installed (see project setup instructions).
 
 ## Architecture
 

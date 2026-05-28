@@ -190,7 +190,7 @@ Compose scorer prompts per `rules/scorer-composition.md`: read scorer protocol, 
 
 ### 2.2 Spawn Scorer Agents
 
-Spawn each composed prompt as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
+Spawn scorer agent (model: "sonnet").
 
 - **Single-expert types**: spawn one agent.
 - **Multi-expert types** (e.g., `prd` → `[pm, qa]`): spawn multiple agents **in parallel** (multiple Agent tool calls in a single message). Each agent receives its own composed prompt and writes to its own report path.
@@ -234,7 +234,7 @@ Compose reviser prompt per `rules/reviser-composition.md`: read reviser protocol
 
 ### 4.2 Spawn Reviser Agent
 
-Spawn as a `general-purpose` agent via the Agent tool with `model: "sonnet"`.
+Spawn reviser agent (model: "sonnet").
 
 Inputs: `DOC_DIR`, `EVAL_REPORT_PATH`, `ATTACK_POINTS` (merged).
 
