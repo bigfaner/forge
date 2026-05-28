@@ -92,16 +92,16 @@ func ValidateAutogenTemplates() error {
 
 // uiSurfaceTypes is the set of surface types that have a visual UI
 // and therefore require UX validation.
-var uiSurfaceTypes = map[string]bool{
-	"tui":    true,
-	"web":    true,
-	"mobile": true,
+var uiSurfaceTypes = map[types.SurfaceType]bool{
+	types.SurfaceTUI:    true,
+	types.SurfaceWeb:    true,
+	types.SurfaceMobile: true,
 }
 
 // hasUISurface returns true if any surface type has a visual UI.
-func hasUISurface(types []string) bool {
-	for _, typ := range types {
-		if uiSurfaceTypes[typ] {
+func hasUISurface(surfaceTypes []string) bool {
+	for _, typ := range surfaceTypes {
+		if uiSurfaceTypes[types.SurfaceType(typ)] {
 			return true
 		}
 	}
@@ -198,7 +198,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		// Single gen-journeys task covering all configured surfaces
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-journeys", ID: "T-test-gen-journeys",
-			Title: "Generate Test Journeys", Priority: "P1", EstimatedTime: "20-30min",
+			Title: "Generate Test Journeys", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 			Type:         TypeTestGenJourneys,
 			StrategyKind: "interface",
 		})
@@ -206,21 +206,21 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		// Eval Journeys (after gen-journeys, before gen-contracts)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "eval-journey", ID: "T-eval-journey",
-			Title: "Evaluate Journey Quality", Priority: "P1", EstimatedTime: "20-30min",
+			Title: "Evaluate Journey Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 			Type: TypeEvalJourney, MainSession: true,
 		})
 
 		// Gen Contracts (after eval-journey, before eval-contract)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-contracts", ID: "T-test-gen-contracts",
-			Title: "Generate Test Contracts", Priority: "P1", EstimatedTime: "30-45min",
+			Title: "Generate Test Contracts", Priority: string(types.PriorityP1), EstimatedTime: "30-45min",
 			Type: TypeTestGenContracts,
 		})
 
 		// Eval Contracts (after gen-contracts, before gen-test-scripts)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "eval-contract", ID: "T-eval-contract",
-			Title: "Evaluate Contract Quality", Priority: "P1", EstimatedTime: "20-30min",
+			Title: "Evaluate Contract Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 			Type: TypeEvalContract, MainSession: true,
 		})
 
@@ -228,7 +228,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		for _, typ := range surfaceTypes {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "gen-test-scripts-" + typ, ID: "T-test-gen-scripts-" + typ,
-				Title: fmt.Sprintf("Generate %s Scripts", TestTypeTitle(typ)), Priority: "P1", EstimatedTime: "1-2h",
+				Title: fmt.Sprintf("Generate %s Scripts", TestTypeTitle(typ)), Priority: string(types.PriorityP1), EstimatedTime: "1-2h",
 				Type: TypeTestGenScripts, SurfaceType: typ,
 				StrategyKind: "generate",
 			})
@@ -241,7 +241,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 			singleType := surfaceTypes[0]
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "run-test", ID: "T-test-run",
-				Title: runTestTitle(singleType), Priority: "P1", EstimatedTime: "30min-1h",
+				Title: runTestTitle(singleType), Priority: string(types.PriorityP1), EstimatedTime: "30min-1h",
 				Type:         TypeTestRun,
 				StrategyKind: "run",
 				SurfaceType:  singleType,
@@ -252,7 +252,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 				surfaceType := surfaces[key]
 				tasks = append(tasks, AutoGenTaskDef{
 					Key: "run-test-" + key, ID: "T-test-run-" + key,
-					Title: runTestTitle(surfaceType), Priority: "P1", EstimatedTime: "30min-1h",
+					Title: runTestTitle(surfaceType), Priority: string(types.PriorityP1), EstimatedTime: "30min-1h",
 					Type:         TypeTestRun,
 					SurfaceKey:   key,
 					SurfaceType:  surfaceType,
@@ -266,13 +266,13 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 	if auto.Validation.Full {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
-			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
+			Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 			Type: TypeValidationCode, MainSession: false,
 		})
 		if hasUISurface(surfaceTypes) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
-				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
+				Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 				Type: TypeValidationUx, MainSession: true,
 			})
 		}
@@ -282,7 +282,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 	if auto.ConsolidateSpecs.Full {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "consolidate-specs", ID: "T-specs-consolidate",
-			Title: "Consolidate Specs", Priority: "P2", EstimatedTime: "20min",
+			Title: "Consolidate Specs", Priority: string(types.PriorityP2), EstimatedTime: "20min",
 			Type: TypeDocConsolidate,
 		})
 	}
@@ -291,7 +291,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 	if auto.CleanCode.Full {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "clean-code", ID: "T-clean-code",
-			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
+			Title: "Simplify and Clean Code", Priority: string(types.PriorityP2), EstimatedTime: "20min",
 			Type: TypeCleanCode,
 		})
 	}
@@ -334,7 +334,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 		// Single gen-journeys task covering all configured surfaces (Stage 1)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-journeys", ID: "T-test-gen-journeys",
-			Title: "Generate Test Journeys", Priority: "P1", EstimatedTime: "20-30min",
+			Title: "Generate Test Journeys", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 			Type:         TypeTestGenJourneys,
 			StrategyKind: "interface",
 		})
@@ -345,7 +345,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 			singleType := surfaceTypes[0]
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "run-test", ID: "T-test-run",
-				Title: runTestTitle(singleType), Priority: "P1", EstimatedTime: "30min-1h",
+				Title: runTestTitle(singleType), Priority: string(types.PriorityP1), EstimatedTime: "30min-1h",
 				Type:         TypeTestRun,
 				StrategyKind: "run",
 				SurfaceType:  singleType,
@@ -356,7 +356,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 				surfaceType := surfaces[key]
 				tasks = append(tasks, AutoGenTaskDef{
 					Key: "run-test-" + key, ID: "T-test-run-" + key,
-					Title: runTestTitle(surfaceType), Priority: "P1", EstimatedTime: "30min-1h",
+					Title: runTestTitle(surfaceType), Priority: string(types.PriorityP1), EstimatedTime: "30min-1h",
 					Type:         TypeTestRun,
 					SurfaceKey:   key,
 					SurfaceType:  surfaceType,
@@ -369,13 +369,13 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	if auto.Validation.Quick {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
-			Title: "Validate Code Quality", Priority: "P2", EstimatedTime: "15min",
+			Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 			Type: TypeValidationCode, MainSession: false,
 		})
 		if hasUISurface(surfaceTypes) {
 			tasks = append(tasks, AutoGenTaskDef{
 				Key: "validate-ux", ID: "T-validate-ux",
-				Title: "Validate User Experience", Priority: "P2", EstimatedTime: "15min",
+				Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 				Type: TypeValidationUx, MainSession: true,
 			})
 		}
@@ -385,7 +385,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	if auto.ConsolidateSpecs.Quick {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-drift-detection", ID: "T-quick-doc-drift",
-			Title: "Detect Spec Drift", Priority: "P2", EstimatedTime: "15min",
+			Title: "Detect Spec Drift", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 			Type: TypeDocDrift,
 		})
 	}
@@ -394,7 +394,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	if auto.CleanCode.Quick {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "quick-clean-code", ID: "T-clean-code",
-			Title: "Simplify and Clean Code", Priority: "P2", EstimatedTime: "20min",
+			Title: "Simplify and Clean Code", Priority: string(types.PriorityP2), EstimatedTime: "20min",
 			Type: TypeCleanCode,
 		})
 	}
@@ -1001,7 +1001,7 @@ func GetReviewDocTask() AutoGenTaskDef {
 		Key:           "review-doc",
 		ID:            "T-review-doc",
 		Title:         "Review Documentation Quality",
-		Priority:      "P1",
+		Priority:      string(types.PriorityP1),
 		EstimatedTime: "30min",
 		Type:          TypeDocReview,
 	}

@@ -178,16 +178,16 @@ func IsSystemType(typ string) bool {
 // Maps surface types to test type names per docs/reference/test-type-model.md.
 // Returns "Functional Test" as fallback for unknown or empty surface types.
 func TestTypeTitle(surfaceType string) string {
-	switch surfaceType {
-	case "cli":
+	switch types.SurfaceType(surfaceType) {
+	case types.SurfaceCLI:
 		return "CLI Functional Test"
-	case "tui":
+	case types.SurfaceTUI:
 		return "Terminal Functional Test"
-	case "api":
+	case types.SurfaceAPI:
 		return "API Functional Test"
-	case "web":
+	case types.SurfaceWeb:
 		return "Web E2E Test"
-	case "mobile":
+	case types.SurfaceMobile:
 		return "Mobile E2E Test"
 	default:
 		return "Functional Test"
@@ -399,15 +399,15 @@ func NewTaskIndex(feature string) *TaskIndex {
 	return &TaskIndex{
 		Feature: feature,
 		StatusEnum: []string{
-			"pending",
-			"in_progress",
-			"completed",
-			"blocked",
-			"suspended",
-			"skipped",
-			"rejected",
+			string(types.StatusPending),
+			string(types.StatusInProgress),
+			string(types.StatusCompleted),
+			string(types.StatusBlocked),
+			string(types.StatusSuspended),
+			string(types.StatusSkipped),
+			string(types.StatusRejected),
 		},
-		PriorityEnum: []string{"P0", "P1", "P2"},
+		PriorityEnum: []string{string(types.PriorityP0), string(types.PriorityP1), string(types.PriorityP2)},
 		tasks:        make(map[string]Task),
 		Created:      time.Now().Format("2006-01-02"),
 	}

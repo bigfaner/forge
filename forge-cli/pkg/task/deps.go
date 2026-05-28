@@ -1,6 +1,10 @@
 package task
 
-import "strings"
+import (
+	"strings"
+
+	"forge-cli/pkg/types"
+)
 
 // ResolveWildcardDep resolves a dependency string against the task index.
 // For wildcard dependencies (e.g. "1.x"), returns all matching business task IDs.
@@ -24,14 +28,14 @@ func ResolveWildcardDep(index *TaskIndex, dep string) ([]string, bool) {
 }
 
 // satisfiedStatuses are the statuses that satisfy dependency checks.
-var satisfiedStatuses = map[string]bool{
-	"completed": true,
-	"skipped":   true,
+var satisfiedStatuses = map[types.Status]bool{
+	types.StatusCompleted: true,
+	types.StatusSkipped:   true,
 }
 
 // IsDepSatisfied returns true if the given status satisfies a dependency.
 func IsDepSatisfied(status string) bool {
-	return satisfiedStatuses[status]
+	return satisfiedStatuses[types.Status(status)]
 }
 
 // GetUnmetDeps returns the concrete dependency IDs that are not satisfied.

@@ -33,10 +33,10 @@ type AddTaskOpts struct {
 }
 
 // terminalStatuses are task statuses that indicate the task is done.
-var terminalStatuses = map[string]bool{
-	"completed": true,
-	"skipped":   true,
-	"rejected":  true,
+var terminalStatuses = map[types.Status]bool{
+	types.StatusCompleted: true,
+	types.StatusSkipped:   true,
+	types.StatusRejected:  true,
 }
 
 // ActiveFixExistsError is returned by AddTask when active fix tasks already exist
@@ -54,7 +54,7 @@ func (e *ActiveFixExistsError) Error() string {
 func hasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 	var active []string
 	for _, t := range index.tasks {
-		if t.SourceTaskID == sourceTaskID && !terminalStatuses[string(t.Status)] {
+		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
 			active = append(active, t.ID)
 		}
 	}
@@ -104,10 +104,10 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 		// Defaults
 		if opts.Status == "" {
-			opts.Status = "pending"
+			opts.Status = string(types.StatusPending)
 		}
 		if opts.Priority == "" {
-			opts.Priority = "P1"
+			opts.Priority = string(types.PriorityP1)
 		}
 
 		// Auto-generate ID if empty
@@ -125,7 +125,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		}
 
 		// Validate priority
-		if !slices.Contains([]string{"P0", "P1", "P2"}, opts.Priority) {
+		if !slices.Contains([]string{string(types.PriorityP0), string(types.PriorityP1), string(types.PriorityP2)}, opts.Priority) {
 			return fmt.Errorf("invalid priority: %s (must be P0, P1, or P2)", opts.Priority)
 		}
 
@@ -180,12 +180,12 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 				// Block source before resolution (--block-source flag).
 				// Prevents auto-resolve from flattening to root, preserving the chain.
 				if opts.BlockSource {
-					t.Status = "blocked"
+					t.Status = types.StatusBlocked
 				}
 
 				// Source auto-resolution: when --source-task-id points to a COMPLETED/SKIPPED
 				// fix-task, trace the chain to find the root blocked task.
-				if t.Status == "completed" || t.Status == "skipped" {
+				if t.Status == types.StatusCompleted || t.Status == types.StatusSkipped {
 					resolved := ResolveSourceTask(index, opts.SourceTaskID)
 					if resolved != opts.SourceTaskID {
 						fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s -> %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)

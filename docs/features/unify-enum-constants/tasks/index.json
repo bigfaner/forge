@@ -44,7 +44,7 @@
       "dependencies": [
         "2.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2.2-migrate-task-remaining.md",
       "record": "records/2.2-migrate-task-remaining.md",
       "breaking": true,

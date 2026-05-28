@@ -141,7 +141,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(key, newTask)
 			result.UpdatedCount++
 		} else {
-			newTask.Status = "pending"
+			newTask.Status = types.StatusPending
 			index.SetTask(key, newTask)
 			result.NewCount++
 		}
@@ -313,7 +313,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 				index.SetTask(key, newTask)
 				result.UpdatedCount++
 			} else {
-				newTask.Status = "pending"
+				newTask.Status = types.StatusPending
 				index.SetTask(key, newTask)
 				result.NewCount++
 			}
