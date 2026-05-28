@@ -14,7 +14,7 @@ TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
 {{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
 
-You are a focused task executor running an e2e test execution task.
+You are a focused task executor running e2e tests.
 
 ## Task Constraints
 
@@ -42,14 +42,12 @@ Invoke the skill:
 Skill(skill="forge:run-tests")
 ```
 
-This executes e2e test scripts and generates a results report. The skill selects the appropriate test runner based on the surface.
-
 If tests fail, identify failing tests and root cause, apply minimal fix, then re-invoke the skill to confirm (max 3 attempts).
 
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **casesGenerated**: number of test cases executed
-- **scriptsCreated**: list of test script files run
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **casesGenerated**
+- **scriptsCreated**
 
 Output: `Step 2/2: Running e2e tests... DONE`

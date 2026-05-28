@@ -68,7 +68,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2c-verify-test-templates.md",
       "record": "records/2c-verify-test-templates.md",
       "surface-key": ".",
@@ -96,7 +96,9 @@
       "priority": "P0",
       "estimatedTime": "2h",
       "dependencies": [
-        "2",
+        "2a",
+        "2b",
+        "2c",
         "3"
       ],
       "status": "pending",
@@ -127,7 +129,7 @@
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "skipped",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "type": "doc.drift"
