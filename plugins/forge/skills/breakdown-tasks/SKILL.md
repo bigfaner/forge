@@ -23,7 +23,7 @@ Evaluate each row independently. Load ONLY if condition is true. Rule files are 
 | `rules/ui-placement.md` | `ui/ui-design.md` OR `prd/prd-ui-functions.md` exists | 1, 2, 3, 4a |
 | `rules/db-schema.md` | `design/er-diagram.md` exists | 2, 4a |
 | `rules/existing-code-split.md` | Tech-design modifies existing shared code | 4a |
-| `rules/scope-to-surface-key.md` | Always (replaces `rules/scope-assignment.md`) | 4a |
+| *(surface resolution built into Step 4a)* | Always | 4a |
 
 Read applicable files via `rules/<filename>`.
 
@@ -164,7 +164,7 @@ For each non-UI business task, populate `## Reference Files` with inline precise
 **Note**: breakdown-tasks reads from tech-design (not proposal), so Reference Files inline content will differ from quick-tasks in practice, but the generation rule format is identical.
 
 ### Surface-Key/Type Assignment
-See `rules/scope-to-surface-key.md` for the full resolution procedure. Uses a two-layer strategy:
+Surface-key/type resolution uses a two-layer strategy:
 
 1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set both fields on every task.
 

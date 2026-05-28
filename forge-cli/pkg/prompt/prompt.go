@@ -6,32 +6,76 @@ package prompt
 import (
 	"embed"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
+
+	"reflect"
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/task"
 )
 
-//go:embed data/*.md
+//go:embed templates/*.md
 var templateFS embed.FS
 
+// promptTemplateData holds all fields exposed to prompt templates via text/template.
+// All fields are value types (string); zero values are empty strings.
+// In templates, {{if .Field}} evaluates to false for empty strings, requiring no nil checks.
+type promptTemplateData struct {
+	TaskID           string // task ID (e.g. "2.1", "T-test-gen-cases")
+	TaskFile         string // absolute path to the task markdown file
+	TaskCategory     string // task category (fix/cleanup/doc/test etc.), empty string omits the category paragraph
+	FeatureSlug      string // feature slug (e.g. "auth-refresh")
+	PhaseSummary     string // phase summary text, empty string omits the entire paragraph
+	CoverageStrategy string // coverage strategy: "percentage"/"maintain"/empty
+	CoverageTarget   string // coverage target value (e.g. "Achieve 80% test coverage")
+	TestTypeArg      string // test type argument (e.g. " --type api"), empty for no type
+	SurfaceKey       string // surface key, empty string omits surface label line
+	SurfaceType      string // surface type
+	Complexity       string // task complexity: low/medium/high (defaults to "medium")
+}
+
+// placeholderReplacer maps legacy {{PLACEHOLDER}} syntax to dot-notation {{.Placeholder}}
+// for text/template compatibility. This bridge allows the engine to use text/template
+// while template files still use the old {{X}} format (Task 2 migrates the files).
+var placeholderReplacer = strings.NewReplacer(
+	"{{TASK_ID}}", "{{.TaskID}}",
+	"{{TASK_FILE}}", "{{.TaskFile}}",
+	"{{SURFACE_KEY}}", "{{.SurfaceKey}}",
+	"{{FEATURE_SLUG}}", "{{.FeatureSlug}}",
+	"{{PHASE_SUMMARY}}", "{{.PhaseSummary}}",
+	"{{TEST_TYPE_ARG}}", "{{.TestTypeArg}}",
+	"{{COVERAGE_STRATEGY}}", "{{.CoverageStrategy}}",
+	"{{COVERAGE_TARGET}}", "{{.CoverageTarget}}",
+	"{{COMPLEXITY}}", "{{.Complexity}}",
+)
+
 // templatePath derives the embed template filename from a task type constant
-// using the naming convention: "data/" + typeName with '.' replaced by '-' + ".md".
+// using the naming convention: "templates/" + typeName with '.' replaced by '-' + ".md".
 func templatePath(typeName string) string {
-	return "data/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
+	return "templates/" + strings.ReplaceAll(typeName, ".", "-") + ".md"
 }
 
 // ValidatePromptTemplates checks that all task types used by Synthesize()
 // have a corresponding template file in the prompt embed FS, and that no two types
-// map to the same filename. Types without a prompt template are skipped (they may
-// exist only in the autogen FS).
+// map to the same filename. It also validates that each template can be executed
+// against a zero-value promptTemplateData using missingkey=error, catching field
+// misspellings at startup.
+//
+// When a template contains metadata frontmatter (type, category, variables fields),
+// the metadata is stripped before parsing. The variables field is cross-validated
+// against promptTemplateData using reflection — each declared variable must have
+// a matching exported field on the struct.
+//
 // Must be called from the CLI main() startup path, NOT from an init() function.
 func ValidatePromptTemplates() error {
 	seen := make(map[string]string) // filename -> type name (for collision detection)
+	structType := reflect.TypeOf(promptTemplateData{})
 
 	for typeName := range task.ValidTypes {
 		filename := templatePath(typeName)
@@ -48,6 +92,28 @@ func ValidatePromptTemplates() error {
 			return fmt.Errorf("template convention error: types %q and %q both map to %q", prev, typeName, filename)
 		}
 		seen[filename] = typeName
+
+		// Strip metadata frontmatter before validation
+		content := string(data)
+		body, meta := parseMetadataFrontmatter(content)
+
+		// Cross-validate metadata variables against struct fields
+		if meta != nil {
+			if err := validateMetadataVariables(meta, structType); err != nil {
+				return fmt.Errorf("template validation error: %s: %w", filename, err)
+			}
+		}
+
+		// Validate that the template executes without errors against a zero-value struct.
+		// missingkey=error catches any field name misspelled in the template.
+		converted := placeholderReplacer.Replace(body)
+		tmpl, err := template.New(filename).Option("missingkey=error").Parse(converted)
+		if err != nil {
+			return fmt.Errorf("template validation error: parse %s: %w", typeName, err)
+		}
+		if err := tmpl.Execute(io.Discard, promptTemplateData{}); err != nil {
+			return fmt.Errorf("template validation error: execute %s with zero-value data: %w", typeName, err)
+		}
 	}
 
 	return nil
@@ -79,7 +145,7 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 
 	// fix-record-missed overrides normal type routing.
 	if opts.FixRecordMissed {
-		return renderTemplate("data/fix-record-missed.md", opts, t)
+		return renderTemplate("templates/fix-record-missed.md", opts, t)
 	}
 
 	if t.Type == "" {
@@ -93,24 +159,23 @@ func Synthesize(opts SynthesizeOpts) (string, error) {
 	return renderTemplate(templatePath(t.Type), opts, t)
 }
 
-// renderTemplate reads the embed template and substitutes placeholders.
+// renderTemplate reads the embed template and renders it using text/template.
 //
-// WARNING: Placeholder substitution uses strings.ReplaceAll with no escaping
-// mechanism. Template content must not contain bare placeholder strings like
-// {{TASK_ID}}, {{TASK_FILE}}, etc., or they will be silently replaced at
-// runtime. This includes code examples, documentation snippets, or any text
-// that coincidentally matches the {{...}} pattern. If literal {{...}} is ever
-// needed in a template, an escaping mechanism must be implemented first.
+// Legacy {{PLACEHOLDER}} syntax in template files is bridge-converted to {{.Placeholder}}
+// dot-notation before parsing. Task 2 migrates the template files permanently.
 //
-// Available placeholders (all use {{NAME}} syntax):
+// Available template fields (accessed as {{.FieldName}} after migration):
 //
-//	{{TASK_ID}}         — task ID (e.g. "2.1", "T-test-gen-cases")
-//	{{TASK_FILE}}       — absolute path to the task markdown file
-//	{{SURFACE_KEY}}     — task surface key (empty string means cross-surface)
-//	{{FEATURE_SLUG}}    — feature slug (e.g. "auth-refresh")
-//	{{PHASE_SUMMARY}}   — "PHASE_SUMMARY: <path>" or empty (injected line)
-//	{{TEST_TYPE_ARG}}   — " --type <surfaceType>" or empty (for per-type gen-scripts)
-//	{{COMPLEXITY}}      — task complexity level ("low", "medium", or "high"; defaults to "medium")
+//	{{.TaskID}}           — task ID (e.g. "2.1", "T-test-gen-cases")
+//	{{.TaskFile}}         — absolute path to the task markdown file
+//	{{.TaskCategory}}     — task category for submit-task routing (fix/cleanup/doc/test etc.)
+//	{{.SurfaceKey}}       — task surface key (empty string means cross-surface)
+//	{{.FeatureSlug}}      — feature slug (e.g. "auth-refresh")
+//	{{.PhaseSummary}}     — "PHASE_SUMMARY: <path>" or empty (injected line)
+//	{{.TestTypeArg}}      — " --type <surfaceType>" or empty (for per-type gen-scripts)
+//	{{.CoverageStrategy}} — coverage strategy text, empty for non-testable types
+//	{{.CoverageTarget}}   — coverage target instruction text
+//	{{.Complexity}}       — task complexity level ("low", "medium", or "high")
 func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (string, error) {
 	data, err := templateFS.ReadFile(templateFile)
 	if err != nil {
@@ -119,51 +184,74 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 
 	taskFile := filepath.Join(opts.ProjectRoot, feature.GetTaskFile(opts.FeatureSlug, t.File))
 
-	scope := t.SurfaceKey
-
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
-
 	phaseSummaryLine := ""
 	if phaseSummaryPath != "" {
 		phaseSummaryLine = "PHASE_SUMMARY: " + phaseSummaryPath
 	}
-
-	result := string(data)
-	result = strings.ReplaceAll(result, "{{TASK_ID}}", t.ID)
-	result = strings.ReplaceAll(result, "{{TASK_FILE}}", taskFile)
-
-	// Inject TASK_CATEGORY after TASK_FILE line for submit-task skill routing.
-	category := task.CategoryForType(t.Type)
-	result = strings.Replace(result, "TASK_FILE: "+taskFile, "TASK_FILE: "+taskFile+"\nTASK_CATEGORY: "+category, 1)
-	result = strings.ReplaceAll(result, "{{SURFACE_KEY}}", scope)
-	result = strings.ReplaceAll(result, "{{FEATURE_SLUG}}", opts.FeatureSlug)
-	result = strings.ReplaceAll(result, "{{PHASE_SUMMARY}}", phaseSummaryLine)
 
 	// Build --type argument from task SurfaceType for per-type gen-scripts tasks.
 	testTypeArg := ""
 	if t.SurfaceType != "" {
 		testTypeArg = " --type " + t.SurfaceType
 	}
-	result = strings.ReplaceAll(result, "{{TEST_TYPE_ARG}}", testTypeArg)
 
 	// Inject coverage target for testable (coding.*) task types.
-	// Non-testable types get empty strings; cleanTemplateOutput removes the empty labels.
 	coverageStrategy := ""
 	coverageTarget := ""
 	if task.IsTestableType(t.Type) {
 		coverageStrategy, coverageTarget = resolveCoverage(opts.ProjectRoot, t)
 	}
-	result = strings.ReplaceAll(result, "{{COVERAGE_STRATEGY}}", coverageStrategy)
-	result = strings.ReplaceAll(result, "{{COVERAGE_TARGET}}", coverageTarget)
 
 	// Inject complexity field (defaults to "medium" when empty for backward compatibility).
 	complexity := t.Complexity
 	if complexity == "" {
 		complexity = "medium"
 	}
-	result = strings.ReplaceAll(result, "{{COMPLEXITY}}", complexity)
 
-	result = cleanTemplateOutput(result, complexity)
+	// Build template data struct. TaskCategory is set here (migrated from the old
+	// strings.Replace injection that appended TASK_CATEGORY after TASK_FILE line).
+	category := task.CategoryForType(t.Type)
+
+	td := promptTemplateData{
+		TaskID:           t.ID,
+		TaskFile:         taskFile,
+		TaskCategory:     category,
+		FeatureSlug:      opts.FeatureSlug,
+		PhaseSummary:     phaseSummaryLine,
+		CoverageStrategy: coverageStrategy,
+		CoverageTarget:   coverageTarget,
+		TestTypeArg:      testTypeArg,
+		SurfaceKey:       t.SurfaceKey,
+		SurfaceType:      t.SurfaceType,
+		Complexity:       complexity,
+	}
+
+	// Bridge-convert legacy {{PLACEHOLDER}} to dot-notation {{.Placeholder}}
+	// for text/template compatibility. Task 2 permanently migrates the template files.
+	converted := placeholderReplacer.Replace(string(data))
+
+	// Strip metadata frontmatter before parsing (metadata is not part of rendered output)
+	converted = stripMetadataFrontmatter(converted)
+
+	tmpl, err := template.New(templateFile).Option("missingkey=error").Parse(converted)
+	if err != nil {
+		return "", fmt.Errorf("parse template %s: %w", templateFile, err)
+	}
+
+	var buf strings.Builder
+	if err := tmpl.Execute(&buf, td); err != nil {
+		return "", fmt.Errorf("execute template %s: %w", templateFile, err)
+	}
+
+	// Transitional: inject TASK_CATEGORY line after TASK_FILE line for submit-task routing.
+	// Task 2 will add {{.TaskCategory}} to template files, making this post-processing unnecessary.
+	result := buf.String()
+	if td.TaskCategory != "" {
+		result = strings.Replace(result, "TASK_FILE: "+td.TaskFile, "TASK_FILE: "+td.TaskFile+"\nTASK_CATEGORY: "+td.TaskCategory, 1)
+	}
+
+	result = collapseBlankLines(result)
 
 	return result, nil
 }
@@ -240,90 +328,14 @@ func InferType(id string) string {
 	return task.InferType(id, nil)
 }
 
-// cleanTemplateOutput removes residual artifacts left when template variables
-// are substituted with empty strings:
-//
-//  1. Lines that are only a label with an empty value (e.g. "SURFACE_KEY: " or "PROFILE: ")
-//     are removed entirely.
-//  2. Lines containing conditional sentences with empty backticks
-//     (e.g. "If “ is non-empty, ...") are removed entirely.
-//  3. Trailing whitespace on "just <cmd> " lines is stripped.
-//  4. Collapsed consecutive blank lines are reduced to a single blank line.
-//  5. Conditional paragraphs wrapped in <!-- IF NOT_LOW -->...<!-- END_IF --> markers
-//     are removed when complexity is "low". This allows templates to include sections
-//     (e.g., Step 1.5 spec-code scan) that are conditionally omitted for low-complexity tasks.
-//     The marker format is: <!-- IF NOT_LOW --> before the paragraph and <!-- END_IF --> after it.
-func cleanTemplateOutput(s string, complexity string) string {
-	// Process conditional paragraph blocks first, before line-level cleanup.
-	// This handles <!-- IF NOT_LOW -->...<!-- END_IF --> markers.
-	if complexity == "low" {
-		for {
-			start := strings.Index(s, "<!-- IF NOT_LOW -->")
-			if start == -1 {
-				break
-			}
-			end := strings.Index(s, "<!-- END_IF -->")
-			if end == -1 {
-				break
-			}
-			// Remove the entire block from start marker to end of END_IF marker
-			s = s[:start] + s[end+len("<!-- END_IF -->"):]
-		}
-	} else {
-		// For non-low complexity, just strip the markers themselves (keep content)
-		s = strings.ReplaceAll(s, "<!-- IF NOT_LOW -->", "")
-		s = strings.ReplaceAll(s, "<!-- END_IF -->", "")
+// collapseBlankLines reduces runs of 3+ consecutive newlines to exactly 2 newlines.
+// This handles residual blank lines left when multiple {{if}} blocks in templates
+// all evaluate to empty, leaving consecutive empty lines at the same position.
+func collapseBlankLines(s string) string {
+	for strings.Contains(s, "\n\n\n") {
+		s = strings.ReplaceAll(s, "\n\n\n", "\n\n")
 	}
-
-	lines := strings.Split(s, "\n")
-	var out []string
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-
-		// Remove conditional sentences referencing empty backticks.
-		if strings.Contains(trimmed, "If `` is non-empty") {
-			continue
-		}
-
-		// Remove label-only lines with empty values: "KEY:" or "KEY: " (no value after colon).
-		if isLabelWithEmptyValue(trimmed) {
-			continue
-		}
-
-		// Strip trailing whitespace on "just" command lines.
-		if strings.HasPrefix(trimmed, "just ") && strings.HasSuffix(line, " ") {
-			line = strings.TrimRight(line, " \t")
-		}
-
-		out = append(out, line)
-	}
-
-	// Collapse consecutive blank lines (3+ newlines → 2 newlines).
-	result := strings.Join(out, "\n")
-	for strings.Contains(result, "\n\n\n") {
-		result = strings.ReplaceAll(result, "\n\n\n", "\n\n")
-	}
-
-	return result
-}
-
-// isLabelWithEmptyValue detects lines like "SURFACE_KEY:" or "PROFILE: " or "PHASE_SUMMARY:"
-// where the label is followed by a colon and optional whitespace but no actual value.
-func isLabelWithEmptyValue(line string) bool {
-	if line == "" {
-		return false
-	}
-	before, after, found := strings.Cut(line, ":")
-	if !found {
-		return false
-	}
-	before = strings.TrimSpace(before)
-	after = strings.TrimSpace(after)
-	if before == "" || strings.Contains(before, " ") {
-		return false
-	}
-	return after == ""
+	return s
 }
 
 // resolveCoverage determines the effective coverage strategy and target text

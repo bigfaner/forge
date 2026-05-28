@@ -11,7 +11,6 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
-	tmpl "forge-cli/pkg/template"
 
 	"github.com/spf13/cobra"
 )
@@ -165,7 +164,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 	// template file existence. Defaults (IDPrefix, Priority, etc.) live in
 	// a hardcoded map and should not depend on the embedded FS file being found.
 	if addType != "" {
-		if defs, err := tmpl.GetDefaults(addType); err == nil {
+		if defs, err := task.GetTaskTemplateDefaults(addType); err == nil {
 			changed := func(name string) bool { return cmd != nil && cmd.Flags().Changed(name) }
 			if !changed("priority") {
 				opts.Priority = defs.Priority
@@ -181,7 +180,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 			}
 		}
 		// Template file is only needed for markdown generation
-		if _, err := tmpl.Get(addType); err == nil {
+		if _, err := task.GetTaskTemplate(addType); err == nil {
 			opts.Template = addType
 		}
 	}

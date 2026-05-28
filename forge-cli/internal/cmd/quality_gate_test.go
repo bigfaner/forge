@@ -556,6 +556,7 @@ func TestAddFixTask_SingleDirCreatesOneTask(t *testing.T) {
 }
 
 // helperSetup creates a minimal feature with a completed task for addFixTask tests.
+// Configures a default scalar surface (".": "cli") so surface inference succeeds.
 func helperSetup(t *testing.T) (projectRoot, featureSlug, indexPath string) {
 	t.Helper()
 	projectRoot = t.TempDir()
@@ -573,6 +574,16 @@ func helperSetup(t *testing.T) (projectRoot, featureSlug, indexPath string) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
+
+	// Configure default surface for inference
+	forgeDir := filepath.Join(projectRoot, ".forge")
+	if err := os.MkdirAll(forgeDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  .: cli\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	return
 }
 
@@ -821,41 +832,26 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 func TestAddFixTask_EmptyOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
-	if addErr != nil {
-		t.Fatalf("unexpected error: %v", addErr)
+	// Hard constraint: empty output -> no source files extracted -> surface inference fails
+	_, addErr := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
+	if addErr == nil {
+		t.Fatal("expected error when surface inference fails on empty output")
 	}
-	if taskID == "" {
-		t.Fatal("expected non-empty task ID even with empty output")
-	}
-	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
-	data, err := os.ReadFile(mdPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	content := string(data)
-	if !strings.Contains(content, "See error output for affected files") {
-		t.Error("empty output should produce fallback source files message")
+	if !strings.Contains(addErr.Error(), "surface inference failed") {
+		t.Errorf("error should mention 'surface inference failed', got: %v", addErr)
 	}
 }
 
 func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
-	if addErr != nil {
-		t.Fatalf("unexpected error: %v", addErr)
+	// Hard constraint: no source files in output -> surface inference fails
+	_, addErr := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
+	if addErr == nil {
+		t.Fatal("expected error when surface inference fails on output without file references")
 	}
-	if taskID == "" {
-		t.Fatal("expected task ID")
-	}
-	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
-	data, err := os.ReadFile(mdPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(data), "See error output for affected files") {
-		t.Error("no source files in output should produce fallback message")
+	if !strings.Contains(addErr.Error(), "surface inference failed") {
+		t.Errorf("error should mention 'surface inference failed', got: %v", addErr)
 	}
 }
 
@@ -1699,7 +1695,7 @@ func TestRunUnitTestStep_RetryFail(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	mockRun := func(_ string) (string, bool) {
-		return "FAIL: TestReal", false
+		return "handler.go:10: FAIL: TestReal", false
 	}
 	passed, fixID, fixErr := runUnitTestStep(projectRoot, featureSlug, mockRun)
 	if passed {
@@ -1752,7 +1748,7 @@ func TestRunUnitTestStep_RetryOutputInDescription(t *testing.T) {
 	callCount := 0
 	mockRun := func(_ string) (string, bool) {
 		callCount++
-		return fmt.Sprintf("attempt %d output: FAIL: TestX", callCount), false
+		return fmt.Sprintf("handler.go:%d: attempt %d output: FAIL: TestX", callCount, callCount), false
 	}
 	passed, fixID, _ := runUnitTestStep(projectRoot, featureSlug, mockRun)
 	if passed {
@@ -1867,6 +1863,61 @@ func TestInferSurface(t *testing.T) {
 	}
 }
 
+func TestRequireSurfaceInference(t *testing.T) {
+	t.Run("returns values when inference succeeds", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		forgeDir := filepath.Join(projectRoot, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  .: web\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		key, typ, err := requireSurfaceInference(projectRoot, "src/App.tsx")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if key != "." {
+			t.Errorf("key = %q, want %q", key, ".")
+		}
+		if typ != "web" {
+			t.Errorf("typ = %q, want %q", typ, "web")
+		}
+	})
+
+	t.Run("returns error when no surfaces configured", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		_, _, err := requireSurfaceInference(projectRoot, "handler.go")
+		if err == nil {
+			t.Fatal("expected error when no surfaces configured")
+		}
+		if !strings.Contains(err.Error(), "surface inference failed") {
+			t.Errorf("error should mention 'surface inference failed', got: %v", err)
+		}
+		if !strings.Contains(err.Error(), "forge surfaces detect") {
+			t.Errorf("error should contain 'forge surfaces detect' guidance, got: %v", err)
+		}
+	})
+
+	t.Run("returns error when file matches no surface", func(t *testing.T) {
+		projectRoot := t.TempDir()
+		forgeDir := filepath.Join(projectRoot, ".forge")
+		if err := os.MkdirAll(forgeDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  admin-panel: web\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+		_, _, err := requireSurfaceInference(projectRoot, "unrelated/path.go")
+		if err == nil {
+			t.Fatal("expected error when file matches no surface")
+		}
+		if !strings.Contains(err.Error(), "surface inference failed") {
+			t.Errorf("error should mention 'surface inference failed', got: %v", err)
+		}
+	})
+}
+
 func TestAddFixTask_SurfaceInference(t *testing.T) {
 	projectRoot, featureSlug, indexPath := helperSetup(t)
 
@@ -1920,31 +1971,28 @@ func TestAddFixTask_SurfaceInference(t *testing.T) {
 	}
 }
 
-func TestAddFixTask_SurfaceInferenceFallback(t *testing.T) {
-	projectRoot, featureSlug, indexPath := helperSetup(t)
+func TestAddFixTask_SurfaceInferenceHardFailure(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
 
-	// No surfaces configured — should create fix-task with empty surface fields
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "handler.go:10: error", "tests/results/out.txt")
-	if addErr != nil {
-		t.Fatalf("unexpected error: %v", addErr)
-	}
-	if taskID == "" {
-		t.Fatal("expected non-empty task ID")
-	}
-
-	updatedIndex, err := task.LoadIndex(indexPath)
-	if err != nil {
+	// Remove surfaces config to trigger inference failure
+	forgeDir := filepath.Join(projectRoot, ".forge")
+	if err := os.Remove(filepath.Join(forgeDir, "config.yaml")); err != nil {
 		t.Fatal(err)
 	}
-	addedTask, exists := updatedIndex.ByID(taskID)
-	if !exists {
-		t.Fatalf("task %s not found in index", taskID)
+
+	// Hard constraint: surface inference failure should return error
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "handler.go:10: error", "tests/results/out.txt")
+	if addErr == nil {
+		t.Fatalf("expected error when surface inference fails, got nil (taskID=%q)", taskID)
 	}
-	if addedTask.SurfaceKey != "" {
-		t.Errorf("SurfaceKey = %q, want empty (no surfaces configured)", addedTask.SurfaceKey)
+	if taskID != "" {
+		t.Errorf("expected empty taskID on inference failure, got %q", taskID)
 	}
-	if addedTask.SurfaceType != "" {
-		t.Errorf("SurfaceType = %q, want empty (no surfaces configured)", addedTask.SurfaceType)
+	if !strings.Contains(addErr.Error(), "surface inference failed") {
+		t.Errorf("error should mention 'surface inference failed', got: %v", addErr)
+	}
+	if !strings.Contains(addErr.Error(), "forge surfaces detect") {
+		t.Errorf("error should mention 'forge surfaces detect', got: %v", addErr)
 	}
 }
 

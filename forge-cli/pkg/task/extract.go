@@ -152,7 +152,6 @@ func extractBodyContext(projectRoot, slug, mode string, surfaceTypes []string) B
 			return ctx // missing proposal is valid
 		}
 		content = string(data)
-		ctx.Scope = extractScope(content)
 		ctx.SuccessCriteria = extractSuccessCriteria(content)
 
 	case "breakdown":
@@ -162,7 +161,6 @@ func extractBodyContext(projectRoot, slug, mode string, surfaceTypes []string) B
 			return ctx // missing PRD is valid
 		}
 		content = string(data)
-		ctx.Scope = extractScope(content)
 		ctx.SuccessCriteria = extractSuccessCriteria(content)
 		ctx.AcceptanceCriteria = extractAcceptanceCriteria(content)
 	}
