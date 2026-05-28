@@ -76,9 +76,8 @@ func runList(cmd *cobra.Command, args []string) error {
 		// Slug provided: bypass RequireFeature, construct index path directly
 		featureSlug = args[0]
 
-		// Validate: feature directory must exist
-		featureDir := filepath.Join(projectRoot, feature.GetFeatureDir(featureSlug))
-		if _, err := os.Stat(featureDir); os.IsNotExist(err) {
+		// Validate: feature directory must exist (in main repo or worktree)
+		if !featureDirExists(projectRoot, featureSlug) {
 			return base.ErrFeatureNotFound(featureSlug)
 		}
 
@@ -341,6 +340,22 @@ func buildMissingPerTask(idx *task.TaskIndex, globalMissing []string) map[string
 		}
 	}
 	return result
+}
+
+// featureDirExists checks whether a feature directory exists in the main repo
+// or inside a worktree (.forge/worktrees/<slug>/docs/features/<slug>/).
+func featureDirExists(projectRoot, slug string) bool {
+	mainDir := filepath.Join(projectRoot, feature.GetFeatureDir(slug))
+	if _, err := os.Stat(mainDir); err == nil {
+		return true
+	}
+	if !listLocal {
+		wtDir := filepath.Join(projectRoot, ".forge", "worktrees", slug, feature.GetFeatureDir(slug))
+		if _, err := os.Stat(wtDir); err == nil {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveListIndexPath determines the index.json path for a feature slug.

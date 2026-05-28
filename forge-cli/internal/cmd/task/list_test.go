@@ -688,6 +688,73 @@ func TestListCmd_MissingDepMarker(t *testing.T) {
 	})
 }
 
+func TestListCmd_SlugArg_Worktree(t *testing.T) {
+	t.Run("bug: slug arg finds feature in worktree when not in main repo", func(t *testing.T) {
+		// Simulate: feature only exists inside .forge/worktrees/<slug>/docs/features/<slug>/
+		// NOT in <projectRoot>/docs/features/<slug>/
+		slug := "wt-feature"
+		dir := t.TempDir()
+		t.Setenv("CLAUDE_PROJECT_DIR", dir)
+
+		if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module test\n\ngo 1.21\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create worktree feature directory structure
+		wtFeatureDir := filepath.Join(dir, ".forge", "worktrees", slug, "docs", "features", slug)
+		if err := os.MkdirAll(wtFeatureDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		wtTasksDir := filepath.Join(wtFeatureDir, "tasks")
+		if err := os.MkdirAll(wtTasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.MkdirAll(filepath.Join(wtTasksDir, "records"), 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Write index.json in the worktree's feature directory
+		tasks := map[string]task.Task{
+			"1": {ID: "1", Title: "Worktree task one", Type: "coding.feature", Status: "completed"},
+			"2": {ID: "2", Title: "Worktree task two", Type: "coding.feature", Status: "pending"},
+		}
+		index := &task.TaskIndex{
+			Feature:      slug,
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
+			StatusEnum:   []string{"pending", "in_progress", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(tasks)
+		indexPath := filepath.Join(wtTasksDir, "index.json")
+		if err := task.SaveIndex(indexPath, index); err != nil {
+			t.Fatal(err)
+		}
+
+		origWd, _ := os.Getwd()
+		t.Cleanup(func() { _ = os.Chdir(origWd) })
+		if err := os.Chdir(dir); err != nil {
+			t.Fatal(err)
+		}
+
+		// BUG: runList returns "Feature not found" because it only checks
+		// <projectRoot>/docs/features/<slug>/, not .forge/worktrees/<slug>/...
+		output := captureStdout(func() {
+			err := runList(nil, []string{slug})
+			if err != nil {
+				t.Fatalf("runList returned error (feature exists in worktree): %v", err)
+			}
+		})
+
+		if !strings.Contains(output, "2 found") {
+			t.Errorf("output should contain '2 found', got:\n%s", output)
+		}
+		if !strings.Contains(output, "Worktree task one") {
+			t.Errorf("output should contain worktree task title, got:\n%s", output)
+		}
+	})
+}
+
 func TestListCmd_PipeModeColorSuppression(t *testing.T) {
 	t.Run("pipe mode suppresses color for all markers", func(t *testing.T) {
 		// Create tasks with both cycle and missing deps
