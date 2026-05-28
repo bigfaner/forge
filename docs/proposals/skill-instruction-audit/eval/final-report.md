@@ -13,7 +13,7 @@
 
 ### Pre-Revision (Freeform Findings)
 
-**Findings Triage Summary**: 18 findings triaged (12 accepted, 6 accepted as suggestions)
+**Findings Triage Summary**: 13 findings triaged (7 accepted, 1 partially-accepted, 4 accepted as suggestions, 1 skipped)
 
 | Finding | Severity | Status | Edit Summary |
 |---------|----------|--------|-------------|
