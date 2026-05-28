@@ -1,0 +1,283 @@
+{
+  "type": "agent",
+  "nodeCount": 45,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "format",
+      "summary": "## Hard Constraints",
+      "sourceLine": 11
+    },
+    {
+      "id": 2,
+      "category": "instruction",
+      "summary": "Tag priority hierarchy: `<EXTREMELY-IMPORTANT>` (agent-level, non-negotiable) > `<CRITICAL>` (template-level hard constr",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "constraint",
+      "summary": "<EXTREMELY-IMPORTANT> block (13 lines)",
+      "sourceLine": 15
+    },
+    {
+      "id": 4,
+      "category": "format",
+      "summary": "## Execution Protocol",
+      "sourceLine": 29
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "1. Extract the task ID from your prompt (format: `Execute task <TASK_ID>` or `Fix record for task <TASK_ID>`)",
+      "sourceLine": 31
+    },
+    {
+      "id": 6,
+      "category": "instruction",
+      "summary": "2. If the prompt says \"Fix record for task\":\n   - Run `forge prompt get-by-task-id <TASK_ID> --fix-record-missed`",
+      "sourceLine": 32
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "3. Otherwise:\n   - Run `forge prompt get-by-task-id <TASK_ID>`",
+      "sourceLine": 34
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "4. If `forge prompt get-by-task-id` fails (non-zero exit), STOP immediately — evaluate Complex Error Pause Flow before s",
+      "sourceLine": 36
+    },
+    {
+      "id": 9,
+      "category": "instruction",
+      "summary": "5. Follow every step in the synthesized strategy exactly",
+      "sourceLine": 37
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "6. If you lose track of your strategy mid-execution, re-run `forge prompt get-by-task-id <TASK_ID>` to recover",
+      "sourceLine": 38
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "7. After all strategy steps are done, check if the task status is blocked:\n   - Run `forge task status <TASK_ID>` — if S",
+      "sourceLine": 39
+    },
+    {
+      "id": 12,
+      "category": "instruction",
+      "summary": "8. Invoke the skill:",
+      "sourceLine": 41
+    },
+    {
+      "id": 13,
+      "category": "format",
+      "summary": "```\n   Skill(skill=\"forge:submit-task\")\n   ```",
+      "sourceLine": 43
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "The submit-task skill generates the execution record and updates task status via `forge task submit`. Check the STATUS o",
+      "sourceLine": 47
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "8.5. After submit-task completes, check whether the task was auto-downgraded to blocked:",
+      "sourceLine": 49
+    },
+    {
+      "id": 16,
+      "category": "constraint",
+      "summary": "- If `forge task submit` output shows `STATUS: blocked`, do NOT proceed to step 9 (git-commit). Go directly to step 10 a",
+      "sourceLine": 50
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "- If `STATUS: completed`, proceed to step 9 normally.",
+      "sourceLine": 51
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "9. Invoke the skill:",
+      "sourceLine": 53
+    },
+    {
+      "id": 19,
+      "category": "format",
+      "summary": "```\n   Skill(skill=\"forge:git-commit\")\n   ```",
+      "sourceLine": 55
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "10. Output final status:",
+      "sourceLine": 59
+    },
+    {
+      "id": 21,
+      "category": "format",
+      "summary": "```\n   DONE: <TASK_ID> | ✅ | <commit-hash> | <one-line-summary>\n   ```",
+      "sourceLine": 61
+    },
+    {
+      "id": 22,
+      "category": "instruction",
+      "summary": "If the task is blocked (from step 7 or step 8.5), use this format instead (no commit-hash):",
+      "sourceLine": 65
+    },
+    {
+      "id": 23,
+      "category": "format",
+      "summary": "```\n   DONE: <TASK_ID> | blocked | <one-line-summary>\n   ```",
+      "sourceLine": 67
+    },
+    {
+      "id": 24,
+      "category": "instruction",
+      "summary": "11. STOP",
+      "sourceLine": 71
+    },
+    {
+      "id": 25,
+      "category": "format",
+      "summary": "## Retry Strategy",
+      "sourceLine": 73
+    },
+    {
+      "id": 26,
+      "category": "instruction",
+      "summary": "All retry decisions throughout execution follow a uniform threshold of **~3 attempts**:",
+      "sourceLine": 75
+    },
+    {
+      "id": 27,
+      "category": "instruction",
+      "summary": "- Simple/transient errors: retry inline up to ~3 times, then evaluate Complex Error Pause Flow",
+      "sourceLine": 76
+    },
+    {
+      "id": 28,
+      "category": "instruction",
+      "summary": "- Template instructions that say \"max 1 retry then stop\" should be interpreted as: attempt inline fix, and if the same e",
+      "sourceLine": 77
+    },
+    {
+      "id": 29,
+      "category": "metadata",
+      "summary": "- **STOP** in any context means: evaluate Complex Error Pause Flow first — if the error is recurring (~3 same/similar at",
+      "sourceLine": 78
+    },
+    {
+      "id": 30,
+      "category": "format",
+      "summary": "## Complex Error Pause Flow",
+      "sourceLine": 80
+    },
+    {
+      "id": 31,
+      "category": "instruction",
+      "summary": "During strategy step execution (step 5 above), errors may occur. Classify and handle them as follows:",
+      "sourceLine": 82
+    },
+    {
+      "id": 32,
+      "category": "format",
+      "summary": "### Error Classification",
+      "sourceLine": 84
+    },
+    {
+      "id": 33,
+      "category": "constraint",
+      "summary": "| Error Type | Examples | Action |\n|------------|----------|--------|\n| Simple/transient | Network timeout, missing depe",
+      "sourceLine": 86
+    },
+    {
+      "id": 34,
+      "category": "format",
+      "summary": "### Decision Flow",
+      "sourceLine": 91
+    },
+    {
+      "id": 35,
+      "category": "format",
+      "summary": "```\nExecute strategy step → error\n  → Can AI fix inline? (low effort, obvious cause)\n    → Yes: fix it, continue\n    → N",
+      "sourceLine": 93
+    },
+    {
+      "id": 36,
+      "category": "format",
+      "summary": "### Pause Protocol",
+      "sourceLine": 102
+    },
+    {
+      "id": 37,
+      "category": "instruction",
+      "summary": "1. Run:\n   ```\n   forge task add --type coding.fix --title \"Fix: <concise error>\" --source-task-id <TASK_ID> --block-sou",
+      "sourceLine": 104
+    },
+    {
+      "id": 38,
+      "category": "instruction",
+      "summary": "2. Output:\n   ```\n   PAUSE: <TASK_ID> | added fix-task <FIX_ID> | <reason>\n   ```",
+      "sourceLine": 108
+    },
+    {
+      "id": 39,
+      "category": "constraint",
+      "summary": "3. STOP immediately — return to dispatcher. Do NOT continue execution.",
+      "sourceLine": 112
+    },
+    {
+      "id": 40,
+      "category": "format",
+      "summary": "### Important Notes",
+      "sourceLine": 114
+    },
+    {
+      "id": 41,
+      "category": "constraint",
+      "summary": "- One-off failures resolved on first retry do NOT warrant a fix task — only recurring (~3 same/similar errors) or demons",
+      "sourceLine": 116
+    },
+    {
+      "id": 42,
+      "category": "instruction",
+      "summary": "- `forge task add` has built-in dedup: it skips gracefully if a fix task already exists for this source",
+      "sourceLine": 117
+    },
+    {
+      "id": 43,
+      "category": "instruction",
+      "summary": "- `--block-source` automatically sets the source task to `blocked`, preventing re-claim until the fix resolves",
+      "sourceLine": 118
+    },
+    {
+      "id": 44,
+      "category": "instruction",
+      "summary": "- When a fix task completes, the source task is automatically unblocked",
+      "sourceLine": 119
+    },
+    {
+      "id": 45,
+      "category": "instruction",
+      "summary": "- The existing \"mark blocked on prompt failure\" behavior (step 4) is preserved and independent of this flow",
+      "sourceLine": 120
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 26,
+    "constraint": 5,
+    "example": 0,
+    "format": 13,
+    "metadata": 1
+  }
+}

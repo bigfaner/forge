@@ -1,0 +1,197 @@
+{
+  "feature": "slim-task-prompt-templates",
+  "proposal": "docs/proposals/slim-task-prompt-templates/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-create-baseline": {
+      "id": "1",
+      "title": "Create SC-Pre baseline measurement",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-create-baseline.md",
+      "record": "records/1-create-baseline.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2-slim-prompt-templates": {
+      "id": "2",
+      "title": "Slim all prompt templates",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "skipped",
+      "file": "2-slim-prompt-templates.md",
+      "record": "records/2-slim-prompt-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "high"
+    },
+    "2a-verify-coding-templates": {
+      "id": "2a",
+      "title": "Verify and finalize coding-* template edits",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2a-verify-coding-templates.md",
+      "record": "records/2a-verify-coding-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "high"
+    },
+    "2b-verify-gate-doc-templates": {
+      "id": "2b",
+      "title": "Verify and finalize gate/doc/validation template edits",
+      "priority": "P0",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2b-verify-gate-doc-templates.md",
+      "record": "records/2b-verify-gate-doc-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "2c-verify-test-templates": {
+      "id": "2c",
+      "title": "Verify and finalize test/code-quality template edits",
+      "priority": "P1",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2c-verify-test-templates.md",
+      "record": "records/2c-verify-test-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "3-slim-task-executor": {
+      "id": "3",
+      "title": "Slim task-executor Execution Protocol",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-slim-task-executor.md",
+      "record": "records/3-slim-task-executor.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "4-refactor-metadata-parsing": {
+      "id": "4",
+      "title": "Refactor Go metadata parsing for grouped frontmatter",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2a",
+        "2b",
+        "2c",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-refactor-metadata-parsing.md",
+      "record": "records/4-refactor-metadata-parsing.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "high"
+    },
+    "5-migrate-frontmatters": {
+      "id": "5",
+      "title": "Migrate all template frontmatters + PhaseSummary",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-migrate-frontmatters.md",
+      "record": "records/5-migrate-frontmatters.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: automated-test-orchestration TestTC_034",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "skipped",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

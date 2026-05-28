@@ -1,19 +1,22 @@
 ---
 type: doc.review
 category: doc
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 SURFACE_KEY: {{.SurfaceKey}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a documentation review task.
+You are a focused task executor reviewing documentation.
 
 ## Workflow (4 Steps)
 
@@ -93,13 +96,8 @@ Output: `Step 3/4: Checking acceptance criteria and fixing non-conformances... D
 ### Step 4: Report Summary
 
 <IMPORTANT>
-Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
-- For each AC item, output:
-  [AC-N] PASS/FAIL
-    Evidence: [specific code, test, or artifact that proves compliance]
-    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
-- If any AC item is FAIL, address the failure before proceeding to other checks.
-- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+Validate each AC item before other checks: output [AC-N] PASS/FAIL with evidence and spec source.
+If any FAIL, address before proceeding. If no AC defined, output "No AC defined — skipping per-item validation."
 </IMPORTANT>
 
 Produce a summary report:
@@ -109,9 +107,9 @@ Produce a summary report:
 
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **referencedDocs**: list of documentation files reviewed (must only contain docs/ paths)
-- **reviewStatus**: review outcome (e.g. "all-passed", "fixes-applied")
-- **docMetrics**: summary of AC results (pass/fail counts per doc task)
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **referencedDocs** (docs/ paths only)
+- **reviewStatus**
+- **docMetrics**
 
 Output: `Step 4/4: Review summary... DONE`

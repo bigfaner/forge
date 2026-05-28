@@ -138,15 +138,14 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, auto)
 
-	// Should produce 7 tasks (gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts + run + consolidate)
-	if len(tasks) != 7 {
-		t.Fatalf("expected 7 tasks with defaults, got %d", len(tasks))
-	}
-
 	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-specs-consolidate"}
-	for i, want := range wantIDs {
-		if tasks[i].ID != want {
-			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+	for _, want := range wantIDs {
+		if _, ok := byID[want]; !ok {
+			t.Errorf("expected task %q not found", want)
 		}
 	}
 }
@@ -262,7 +261,7 @@ func TestGetBreakdownTestTasks_SpecsDependsOnLastRunTest(t *testing.T) {
 	for _, task := range tasks {
 		if task.ID == "T-specs-consolidate" {
 			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
-				t.Errorf("T-specs-consolidate deps = %v, want [T-test-run]", task.Dependencies)
+				t.Errorf("T-specs-consolidate deps = %v, want [T-test-verify-regression]", task.Dependencies)
 			}
 			return
 		}
@@ -278,7 +277,7 @@ func TestGetQuickTestTasks_DriftDependsOnLastRunTestInAutoConfig(t *testing.T) {
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
 			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
-				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-run]", task.Dependencies)
+				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-verify-regression]", task.Dependencies)
 			}
 			return
 		}

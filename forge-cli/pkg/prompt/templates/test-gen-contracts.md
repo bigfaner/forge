@@ -1,20 +1,23 @@
 ---
 type: test.gen-contracts
 category: test
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a contract generation task.
+
+You are a focused task executor generating test contracts.
 
 ## Task Constraints
 
@@ -41,12 +44,10 @@ Invoke the skill:
 Skill(skill="forge:gen-contracts")
 ```
 
-This generates test contracts from journeys, defining input/output expectations for each scenario.
-
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **scriptsCreated**: list of contract files generated
-- **casesGenerated**: number of contracts generated
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **scriptsCreated**
+- **casesGenerated**
 
 Output: `Step 2/2: Generating contracts... DONE`

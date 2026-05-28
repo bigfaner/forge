@@ -111,6 +111,7 @@ func runForge(t *testing.T, dir string, args ...string) string {
 	t.Helper()
 	cmd := exec.Command(testkit.ForgeBinary, args...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+dir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("forge command failed in %s: %s: %s", dir, err, out)
@@ -123,6 +124,7 @@ func runForgeRaw(t *testing.T, dir string, args ...string) (string, int) {
 	t.Helper()
 	cmd := exec.Command(testkit.ForgeBinary, args...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+dir)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0
 	if err != nil {

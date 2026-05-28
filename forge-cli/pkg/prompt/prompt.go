@@ -187,7 +187,7 @@ func renderTemplate(templateFile string, opts SynthesizeOpts, t task.Task) (stri
 	phaseSummaryPath := PhaseDetect(opts.ProjectRoot, opts.FeatureSlug, opts.TaskID)
 	phaseSummaryLine := ""
 	if phaseSummaryPath != "" {
-		phaseSummaryLine = "PHASE_SUMMARY: " + phaseSummaryPath
+		phaseSummaryLine = phaseSummaryPath
 	}
 
 	// Build --type argument from task SurfaceType for per-type gen-scripts tasks.

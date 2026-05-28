@@ -721,12 +721,12 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		}
 	}
 
-	// Surface inference with hard-failure policy.
+	// Surface inference with soft-failure policy.
 	// When surfaces are not configured or no match is found, fix-task creation
-	// is blocked and the user is guided to run 'forge surfaces detect'.
-	surfaceKey, surfaceType, inferErr := requireSurfaceInference(projectRoot, sourceFiles)
-	if inferErr != nil {
-		return "", inferErr
+	// proceeds with empty surface key/type.
+	surfaceKey, surfaceType := inferSurface(projectRoot, sourceFiles)
+	if surfaceKey == "" && surfaceType == "" {
+		fmt.Fprintln(os.Stderr, "WARNING: surface inference failed: no surfaces configured or no match for source files. Run 'forge surfaces detect' to configure surfaces")
 	}
 
 	testScript := "just " + step

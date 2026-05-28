@@ -1,0 +1,169 @@
+{
+  "type": "prompt",
+  "nodeCount": 26,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor running an e2e test execution task.",
+      "sourceLine": 17
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "## Task Constraints",
+      "sourceLine": 19
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "<TASK-CONSTRAINTS>",
+      "sourceLine": 21
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "- MUST invoke `Skill(skill=\"forge:run-tests\")` to execute tests",
+      "sourceLine": 22
+    },
+    {
+      "id": 9,
+      "category": "constraint",
+      "summary": "- MUST NOT run any direct test runner command — the skill handles framework-specific execution",
+      "sourceLine": 23
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "- The skill handles surface resolution, server lifecycle, result parsing, and reporting",
+      "sourceLine": 24
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "</TASK-CONSTRAINTS>",
+      "sourceLine": 25
+    },
+    {
+      "id": 12,
+      "category": "format",
+      "summary": "## Workflow (2 Steps)",
+      "sourceLine": 27
+    },
+    {
+      "id": 13,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 29
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand what tests to run.",
+      "sourceLine": 31
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}",
+      "sourceLine": 33
+    },
+    {
+      "id": 16,
+      "category": "format",
+      "summary": "Output: `Step 1/2: Reading task definition... DONE`",
+      "sourceLine": 35
+    },
+    {
+      "id": 17,
+      "category": "format",
+      "summary": "### Step 2: Run E2E Tests",
+      "sourceLine": 37
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "Invoke the skill:",
+      "sourceLine": 39
+    },
+    {
+      "id": 19,
+      "category": "format",
+      "summary": "```\nSkill(skill=\"forge:run-tests\")\n```",
+      "sourceLine": 41
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "This executes e2e test scripts and generates a results report. The skill selects the appropriate test runner based on th",
+      "sourceLine": 45
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "If tests fail, identify failing tests and root cause, apply minimal fix, then re-invoke the skill to confirm (max 3 atte",
+      "sourceLine": 47
+    },
+    {
+      "id": 22,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 49
+    },
+    {
+      "id": 23,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 51
+    },
+    {
+      "id": 24,
+      "category": "metadata",
+      "summary": "- **casesGenerated**: number of test cases executed",
+      "sourceLine": 52
+    },
+    {
+      "id": 25,
+      "category": "metadata",
+      "summary": "- **scriptsCreated**: list of test script files run",
+      "sourceLine": 53
+    },
+    {
+      "id": 26,
+      "category": "format",
+      "summary": "Output: `Step 2/2: Running e2e tests... DONE`",
+      "sourceLine": 55
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 13,
+    "constraint": 1,
+    "example": 0,
+    "format": 8,
+    "metadata": 4
+  }
+}

@@ -1,20 +1,23 @@
 ---
 type: test.gen-journeys
 category: test
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a journey generation task.
+
+You are a focused task executor generating test journeys.
 
 ## Task Constraints
 
@@ -41,12 +44,10 @@ Invoke the skill:
 Skill(skill="forge:gen-journeys")
 ```
 
-This generates test journeys from specifications, covering user flows and scenarios.
-
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **scriptsCreated**: list of journey files generated
-- **casesGenerated**: number of journeys generated
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **scriptsCreated**
+- **casesGenerated**
 
 Output: `Step 2/2: Generating journeys... DONE`

@@ -1,0 +1,169 @@
+{
+  "type": "prompt",
+  "nodeCount": 26,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "FEATURE_SLUG: {{.FeatureSlug}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 16
+    },
+    {
+      "id": 6,
+      "category": "instruction",
+      "summary": "You are a focused task executor running a phase summary generation task.",
+      "sourceLine": 18
+    },
+    {
+      "id": 7,
+      "category": "format",
+      "summary": "## Workflow (2 Steps)",
+      "sourceLine": 20
+    },
+    {
+      "id": 8,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 22
+    },
+    {
+      "id": 9,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand what the summary should cover.",
+      "sourceLine": 24
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}",
+      "sourceLine": 26
+    },
+    {
+      "id": 11,
+      "category": "format",
+      "summary": "Output: `Step 1/2: Reading task definition... DONE`",
+      "sourceLine": 28
+    },
+    {
+      "id": 12,
+      "category": "format",
+      "summary": "### Step 2: Generate Summary",
+      "sourceLine": 30
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "Read all completed task records for this phase from `docs/features/{{.FeatureSlug}}/tasks/records/`.",
+      "sourceLine": 32
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "Generate a phase summary document with these 5 sections:",
+      "sourceLine": 34
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "1. **Tasks Completed** — one line per task describing what it did",
+      "sourceLine": 36
+    },
+    {
+      "id": 16,
+      "category": "instruction",
+      "summary": "2. **Key Decisions** — decisions prefixed with task ID (e.g., `[1.1]`)",
+      "sourceLine": 37
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "3. **Types & Interfaces Changed** — table of type/interface changes and blast radius",
+      "sourceLine": 38
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "4. **Conventions Established** — patterns future tasks must follow",
+      "sourceLine": 39
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "5. **Deviations from Design** — where implementation diverged from tech-design",
+      "sourceLine": 40
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "Write the summary to the record file specified in the task.",
+      "sourceLine": 42
+    },
+    {
+      "id": 21,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 44
+    },
+    {
+      "id": 22,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 46
+    },
+    {
+      "id": 23,
+      "category": "metadata",
+      "summary": "- **referencedDocs**: list of task records read for the summary",
+      "sourceLine": 47
+    },
+    {
+      "id": 24,
+      "category": "metadata",
+      "summary": "- **reviewStatus**: summary review status",
+      "sourceLine": 48
+    },
+    {
+      "id": 25,
+      "category": "metadata",
+      "summary": "- **docMetrics**: phase summary statistics (e.g. \"5 tasks completed, 3 phases\")",
+      "sourceLine": 49
+    },
+    {
+      "id": 26,
+      "category": "format",
+      "summary": "Output: `Step 2/2: Generating summary... DONE`",
+      "sourceLine": 51
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 15,
+    "constraint": 0,
+    "example": 0,
+    "format": 6,
+    "metadata": 5
+  }
+}

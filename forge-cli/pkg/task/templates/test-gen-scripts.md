@@ -1,16 +1,16 @@
 ---
 type: test.gen-scripts
 category: test
-variables:
+identity:
   - TaskID
   - TaskType
   - FeatureSlug
+context:
   - Mode
   - SurfaceKey
   - SurfaceType
   - SurfaceTypes
   - AcceptanceCriteria
-  - DocTaskCriteria
 ---
 Generate executable test scripts for the {{.FeatureSlug}} feature.{{if .SurfaceType}}
 Test type: {{.SurfaceType}}.{{end}}

@@ -1,7 +1,7 @@
 ---
 type: record
 category: record
-variables:
+identity:
   - Status
   - Started
   - Completed
@@ -12,7 +12,6 @@ variables:
   - TypeReclassification
   - GateChecksFormatted
   - GatePassedFormatted
-  - Notes
 ---
 ---
 status: "{{.Status}}"

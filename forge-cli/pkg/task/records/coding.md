@@ -1,7 +1,7 @@
 ---
 type: record
 category: record
-variables:
+identity:
   - Status
   - Started
   - Completed
@@ -18,7 +18,6 @@ variables:
   - TestsFailed
   - CoverageFormatted
   - AcceptanceCriteriaFormatted
-  - Notes
 ---
 ---
 status: "{{.Status}}"

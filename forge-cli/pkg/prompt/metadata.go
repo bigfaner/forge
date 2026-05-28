@@ -4,13 +4,44 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // TemplateMetadata holds the parsed metadata frontmatter from a template file.
 type TemplateMetadata struct {
-	Type      string   // task type constant (e.g. "coding.feature")
-	Category  string   // task category (coding/doc/test/eval/validation/gate/record)
-	Variables []string // list of template variable names used for validation
+	Type        string          // task type constant (e.g. "coding.feature")
+	Category    string          // task category (coding/doc/test/eval/validation/gate/record)
+	Identity    map[string]bool // identity fields — always present in rendered output
+	Context     map[string]bool // context fields — provide environment context
+	Conditional map[string]bool // conditional fields — may be omitted if empty
+	Variables   []string        // flat list for backward compatibility
+}
+
+// AllFields returns the union of all variable names across Identity, Context,
+// Conditional groups and the Variables list. Used for backward compatibility
+// with validation that expects a single flat list.
+func (m *TemplateMetadata) AllFields() []string {
+	if m == nil {
+		return nil
+	}
+	seen := make(map[string]bool)
+	var result []string
+	for _, collect := range []map[string]bool{m.Identity, m.Context, m.Conditional} {
+		for k := range collect {
+			if !seen[k] {
+				seen[k] = true
+				result = append(result, k)
+			}
+		}
+	}
+	for _, v := range m.Variables {
+		if !seen[v] {
+			seen[v] = true
+			result = append(result, v)
+		}
+	}
+	return result
 }
 
 // parseMetadataFrontmatter extracts metadata from between the first pair of ---
@@ -49,31 +80,11 @@ func parseMetadataFrontmatter(content string) (body string, meta *TemplateMetada
 		remaining = remaining[2:]
 	}
 
-	// Parse YAML-like frontmatter (simple line-based parser)
+	// Parse YAML frontmatter using gopkg.in/yaml.v3
 	meta = &TemplateMetadata{}
-	for _, line := range strings.Split(frontmatter, "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		switch {
-		case strings.HasPrefix(line, "type:"):
-			meta.Type = strings.TrimSpace(strings.TrimPrefix(line, "type:"))
-			// Remove surrounding quotes if present
-			meta.Type = strings.Trim(meta.Type, "\"")
-		case strings.HasPrefix(line, "category:"):
-			meta.Category = strings.TrimSpace(strings.TrimPrefix(line, "category:"))
-			meta.Category = strings.Trim(meta.Category, "\"")
-		case strings.HasPrefix(line, "- ") && meta.Variables != nil:
-			// Variable list item
-			varName := strings.TrimSpace(strings.TrimPrefix(line, "- "))
-			varName = strings.Trim(varName, "\"")
-			meta.Variables = append(meta.Variables, varName)
-		case strings.HasPrefix(line, "variables:"):
-			// Initialize variables list (may be empty)
-			meta.Variables = []string{}
-		}
+	if err := yaml.Unmarshal([]byte(frontmatter), meta); err != nil {
+		// If YAML parsing fails, return as-is (backward compatibility)
+		return content, nil
 	}
 
 	return remaining, meta
@@ -88,15 +99,21 @@ func stripMetadataFrontmatter(content string) string {
 }
 
 // validateMetadataVariables checks that each variable declared in metadata
+// (across Identity, Context, Conditional groups and the Variables list)
 // exists as an exported field on the given struct type.
 // Returns an error listing any variables that don't have matching struct fields.
 func validateMetadataVariables(meta *TemplateMetadata, structType reflect.Type) error {
-	if meta == nil || len(meta.Variables) == 0 {
+	if meta == nil {
+		return nil
+	}
+
+	allFields := meta.AllFields()
+	if len(allFields) == 0 {
 		return nil
 	}
 
 	var mismatches []string
-	for _, varName := range meta.Variables {
+	for _, varName := range allFields {
 		if !structHasField(structType, varName) {
 			mismatches = append(mismatches, varName)
 		}

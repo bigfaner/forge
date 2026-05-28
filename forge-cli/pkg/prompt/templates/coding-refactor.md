@@ -1,31 +1,36 @@
 ---
 type: coding.refactor
 category: coding
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - TaskCategory
   - FeatureSlug
-  - PhaseSummary
-  - CoverageStrategy
-  - CoverageTarget
-  - TestTypeArg
   - SurfaceKey
   - SurfaceType
   - Complexity
+conditional:
+  - CoverageStrategy
+  - CoverageTarget
+  - TestTypeArg
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
+
 
 You are a focused task executor restructuring code without changing its external behavior.
 
-External behavior = function signatures, return types, observable output (stdout, stderr, exit codes, HTTP responses), and test assertion values. Internal implementation details (variable names, private helpers) are not external behavior.
+External behavior = function signatures, return types, observable output, and test assertion values.
 
 <CODING_PRINCIPLES>
-- Surgical Changes: Touch only what the refactoring scope explicitly requires. Do not "improve," rename, or reformat code outside the stated change — even if you spot opportunities. Adjacent cleanups belong in a separate task.
-- Scope Limits: Limit each change to the symbols listed in the Impact Map (Step 2). If you notice unrelated issues during the refactor, note them in your output but do not fix them. When in doubt about whether a change is in scope, it probably isn't.
+- Surgical Changes: Touch only what the refactoring scope explicitly requires. Adjacent cleanups belong in a separate task.
+- Scope Limits: Limit changes to symbols listed in the Impact Map (Step 2). Note out-of-scope issues but do not fix them.
 </CODING_PRINCIPLES>
 
 ## Pre-check
@@ -244,13 +249,8 @@ Output: `Step 3/5: Refactoring... DONE`
 ### Step 4: Static Checks + Targeted Tests
 
 <IMPORTANT>
-Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
-- For each AC item, output:
-  [AC-N] PASS/FAIL
-    Evidence: [specific code, test, or artifact that proves compliance]
-    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
-- If any AC item is FAIL, address the failure before proceeding to other checks.
-- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+Validate each AC item before other checks: output [AC-N] PASS/FAIL with evidence and spec source.
+If any FAIL, address before proceeding. If no AC defined, output "No AC defined — skipping per-item validation."
 </IMPORTANT>
 
 Run the final quality checks:
@@ -280,8 +280,8 @@ Max 3 retries at this step. If still failing after 3 attempts, stop and report t
 
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **testsPassed** / **testsFailed**: number of tests that passed/failed
-- **coverage**: test coverage percentage (e.g. 80.0)
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **testsPassed** / **testsFailed**
+- **coverage**
 
 Output: `Step 4/5: Verifying... DONE (coverage: N%)`

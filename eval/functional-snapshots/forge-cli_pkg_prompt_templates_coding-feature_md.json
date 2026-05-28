@@ -1,0 +1,367 @@
+{
+  "type": "prompt",
+  "nodeCount": 59,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 17
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 18
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 19
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 20
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor implementing a new feature.",
+      "sourceLine": 22
+    },
+    {
+      "id": 6,
+      "category": "instruction",
+      "summary": "<CODING_PRINCIPLES>",
+      "sourceLine": 24
+    },
+    {
+      "id": 7,
+      "category": "constraint",
+      "summary": "- Think Before Coding: Before writing any code, restate the task goal in your own words. Identify assumptions and ambigu",
+      "sourceLine": 25
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "- Simplicity First: Implement only what the task requires. No speculative abstractions, no \"while I'm here\" improvements",
+      "sourceLine": 26
+    },
+    {
+      "id": 9,
+      "category": "constraint",
+      "summary": "- Surgical Changes: Modify only the code directly relevant to the task. Do not touch neighboring code, reformat unrelate",
+      "sourceLine": 27
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "- Goal-Driven Execution: Define a clear, verifiable success condition before starting. After implementation, confirm the",
+      "sourceLine": 28
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "</CODING_PRINCIPLES>",
+      "sourceLine": 29
+    },
+    {
+      "id": 12,
+      "category": "format",
+      "summary": "## Workflow (4 Steps)",
+      "sourceLine": 31
+    },
+    {
+      "id": 13,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 33
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.",
+      "sourceLine": 35
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "Read each file's YAML frontmatter `domains` field to determine relevance.",
+      "sourceLine": 36
+    },
+    {
+      "id": 16,
+      "category": "instruction",
+      "summary": "Load files whose domains match `{{.SurfaceKey}}` or keywords from `{{.TaskFile}}`.",
+      "sourceLine": 37
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "If no files match, skip — no matching convention files for this task.",
+      "sourceLine": 38
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "Then read the task file at `{{.TaskFile}}`.",
+      "sourceLine": 40
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for key decisions and conventions from the pr",
+      "sourceLine": 42
+    },
+    {
+      "id": 20,
+      "category": "format",
+      "summary": "Output: `Step 1/4: Reading task definition... DONE`",
+      "sourceLine": 44
+    },
+    {
+      "id": 21,
+      "category": "constraint",
+      "summary": "<CRITICAL> block (19 lines)",
+      "sourceLine": 46
+    },
+    {
+      "id": 22,
+      "category": "constraint",
+      "summary": "<CRITICAL> block (6 lines)",
+      "sourceLine": 66
+    },
+    {
+      "id": 23,
+      "category": "instruction",
+      "summary": "{{if ne .Complexity \"low\"}}### Step 1.5: Spec-Code Conflict Scan",
+      "sourceLine": 73
+    },
+    {
+      "id": 24,
+      "category": "instruction",
+      "summary": "For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.",
+      "sourceLine": 75
+    },
+    {
+      "id": 25,
+      "category": "instruction",
+      "summary": "Read the code files that implement the requirements described in each Reference File, then output a per-dimension checkl",
+      "sourceLine": 77
+    },
+    {
+      "id": 26,
+      "category": "instruction",
+      "summary": "SPEC-CODE SCAN:",
+      "sourceLine": 78
+    },
+    {
+      "id": 27,
+      "category": "instruction",
+      "summary": "- MUST/SHALL directives: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 79
+    },
+    {
+      "id": 28,
+      "category": "instruction",
+      "summary": "- Architecture decisions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 80
+    },
+    {
+      "id": 29,
+      "category": "instruction",
+      "summary": "- Data flow patterns: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 81
+    },
+    {
+      "id": 30,
+      "category": "instruction",
+      "summary": "- Interface contracts: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 82
+    },
+    {
+      "id": 31,
+      "category": "instruction",
+      "summary": "- Naming conventions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 83
+    },
+    {
+      "id": 32,
+      "category": "instruction",
+      "summary": "For each finding, output:",
+      "sourceLine": 85
+    },
+    {
+      "id": 33,
+      "category": "instruction",
+      "summary": "[spec section: \"key requirement\"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]",
+      "sourceLine": 86
+    },
+    {
+      "id": 34,
+      "category": "instruction",
+      "summary": "- If DIFFERS: describe the specific difference and state \"WILL FOLLOW SPEC\"",
+      "sourceLine": 87
+    },
+    {
+      "id": 35,
+      "category": "instruction",
+      "summary": "If no Reference Files were loaded: output \"SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions ",
+      "sourceLine": 89
+    },
+    {
+      "id": 36,
+      "category": "instruction",
+      "summary": "{{end}}",
+      "sourceLine": 90
+    },
+    {
+      "id": 37,
+      "category": "instruction",
+      "summary": "在修改任何文件前，先用 Grep/Glob 搜索所有需要修改的位置，收集完整清单后再执行修改。禁止边搜边改。",
+      "sourceLine": 92
+    },
+    {
+      "id": 38,
+      "category": "format",
+      "summary": "### Step 2: TDD Implementation",
+      "sourceLine": 94
+    },
+    {
+      "id": 39,
+      "category": "instruction",
+      "summary": "Apply SPEC-CODE SCAN results — for any DIFFERS finding, follow spec over existing code. Reference Files from Step 1 are ",
+      "sourceLine": 96
+    },
+    {
+      "id": 40,
+      "category": "instruction",
+      "summary": "{{if .CoverageStrategy}}<IMPORTANT>",
+      "sourceLine": 98
+    },
+    {
+      "id": 41,
+      "category": "instruction",
+      "summary": "Coverage strategy: {{.CoverageStrategy}} — Target: {{.CoverageTarget}}. Stop adding tests once the target is reached.",
+      "sourceLine": 99
+    },
+    {
+      "id": 42,
+      "category": "instruction",
+      "summary": "</IMPORTANT>",
+      "sourceLine": 100
+    },
+    {
+      "id": 43,
+      "category": "instruction",
+      "summary": "{{end}}",
+      "sourceLine": 101
+    },
+    {
+      "id": 44,
+      "category": "instruction",
+      "summary": "First, extract test requirements from the task file's Acceptance Criteria. Each checkbox item maps to one or more test c",
+      "sourceLine": 102
+    },
+    {
+      "id": 45,
+      "category": "instruction",
+      "summary": "Then follow the TDD cycle for each requirement:",
+      "sourceLine": 104
+    },
+    {
+      "id": 46,
+      "category": "format",
+      "summary": "```\nRED      → Write failing test first\nGREEN    → Implement minimal code to pass\nREFACTOR → Clean up while keeping test",
+      "sourceLine": 106
+    },
+    {
+      "id": 47,
+      "category": "format",
+      "summary": "Output: `Step 2/4: Implementing... DONE (N new tests)`",
+      "sourceLine": 112
+    },
+    {
+      "id": 48,
+      "category": "format",
+      "summary": "### Step 3: Static Checks + Targeted Tests",
+      "sourceLine": 114
+    },
+    {
+      "id": 49,
+      "category": "instruction",
+      "summary": "<IMPORTANT> block (9 lines)",
+      "sourceLine": 116
+    },
+    {
+      "id": 50,
+      "category": "instruction",
+      "summary": "**Static checks** — execute in strict sequential order:",
+      "sourceLine": 126
+    },
+    {
+      "id": 51,
+      "category": "format",
+      "summary": "```bash\njust compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust lin",
+      "sourceLine": 128
+    },
+    {
+      "id": 52,
+      "category": "instruction",
+      "summary": "**Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-nati",
+      "sourceLine": 134
+    },
+    {
+      "id": 53,
+      "category": "instruction",
+      "summary": "> **Note:** Full project-wide tests run at CLI submit (`forge task submit`) — agent runs targeted tests only.",
+      "sourceLine": 136
+    },
+    {
+      "id": 54,
+      "category": "constraint",
+      "summary": "| Failed step | Action |\n|---|---|\n| `compile` | Fix compilation errors, retry from compile |\n| `fmt` | **WARNING** (non",
+      "sourceLine": 138
+    },
+    {
+      "id": 55,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 145
+    },
+    {
+      "id": 56,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 147
+    },
+    {
+      "id": 57,
+      "category": "metadata",
+      "summary": "- **testsPassed** / **testsFailed**: number of tests that passed/failed",
+      "sourceLine": 148
+    },
+    {
+      "id": 58,
+      "category": "metadata",
+      "summary": "- **coverage**: test coverage percentage (e.g. 80.0)",
+      "sourceLine": 149
+    },
+    {
+      "id": 59,
+      "category": "format",
+      "summary": "Output: `Step 3/4: Verifying... DONE (coverage: N%)`",
+      "sourceLine": 151
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 40,
+    "constraint": 5,
+    "example": 0,
+    "format": 10,
+    "metadata": 4
+  }
+}

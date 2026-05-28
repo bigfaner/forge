@@ -1,29 +1,34 @@
 ---
 type: coding.cleanup
 category: coding
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - TaskCategory
   - FeatureSlug
-  - PhaseSummary
-  - CoverageStrategy
-  - CoverageTarget
-  - TestTypeArg
   - SurfaceKey
   - SurfaceType
   - Complexity
+conditional:
+  - CoverageStrategy
+  - CoverageTarget
+  - TestTypeArg
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor cleaning up technical debt, removing dead code, or fixing existing tests.
+
+You are a focused task executor cleaning up technical debt and removing dead code.
 
 <CODING_PRINCIPLES>
-- Simplicity First: Remove only what the task targets. Do not extract "reusable" helpers from code you are cleaning up, or restructure adjacent logic that is not part of the cleanup scope. Trivial cleanups (one-liner removals, import deduplication) use judgment — full analysis is not needed.
-- Surgical Changes: Touch only files and symbols the cleanup task explicitly covers. Do not reformat neighboring code, rename unrelated identifiers, or "improve" code outside the stated cleanup target. If you notice issues outside scope, note them in your output but do not fix them.
+- Simplicity First: Remove only what the task targets. Trivial cleanups (one-liner removals, import deduplication) skip full analysis.
+- Surgical Changes: Touch only files and symbols the cleanup task explicitly covers. Note out-of-scope issues but do not fix them.
 </CODING_PRINCIPLES>
 
 ## Workflow (4 Steps)
@@ -111,13 +116,8 @@ Output: `Step 2/4: Improving... DONE`
 ### Step 3: Static Checks + Targeted Tests
 
 <IMPORTANT>
-Before performing other verification checks, validate against each Acceptance Criteria item from the task file:
-- For each AC item, output:
-  [AC-N] PASS/FAIL
-    Evidence: [specific code, test, or artifact that proves compliance]
-    Spec source: [which Reference File section defined this requirement, or "task-defined" if from task file]
-- If any AC item is FAIL, address the failure before proceeding to other checks.
-- If `## Acceptance Criteria` is empty or missing, output: "No AC defined — skipping per-item validation."
+Validate each AC item before other checks: output [AC-N] PASS/FAIL with evidence and spec source.
+If any FAIL, address before proceeding. If no AC defined, output "No AC defined — skipping per-item validation."
 </IMPORTANT>
 
 **Static checks** — execute in strict sequential order:
@@ -141,8 +141,8 @@ just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
 
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **testsPassed** / **testsFailed**: number of tests that passed/failed
-- **coverage**: test coverage percentage (e.g. 80.0)
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **testsPassed** / **testsFailed**
+- **coverage**
 
 Output: `Step 3/4: Verifying... DONE (coverage: N%)`

@@ -1,16 +1,16 @@
 ---
 type: test.gen-contracts
 category: test
-variables:
+identity:
   - TaskID
   - TaskType
   - FeatureSlug
+context:
   - Mode
   - SurfaceKey
   - SurfaceType
   - SurfaceTypes
   - AcceptanceCriteria
-  - DocTaskCriteria
 ---
 Generate test Contract specifications for the {{.FeatureSlug}} feature.{{if .Mode}}
 Mode: {{.Mode}}{{end}}

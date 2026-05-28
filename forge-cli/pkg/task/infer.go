@@ -29,6 +29,8 @@ func InferType(id string, surfaces map[string]string) string {
 		return TypeTestRun
 	case testRunSurfaceKeyMatch(id, surfaces):
 		return TypeTestRun
+	case id == "T-test-verify-regression":
+		return "test.verify-regression"
 	case id == "T-specs-consolidate":
 		return TypeDocConsolidate
 	case id == "T-validate-code":

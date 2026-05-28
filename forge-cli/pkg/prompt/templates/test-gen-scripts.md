@@ -1,21 +1,25 @@
 ---
 type: test.gen-scripts
 category: test
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
-  - TestTypeArg
   - SurfaceKey
-  - SurfaceType
+conditional:
+  - TestTypeArg
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a test script generation task.
+
+You are a focused task executor generating test scripts.
 
 ## Task Constraints
 
@@ -42,12 +46,10 @@ Invoke the skill:
 Skill(skill="forge:gen-test-scripts"{{.TestTypeArg}})
 ```
 
-This generates executable e2e test scripts from test cases, using the framework specified by the surface.
-
 ## Record Fields
 
-When submitting via `forge:submit-task`, populate these record fields in record.json:
-- **scriptsCreated**: list of test script files generated
-- **casesGenerated**: number of test cases used as input
+When submitting via `forge:submit-task`, populate these fields in record.json:
+- **scriptsCreated**
+- **casesGenerated**
 
 Output: `Step 2/2: Generating test scripts... DONE`

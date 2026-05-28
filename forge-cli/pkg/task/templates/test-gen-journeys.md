@@ -1,16 +1,16 @@
 ---
 type: test.gen-journeys
 category: test
-variables:
+identity:
   - TaskID
   - TaskType
   - FeatureSlug
+context:
   - Mode
   - SurfaceKey
   - SurfaceType
   - SurfaceTypes
   - AcceptanceCriteria
-  - DocTaskCriteria
 ---
 Generate test Journey documents for the {{.FeatureSlug}} feature.{{if .Mode}}
 Mode: {{.Mode}}{{end}}

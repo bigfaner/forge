@@ -1,0 +1,289 @@
+{
+  "type": "prompt",
+  "nodeCount": 46,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "metadata",
+      "summary": "SURFACE_KEY: {{.SurfaceKey}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "You are a focused task executor running a documentation task.",
+      "sourceLine": 16
+    },
+    {
+      "id": 5,
+      "category": "format",
+      "summary": "## Workflow (4 Steps)",
+      "sourceLine": 18
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 20
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}`.",
+      "sourceLine": 22
+    },
+    {
+      "id": 8,
+      "category": "format",
+      "summary": "Output: `Step 1/4: Reading task definition... DONE`",
+      "sourceLine": 24
+    },
+    {
+      "id": 9,
+      "category": "instruction",
+      "summary": "<CRITICAL> block (17 lines)",
+      "sourceLine": 26
+    },
+    {
+      "id": 10,
+      "category": "format",
+      "summary": "### Step 1.5: Spec-Code Conflict Scan",
+      "sourceLine": 44
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "For each Reference File loaded in Step 1, scan existing documents against spec requirements across four dimensions.",
+      "sourceLine": 46
+    },
+    {
+      "id": 12,
+      "category": "instruction",
+      "summary": "Read the documents that address the requirements in each Reference File, then output a per-dimension checklist:",
+      "sourceLine": 48
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "SPEC-CODE SCAN:",
+      "sourceLine": 49
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "- Required document structure: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 50
+    },
+    {
+      "id": 15,
+      "category": "instruction",
+      "summary": "- Mandatory sections: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 51
+    },
+    {
+      "id": 16,
+      "category": "instruction",
+      "summary": "- Naming conventions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 52
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "- Content constraints: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 53
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "For each finding, output:",
+      "sourceLine": 55
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "[spec section: \"key requirement\"]: existing document [MATCHES | DIFFERS | NOT YET IMPLEMENTED]",
+      "sourceLine": 56
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "- If DIFFERS: describe the specific difference and state \"WILL FOLLOW SPEC\"",
+      "sourceLine": 57
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "If no Reference Files were loaded: output \"SPEC-CODE SCAN: skipped — no spec sources loaded\" and skip the per-dimension ",
+      "sourceLine": 59
+    },
+    {
+      "id": 22,
+      "category": "format",
+      "summary": "### Step 2: Execute Document Work",
+      "sourceLine": 61
+    },
+    {
+      "id": 23,
+      "category": "instruction",
+      "summary": "Use Reference Files from Step 1 as the authoritative structure and content guide.",
+      "sourceLine": 63
+    },
+    {
+      "id": 24,
+      "category": "instruction",
+      "summary": "First, identify the task type from the task file description:",
+      "sourceLine": 65
+    },
+    {
+      "id": 25,
+      "category": "metadata",
+      "summary": "- **Create**: Write a new document from scratch. Follow the project's documentation conventions for structure, naming, a",
+      "sourceLine": 66
+    },
+    {
+      "id": 26,
+      "category": "metadata",
+      "summary": "- **Modify**: Update an existing document. Read the current content first, then apply the specified changes while preser",
+      "sourceLine": 67
+    },
+    {
+      "id": 27,
+      "category": "metadata",
+      "summary": "- **Delete**: Remove a document. Confirm the task explicitly requires deletion, verify no other documents reference it (",
+      "sourceLine": 68
+    },
+    {
+      "id": 28,
+      "category": "instruction",
+      "summary": "Then execute according to the identified type:",
+      "sourceLine": 70
+    },
+    {
+      "id": 29,
+      "category": "instruction",
+      "summary": "- Follow the style of existing documents in the same directory. If `docs/conventions/` contains documentation guides, us",
+      "sourceLine": 71
+    },
+    {
+      "id": 30,
+      "category": "instruction",
+      "summary": "- Ensure cross-references to other documents are accurate",
+      "sourceLine": 72
+    },
+    {
+      "id": 31,
+      "category": "instruction",
+      "summary": "- Use consistent terminology throughout",
+      "sourceLine": 73
+    },
+    {
+      "id": 32,
+      "category": "format",
+      "summary": "Output: `Step 2/4: Executing document work... DONE`",
+      "sourceLine": 75
+    },
+    {
+      "id": 33,
+      "category": "format",
+      "summary": "### Step 3: Self-Check",
+      "sourceLine": 77
+    },
+    {
+      "id": 34,
+      "category": "instruction",
+      "summary": "<IMPORTANT> block (9 lines)",
+      "sourceLine": 79
+    },
+    {
+      "id": 35,
+      "category": "instruction",
+      "summary": "Verify your documentation work against these criteria:",
+      "sourceLine": 89
+    },
+    {
+      "id": 36,
+      "category": "instruction",
+      "summary": "1. **Format**: Document structure follows project conventions (headings, sections, tables)",
+      "sourceLine": 91
+    },
+    {
+      "id": 37,
+      "category": "instruction",
+      "summary": "2. **Cross-references**: All internal links and references point to existing files or valid anchors",
+      "sourceLine": 92
+    },
+    {
+      "id": 38,
+      "category": "instruction",
+      "summary": "3. **Terminology consistency**: Terms are used consistently across all documents you created or modified",
+      "sourceLine": 93
+    },
+    {
+      "id": 39,
+      "category": "instruction",
+      "summary": "4. **Completeness**: All items described in the task's acceptance criteria are addressed",
+      "sourceLine": 94
+    },
+    {
+      "id": 40,
+      "category": "instruction",
+      "summary": "If any criterion fails, fix the issue before proceeding.",
+      "sourceLine": 96
+    },
+    {
+      "id": 41,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 98
+    },
+    {
+      "id": 42,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 100
+    },
+    {
+      "id": 43,
+      "category": "metadata",
+      "summary": "- **referencedDocs**: list of documentation files referenced during the task",
+      "sourceLine": 101
+    },
+    {
+      "id": 44,
+      "category": "metadata",
+      "summary": "- **reviewStatus**: review outcome (e.g. \"completed\", \"pending-review\")",
+      "sourceLine": 102
+    },
+    {
+      "id": 45,
+      "category": "metadata",
+      "summary": "- **docMetrics**: summary of document changes (e.g. \"3 files created, 1 updated\")",
+      "sourceLine": 103
+    },
+    {
+      "id": 46,
+      "category": "format",
+      "summary": "Output: `Step 3/4: Self-check... DONE`",
+      "sourceLine": 105
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 28,
+    "constraint": 0,
+    "example": 0,
+    "format": 9,
+    "metadata": 9
+  }
+}

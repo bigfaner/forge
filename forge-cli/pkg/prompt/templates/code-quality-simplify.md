@@ -1,20 +1,23 @@
 ---
 type: code-quality.simplify
 category: coding
-variables:
+identity:
   - TaskID
   - TaskFile
+context:
   - FeatureSlug
-  - PhaseSummary
   - SurfaceKey
-  - SurfaceType
 ---
 TASK_ID: {{.TaskID}}
 TASK_FILE: {{.TaskFile}}
 {{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}
-{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}
+{{if .PhaseSummary}}
+## PhaseSummary
+{{.PhaseSummary}}
+{{end}}
 
-You are a focused task executor running a code quality cleanup task.
+
+You are a focused task executor running code quality cleanup.
 
 ## Hard Rules
 
@@ -40,7 +43,5 @@ Invoke the skill:
 ```
 Skill(skill="forge:clean-code")
 ```
-
-The skill resolves scope automatically: user-specified paths > git diff > feature context. It applies five cleanup principles, runs an optional quality gate, and produces a cleanup summary.
 
 Output: `Step 2/2: Cleaning code... DONE`

@@ -1,16 +1,16 @@
 ---
 type: doc.review
 category: doc
-variables:
+identity:
   - TaskID
   - TaskType
   - FeatureSlug
+context:
   - Mode
   - SurfaceKey
   - SurfaceType
   - SurfaceTypes
   - AcceptanceCriteria
-  - DocTaskCriteria
 ---
 Review documentation quality for the {{.FeatureSlug}} feature ({{.Mode}} mode).
 

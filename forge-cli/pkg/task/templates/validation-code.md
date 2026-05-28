@@ -1,16 +1,16 @@
 ---
 type: validation.code
 category: validation
-variables:
+identity:
   - TaskID
   - TaskType
   - FeatureSlug
+context:
   - Mode
   - SurfaceKey
   - SurfaceType
   - SurfaceTypes
   - AcceptanceCriteria
-  - DocTaskCriteria
 ---
 Validate code quality for the {{.FeatureSlug}} feature.
 

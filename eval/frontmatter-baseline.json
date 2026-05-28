@@ -1,0 +1,828 @@
+{
+  "forge-cli/pkg/prompt/templates/code-quality-simplify.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "code-quality.simplify"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/coding-cleanup.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.cleanup"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 11
+      }
+    },
+    "variablesCount": 11,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/coding-enhancement.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.enhancement"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 11
+      }
+    },
+    "variablesCount": 11,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/coding-feature.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.feature"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 11
+      }
+    },
+    "variablesCount": 11,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/coding-fix.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.fix"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 11
+      }
+    },
+    "variablesCount": 11,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/coding-refactor.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.refactor"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 11
+      }
+    },
+    "variablesCount": 11,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/doc-consolidate.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.consolidate"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/doc-drift.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.drift"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/doc-review.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.review"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/doc-summary.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.summary"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/doc.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/eval-contract.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "eval.contract"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "eval"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/eval-journey.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "eval.journey"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "eval"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/fix-record-missed.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.fix"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/gate.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "gate"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "gate"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/test-gen-contracts.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.gen-contracts"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/test-gen-journeys.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.gen-journeys"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/test-gen-scripts.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.gen-scripts"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 7
+      }
+    },
+    "variablesCount": 7,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/test-run.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.run"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/validation-code.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "validation.code"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "validation"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/prompt/templates/validation-ux.md": {
+    "type": "prompt",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "validation.ux"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "validation"
+      },
+      "variables": {
+        "type": "list",
+        "count": 6
+      }
+    },
+    "variablesCount": 6,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/code-quality-simplify.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "code-quality.simplify"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/coding.cleanup.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.cleanup"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 12
+      }
+    },
+    "variablesCount": 12,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/coding.fix.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "coding.fix"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "coding"
+      },
+      "variables": {
+        "type": "list",
+        "count": 12
+      }
+    },
+    "variablesCount": 12,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/doc-consolidate.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.consolidate"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/doc-drift.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.drift"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/doc-review.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "doc.review"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "doc"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/eval-contract.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "eval.contract"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "eval"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/eval-journey.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "eval.journey"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "eval"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/test-gen-contracts.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.gen-contracts"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/test-gen-journeys.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.gen-journeys"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/test-gen-scripts.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.gen-scripts"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/test-run.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "test.run"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "test"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/validation-code.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "validation.code"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "validation"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/templates/validation-ux.md": {
+    "type": "task",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "validation.ux"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "validation"
+      },
+      "variables": {
+        "type": "list",
+        "count": 9
+      }
+    },
+    "variablesCount": 9,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/records/coding.md": {
+    "type": "record",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "variables": {
+        "type": "list",
+        "count": 17
+      }
+    },
+    "variablesCount": 17,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/records/doc.md": {
+    "type": "record",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "variables": {
+        "type": "list",
+        "count": 16
+      }
+    },
+    "variablesCount": 16,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/records/eval.md": {
+    "type": "record",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "variables": {
+        "type": "list",
+        "count": 14
+      }
+    },
+    "variablesCount": 14,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/records/gate.md": {
+    "type": "record",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "variables": {
+        "type": "list",
+        "count": 11
+      }
+    },
+    "variablesCount": 11,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/records/test.md": {
+    "type": "record",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "variables": {
+        "type": "list",
+        "count": 17
+      }
+    },
+    "variablesCount": 17,
+    "fieldCount": 3
+  },
+  "forge-cli/pkg/task/records/validation.md": {
+    "type": "record",
+    "hasMetadataFrontmatter": true,
+    "fields": {
+      "type": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "category": {
+        "type": "scalar",
+        "value": "record"
+      },
+      "variables": {
+        "type": "list",
+        "count": 15
+      }
+    },
+    "variablesCount": 15,
+    "fieldCount": 3
+  },
+  "_summary": {
+    "promptTemplates": 21,
+    "taskTemplates": 14,
+    "recordTemplates": 6,
+    "totalTemplates": 41
+  }
+}

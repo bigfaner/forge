@@ -1,0 +1,133 @@
+{
+  "type": "prompt",
+  "nodeCount": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor running a code quality cleanup task.",
+      "sourceLine": 17
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "## Hard Rules",
+      "sourceLine": 19
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "<TASK-CONSTRAINTS>",
+      "sourceLine": 21
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "- MUST invoke `Skill(skill=\"forge:clean-code\")` to perform scoped code cleanup",
+      "sourceLine": 22
+    },
+    {
+      "id": 9,
+      "category": "constraint",
+      "summary": "- MUST NOT manually rewrite code — the skill handles scope detection, cleanup, and quality gate",
+      "sourceLine": 23
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "</TASK-CONSTRAINTS>",
+      "sourceLine": 24
+    },
+    {
+      "id": 11,
+      "category": "format",
+      "summary": "## Workflow (2 Steps)",
+      "sourceLine": 26
+    },
+    {
+      "id": 12,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 28
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand the code to clean up.",
+      "sourceLine": 30
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}",
+      "sourceLine": 32
+    },
+    {
+      "id": 15,
+      "category": "format",
+      "summary": "Output: `Step 1/2: Reading task definition... DONE`",
+      "sourceLine": 34
+    },
+    {
+      "id": 16,
+      "category": "format",
+      "summary": "### Step 2: Clean Code",
+      "sourceLine": 36
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "Invoke the skill:",
+      "sourceLine": 38
+    },
+    {
+      "id": 18,
+      "category": "format",
+      "summary": "```\nSkill(skill=\"forge:clean-code\")\n```",
+      "sourceLine": 40
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "The skill resolves scope automatically: user-specified paths > git diff > feature context. It applies five cleanup princ",
+      "sourceLine": 44
+    },
+    {
+      "id": 20,
+      "category": "format",
+      "summary": "Output: `Step 2/2: Cleaning code... DONE`",
+      "sourceLine": 46
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 10,
+    "constraint": 1,
+    "example": 0,
+    "format": 7,
+    "metadata": 2
+  }
+}
