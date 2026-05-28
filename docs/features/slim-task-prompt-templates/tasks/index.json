@@ -1,0 +1,105 @@
+{
+  "feature": "slim-task-prompt-templates",
+  "proposal": "docs/proposals/slim-task-prompt-templates/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-create-baseline": {
+      "id": "1",
+      "title": "Create SC-Pre baseline measurement",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-create-baseline.md",
+      "record": "records/1-create-baseline.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature"
+    },
+    "2-slim-prompt-templates": {
+      "id": "2",
+      "title": "Slim all prompt templates",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-slim-prompt-templates.md",
+      "record": "records/2-slim-prompt-templates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "3-slim-task-executor": {
+      "id": "3",
+      "title": "Slim task-executor Execution Protocol",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-slim-task-executor.md",
+      "record": "records/3-slim-task-executor.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "4-refactor-metadata-parsing": {
+      "id": "4",
+      "title": "Refactor Go metadata parsing for grouped frontmatter",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-refactor-metadata-parsing.md",
+      "record": "records/4-refactor-metadata-parsing.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "5-migrate-frontmatters": {
+      "id": "5",
+      "title": "Migrate all template frontmatters + PhaseSummary",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-migrate-frontmatters.md",
+      "record": "records/5-migrate-frontmatters.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
