@@ -245,10 +245,10 @@ internal/cmd/
 190、检查justfile中的命令是否对应最新的实现，并且正确运行just test 和just unit-test。done
 191、forge task add 的--template参数更改为--type，通过type来查找模板。 done
 192、改动现有功能的提案，要列举受影响的点。doing
-193、forge init 支持auto.eval.*。除了auto.eval.proposal.*之外，其它只支持full模式，不支持quick模式。doing
+193、forge init 支持auto.eval.*。除了auto.eval.proposal.*之外，其它只支持full模式，不支持quick模式。done
 194、优化cli内置的Claude.md模板，要对齐forge cli现状。
-195、forge task list 按照依赖顺序从上到下依次排列。DAG图。doing
+195、forge task list 按照依赖顺序从上到下依次排列。DAG图。done
 196、slim 任务prompt模板，去掉冗余的描述信息。doing
-197、引入模板引擎：条件化构造prompt或任务模板。doing
+197、引入模板引擎：条件化构造prompt或任务模板。done
   forge-cli\pkg\task\data\test-run.md 等任务模板，或提示词模板、skill、command、task-executor等对齐最新的概念，去掉scope等过时的概念。
 198、eval-proposal只执行一轮时，必须要执行自由专家评审。done
