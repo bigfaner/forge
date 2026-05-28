@@ -46,7 +46,7 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge task list-types` | 列出所有支持的任务类型 | `list_types.go` |
 | `forge task reopen <task-id>` | 重新打开已拒绝/跳过的任务（恢复为 pending） | `reopen.go` |
 | `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
-| `forge task list [slug]` | 列出当前 feature 或指定 feature 的所有任务（支持 `--local` 忽略 worktree） | `list.go` |
+| `forge task list [slug]` | 列出当前 feature 或指定 feature 的所有任务。默认拓扑排序（`--sort topo`）；`--sort id` 恢复自然 ID 排序；`--tree` 显示交互式依赖树（TUI）；`--local` 忽略 worktree 直接读取主仓库 | `list.go` |
 
 ### forge prompt — Agent 执行提示词管理
 

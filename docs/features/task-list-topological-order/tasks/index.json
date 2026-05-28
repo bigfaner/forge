@@ -1,0 +1,84 @@
+{
+  "feature": "task-list-topological-order",
+  "proposal": "docs/proposals/task-list-topological-order/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-toposort-algorithm": {
+      "id": "1",
+      "title": "Implement Kahn's algorithm topological sort",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-toposort-algorithm.md",
+      "record": "records/1-toposort-algorithm.md",
+      "surface-type": "cli",
+      "type": "coding.feature"
+    },
+    "2-list-topo-sort": {
+      "id": "2",
+      "title": "Integrate topo sort into forge task list + add --sort flag",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-list-topo-sort.md",
+      "record": "records/2-list-topo-sort.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "3-claim-topo-align": {
+      "id": "3",
+      "title": "Align claimNextTask with topological ordering",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-claim-topo-align.md",
+      "record": "records/3-claim-topo-align.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "4-tui-tree-view": {
+      "id": "4",
+      "title": "Add TUI tree view with --tree flag",
+      "priority": "P1",
+      "estimatedTime": "1d",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "4-tui-tree-view.md",
+      "record": "records/4-tui-tree-view.md",
+      "surface-type": "cli",
+      "type": "coding.feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
