@@ -101,7 +101,7 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	}
 
 	t.Status = types.Status(targetStatus)
-	if targetStatus == "blocked" || targetStatus == "suspended" {
+	if targetStatus == string(types.StatusBlocked) || targetStatus == string(types.StatusSuspended) {
 		t.BlockedReason = transitionReason
 	}
 

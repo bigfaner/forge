@@ -106,7 +106,7 @@
       "dependencies": [
         "2.gate"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4.1-migrate-cmd-task.md",
       "record": "records/4.1-migrate-cmd-task.md",
       "surface-key": ".",

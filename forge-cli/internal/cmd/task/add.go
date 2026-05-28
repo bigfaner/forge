@@ -11,6 +11,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -41,7 +42,7 @@ The CLI is a pure tool — the caller decides what to add.`,
 func init() {
 	addCmd.Flags().StringVar(&addTitle, "title", "", "Task title (required)")
 	addCmd.Flags().StringVar(&addID, "id", "", "Custom task ID (auto-generated as disc-N if omitted)")
-	addCmd.Flags().StringVar(&addPriority, "priority", "P1", "Task priority: P0, P1, or P2")
+	addCmd.Flags().StringVar(&addPriority, "priority", string(types.PriorityP1), "Task priority: P0, P1, or P2")
 	addCmd.Flags().StringVar(&addDependsOn, "depends-on", "", "Comma-separated dependency task IDs")
 	addCmd.Flags().StringVar(&addEstimatedTime, "estimated-time", "", "Time estimate (e.g. \"1-2h\")")
 	addCmd.Flags().BoolVar(&addBreaking, "breaking", false, "Mark as breaking (triggers full test suite)")
@@ -230,7 +231,7 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		ID:            id,
 		Title:         addTitle,
 		Priority:      opts.Priority,
-		Status:        "pending",
+		Status:        string(types.StatusPending),
 		File:          filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, id+".md")),
 		Record:        filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, "records/"+id+".md")),
 		Breaking:      opts.Breaking,

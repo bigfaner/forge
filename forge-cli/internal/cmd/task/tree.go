@@ -9,6 +9,7 @@ import (
 	"forge-cli/internal/cmd/base"
 
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -196,28 +197,36 @@ func sortChildrenRecursive(roots []*treeNode, sortByID bool) {
 
 // statusSymbol returns the symbol for a task status.
 func statusSymbol(status string) string {
-	switch status {
-	case "completed":
+	switch types.Status(status) {
+	case types.StatusCompleted:
 		return "✓"
-	case "in_progress":
+	case types.StatusInProgress:
 		return "~"
-	case "blocked", "failed", "rejected":
+	case types.StatusBlocked, types.StatusRejected:
 		return "✗"
-	default: // pending, skipped, suspended, unknown
+	default:
+		// Non-canonical error-like statuses (e.g. "failed") also get error symbol
+		if status == "failed" {
+			return "✗"
+		}
 		return "○"
 	}
 }
 
 // statusColor returns the lipgloss color name for a task status.
 func statusColor(status string) string {
-	switch status {
-	case "completed":
+	switch types.Status(status) {
+	case types.StatusCompleted:
 		return "green"
-	case "in_progress":
+	case types.StatusInProgress:
 		return "yellow"
-	case "blocked", "failed", "rejected":
+	case types.StatusBlocked, types.StatusRejected:
 		return "red"
-	default: // pending, skipped, suspended, unknown
+	default:
+		// Non-canonical error-like statuses (e.g. "failed") also get red
+		if status == "failed" {
+			return "red"
+		}
 		return "gray"
 	}
 }

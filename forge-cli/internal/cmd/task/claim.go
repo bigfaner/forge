@@ -13,6 +13,7 @@ import (
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -178,11 +179,11 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	// Runs before the hasPending check so newly-unblocked tasks are visible.
 	// Suspended tasks are naturally excluded (they have status "suspended", not "blocked").
 	for key, t := range index.TasksMap() {
-		if t.Status != "blocked" {
+		if t.Status != types.StatusBlocked {
 			continue
 		}
 		if met, _ := checkDependenciesMet(index, t.ID, t); met {
-			t.Status = "pending"
+			t.Status = types.StatusPending
 			index.SetTask(key, t)
 			fmt.Printf("Auto-unblocked task %s\n", t.ID)
 		}
@@ -190,7 +191,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 
 	hasPending := false
 	for _, t := range index.TasksMap() {
-		if t.Status == "pending" {
+		if t.Status == types.StatusPending {
 			hasPending = true
 			break
 		}
@@ -200,7 +201,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	}
 
 	for key, t := range index.TasksMap() {
-		if t.Status == "pending" {
+		if t.Status == types.StatusPending {
 			if met, _ := checkDependenciesMet(index, t.ID, t); met {
 				eligibleTasks = append(eligibleTasks, taskWithKey{key: key, t: t})
 			}
@@ -211,7 +212,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 		return "", nil, fmt.Errorf("no task available with met dependencies")
 	}
 
-	priorityOrder := map[string]int{"P0": 0, "P1": 1, "P2": 2}
+	priorityOrder := map[types.Priority]int{types.PriorityP0: 0, types.PriorityP1: 1, types.PriorityP2: 2}
 
 	// Compute topological depths for all tasks in the index.
 	depths := computeTopoDepths(index)
@@ -221,7 +222,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 		if di != dj {
 			return di < dj
 		}
-		pi, pj := priorityOrder[string(eligibleTasks[i].t.Priority)], priorityOrder[string(eligibleTasks[j].t.Priority)]
+		pi, pj := priorityOrder[eligibleTasks[i].t.Priority], priorityOrder[eligibleTasks[j].t.Priority]
 		if pi != pj {
 			return pi < pj
 		}
@@ -230,7 +231,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 
 	twk := eligibleTasks[0]
 	t, _ := index.ByID(twk.key)
-	t.Status = "in_progress"
+	t.Status = types.StatusInProgress
 	index.SetTask(twk.key, t)
 	return twk.key, &t, nil
 }
@@ -258,7 +259,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	for _, dep := range t.Dependencies {
 		for _, other := range index.TasksMap() {
 			if other.ID != selfID && other.Type == task.TypeCodingFix && other.SourceTaskID == dep &&
-				(other.Status == "pending" || other.Status == "in_progress") {
+				(other.Status == types.StatusPending || other.Status == types.StatusInProgress) {
 				unmet = append(unmet, other.ID)
 			}
 		}
@@ -269,7 +270,7 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 	// this task should not be claimed (--block-source scenario).
 	for _, other := range index.TasksMap() {
 		if other.Type == task.TypeCodingFix && other.SourceTaskID == selfID &&
-			(other.Status == "pending" || other.Status == "in_progress") {
+			(other.Status == types.StatusPending || other.Status == types.StatusInProgress) {
 			unmet = append(unmet, other.ID)
 		}
 	}

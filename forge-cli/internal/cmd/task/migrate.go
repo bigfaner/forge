@@ -11,6 +11,7 @@ import (
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -54,7 +55,7 @@ func runMigrate(_ *cobra.Command, _ []string) error {
 
 		// Pre-flight check: abort if any task is in_progress.
 		for _, t := range index.TasksMap() {
-			if t.Status == feature.StatusInProgress {
+			if t.Status == types.StatusInProgress {
 				return fmt.Errorf("task %q is in_progress — finish or pause it before migrating", t.ID)
 			}
 		}
