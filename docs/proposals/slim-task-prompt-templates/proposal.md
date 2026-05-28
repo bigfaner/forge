@@ -2,7 +2,7 @@
 created: "2026-05-27"
 updated: "2026-05-28"
 author: "forge-brainstorm"
-status: Draft
+status: Approved
 ---
 
 # Proposal: 精简任务 Prompt 模板 + Frontmatter 元数据结构重构
