@@ -1,0 +1,22 @@
+---
+type: code-quality.simplify
+category: coding
+variables:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+  - DocTaskCriteria
+---
+Simplify and clean up code for the {{.FeatureSlug}} feature.
+
+## Discovery Strategy
+1. Run `git diff --name-only main...HEAD` to identify files changed by this feature
+2. Focus cleanup on changed files only
+3. The skill resolves scope: git diff > feature context > user-specified paths
+
+Do NOT clean up files outside this feature's scope.

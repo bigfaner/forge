@@ -375,9 +375,6 @@ func TestExtractBodyContext(t *testing.T) {
 		if ctx.Mode != "quick" {
 			t.Errorf("Mode = %q, want quick", ctx.Mode)
 		}
-		if len(ctx.Scope) != 2 || ctx.Scope[0] != "Backend logic" {
-			t.Errorf("Scope = %v, want [Backend logic, API endpoints]", ctx.Scope)
-		}
 		if len(ctx.SuccessCriteria) != 2 {
 			t.Errorf("SuccessCriteria = %v, want 2 items", ctx.SuccessCriteria)
 		}
@@ -406,9 +403,6 @@ func TestExtractBodyContext(t *testing.T) {
 		if ctx.Mode != "breakdown" {
 			t.Errorf("Mode = %q, want breakdown", ctx.Mode)
 		}
-		if len(ctx.Scope) != 2 || ctx.Scope[0] != "Database layer" {
-			t.Errorf("Scope = %v, want [Database layer, Service layer]", ctx.Scope)
-		}
 		if len(ctx.AcceptanceCriteria) != 2 {
 			t.Errorf("AcceptanceCriteria = %v, want 2 items", ctx.AcceptanceCriteria)
 		}
@@ -426,9 +420,6 @@ func TestExtractBodyContext(t *testing.T) {
 		}
 		if ctx.Mode != "" {
 			t.Errorf("Mode = %q, want empty", ctx.Mode)
-		}
-		if len(ctx.Scope) != 0 {
-			t.Errorf("Scope = %v, want empty", ctx.Scope)
 		}
 		if len(ctx.AcceptanceCriteria) != 0 {
 			t.Errorf("AcceptanceCriteria = %v, want empty", ctx.AcceptanceCriteria)
@@ -479,9 +470,6 @@ func TestBuildIndex_BodyContextPopulatedInGeneratedMD(t *testing.T) {
 	content := string(data)
 	if !strings.Contains(content, "test-feature") {
 		t.Errorf("generated .md should contain feature slug, got:\n%s", content)
-	}
-	if !strings.Contains(content, "Backend API") || !strings.Contains(content, "CLI integration") {
-		t.Errorf("generated .md should contain scope items from proposal, got:\n%s", content)
 	}
 }
 

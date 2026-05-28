@@ -3,56 +3,33 @@
 frontend_dir := "FRONTEND_DIR"
 backend_dir  := "BACKEND_DIR"
 
-compile scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npx tsc --noEmit ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_COMPILE ;;
-      "")       (cd "{{frontend_dir}}" && npx tsc --noEmit) && (cd "{{backend_dir}}" && BACKEND_COMPILE) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+# Language-level targets (run for all surfaces)
 
-build scope="":
+compile:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm run build ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_BUILD ;;
-      "")       (cd "{{frontend_dir}}" && npm run build) && (cd "{{backend_dir}}" && BACKEND_BUILD) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npx tsc --noEmit) && (cd "{{backend_dir}}" && BACKEND_COMPILE)
 
-run scope="":
+build:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && FRONTEND_RUN ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_RUN ;;
-      "")       cd "{{backend_dir}}" && BACKEND_RUN & _bp=$!; _cleanup() { kill "$_bp" 2>/dev/null || true; }; trap _cleanup EXIT INT TERM; sleep 2; cd "{{frontend_dir}}" && FRONTEND_RUN ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npm run build) && (cd "{{backend_dir}}" && BACKEND_BUILD)
 
-dev scope="":
+run:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && FRONTEND_DEV ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_DEV ;;
-      "")       cd "{{backend_dir}}" && BACKEND_DEV & _bp=$!; _cleanup() { kill "$_bp" 2>/dev/null || true; }; trap _cleanup EXIT INT TERM; sleep 2; cd "{{frontend_dir}}" && FRONTEND_DEV ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    cd "{{backend_dir}}" && BACKEND_RUN & _bp=$!; _cleanup() { kill "$_bp" 2>/dev/null || true; }; trap _cleanup EXIT INT TERM; sleep 2; cd "{{frontend_dir}}" && FRONTEND_RUN
+
+dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "{{backend_dir}}" && BACKEND_DEV & _bp=$!; _cleanup() { kill "$_bp" 2>/dev/null || true; }; trap _cleanup EXIT INT TERM; sleep 2; cd "{{frontend_dir}}" && FRONTEND_DEV
 
 # unit-test: language-level unit tests
-unit-test scope="":
+unit-test:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm test ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_TEST ;;
-      "")       (cd "{{frontend_dir}}" && npm test) && (cd "{{backend_dir}}" && BACKEND_TEST) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npm test) && (cd "{{backend_dir}}" && BACKEND_TEST)
 
 # test: surface-level advanced tests (functional, integration, e2e, etc.)
 test journey='':
@@ -114,57 +91,94 @@ test journey='':
         cd tests && npx playwright test
     fi
 
-lint scope="":
+lint:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm run lint ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_LINT ;;
-      "")       (cd "{{frontend_dir}}" && npm run lint) && (cd "{{backend_dir}}" && BACKEND_LINT) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npm run lint) && (cd "{{backend_dir}}" && BACKEND_LINT)
 
-fmt scope="":
+fmt:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npx prettier --write . ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_FMT ;;
-      "")       (cd "{{frontend_dir}}" && npx prettier --write .) && (cd "{{backend_dir}}" && BACKEND_FMT) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npx prettier --write .) && (cd "{{backend_dir}}" && BACKEND_FMT)
 
-check scope="":
+check:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_LINT && BACKEND_COMPILE ;;
-      "")       (cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit) && (cd "{{backend_dir}}" && BACKEND_LINT && BACKEND_COMPILE) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit) && (cd "{{backend_dir}}" && BACKEND_LINT && BACKEND_COMPILE)
 
-clean scope="":
+clean:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && rm -rf dist ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_CLEAN ;;
-      "")       (cd "{{frontend_dir}}" && rm -rf dist) && (cd "{{backend_dir}}" && BACKEND_CLEAN) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && rm -rf dist) && (cd "{{backend_dir}}" && BACKEND_CLEAN)
 
-install scope="":
+install:
     #!/usr/bin/env bash
     set -euo pipefail
-    case "{{scope}}" in
-      frontend) cd "{{frontend_dir}}" && npm install ;;
-      backend)  cd "{{backend_dir}}" && BACKEND_INSTALL ;;
-      "")       (cd "{{frontend_dir}}" && npm install) && (cd "{{backend_dir}}" && BACKEND_INSTALL) ;;
-      *)        echo "[forge] invalid scope '{{scope}}'; expected frontend/backend" >&2; exit 1 ;;
-    esac
+    (cd "{{frontend_dir}}" && npm install) && (cd "{{backend_dir}}" && BACKEND_INSTALL)
 
 ci: install compile build unit-test lint
+
+# Surface-specific recipes (per-surface scoping)
+
+frontend-compile:
+    cd "{{frontend_dir}}" && npx tsc --noEmit
+
+backend-compile:
+    cd "{{backend_dir}}" && BACKEND_COMPILE
+
+frontend-build:
+    cd "{{frontend_dir}}" && npm run build
+
+backend-build:
+    cd "{{backend_dir}}" && BACKEND_BUILD
+
+frontend-run:
+    cd "{{frontend_dir}}" && FRONTEND_RUN
+
+backend-run:
+    cd "{{backend_dir}}" && BACKEND_RUN
+
+frontend-dev:
+    cd "{{frontend_dir}}" && FRONTEND_DEV
+
+backend-dev:
+    cd "{{backend_dir}}" && BACKEND_DEV
+
+frontend-unit-test:
+    cd "{{frontend_dir}}" && npm test
+
+backend-unit-test:
+    cd "{{backend_dir}}" && BACKEND_TEST
+
+frontend-lint:
+    cd "{{frontend_dir}}" && npm run lint
+
+backend-lint:
+    cd "{{backend_dir}}" && BACKEND_LINT
+
+frontend-fmt:
+    cd "{{frontend_dir}}" && npx prettier --write .
+
+backend-fmt:
+    cd "{{backend_dir}}" && BACKEND_FMT
+
+frontend-check:
+    cd "{{frontend_dir}}" && npm run lint && npx tsc --noEmit
+
+backend-check:
+    cd "{{backend_dir}}" && BACKEND_LINT && BACKEND_COMPILE
+
+frontend-clean:
+    cd "{{frontend_dir}}" && rm -rf dist
+
+backend-clean:
+    cd "{{backend_dir}}" && BACKEND_CLEAN
+
+frontend-install:
+    cd "{{frontend_dir}}" && npm install
+
+backend-install:
+    cd "{{backend_dir}}" && BACKEND_INSTALL
 
 # test-setup: prepare test environment (install test dependencies, seed data, etc.)
 test-setup:

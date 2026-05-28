@@ -1508,7 +1508,7 @@ func TestSynthesize_GateTemplate_ContainsRecordFieldHints(t *testing.T) {
 // --- doc-review prompt template content tests (Task 2) ---
 
 func TestDocReviewPromptTemplate_Step1LoadsPreExtractedAC(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1523,7 +1523,7 @@ func TestDocReviewPromptTemplate_Step1LoadsPreExtractedAC(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_Step2UsesAllowlistDiscovery(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1532,13 +1532,13 @@ func TestDocReviewPromptTemplate_Step2UsesAllowlistDiscovery(t *testing.T) {
 	if !strings.Contains(s, "allowlist") {
 		t.Error("doc-review prompt Step 2 should use allowlist strategy")
 	}
-	if !strings.Contains(s, "docs/features/{{FEATURE_SLUG}}") {
+	if !strings.Contains(s, "docs/features/{{.FeatureSlug}}") {
 		t.Error("doc-review prompt Step 2 should reference docs/features/ path")
 	}
 }
 
 func TestDocReviewPromptTemplate_Step3HasDocsOnlyConstraint(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1553,7 +1553,7 @@ func TestDocReviewPromptTemplate_Step3HasDocsOnlyConstraint(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_NoScanTasksDirective(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1573,7 +1573,7 @@ func TestDocReviewPromptTemplate_NoScanTasksDirective(t *testing.T) {
 // --- Task 5: test-run.md skill reference fix ---
 
 func TestTestRunTemplate_ReferencesRunTests(t *testing.T) {
-	data, err := templateFS.ReadFile("data/test-run.md")
+	data, err := templateFS.ReadFile("templates/test-run.md")
 	if err != nil {
 		t.Fatalf("cannot read test-run prompt template: %v", err)
 	}
@@ -1593,7 +1593,7 @@ func TestTestRunTemplate_ReferencesRunTests(t *testing.T) {
 // --- Task 5: SCOPE label rename to SURFACE_KEY ---
 
 func TestAllTemplates_NoScopeLabel(t *testing.T) {
-	entries, err := templateFS.ReadDir("data")
+	entries, err := templateFS.ReadDir("templates")
 	if err != nil {
 		t.Fatalf("cannot read template directory: %v", err)
 	}
@@ -1608,14 +1608,14 @@ func TestAllTemplates_NoScopeLabel(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			data, err := templateFS.ReadFile("data/" + name)
+			data, err := templateFS.ReadFile("templates/" + name)
 			if err != nil {
 				t.Fatalf("cannot read template %s: %v", name, err)
 			}
 			s := string(data)
 
-			// No template should have "SCOPE: {{SURFACE_KEY}}" label
-			if strings.Contains(s, "SCOPE: {{SURFACE_KEY}}") {
+			// No template should have "SCOPE: {{.SurfaceKey}}" label
+			if strings.Contains(s, "SCOPE: {{.SurfaceKey}}") {
 				t.Errorf("template %s still uses deprecated SCOPE: label (should be SURFACE_KEY:)", name)
 			}
 		})
@@ -1623,7 +1623,7 @@ func TestAllTemplates_NoScopeLabel(t *testing.T) {
 }
 
 func TestAllTemplates_UseSurfaceKeyLabel(t *testing.T) {
-	entries, err := templateFS.ReadDir("data")
+	entries, err := templateFS.ReadDir("templates")
 	if err != nil {
 		t.Fatalf("cannot read template directory: %v", err)
 	}
@@ -1638,15 +1638,15 @@ func TestAllTemplates_UseSurfaceKeyLabel(t *testing.T) {
 		}
 
 		t.Run(name, func(t *testing.T) {
-			data, err := templateFS.ReadFile("data/" + name)
+			data, err := templateFS.ReadFile("templates/" + name)
 			if err != nil {
 				t.Fatalf("cannot read template %s: %v", name, err)
 			}
 			s := string(data)
 
-			// Templates that use {{SURFACE_KEY}} should use SURFACE_KEY: label
-			if strings.Contains(s, "{{SURFACE_KEY}}") && !strings.Contains(s, "SURFACE_KEY: {{SURFACE_KEY}}") {
-				t.Errorf("template %s uses {{SURFACE_KEY}} but not with SURFACE_KEY: label", name)
+			// Templates that use {{.SurfaceKey}} should use SURFACE_KEY: label
+			if strings.Contains(s, "{{.SurfaceKey}}") && !strings.Contains(s, "SURFACE_KEY: {{.SurfaceKey}}") {
+				t.Errorf("template %s uses {{.SurfaceKey}} but not with SURFACE_KEY: label", name)
 			}
 		})
 	}
@@ -1680,7 +1680,7 @@ func TestSynthesize_TestRunTemplate_InvokesRunTests(t *testing.T) {
 }
 
 func TestDocReviewPromptTemplate_Step1ExplicitNoScanDirective(t *testing.T) {
-	data, err := templateFS.ReadFile("data/doc-review.md")
+	data, err := templateFS.ReadFile("templates/doc-review.md")
 	if err != nil {
 		t.Fatalf("cannot read doc-review prompt template: %v", err)
 	}
@@ -1775,108 +1775,40 @@ func TestSynthesize_ComplexityPlaceholder_ExplicitHigh(t *testing.T) {
 	}
 }
 
-// --- cleanTemplateOutput conditional paragraph tests ---
+// --- collapseBlankLines tests ---
 
-func TestCleanTemplateOutput_ConditionalParagraph_LowRemovesBlock(t *testing.T) {
-	input := `Step 1: Read Task
-
-<!-- IF NOT_LOW -->
-### Step 1.5: Spec-Code Conflict Scan
-
-For each Reference File loaded in Step 1, scan existing code.
-<!-- END_IF -->
-
-### Step 2: TDD Implementation`
-
-	result := cleanTemplateOutput(input, "low")
-
-	if strings.Contains(result, "Step 1.5") {
-		t.Error("complexity=low should remove the Step 1.5 conditional block")
-	}
-	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
-		t.Error("complexity=low should remove the IF NOT_LOW marker")
-	}
-	if strings.Contains(result, "<!-- END_IF -->") {
-		t.Error("complexity=low should remove the END_IF marker")
-	}
-	if !strings.Contains(result, "Step 1: Read Task") {
-		t.Error("Step 1 should be preserved")
-	}
-	if !strings.Contains(result, "Step 2: TDD Implementation") {
-		t.Error("Step 2 should be preserved")
-	}
-}
-
-func TestCleanTemplateOutput_ConditionalParagraph_MediumKeepsContent(t *testing.T) {
-	input := `Step 1: Read Task
-
-<!-- IF NOT_LOW -->
-### Step 1.5: Spec-Code Conflict Scan
-
-For each Reference File loaded in Step 1, scan existing code.
-<!-- END_IF -->
-
-### Step 2: TDD Implementation`
-
-	result := cleanTemplateOutput(input, "medium")
-
-	if !strings.Contains(result, "Step 1.5") {
-		t.Error("complexity=medium should keep the Step 1.5 content")
-	}
-	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
-		t.Error("complexity=medium should strip the IF NOT_LOW marker")
-	}
-	if strings.Contains(result, "<!-- END_IF -->") {
-		t.Error("complexity=medium should strip the END_IF marker")
-	}
-}
-
-func TestCleanTemplateOutput_ConditionalParagraph_HighKeepsContent(t *testing.T) {
-	input := `Step 1: Read Task
-
-<!-- IF NOT_LOW -->
-### Step 1.5: Spec-Code Conflict Scan
-<!-- END_IF -->
-
-### Step 2: TDD Implementation`
-
-	result := cleanTemplateOutput(input, "high")
-
-	if !strings.Contains(result, "Step 1.5") {
-		t.Error("complexity=high should keep the Step 1.5 content")
-	}
-	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
-		t.Error("complexity=high should strip the IF NOT_LOW marker")
-	}
-}
-
-func TestCleanTemplateOutput_ConditionalParagraph_NoMarkersUnchanged(t *testing.T) {
-	input := `Step 1: Read Task
-
-### Step 2: TDD Implementation`
-
-	result := cleanTemplateOutput(input, "low")
-
+func TestCollapseBlankLines_TrailingNewlinePreserved(t *testing.T) {
+	input := "Step 1: Read Task\n\n### Step 2: TDD Implementation"
+	result := collapseBlankLines(input)
 	if result != input {
-		t.Errorf("template without markers should be unchanged, got:\n%s", result)
+		t.Errorf("input without triple newlines should be unchanged, got:\n%s", result)
 	}
 }
 
-func TestCleanTemplateOutput_ConditionalParagraph_MultipleBlocks(t *testing.T) {
-	input := `<!-- IF NOT_LOW -->Block A<!-- END_IF -->
-Kept content
-<!-- IF NOT_LOW -->Block B<!-- END_IF -->`
-
-	result := cleanTemplateOutput(input, "low")
-
-	if strings.Contains(result, "Block A") {
-		t.Error("complexity=low should remove Block A")
+func TestCollapseBlankLines_TripleNewlinesToDouble(t *testing.T) {
+	input := "Step 1\n\n\n\nStep 2"
+	expected := "Step 1\n\nStep 2"
+	result := collapseBlankLines(input)
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
 	}
-	if strings.Contains(result, "Block B") {
-		t.Error("complexity=low should remove Block B")
+}
+
+func TestCollapseBlankLines_MultipleRuns(t *testing.T) {
+	input := "A\n\n\n\n\nB"
+	expected := "A\n\nB"
+	result := collapseBlankLines(input)
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
 	}
-	if !strings.Contains(result, "Kept content") {
-		t.Error("non-conditional content should be preserved")
+}
+
+func TestCollapseBlankLines_MultiplePositions(t *testing.T) {
+	input := "A\n\n\nB\n\n\nC"
+	expected := "A\n\nB\n\nC"
+	result := collapseBlankLines(input)
+	if result != expected {
+		t.Errorf("expected %q, got %q", expected, result)
 	}
 }
 
@@ -1903,13 +1835,6 @@ func TestSynthesize_LowComplexity_SkipsStep15(t *testing.T) {
 	// Step 1.5 section should be removed for low complexity
 	if strings.Contains(result, "Step 1.5") {
 		t.Error("complexity=low should not contain Step 1.5 spec-code scan section")
-	}
-	// The conditional markers should be fully removed
-	if strings.Contains(result, "<!-- IF NOT_LOW -->") {
-		t.Error("complexity=low should not contain IF NOT_LOW marker")
-	}
-	if strings.Contains(result, "<!-- END_IF -->") {
-		t.Error("complexity=low should not contain END_IF marker")
 	}
 	// Step 2 should still be present
 	if !strings.Contains(result, "Step 2") {

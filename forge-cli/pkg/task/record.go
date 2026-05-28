@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-//go:embed data/record-*.md
+//go:embed records/*.md
 var recordTemplateFS embed.FS
 
 // RecordTemplateData combines all fields needed by record templates.
@@ -245,7 +245,7 @@ func FormatCriteria(criteria []AcceptanceCriterion) string {
 
 // RenderCodingRecord renders the coding record template with the given data.
 func RenderCodingRecord(t *Task, rd *RecordData, startedTime string) string {
-	return renderRecordTemplate("data/record-coding.md", t, rd, startedTime)
+	return renderRecordTemplate("records/coding.md", t, rd, startedTime)
 }
 
 // RenderRecord dispatches to the appropriate category-specific renderer.
@@ -268,30 +268,32 @@ func RenderRecord(t *Task, rd *RecordData, startedTime string) string {
 
 // RenderDocRecord renders the doc record template with the given data.
 func RenderDocRecord(t *Task, rd *RecordData, startedTime string) string {
-	return renderRecordTemplate("data/record-doc.md", t, rd, startedTime)
+	return renderRecordTemplate("records/doc.md", t, rd, startedTime)
 }
 
 // RenderTestRecord renders the test record template with the given data.
 func RenderTestRecord(t *Task, rd *RecordData, startedTime string) string {
-	return renderRecordTemplate("data/record-test.md", t, rd, startedTime)
+	return renderRecordTemplate("records/test.md", t, rd, startedTime)
 }
 
 // RenderValidationRecord renders the validation record template with the given data.
 func RenderValidationRecord(t *Task, rd *RecordData, startedTime string) string {
-	return renderRecordTemplate("data/record-validation.md", t, rd, startedTime)
+	return renderRecordTemplate("records/validation.md", t, rd, startedTime)
 }
 
 // RenderGateRecord renders the gate record template with the given data.
 func RenderGateRecord(t *Task, rd *RecordData, startedTime string) string {
-	return renderRecordTemplate("data/record-gate.md", t, rd, startedTime)
+	return renderRecordTemplate("records/gate.md", t, rd, startedTime)
 }
 
 // RenderEvalRecord renders the eval record template with the given data.
 func RenderEvalRecord(t *Task, rd *RecordData, startedTime string) string {
-	return renderRecordTemplate("data/record-eval.md", t, rd, startedTime)
+	return renderRecordTemplate("records/eval.md", t, rd, startedTime)
 }
 
 // renderRecordTemplate renders a named record template with the given data.
+// Metadata frontmatter is stripped before parsing; the output frontmatter
+// (status, started, etc.) remains in the template body and is rendered by Go template.
 func renderRecordTemplate(templateName string, t *Task, rd *RecordData, startedTime string) string {
 	data, err := recordTemplateFS.ReadFile(templateName)
 	if err != nil {
@@ -299,7 +301,10 @@ func renderRecordTemplate(templateName string, t *Task, rd *RecordData, startedT
 		return fmt.Sprintf("ERROR: template %s not found: %v", templateName, err)
 	}
 
-	tmpl, err := template.New("record").Funcs(recordFuncMap).Parse(string(data))
+	// Strip metadata frontmatter before parsing (metadata is not part of rendered output)
+	content := stripAutogenMetadata(string(data))
+
+	tmpl, err := template.New("record").Funcs(recordFuncMap).Parse(content)
 	if err != nil {
 		return fmt.Sprintf("ERROR: parse template %s: %v", templateName, err)
 	}

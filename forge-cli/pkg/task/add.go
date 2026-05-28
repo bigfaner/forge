@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
 	indexPkg "forge-cli/pkg/index"
-	tmpl "forge-cli/pkg/template"
 )
 
 // AddTaskOpts holds options for adding a new task.
@@ -39,9 +37,6 @@ var terminalStatuses = map[string]bool{
 	"skipped":   true,
 	"rejected":  true,
 }
-
-// placeholderRe matches remaining {{KEY}} patterns after variable substitution.
-var placeholderRe = regexp.MustCompile(`\{\{(\w+)\}\}`)
 
 // ActiveFixExistsError is returned by AddTask when active fix tasks already exist
 // for the specified source task, making the new addition redundant.
@@ -245,11 +240,34 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 	var content string
 
 	if opts.Template != "" {
-		t, err := tmpl.Get(opts.Template)
-		if err != nil {
-			return err
+		// Resolve user-provided Vars into dedicated fields for text/template rendering.
+		// SOURCE_TASK_ID: prefer opts.SourceTaskID, fall back to Vars (quality-gate path).
+		sourceTaskID := opts.SourceTaskID
+		if sourceTaskID == "" {
+			sourceTaskID = opts.Vars["SOURCE_TASK_ID"]
 		}
-		content, err = ApplyVars(t, opts)
+		sourceFiles := opts.Vars["SOURCE_FILES"]
+		testScript := opts.Vars["TEST_SCRIPT"]
+		testResults := opts.Vars["TEST_RESULTS"]
+		scopeDescription := opts.Vars["SCOPE_DESCRIPTION"]
+
+		data := TemplateData{
+			ID:               opts.ID,
+			Title:            opts.Title,
+			Priority:         opts.Priority,
+			EstimatedTime:    opts.EstimatedTime,
+			Description:      opts.Description,
+			SourceTaskID:     sourceTaskID,
+			SurfaceKey:       opts.SurfaceKey,
+			SurfaceType:      opts.SurfaceType,
+			SourceFiles:      sourceFiles,
+			TestScript:       testScript,
+			TestResults:      testResults,
+			ScopeDescription: scopeDescription,
+		}
+
+		var err error
+		content, err = ExecuteTaskTemplate(opts.Template, data)
 		if err != nil {
 			return err
 		}
@@ -257,64 +275,7 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		content = buildTaskMarkdown(opts)
 	}
 
-	// Inject surface-key/surface-type into frontmatter when non-empty.
-	// Templates may have static empty values; overwrite with inferred values.
-	if opts.SurfaceKey != "" || opts.SurfaceType != "" {
-		content = injectSurfaceFrontmatter(content, opts.SurfaceKey, opts.SurfaceType)
-	}
-
 	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(content), 0644)
-}
-
-// injectSurfaceFrontmatter replaces static surface-key/surface-type values in
-// frontmatter with the provided values. If the fields are absent, they are
-// inserted before the closing "---".
-func injectSurfaceFrontmatter(content, surfaceKey, surfaceType string) string {
-	if surfaceKey != "" {
-		content = strings.Replace(content, `surface-key: ""`, fmt.Sprintf(`surface-key: %q`, surfaceKey), 1)
-	}
-	if surfaceType != "" {
-		content = strings.Replace(content, `surface-type: ""`, fmt.Sprintf(`surface-type: %q`, surfaceType), 1)
-	}
-	return content
-}
-
-// ApplyVars replaces {{KEY}} placeholders in tmpl with values from opts.Vars
-// and built-in variables (ID, TITLE, PRIORITY, DESCRIPTION).
-// User-provided variables take precedence over builtins.
-// Returns an error if any {{...}} placeholders remain unfilled after substitution.
-func ApplyVars(tmpl string, opts AddTaskOpts) (string, error) {
-	result := tmpl
-
-	// Build merged variable map: user vars override builtins
-	vars := map[string]string{
-		"ID":             opts.ID,
-		"TITLE":          opts.Title,
-		"PRIORITY":       opts.Priority,
-		"DESCRIPTION":    opts.Description,
-		"SOURCE_TASK_ID": opts.SourceTaskID,
-		"ESTIMATED_TIME": opts.EstimatedTime,
-	}
-	for key, val := range opts.Vars {
-		vars[key] = val
-	}
-
-	for key, val := range vars {
-		result = strings.ReplaceAll(result, "{{"+key+"}}", val)
-	}
-
-	// Check for remaining unfilled placeholders
-	var unfilled []string
-	for _, match := range placeholderRe.FindAllStringSubmatch(result, -1) {
-		if len(match) > 1 {
-			unfilled = append(unfilled, match[1])
-		}
-	}
-	if len(unfilled) > 0 {
-		return "", fmt.Errorf("unfilled template variables: %s", strings.Join(unfilled, ", "))
-	}
-
-	return result, nil
 }
 
 // buildTaskMarkdown generates task markdown from scratch (non-template mode).
