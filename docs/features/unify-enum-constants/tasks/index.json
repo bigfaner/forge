@@ -10,7 +10,7 @@
       "title": "Create pkg/types/ package with typed constants",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1.1-define-types.md",
       "record": "records/1.1-define-types.md",
       "surface-key": ".",
