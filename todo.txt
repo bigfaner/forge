@@ -248,7 +248,11 @@ internal/cmd/
 193、forge init 支持auto.eval.*。除了auto.eval.proposal.*之外，其它只支持full模式，不支持quick模式。done
 194、优化cli内置的Claude.md模板，要对齐forge cli现状。
 195、forge task list 按照依赖顺序从上到下依次排列。DAG图。done
-196、slim 任务prompt模板，去掉冗余的描述信息。doing
+196、slim 任务prompt模板，去掉冗余的描述信息。done
 197、引入模板引擎：条件化构造prompt或任务模板。done
   forge-cli\pkg\task\data\test-run.md 等任务模板，或提示词模板、skill、command、task-executor等对齐最新的概念，去掉scope等过时的概念。
 198、eval-proposal只执行一轮时，必须要执行自由专家评审。done
+199、run-tests等CLI自动生成的任务，要根据forge的规范调整任务模板，指定当前feature的journey、contract、test-scripts等路径。
+  如docs/features/<slug>/testing/journeys/<journey>/contracts
+200、梳理并重组forge cli的代码包，输出规范。
+201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。
