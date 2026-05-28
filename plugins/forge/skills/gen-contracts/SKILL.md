@@ -1,6 +1,6 @@
 ---
 name: gen-contracts
-description: Generate Contract specifications (six dimensions + semantic descriptors + multi-Outcome + Invariants) from Journey documents and code reconnaissance (Fact Table). Formalizes TUI async Cmd await semantics. Risk-driven Outcome density based on Journey risk_level, auto-derived boundary/error Outcomes from surface rules and Fact Table.
+description: Generate Contract specifications (six dimensions, semantic descriptors, risk-driven Outcomes) from Journey documents and code reconnaissance.
 ---
 
 # Gen Contracts

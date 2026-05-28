@@ -37,6 +37,26 @@ Then route to the appropriate extraction section:
 
 For **mobile** and **tui** platform-specific extraction details, follow the rules in `rules/platform-routing.md`.
 
+### Mobile Extraction Summary
+
+When `--platform mobile`, reuse the web extraction pipeline (Layers 1-5) with a mobile User-Agent and viewport context (viewport width: 375px), then add mobile-specific analysis:
+
+- **Responsive breakpoint analysis**: Scan CSS for `@media` queries targeting common mobile breakpoints: 320px (small phone / iPhone SE), 375px (standard phone), 414px (large phone), 768px (tablet). Record which breakpoints the target site uses.
+- **Touch target estimation**: Analyze interactive elements for minimum size compliance against the 44x44pt touch target guideline. Flag elements below minimum. Mark values as `(estimated)` if not directly specified.
+- **Safe area handling**: Check CSS for `env(safe-area-inset-*)` usage and HTML `<meta name="viewport">` for `viewport-fit=cover`. Note safe-area results.
+- **Responsive CSS limitation**: Mobile extraction depends on the target URL serving responsive CSS (responsive stylesheet with media queries). Sites without responsive stylesheets produce web-equivalent results with mobile sections marked `(estimated)`.
+
+### TUI Extraction Summary
+
+When `--platform tui`, input must be a **local file path** to a terminal screenshot (not a URL). AI vision analyzes the screenshot to reverse-engineer design tokens:
+
+- **ANSI color palette**: Identify xterm-256 color numbers used. Map observed colors to closest xterm-256 palette entries (0-255). All values `(estimated)`.
+- **Character set**: Determine whether the TUI uses box-drawing characters, block elements, pure ASCII, or a mix. Identify specific characters for borders, dividers, indicators, bar charts, and progress bars.
+- **Panel layout dimensions**: Estimate terminal rows and columns. Identify panel boundaries and their dimensions.
+- **Key bindings**: Extract key-to-action mappings from visible status bar or help panel.
+- **Built-in TUI themes**: Match against `modern-dark-tui` (dark background, 256-color, box-drawing + block elements) or `minimal-ascii-tui` (default background, 16-color, pure ASCII).
+- **Screenshot quality check**: Reject blurry, low-resolution, or unreadable screenshots.
+
 ## Step 1: Get URL
 
 Extract the target URL from command arguments or user message. If not provided, use `AskUserQuestion`:
