@@ -84,17 +84,17 @@ IF `rules/ui-placement.md` loaded, apply its UI Dependency Layer rules.
 
 1. **Independently verifiable standard**: A design element maps to one task if all its outcomes can be verified together in a single review pass. If outcomes require separate verification contexts (different files, different test suites, different reviewers), split into separate tasks.
 2. **Multi-verb detection**: Task descriptions with connectors linking independent actions (e.g., "rename + flatten + confirm", "extract + migrate + validate") should be split by functional boundary. Each verb phrase becomes a separate task if it targets a different concern.
-3. **AC ceiling**: If a single design element produces >6 Acceptance Criteria, the scope is too large — split further by functional boundary until each task has ≤6 AC.
+3. **Operational ceiling**: If a task requires modifying >8 files with the same pattern (e.g., applying identical edits across N templates/configs/modules), split by file group — group by complexity tier, feature area, or directory. Each sub-task targets ≤8 files.
 
-<HARD-RULE>
-Maximum 6 Acceptance Criteria per task. If a task has >6 AC, its scope is too large — split further by functional boundary.
-</HARD-RULE>
+<HARD-GATE>
+Maximum 6 Acceptance Criteria per task. If a task has >6 AC, its scope is too large — split further by functional boundary. No overall task count cap; task volume is bounded by design scope and the AC max rule.
+</HARD-GATE>
 
 **Complexity判定** (assigned at task generation time):
 
 Default heuristic based on static metrics:
 - **low**: AC ≤ 3 AND no Hard Rules AND Reference Files ≤ 1
-- **high**: AC > 6 OR has Hard Rules
+- **high**: AC ≥ 5 OR has Hard Rules
 - **medium**: everything else
 
 LLM judgment override: 如果静态指标与认知判断冲突（如 AC≤3 但涉及多文件架构变更），LLM 可根据认知判断覆盖默认 complexity 等级。Override 时须在 task Implementation Notes 中记录理由。
@@ -113,6 +113,10 @@ Read template before writing. Naming: business task `<seq>.<sub>-<slug>.md` ID `
 One task file per design element. Set `breaking: true` if modifying shared interfaces/models/API contracts. Additive Go interface changes are breaking.
 
 IF `rules/existing-code-split.md` loaded, apply split for shared-code modifications. IF `rules/db-schema.md` loaded, apply schema task rules. IF `rules/ui-placement.md` loaded, apply UI Reference File Requirements.
+
+### File Scope Boundary
+
+When a task involves batch-editing multiple files, enumerate exact file names in Implementation Notes and add a Hard Rule: `仅修改以下文件：<file list>`. Never use vague terms like "all files" or "全部". This prevents directory-driven scope creep where an executor `ls` a directory, reads all files, and edits beyond its task scope.
 
 ### Breaking Task Test Impact Assessment
 
@@ -163,7 +167,7 @@ For each non-UI business task, populate `## Reference Files` with inline precise
 
 **Note**: breakdown-tasks reads from tech-design (not proposal), so Reference Files inline content will differ from quick-tasks in practice, but the generation rule format is identical.
 
-### Surface-Key/Type Assignment
+### Surface-Key/Type Inference
 Surface-key/type resolution uses a two-layer strategy:
 
 1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set both fields on every task.
@@ -177,7 +181,7 @@ If `forge surfaces --json` fails or returns no surfaces configured, set both fie
 ### Priority Assignment
 
 P0 | P1 | P2. Classified by structural properties, not subjective importance:
-- P0: blocks other tasks in the dependency graph, or fixes a broken pipeline
+- P0: implements the core mechanism (feature won't work without it) OR blocks other tasks in the dependency graph
 - P1: directly maps to a PRD acceptance criterion or core user flow
 - P2: polish, optimization, or non-essential enhancement not traceable to a PRD AC
 
@@ -189,11 +193,16 @@ P0 | P1 | P2. Classified by structural properties, not subjective importance:
 | `coding.enhancement` | Task improves existing behavior without adding new capabilities |
 | `coding.cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
 | `coding.refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
+| `coding.fix` | Auto-generated for test failures via `forge task add`; do not assign manually |
 | `doc` | Tasks producing only markdown, specs, or templates (non-compilable, non-runnable) |
 | `doc.consolidate` | User manually creates a consolidation task for legacy projects — merging scattered spec files into `docs/business-rules/` or `docs/conventions/` |
 | `doc.drift` | User manually creates a drift audit task — detecting inconsistencies between existing specs and current code |
 
 Fallback: `coding.feature`. **Classify by output artifact, not intent.** Quality-gate: Code types → run; Doc types (`doc`, `doc.consolidate`, `doc.drift`) → skip.
+
+<HARD-RULE>
+`.md` files are non-compilable regardless of directory location — even under `pkg/`, `src/`, `internal/`, or any code-style path. If a task's output is only `.md` files (e.g., prompt templates, configuration docs, skill definitions), the type **must** be `doc`, not `coding.*`. Directory path does NOT determine compilability; file extension does.
+</HARD-RULE>
 
 ### Intent Propagation
 If `proposal.md` has `intent`, use as default type. Individual task `type` overrides. Missing intent → per-task Type Assignment. 1:1 mapping.
@@ -245,9 +254,9 @@ Other uncommitted changes remain unstaged.
 - [ ] DAG (no cycles)
 - [ ] Every gate has corresponding gate task
 - [ ] `breaking: true` on shared-contract modifications
-- [ ] Shared-code splits applied (>5 files or cross-layer)
+- [ ] Shared-code splits applied (per `rules/existing-code-split.md`)
 - [ ] UI tasks reference prototypes (if applicable)
 - [ ] User Stories populated
-- [ ] Test tasks match interface config
+- [ ] Test tasks match surfaces config (`.forge/config.yaml`)
 - [ ] `manifest.md` updated with traceability + `status: tasks`
 - [ ] Planning artifacts committed (task .md files, index.json, manifest.md)

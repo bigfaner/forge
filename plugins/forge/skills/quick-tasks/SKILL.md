@@ -64,10 +64,6 @@ Determine the feature slug from the proposal directory name. Read `docs/proposal
 - **Success Criteria** → acceptance criteria for each task
 - **Key Risks** → implementation notes and risk mitigations
 
-<HARD-RULE>
-Enforce maximum 6 AC per task. If a task naturally has >6 AC, split by functional boundary. No overall task count cap.
-</HARD-RULE>
-
 ## Step 2: Derive Tasks
 
 For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria from Success Criteria, classify type (see Step 3 Template Selection), resolve surface-key/surface-type via Surface-Key/Type Inference, fill Reference Files with section-level references from proposal context.
@@ -78,13 +74,13 @@ For each In Scope bullet: estimate effort (1-2h), derive acceptance criteria fro
 
 1. **Independently verifiable standard**: A bullet maps to one task if all its outcomes can be verified together in a single review pass. If outcomes require separate verification contexts (different files, different test suites, different reviewers), split into separate tasks.
 2. **Multi-verb detection**: Task descriptions with connectors linking independent actions (e.g., "rename + flatten + confirm", "extract + migrate + validate") should be split by functional boundary. Each verb phrase becomes a separate task if it targets a different concern.
-3. **AC ceiling**: If a single bullet produces >6 Acceptance Criteria, the scope is too large — split further by functional boundary until each task has ≤6 AC.
+3. **Operational ceiling**: If a task requires modifying >8 files with the same pattern (e.g., applying identical edits across N templates/configs/modules), split by file group — group by complexity tier, feature area, or directory. Each sub-task targets ≤8 files. Detect when an In Scope bullet explicitly mentions "N files/templates/modules" and N > 8.
 
 **Complexity判定** (assigned at task generation time):
 
 Default heuristic based on static metrics:
 - **low**: AC ≤ 3 AND no Hard Rules AND Reference Files ≤ 1
-- **high**: AC > 6 OR has Hard Rules
+- **high**: AC ≥ 5 OR has Hard Rules
 - **medium**: everything else
 
 LLM judgment override: 如果静态指标与认知判断冲突（如 AC≤3 但涉及多文件架构变更），LLM 可根据认知判断覆盖默认 complexity 等级。Override 时须在 task Implementation Notes 中记录理由。
@@ -126,8 +122,8 @@ If `forge surfaces --json` fails or returns no surfaces configured, set both fie
 Replace the default Reference Files section content (`- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated inline references. This is a content replacement instruction — there is no `{{REFERENCE_FILES}}` token in the template; the agent edits the `## Reference Files` section directly.
 
 **Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
-- P0: implements the core solution mechanism described in the proposal — without this, the feature doesn't work
-- P1: implements supporting scope items or success criteria that complete the feature
+- P0: implements the core mechanism (feature won't work without it) OR blocks other tasks in the dependency graph
+- P1: directly maps to a core scope item or success criterion from the proposal
 - P2: polish, edge cases, optional enhancements from the proposal's "Considerations" or "Future Work"
 
 ## Step 3: Create Task Files
@@ -159,11 +155,19 @@ Both `templates/task.md` and `templates/task-doc.md` use the following placehold
 <HARD-RULE>
 Naming & ID conventions:
 - Business task: file `<seq>-<slug>.md`, ID `<seq>` (e.g., file `1-add-command.md`, ID `1`)
-- Quick test: file `quick-<name>.md`, ID `T-quick-<N>`
+- Auto-generated tasks use semantic IDs: `T-test-*`, `T-quick-doc-drift`, `T-validate-*`, `T-clean-*` (created by `forge task index`; do NOT create manually)
 - No phase prefixes, no sub-IDs, no summary/gate tasks
 </HARD-RULE>
 
 For each task, fill from proposal context: Description (Problem + Solution), Acceptance Criteria (Success Criteria), Implementation Notes (Key Risks). Fill Hard Rules only for critical constraints (specific recipes, hidden env deps, scope restrictions). Set `breaking: true` for tasks modifying shared interfaces/models/APIs.
+
+### File Scope Boundary
+
+When a task's In Scope involves multiple files (especially batch-edit patterns), enforce write-scope boundaries to prevent directory-driven scope creep:
+
+1. **Enumerate files explicitly**: List exact file names in Implementation Notes (e.g., "coding-feature.md, coding-enhancement.md, gate.md"). Never use vague terms like "all templates", "全部文件", "every file in the directory".
+2. **Add Hard Rules for file boundaries**: When the operational ceiling rule triggers a split, add a Hard Rule to each sub-task: `仅修改以下文件：<enumerated file list>`.
+3. **Rationale**: Inline Reference Files control read-scope (what the executor reads), but do not control write-scope (what the executor edits). An executor that `ls` a directory and sees all files may edit files beyond its task scope. Explicit enumeration is the only reliable write-scope boundary.
 
 ### Breaking Task Test Impact Assessment
 
@@ -189,15 +193,12 @@ Every task receives a `type` field in its frontmatter. The type controls quality
 | `coding.enhancement` | Task improves existing behavior without adding new capabilities |
 | `coding.cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
 | `coding.refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
+| `coding.fix` | Auto-generated for test failures via `forge task add`; do not assign manually |
 | `doc` | Tasks producing only markdown, specs, or templates (non-compilable, non-runnable) |
 | `doc.consolidate` | User manually creates a consolidation task for legacy projects — merging scattered spec files into `docs/business-rules/` or `docs/conventions/` |
 | `doc.drift` | User manually creates a drift audit task — detecting inconsistencies between existing specs and current code |
 
 Fallback: `coding.feature`. **Classify by output artifact, not intent.**
-
-Test pipeline tasks are auto-generated by `forge task index`.
-
-**Rule: classify by output artifact, not by intent.** The type determines quality-gate behavior. Quality-gate (compile, fmt, lint, test) only makes sense for compilable or runnable output. Therefore, the decisive factor is *what the task produces*, not *what the task intends to accomplish*.
 
 | Category | Types | Quality-gate |
 |----------|-------|-------------|
@@ -207,8 +208,12 @@ Test pipeline tasks are auto-generated by `forge task index`.
 How to apply:
 
 1. Look at the **affected files** listed in the task definition.
-2. If all affected files are non-compilable, non-runnable artifacts (`.md`, `.yaml`, `.json` under `skills/`, `docs/`, etc.), the type **must** be `doc`.
+2. If all affected files are non-compilable, non-runnable artifacts (`.md`, `.yaml`, `.json` — regardless of directory, even under `pkg/`, `src/`, `internal/`), the type **must** be `doc`.
 3. If any affected file is compilable or runnable source code, use the appropriate Code type from the table above.
+
+<HARD-RULE>
+`.md` files are non-compilable regardless of directory location — even under `pkg/`, `src/`, `internal/`, or any code-style path. If a task's output is only `.md` files (e.g., prompt templates, configuration docs, skill definitions), the type **must** be `doc`, not `coding.*`. Directory path does NOT determine compilability; file extension does.
+</HARD-RULE>
 
 ### Intent Propagation
 
@@ -237,7 +242,13 @@ forge task index --feature <slug>
 
 This auto-generates test task `.md` files (based on `surfaces` in `.forge/config.yaml`) and `index.json` (runs validation automatically). Existing files are preserved on re-run. Quick mode uses simple integer IDs — no stage-gate files are generated.
 
-## Step 6: Create Manifest
+## Step 6: Validate
+
+```bash
+forge task validate-index docs/features/<slug>/tasks/index.json
+```
+
+## Step 7: Create Manifest
 
 Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug>/manifest.md`. Replace placeholders:
 
@@ -247,15 +258,9 @@ Read `templates/manifest-quick.md` for the format. Write to `docs/features/<slug
 | `{{DATE}}` | Today's date in `YYYY-MM-DD` format |
 | `{{TASK_ROWS}}` | One row per task: `\| <ID> \| <title> \| pending \| <ID>-<slug>.md \|` |
 
-## Step 7: Validate
-
-```bash
-forge task validate-index docs/features/<slug>/tasks/index.json
-```
-
 ## Step 8: Commit Planning Artifacts
 
-Only execute if Step 7 validation passed. If validation failed, fix issues first.
+Only execute if Step 6 validation passed. If validation failed, fix issues first.
 
 <HARD-RULE>
 Stage only planning artifact paths — never use `git add -A` or `git add .`.
