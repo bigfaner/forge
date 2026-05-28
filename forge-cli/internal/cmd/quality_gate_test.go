@@ -12,6 +12,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 )
 
 func TestCheckAllCompleted(t *testing.T) {
@@ -2038,7 +2039,7 @@ func TestNeedsFullLifecycle(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.surfaceType, func(t *testing.T) {
-			got := needsFullLifecycle(tc.surfaceType)
+			got := needsFullLifecycle(types.SurfaceType(tc.surfaceType))
 			if got != tc.want {
 				t.Errorf("needsFullLifecycle(%q) = %v, want %v", tc.surfaceType, got, tc.want)
 			}

@@ -15,6 +15,7 @@ import (
 	"forge-cli/pkg/git"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/proposal"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -195,7 +196,7 @@ func listUnfinishedItems(projectRoot string) []selectableItem {
 	proposals, err := proposal.Discover(projectRoot)
 	if err == nil {
 		for _, p := range proposals {
-			if strings.EqualFold(p.Status, "completed") {
+			if strings.EqualFold(p.Status, string(types.StatusCompleted)) {
 				continue
 			}
 			status := p.Status
@@ -228,7 +229,7 @@ func listUnfinishedItems(projectRoot string) []selectableItem {
 			manifestPath := filepath.Join(featuresDir, slug, feature.ManifestFileName)
 			status := readManifestStatus(manifestPath)
 
-			if strings.EqualFold(status, "completed") {
+			if strings.EqualFold(status, string(types.StatusCompleted)) {
 				continue
 			}
 			if status == "" {

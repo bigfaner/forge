@@ -123,7 +123,7 @@
         "2.gate",
         "3.1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4.2-migrate-cmd-other.md",
       "record": "records/4.2-migrate-cmd-other.md",
       "surface-key": ".",
