@@ -97,6 +97,22 @@ Developer migrates all Surface Type string literals (~97 occurrences across 6 fi
 
 **Expected Result**: Config serialization/deserialization produces identical output. `type SurfaceType string` is transparent in JSON/YAML.
 
+### Step 5: CLI Error — Surface Not Found
+
+**Precondition**: CLI command references a surface type that does not match any typed constant (e.g., `forge surfaces ./project/` returns no detectable surface)
+
+**User Action**: Developer runs `forge surfaces ./unknown-project/`
+
+**Expected Result**: Exit code 1. stderr contains error message indicating no surface detected, with configuration guidance. No crash.
+
+### Step 6: CLI Error — Duplicate Surface Type in Config
+
+**Precondition**: `.forge/config.yaml` defines a surface key that resolves to a type already configured
+
+**User Action**: Developer runs `forge surfaces detect`
+
+**Expected Result**: The already-existing surface type is reported. No duplicate entries created. If validation enforces uniqueness, error is reported on stderr.
+
 ## Journey Invariants
 
 - `pkg/types/` must never import any forge-cli internal package — it is a leaf package

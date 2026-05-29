@@ -21,33 +21,33 @@ generated: "2026-05-29"
 
 ## Overview
 
-Developer consolidates hardcoded validation maps in `validate_index.go` to use `types.AllStatuses()` and `types.AllPriorities()` helper functions, ensuring validation logic stays synchronized with constant definitions (Story 4).
+Developer verifies that validation maps in `validate_index.go` correctly use `types.AllStatuses()` and `types.AllPriorities()` helper functions, ensuring validation logic stays synchronized with constant definitions (Story 4). This journey validates already-completed migration work.
 
 ## Setup
 
 - `pkg/types/` package exists with Status, SurfaceType, Priority types and helper functions (`AllStatuses()`, `AllPriorities()`)
-- `internal/cmd/validate_index.go` contains hardcoded `validStatus` and `validPriority` maps
-- All Status and Priority magic values already migrated to typed constants (prerequisite: journeys 1 and status-migration)
+- `internal/cmd/task/validate_index.go` uses `buildValidStatusMap()` and `buildValidPriorityMap()` which call `types.AllStatuses()`/`types.AllPriorities()`
+- All Status and Priority magic values already migrated to typed constants (prerequisite: status-migration and surface-type-migration journeys)
 
 ## Happy Path
 
-### Step 1: Identify Hardcoded Validation Maps
+### Step 1: Verify Validation Maps Use Typed Helper Functions
 
-**User Action**: Developer locates `validStatus map[string]bool{"pending": true, "in-progress": true, ...}` and similar `validPriority` map in `validate_index.go`
+**User Action**: Developer inspects `internal/cmd/task/validate_index.go` to confirm `buildValidStatusMap()` calls `types.AllStatuses()` and `buildValidPriorityMap()` calls `types.AllPriorities()`
 
-**Expected Result**: All hardcoded validation maps identified. Count of hardcoded entries matches expected enum count (7 Status, 3 Priority).
+**Expected Result**: No hardcoded `validStatus`/`validPriority` maps exist. Validation maps are built from `types.AllStatuses()`/`types.AllPriorities()`. Adding a new enum constant automatically includes it in validation.
 
-### Step 2: Replace Status Validation with AllStatuses()
+### Step 2: Verify AllStatuses() Coverage
 
-**User Action**: Developer replaces `validStatus` hardcoded map with a map built from `types.AllStatuses()`, e.g., `buildValidMap(types.AllStatuses())`
+**User Action**: Developer runs `go test ./pkg/types/... -run TestAllStatuses` to confirm `AllStatuses()` returns all 7 status constants
 
-**Expected Result**: Validation logic uses `types.AllStatuses()` as single source of truth. Any future Status constant added to `pkg/types/` is automatically included in validation.
+**Expected Result**: Test passes. `AllStatuses()` returns exactly `[StatusPending, StatusInProgress, StatusCompleted, StatusBlocked, StatusSuspended, StatusSkipped, StatusRejected]`.
 
-### Step 3: Replace Priority Validation with AllPriorities()
+### Step 3: Verify AllPriorities() Coverage
 
-**User Action**: Developer replaces `validPriority` hardcoded map with a map built from `types.AllPriorities()`
+**User Action**: Developer runs `go test ./pkg/types/... -run TestAllPriorities` to confirm `AllPriorities()` returns all 3 priority constants
 
-**Expected Result**: Validation logic uses `types.AllPriorities()` as single source of truth. Same auto-sync benefit as Status.
+**Expected Result**: Test passes. `AllPriorities()` returns exactly `[PriorityP0, PriorityP1, PriorityP2]`.
 
 ### Step 4: Verify Validation Behavior Unchanged
 
@@ -80,6 +80,22 @@ Developer consolidates hardcoded validation maps in `validate_index.go` to use `
 **User Action**: Developer runs `forge task validate` on the config
 
 **Expected Result**: Validation rejects the incorrect casing. Typed constants enforce exact string matching. Error message clearly indicates the invalid value.
+
+### Step 5: CLI Error — Task Status Not Found
+
+**Precondition**: `forge task validate` is run on an index with a task whose status is not in `AllStatuses()` output (e.g., a typo like `"pendng"`)
+
+**User Action**: Developer runs `forge task validate` on the malformed index
+
+**Expected Result**: Exit code non-zero. stderr lists the invalid status value with guidance on valid values. No crash.
+
+### Step 6: CLI Error — Priority Already Exists
+
+**Precondition**: Task index contains two tasks with the same ID but different priorities (conflicting `validPriority` lookup)
+
+**User Action**: Developer runs `forge task validate` on the conflicting index
+
+**Expected Result**: Validation reports the duplicate/conflicting entry. Error message identifies the task ID and both priority values.
 
 ## Journey Invariants
 

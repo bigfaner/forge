@@ -33,7 +33,7 @@ Developer migrates all Status string literals across the codebase to typed const
 
 ### Step 1: Define Status Type and Constants
 
-**User Action**: Developer creates `pkg/types/status.go` with `type Status string` and 7 constants (`StatusPending`, `StatusInProgress`, `StatusCompleted`, `StatusBlocked`, `StatusCancelled`, `StatusFailed`, `StatusReview`)
+**User Action**: Developer creates `pkg/types/status.go` with `type Status string` and 7 constants (`StatusPending`, `StatusInProgress`, `StatusCompleted`, `StatusBlocked`, `StatusSuspended`, `StatusSkipped`, `StatusRejected`)
 
 **Expected Result**: File compiles, `go build ./pkg/types/` succeeds. Constants are of type `Status` (not untyped string).
 
@@ -81,7 +81,7 @@ Developer migrates all Status string literals across the codebase to typed const
 
 ### Step 3b: Incorrect State Transition After Migration
 
-**Precondition**: A string literal was incorrectly replaced with the wrong typed constant (e.g., `"completed"` replaced with `types.StatusFailed`)
+**Precondition**: A string literal was incorrectly replaced with the wrong typed constant (e.g., `"completed"` replaced with `types.StatusRejected`)
 
 **User Action**: Developer runs `go test ./pkg/task/...`
 
@@ -111,10 +111,27 @@ Developer migrates all Status string literals across the codebase to typed const
 
 **Expected Result**: Compiler allows the comparison (untyped string constant is assignable to `types.Status`), but linter/review should flag it. The typed constant form `task.Status == types.StatusPending` is preferred.
 
+### Step 6: CLI Error — Status Value Not Found
+
+**Precondition**: CLI command references a status value that does not match any typed constant (e.g., `forge task status 99` when task 99 does not exist)
+
+**User Action**: Developer runs the CLI command with an unrecognized status value
+
+**Expected Result**: Exit code non-zero. stderr contains descriptive error message listing valid status values. No crash or panic.
+
+### Step 7: CLI Error — Duplicate Status Constant
+
+**Precondition**: Developer accidentally defines two Status constants with the same string value in `pkg/types/status.go`
+
+**User Action**: Developer runs `go build ./pkg/types/`
+
+**Expected Result**: Compilation succeeds (Go allows duplicate constant values), but `AllStatuses()` returns duplicates. Unit test for `AllStatuses()` uniqueness fails.
+
 ## Journey Invariants
 
 - `pkg/types/` must never import any forge-cli internal package — it is a leaf package
-- All typed constant values must exactly match the original string literals (zero behavior change)
+- All typed constant values must exactly match the original string literals (`"pending"`, `"in_progress"`, `"completed"`, `"blocked"`, `"suspended"`, `"skipped"`, `"rejected"`) — zero behavior change
 - Every Status field assignment in production code must use `types.StatusXxx` constants, never raw string literals
 - `go build ./...` must pass after each migration step (incremental correctness)
 - JSON serialization/deserialization of Status fields must produce identical output before and after migration
+- `IsTerminalStatus` must include `completed`, `rejected`, and `skipped` as terminal states (per BIZ-task-lifecycle-001)

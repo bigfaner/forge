@@ -224,11 +224,12 @@
       "dependencies": [
         "T-test-gen-journeys"
       ],
-      "status": "pending",
+      "status": "suspended",
       "file": "eval-journey.md",
       "record": "records/eval-journey.md",
       "mainSession": true,
-      "type": "eval.journey"
+      "type": "eval.journey",
+      "blockedReason": "Journey eval failed (585/1000, target 850). Paused for user decision: skip and proceed with test pipeline, or accept current journey quality."
     },
     "fix-1": {
       "id": "fix-1",

@@ -33,7 +33,7 @@ Maintainer verifies that the complete enum constants migration is correct: zero 
 
 ### Step 1: Verify Zero Magic Values in Production Code
 
-**User Action**: Maintainer runs `grep -r '"pending"\|"in-progress"\|"completed"\|"blocked"\|"cancelled"\|"failed"\|"review"' --include='*.go'` excluding test files
+**User Action**: Maintainer runs `grep -r '"pending"\|"in_progress"\|"completed"\|"blocked"\|"suspended"\|"skipped"\|"rejected"' --include='*.go'` excluding test files
 
 **Expected Result**: Zero matches in production code. All Status values are typed constants. Exit code 1 (grep found nothing).
 
@@ -81,11 +81,27 @@ Maintainer verifies that the complete enum constants migration is correct: zero 
 
 ### Step 4b: Test Failure Due to Type Assertion
 
-**Precondition**: A test uses `assert.Equal(t, "pending", task.Status)` with untyped string
+**Precondition**: A test uses `assert.Equal(t, "pending", task.Status)` with untyped string, where `task.Status` is of type `types.Status`
 
 **User Action**: Maintainer runs the failing test
 
-**Expected Result**: Test fails because `types.StatusPending` is not equal to untyped `"pending"` in strict equality. Test must be updated to use typed constant or the comparison must account for the string underlying type.
+**Expected Result**: Test passes because `types.Status` has underlying type `string` and `reflect.DeepEqual` compares underlying values. However, the test should be updated to use `types.StatusPending` for type safety, even though the string comparison succeeds.
+
+### Step 5b: CLI Command Returns Unexpected Status
+
+**Precondition**: A CLI command (e.g., `forge task list --status unknown`) receives a status filter that does not match any defined constant
+
+**User Action**: Maintainer runs the CLI command with an invalid status filter
+
+**Expected Result**: Exit code non-zero. stderr reports the invalid status value. No unhandled panic.
+
+### Step 5c: CLI Output Already Contains Typed Value
+
+**Precondition**: `forge task status <id>` output shows a status value that was already migrated
+
+**User Action**: Maintainer runs `forge task status 1.1`
+
+**Expected Result**: Output shows the status value (e.g., `"completed"`). Value is identical to pre-migration output. The typed constant is transparent in CLI output.
 
 ## Journey Invariants
 
