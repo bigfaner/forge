@@ -1,7 +1,7 @@
 ---
 feature: "intent-driven-pipeline-branching"
 created: "2026-05-29"
-status: tasks
+status: completed
 mode: quick
 ---
 
