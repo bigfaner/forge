@@ -22,6 +22,12 @@ Mode: {{.Mode}}{{end}}
 
 ## Discovery Strategy
 
+Discover the feature's testing directory layout before starting:
+```bash
+ls docs/features/{{.FeatureSlug}}/testing/                                 # journeys
+ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # contracts
+```
+
 Invoke the `/gen-journeys` skill to extract Journey narratives from specification documents.
 
 ### Input Source by Mode

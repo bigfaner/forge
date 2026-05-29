@@ -14,6 +14,14 @@ context:
 ---
 Execute staged test scripts for the {{.FeatureSlug}} feature.
 
+## Feature Paths
+
+Discover the feature's testing directory layout before starting:
+```bash
+ls docs/features/{{.FeatureSlug}}/testing/                                 # journeys
+ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # contracts
+```
+
 ## Feature Context
 {{if .SurfaceKey}}- Scope: {{.SurfaceKey}}{{end}}
 

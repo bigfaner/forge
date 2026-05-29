@@ -22,6 +22,12 @@ Mode: {{.Mode}}{{end}}
 
 ## Discovery Strategy
 
+Discover the feature's testing directory layout before starting:
+```bash
+ls docs/features/{{.FeatureSlug}}/testing/                                 # journeys
+ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # contracts
+```
+
 Invoke the `/gen-contracts` skill to generate Contract specifications from Journey documents and code reconnaissance.
 
 ### Eval Gate by Mode
