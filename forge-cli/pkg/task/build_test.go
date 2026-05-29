@@ -2022,7 +2022,7 @@ func TestBuildIndex_ValidationTasksGenerated(t *testing.T) {
 
 	// Verify validation tasks can be generated via GenerateTestTasks
 	// Use "tui" interface so validate-ux is generated (UI type required for UX validation)
-	tasks := GenerateTestTasks("breakdown", scalarSurface("tui"), nil, auto)
+	tasks := GenerateTestTasks("breakdown", scalarSurface("tui"), nil, auto, "")
 	var foundValidateCode, foundValidateUx bool
 	for _, task := range tasks {
 		if task.ID == "T-validate-code" {
@@ -2120,7 +2120,7 @@ func TestBuildIndex_QuickValidationTasks(t *testing.T) {
 
 	// Verify validation tasks can be generated via GenerateTestTasks
 	// Use "tui" interface so validate-ux is generated (UI type required for UX validation)
-	tasks := GenerateTestTasks("quick", scalarSurface("tui"), nil, auto)
+	tasks := GenerateTestTasks("quick", scalarSurface("tui"), nil, auto, "")
 	var foundValidateCode, foundValidateUx bool
 	for _, task := range tasks {
 		if task.ID == "T-validate-code" {

@@ -64,7 +64,7 @@
       "dependencies": [
         "4"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-autogen-go-intent-generation.md",
       "record": "records/5-autogen-go-intent-generation.md",
       "breaking": true,

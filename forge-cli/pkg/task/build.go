@@ -364,7 +364,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			return nil, fmt.Errorf("no surfaces configured in .forge/config.yaml. Run `forge init` to configure surfaces")
 		}
 		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(surfaces, executionOrder)
-		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig)
+		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig, intent)
 		for _, td := range testTasks {
 			ttKey := td.Key
 			existingKeys[ttKey] = true
@@ -397,7 +397,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// Resolve first-test-task dependency and inject T-review-doc in a single
 		// atomic operation. This eliminates the ordering coupling that existed
 		// when these were separate steps.
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, mode, needsEval)
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, mode, needsEval, intent)
 
 		// Write the modified first-test-task deps back to the index.
 		firstTestIdx := findFirstTestTaskIdx(testTasks)
@@ -488,14 +488,14 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode, surfaces, and execution order.
+// GenerateTestTasks returns test task definitions for the given mode, surfaces, execution order, and intent.
 // Exported for use by caller (task 1.4).
-func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(surfaces, executionOrder, auto)
+		return GetBreakdownTestTasks(surfaces, executionOrder, auto, intent)
 	case "quick":
-		return GetQuickTestTasks(surfaces, executionOrder, auto)
+		return GetQuickTestTasks(surfaces, executionOrder, auto, intent)
 	default:
 		return nil
 	}
@@ -585,14 +585,14 @@ func findFirstTestTaskIdx(tasks []AutoGenTaskDef) int {
 // When needsEval is true, T-review-doc is prepended to the first test task's deps
 // (it depends on the last business task; the original dep flows through T-review-doc).
 // When needsEval is false, this behaves identically to ResolveFirstTestDep alone.
-func resolveTestDepsAndInjectReviewDoc(testTasks []AutoGenTaskDef, index *TaskIndex, mode string, needsEval bool) {
+func resolveTestDepsAndInjectReviewDoc(testTasks []AutoGenTaskDef, index *TaskIndex, mode string, needsEval bool, intent string) {
 	if len(testTasks) == 0 {
 		return
 	}
 
 	// Resolve base dependency (same logic as ResolveFirstTestDep)
 	existingTasks := index.TasksMap()
-	ResolveFirstTestDep(testTasks, existingTasks, mode)
+	ResolveFirstTestDep(testTasks, existingTasks, mode, intent)
 
 	if !needsEval {
 		return
