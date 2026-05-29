@@ -803,25 +803,41 @@ func conciseError(output string) string {
 	return just.ExtractConciseError(output, 10)
 }
 
-// addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
-// Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
-// Returns (taskID, nil) on success.
-// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
-func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string) (string, error) {
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+// fixTaskOverride holds optional overrides for createFixTask.
+// When a field is set, it replaces the default value derived from step/output.
+// This allows callers (e.g. addRegressionFixTasks) to customize the task
+// while reusing the shared creation logic.
+type fixTaskOverride struct {
+	// Title overrides the default title. When empty, the default
+	// "fix <step>: just <step> failure in quality gate" is used.
+	Title string
+	// Description overrides the default description. When empty, the default
+	// description with error doc path and concise error is used.
+	Description string
+	// ExtraVars are merged into the default Vars map, overwriting keys
+	// with the same name (e.g. SOURCE_FILES, TEST_SCRIPT).
+	ExtraVars map[string]string
+}
 
-	// Check cap before creating a new fix-task.
-	index, err := task.LoadIndex(indexPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
-		// Proceed without cap check if index can't be loaded.
-	} else {
-		active := countFixTasks(index, step)
-		if active >= maxFixTasksPerStep {
-			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
-			return "", ErrMaxFixTasks
-		}
+// createFixTask is the shared helper for creating a single fix task.
+// It encapsulates: surface inference, opts construction, AddTask,
+// CreateTaskMarkdown, and EnsureForgeState.
+//
+// The caller provides the core parameters (projectRoot, featureSlug, step,
+// sourceFiles, output, errorDocPath) and optional overrides via fixTaskOverride.
+// When no overrides are provided, defaults are derived from step and output
+// (matching the original addSingleFixTask behavior).
+//
+// Returns (taskID, nil) on success.
+// Returns ("", error) on failure: template not found, task add failure,
+// or markdown creation failure.
+func createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string, overrides ...fixTaskOverride) (string, error) {
+	var ov fixTaskOverride
+	if len(overrides) > 0 {
+		ov = overrides[0]
 	}
+
+	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
 	// Surface inference with soft-failure policy.
 	// When surfaces are not configured or no match is found, fix-task creation
@@ -833,13 +849,22 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 
 	testScript := "just " + step
 
-	title := fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
-	description := fmt.Sprintf(
-		"Quality gate step `%s` failed during quality-gate hook.\n\n"+
-			"Error output saved to: `%s`\n\n"+
-			"Concise error:\n```\n%s\n```",
-		testScript, errorDocPath, conciseError(output),
-	)
+	// Derive title: use override if provided, otherwise default.
+	title := ov.Title
+	if title == "" {
+		title = fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
+	}
+
+	// Derive description: use override if provided, otherwise default.
+	description := ov.Description
+	if description == "" {
+		description = fmt.Sprintf(
+			"Quality gate step `%s` failed during quality-gate hook.\n\n"+
+				"Error output saved to: `%s`\n\n"+
+				"Concise error:\n```\n%s\n```",
+			testScript, errorDocPath, conciseError(output),
+		)
+	}
 
 	// Build opts — Priority/Breaking/EstimatedTime sourced from template defaults
 	// when available (dual-source truth: opts is authoritative, template provides defaults).
@@ -857,6 +882,17 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		estimatedTime = defs.EstimatedTime
 	}
 
+	// Build default vars, then merge extra vars from overrides.
+	vars := map[string]string{
+		"SOURCE_FILES":   sourceFiles,
+		"TEST_SCRIPT":    testScript,
+		"TEST_RESULTS":   errorDocPath,
+		"SOURCE_TASK_ID": "N/A (project-wide gate)",
+	}
+	for k, v := range ov.ExtraVars {
+		vars[k] = v
+	}
+
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      string(types.PriorityP0),
@@ -867,12 +903,7 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		Type:          taskType,
 		SurfaceKey:    surfaceKey,
 		SurfaceType:   surfaceType,
-		Vars: map[string]string{
-			"SOURCE_FILES":   sourceFiles,
-			"TEST_SCRIPT":    testScript,
-			"TEST_RESULTS":   errorDocPath,
-			"SOURCE_TASK_ID": "N/A (project-wide gate)",
-		},
+		Vars:          vars,
 	}
 
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
@@ -901,4 +932,27 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 
 	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking=%v)\n", id, breaking)
 	return id, nil
+}
+
+// addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
+// It performs a cap check (countFixTasks + maxFixTasksPerStep) and delegates to createFixTask.
+// Returns (taskID, nil) on success.
+// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
+func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string) (string, error) {
+	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+
+	// Check cap before creating a new fix-task.
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
+		// Proceed without cap check if index can't be loaded.
+	} else {
+		active := countFixTasks(index, step)
+		if active >= maxFixTasksPerStep {
+			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
+			return "", ErrMaxFixTasks
+		}
+	}
+
+	return createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath)
 }

@@ -2550,3 +2550,228 @@ func TestAddFixTask_DescriptionFallbackOnCompile(t *testing.T) {
 		t.Errorf("task description should contain compile error via fallback, got:\n%s", content)
 	}
 }
+
+// --- createFixTask shared helper tests ---
+
+func TestCreateFixTask_DefaultFields(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	output := "handler.go:10: undefined: foo"
+	taskID, err := createFixTask(projectRoot, featureSlug, "compile", "handler.go", output, "tests/results/out.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Verify task fields in index
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	addedTask, exists := updatedIndex.ByID(taskID)
+	if !exists {
+		t.Fatalf("task %s not found in index", taskID)
+	}
+	if addedTask.Priority != "P0" {
+		t.Errorf("priority = %q, want P0", addedTask.Priority)
+	}
+	if !addedTask.Breaking {
+		t.Error("expected breaking=true for compile step")
+	}
+	if addedTask.Status != "pending" {
+		t.Errorf("status = %q, want pending", addedTask.Status)
+	}
+	if addedTask.EstimatedTime != "30min" {
+		t.Errorf("estimatedTime = %q, want 30min", addedTask.EstimatedTime)
+	}
+	if addedTask.Type != task.TypeCodingFix {
+		t.Errorf("type = %q, want %q", addedTask.Type, task.TypeCodingFix)
+	}
+}
+
+func TestCreateFixTask_MarkdownGenerated(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := "handler.go:10: undefined: foo"
+	taskID, err := createFixTask(projectRoot, featureSlug, "lint", "handler.go", output, "tests/results/lint.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, readErr := os.ReadFile(mdPath)
+	if readErr != nil {
+		t.Fatalf("task markdown not found: %v", readErr)
+	}
+	content := string(data)
+
+	// Markdown should reference error doc path
+	if !strings.Contains(content, "tests/results/lint.txt") {
+		t.Error("markdown should reference error doc path")
+	}
+	// Markdown should reference source files
+	if !strings.Contains(content, "handler.go") {
+		t.Error("markdown should reference source files")
+	}
+	// Markdown should contain template sections
+	if !strings.Contains(content, "Root Cause") {
+		t.Error("markdown should contain Root Cause section from template")
+	}
+	// lint step -> coding.cleanup type
+	if !strings.Contains(content, "type: \"coding.cleanup\"") {
+		t.Error("markdown should contain coding.cleanup type")
+	}
+}
+
+func TestCreateFixTask_ForgeStateUpdated(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := "handler.go:10: error"
+	taskID, err := createFixTask(projectRoot, featureSlug, "compile", "handler.go", output, "tests/results/out.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Verify forge state was reset
+	state := feature.ReadForgeState(projectRoot)
+	if state == nil {
+		t.Fatal("forge state should exist after createFixTask")
+	}
+	if state.AllCompleted {
+		t.Error("allCompleted should be false after creating fix task")
+	}
+}
+
+func TestCreateFixTask_TitleOverride(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := "handler.go:10: error"
+	taskID, err := createFixTask(projectRoot, featureSlug, "test", "handler.go", output, "tests/results/out.txt",
+		fixTaskOverride{Title: "fix test: handler_test.go failure in quality gate"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, readErr := os.ReadFile(mdPath)
+	if readErr != nil {
+		t.Fatalf("task markdown not found: %v", readErr)
+	}
+	content := string(data)
+	if !strings.Contains(content, "fix test: handler_test.go failure in quality gate") {
+		t.Errorf("markdown should contain overridden title, got:\n%s", content[:min(len(content), 500)])
+	}
+}
+
+func TestCreateFixTask_DescriptionOverride(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	customDesc := "Custom description for regression failure.\nFile: handler_test.go\nLines:\n  handler_test.go:10: error1"
+	output := "handler_test.go:10: error1"
+	taskID, err := createFixTask(projectRoot, featureSlug, "test", "handler_test.go", output, "tests/results/raw.txt",
+		fixTaskOverride{Description: customDesc})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, readErr := os.ReadFile(mdPath)
+	if readErr != nil {
+		t.Fatalf("task markdown not found: %v", readErr)
+	}
+	content := string(data)
+	if !strings.Contains(content, "Custom description for regression failure") {
+		t.Errorf("markdown should contain overridden description, got:\n%s", content[:min(len(content), 500)])
+	}
+}
+
+func TestCreateFixTask_ExtraVarsOverride(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := "handler.go:10: error"
+	taskID, err := createFixTask(projectRoot, featureSlug, "compile", "handler.go", output, "tests/results/out.txt",
+		fixTaskOverride{ExtraVars: map[string]string{
+			"SOURCE_FILES": "custom/path.go",
+		}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, readErr := os.ReadFile(mdPath)
+	if readErr != nil {
+		t.Fatalf("task markdown not found: %v", readErr)
+	}
+	content := string(data)
+	if !strings.Contains(content, "custom/path.go") {
+		t.Errorf("markdown should contain overridden SOURCE_FILES var, got:\n%s", content[:min(len(content), 500)])
+	}
+}
+
+func TestCreateFixTask_SurfaceInferenceInHelper(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Configure surfaces for inference
+	forgeDir := filepath.Join(projectRoot, ".forge")
+	configContent := "surfaces:\n  admin-panel: web\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	output := "admin-panel/src/App.tsx:10: error"
+	taskID, err := createFixTask(projectRoot, featureSlug, "compile", "admin-panel/src/App.tsx", output, "tests/results/out.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	addedTask, exists := updatedIndex.ByID(taskID)
+	if !exists {
+		t.Fatalf("task %s not found in index", taskID)
+	}
+	if addedTask.SurfaceKey != "admin-panel" {
+		t.Errorf("SurfaceKey = %q, want %q", addedTask.SurfaceKey, "admin-panel")
+	}
+	if addedTask.SurfaceType != "web" {
+		t.Errorf("SurfaceType = %q, want %q", addedTask.SurfaceType, "web")
+	}
+}
+
+func TestAddSingleFixTask_DelegatesToCreateFixTask(t *testing.T) {
+	// Verify addSingleFixTask still works correctly after refactoring
+	// (cap check + delegation to createFixTask).
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := "handler.go:10: error"
+	taskID, err := addSingleFixTask(projectRoot, featureSlug, "compile", "handler.go", output, "tests/results/out.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, readErr := os.ReadFile(mdPath)
+	if readErr != nil {
+		t.Fatalf("task markdown not found: %v", readErr)
+	}
+	content := string(data)
+	if !strings.Contains(content, "fix compile:") {
+		t.Error("task title should contain 'fix compile:' prefix")
+	}
+	if !strings.Contains(content, "handler.go") {
+		t.Error("task markdown should reference source files")
+	}
+}
