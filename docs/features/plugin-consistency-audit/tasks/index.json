@@ -19,7 +19,7 @@
       "title": "Fix: run-tasks MAIN_SESSION missing submit-task + git-commit",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "10-fix-run-tasks-main-session.md",
       "record": "records/10-fix-run-tasks-main-session.md",
       "type": "doc",
