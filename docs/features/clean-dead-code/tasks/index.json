@@ -8,7 +8,7 @@
       "title": "删除 internal/docsync 目录和空壳文件",
       "priority": "P1",
       "estimatedTime": "15m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-delete-dead-packages-and-shells.md",
       "record": "records/1-delete-dead-packages-and-shells.md",
       "surface-key": ".",
