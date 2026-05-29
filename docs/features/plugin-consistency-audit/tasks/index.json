@@ -8,7 +8,7 @@
       "title": "Component inventory and Layer 1 structural scan",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-inventory-structural-scan.md",
       "record": "records/1-inventory-structural-scan.md",
       "type": "doc",

@@ -1,7 +1,7 @@
 ---
 created: "2026-05-29"
 author: "faner"
-status: Draft
+status: Approved
 intent: "refactor"
 ---
 
