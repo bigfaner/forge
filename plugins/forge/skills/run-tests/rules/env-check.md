@@ -46,7 +46,7 @@ The following sections define the detection items for each built-in surface type
 |---|-------|--------------|----------|-------------------|
 | 1 | Dev server starts | Start the dev server (`npm run dev` or equivalent). Verify it responds on the expected port within 30s | Yes | Check port availability, fix startup errors in server logs |
 | 2 | Dev server responds | HTTP GET to dev server root returns 200 | Yes | Check server health endpoint, verify application routes are configured |
-| 3 | Browser automation framework installed | Run framework install command (e.g., `npx playwright install --dry-run`). Exit code 0 = pass | Yes | Run `npx playwright install` (or equivalent for your framework) |
+| 3 | Browser automation framework installed | Run the browser automation framework's install or version-check command (per Convention file `framework` section). Exit code 0 = pass | Yes | Run the browser automation framework install command (per Convention file `framework` section) |
 | 4 | Test database seeded | Verify test data fixtures are loaded (check a known test record exists) | No | Run seed command or setup script |
 
 ### API
