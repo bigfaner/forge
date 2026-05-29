@@ -23,6 +23,7 @@ forge task claim
 
 **Extract from claim output**:
 - `TASK_ID` — the claimed task's numeric ID
+- `TYPE` — the task's full type string (e.g., `coding.feature`, `doc.fix`, `test`)
 - `FILE` — absolute path to the task Markdown file
 - `MAIN_SESSION` — `"true"` if the task must run in the main agent session (not a subagent); `"false"` or absent otherwise
 - `TASK_CATEGORY` — the task's category (`doc`, `eval`, `coding`, `test`, `validation`, `gate`); used for fix-type derivation in error handling

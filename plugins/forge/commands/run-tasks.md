@@ -52,7 +52,7 @@ forge task claim
 
 **Output**: `ACTION: CLAIMED` (new) | `ACTION: CONTINUE` (resume) | Error (no task, end loop).
 
-**Extract**: `TASK_ID`, `FILE`, `MAIN_SESSION`, `TASK_CATEGORY`, `SURFACE_KEY`, `SURFACE_TYPE`, `FEATURE`.
+**Extract**: `TASK_ID`, `TYPE`, `FILE`, `MAIN_SESSION`, `TASK_CATEGORY`, `SURFACE_KEY`, `SURFACE_TYPE`, `FEATURE`.
 
 ### Step 1.5: Main Session Routing
 
