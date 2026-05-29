@@ -47,9 +47,8 @@ Forge 由三个核心子系统组成：
 | **Commands** | `plugins/forge/commands/` | 可直接调用的 slash commands |
 | **Agents** | `plugins/forge/agents/` | 自主执行的 subagent 定义 |
 | **Hooks** | `plugins/forge/hooks/hooks.json` | 生命周期事件的自动触发器 |
-| **task-cli** | `forge` CLI | 任务状态管理 CLI（Go 实现，独立安装） |
 
-**数据流向**：Skills/Commands → 调用 forge CLI 管理状态 → Agents 执行实际开发工作 → Hooks 自动验证和清理。
+**数据流向**：Skills/Commands → 调用 forge CLI 管理状态 → Agents 执行实际开发工作 → Hooks 自动验证和清理。forge CLI 是统一的 Go 二进制，集成了任务状态管理、feature 管理、surface 检测等功能。
 
 ---
 
@@ -341,8 +340,6 @@ scorer 评分 ──→ 达标？── 是 ──→ 输出最终报告   │
 | `/eval-proposal` | 提案文档 | `skills/eval/rubrics/proposal.md` |
 | `/eval-journey` | Journey 文档 | `skills/eval/rubrics/journey.md` |
 | `/eval-contract` | Contract 文档 | `skills/eval/rubrics/contract.md` |
-| `/eval-consistency` | 跨文档一致性 | `skills/eval/rubrics/consistency.md` |
-| `/eval-harness` | 测试基础设施 | `skills/eval/rubrics/harness.md` |
 
 **主 session 职责**：orchestrator 负责：
 1. 调用 scorer 协议
@@ -468,8 +465,8 @@ docs/
 │   ├── api.md               #   API 约定
 │   ├── testing.md           #   测试约定
 │   └── ...
-├── decisions/               # 技术决策（/record-decision）
-├── lessons/                 # 经验教训（/learn-lesson）
+├── decisions/               # 技术决策（/learn）
+├── lessons/                 # 经验教训（/learn）
 └── sitemap/sitemap.json     # 页面元素映射（/gen-sitemap）
 ```
 
