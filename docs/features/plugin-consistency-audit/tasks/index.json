@@ -176,7 +176,7 @@
       "title": "Fix: quick-tasks template hardcoded defaults",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "23-fix-quick-tasks-templates.md",
       "record": "records/23-fix-quick-tasks-templates.md",
       "type": "doc",
