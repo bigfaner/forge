@@ -38,7 +38,7 @@
         "1",
         "2"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "3-tidy-go-mod.md",
       "record": "records/3-tidy-go-mod.md",
       "surface-key": ".",
@@ -54,7 +54,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "type": "doc.drift"
