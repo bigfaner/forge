@@ -15,6 +15,56 @@ func writeJustfile(t *testing.T, dir, content string) {
 	}
 }
 
+func TestExtractFailLines(t *testing.T) {
+	t.Run("empty output returns empty", func(t *testing.T) {
+		got := ExtractFailLines("")
+		if got != "" {
+			t.Errorf("expected empty, got %q", got)
+		}
+	})
+
+	t.Run("no FAIL lines returns empty", func(t *testing.T) {
+		output := "ok\nPASS: TestFoo\nall tests passed"
+		got := ExtractFailLines(output)
+		if got != "" {
+			t.Errorf("expected empty, got %q", got)
+		}
+	})
+
+	t.Run("single FAIL line extracted", func(t *testing.T) {
+		output := "--- FAIL: TestHandler (0.00s)\n    handler_test.go:42: Expected 200, got 404\nFAIL"
+		got := ExtractFailLines(output)
+		if got != "--- FAIL: TestHandler (0.00s)" {
+			t.Errorf("expected single FAIL line, got %q", got)
+		}
+	})
+
+	t.Run("multiple FAIL lines extracted", func(t *testing.T) {
+		output := "--- FAIL: TestHandler (0.00s)\n    handler_test.go:10: error1\n--- FAIL: TestService (0.01s)\n    service_test.go:20: error2\nFAIL"
+		got := ExtractFailLines(output)
+		expected := "--- FAIL: TestHandler (0.00s)\n--- FAIL: TestService (0.01s)"
+		if got != expected {
+			t.Errorf("expected %q, got %q", expected, got)
+		}
+	})
+
+	t.Run("FAIL line with leading whitespace matched", func(t *testing.T) {
+		output := "  --- FAIL: TestIndented (0.00s)\n    file.go:1: err\n"
+		got := ExtractFailLines(output)
+		if got != "  --- FAIL: TestIndented (0.00s)" {
+			t.Errorf("expected trimmed FAIL line, got %q", got)
+		}
+	})
+
+	t.Run("lines containing but not starting with --- FAIL: are excluded", func(t *testing.T) {
+		output := "FAIL: TestHandler (0.00s)\nFAIL --- TestReal (0.00s)\n--- FAIL: TestReal (0.00s)\n"
+		got := ExtractFailLines(output)
+		if got != "--- FAIL: TestReal (0.00s)" {
+			t.Errorf("expected only lines starting with --- FAIL:, got %q", got)
+		}
+	})
+}
+
 func TestExtractConciseError(t *testing.T) {
 	t.Run("empty input", func(t *testing.T) {
 		got := ExtractConciseError("", 10)

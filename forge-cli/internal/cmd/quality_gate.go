@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -257,7 +258,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 			}
 		}
-		fixID, fixErr := addFixTask(projectRoot, featureSlug, "test", regressionOutput, errorDocPath)
+		fixID, fixErr := addRegressionFixTasks(projectRoot, featureSlug, regressionOutput, errorDocPath)
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
@@ -286,7 +287,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 				}
 			}
-			fixID, fixErr := addFixTask(projectRoot, featureSlug, "test", result.output, errorDocPath)
+			fixID, fixErr := addRegressionFixTasks(projectRoot, featureSlug, result.output, errorDocPath)
 			if fixErr != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 			}
@@ -607,6 +608,96 @@ func extractSourceFiles(output string) string {
 	return strings.Join(files, ", ")
 }
 
+// isTestFile checks if a filename matches Go test file naming convention (*_test.go).
+func isTestFile(filename string) bool {
+	return strings.HasSuffix(filename, "_test.go")
+}
+
+// extractFileLineMap extracts a mapping from test file paths to their related output lines.
+// Only files with direct --- FAIL: entries (primary files) get independent map entries.
+// Stack-trace-only references are excluded from independent entries but their lines
+// appear in the primary file's context via line matching.
+func extractFileLineMap(output string) map[string][]string {
+	result := make(map[string][]string)
+	if output == "" {
+		return result
+	}
+
+	allLines := strings.Split(output, "\n")
+
+	// Step 1: Collect primary files (first test file reference in each --- FAIL: block).
+	primaryFiles := make(map[string]bool)
+	inFailBlock := false
+	foundPrimary := false
+	for _, line := range allLines {
+		if strings.HasPrefix(line, "--- FAIL:") {
+			inFailBlock = true
+			foundPrimary = false
+			continue
+		}
+		if inFailBlock {
+			if strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+				if !foundPrimary {
+					for _, match := range sourceFileRe.FindAllStringSubmatch(line, -1) {
+						path := strings.TrimPrefix(match[1], "./")
+						if isTestFile(path) {
+							primaryFiles[path] = true
+							foundPrimary = true
+							break
+						}
+					}
+				}
+			} else {
+				inFailBlock = false
+				foundPrimary = false
+			}
+		}
+	}
+
+	if len(primaryFiles) == 0 {
+		return result
+	}
+
+	// Step 2: For each line, check if it contains any primary file reference.
+	// Add context window (±2 lines) for matched lines.
+	lineSet := make(map[string]map[int]bool)
+	for file := range primaryFiles {
+		lineSet[file] = make(map[int]bool)
+	}
+
+	for i, line := range allLines {
+		for _, match := range sourceFileRe.FindAllStringSubmatch(line, -1) {
+			path := strings.TrimPrefix(match[1], "./")
+			if primaryFiles[path] {
+				for j := i - 2; j <= i+2; j++ {
+					if j >= 0 && j < len(allLines) {
+						lineSet[path][j] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Step 3: Convert to sorted lines per file.
+	for file, indices := range lineSet {
+		if len(indices) == 0 {
+			continue
+		}
+		sorted := make([]int, 0, len(indices))
+		for idx := range indices {
+			sorted = append(sorted, idx)
+		}
+		sort.Ints(sorted)
+		lines := make([]string, 0, len(sorted))
+		for _, idx := range sorted {
+			lines = append(lines, allLines[idx])
+		}
+		result[file] = lines
+	}
+
+	return result
+}
+
 // countFixTasks counts active (non-terminal) fix-tasks for a step.
 // A fix-task is identified by having a title with the prefix "fix <step>:".
 // Terminal statuses (completed, rejected, skipped) are excluded from the count.
@@ -702,25 +793,51 @@ func groupFilesByDir(files string) []string {
 	return groups
 }
 
-// addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
-// Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
-// Returns (taskID, nil) on success.
-// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
-func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string) (string, error) {
-	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
-
-	// Check cap before creating a new fix-task.
-	index, err := task.LoadIndex(indexPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
-		// Proceed without cap check if index can't be loaded.
-	} else {
-		active := countFixTasks(index, step)
-		if active >= maxFixTasksPerStep {
-			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
-			return "", ErrMaxFixTasks
-		}
+// conciseError extracts all "--- FAIL:" lines from output for test failures.
+// Falls back to ExtractConciseError (tail 10 lines) when no "--- FAIL:" lines
+// exist (e.g. compile/fmt/lint steps), ensuring the description is never empty.
+func conciseError(output string) string {
+	if failLines := just.ExtractFailLines(output); failLines != "" {
+		return failLines
 	}
+	return just.ExtractConciseError(output, 10)
+}
+
+// fixTaskOverride holds optional overrides for createFixTask.
+// When a field is set, it replaces the default value derived from step/output.
+// This allows callers (e.g. addRegressionFixTasks) to customize the task
+// while reusing the shared creation logic.
+type fixTaskOverride struct {
+	// Title overrides the default title. When empty, the default
+	// "fix <step>: just <step> failure in quality gate" is used.
+	Title string
+	// Description overrides the default description. When empty, the default
+	// description with error doc path and concise error is used.
+	Description string
+	// ExtraVars are merged into the default Vars map, overwriting keys
+	// with the same name (e.g. SOURCE_FILES, TEST_SCRIPT).
+	ExtraVars map[string]string
+}
+
+// createFixTask is the shared helper for creating a single fix task.
+// It encapsulates: surface inference, opts construction, AddTask,
+// CreateTaskMarkdown, and EnsureForgeState.
+//
+// The caller provides the core parameters (projectRoot, featureSlug, step,
+// sourceFiles, output, errorDocPath) and optional overrides via fixTaskOverride.
+// When no overrides are provided, defaults are derived from step and output
+// (matching the original addSingleFixTask behavior).
+//
+// Returns (taskID, nil) on success.
+// Returns ("", error) on failure: template not found, task add failure,
+// or markdown creation failure.
+func createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string, overrides ...fixTaskOverride) (string, error) {
+	var ov fixTaskOverride
+	if len(overrides) > 0 {
+		ov = overrides[0]
+	}
+
+	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
 	// Surface inference with soft-failure policy.
 	// When surfaces are not configured or no match is found, fix-task creation
@@ -732,13 +849,22 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 
 	testScript := "just " + step
 
-	title := fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
-	description := fmt.Sprintf(
-		"Quality gate step `%s` failed during quality-gate hook.\n\n"+
-			"Error output saved to: `%s`\n\n"+
-			"Concise error:\n```\n%s\n```",
-		testScript, errorDocPath, just.ExtractConciseError(output, 10),
-	)
+	// Derive title: use override if provided, otherwise default.
+	title := ov.Title
+	if title == "" {
+		title = fmt.Sprintf("fix %s: %s failure in quality gate", step, testScript)
+	}
+
+	// Derive description: use override if provided, otherwise default.
+	description := ov.Description
+	if description == "" {
+		description = fmt.Sprintf(
+			"Quality gate step `%s` failed during quality-gate hook.\n\n"+
+				"Error output saved to: `%s`\n\n"+
+				"Concise error:\n```\n%s\n```",
+			testScript, errorDocPath, conciseError(output),
+		)
+	}
 
 	// Build opts — Priority/Breaking/EstimatedTime sourced from template defaults
 	// when available (dual-source truth: opts is authoritative, template provides defaults).
@@ -756,6 +882,17 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		estimatedTime = defs.EstimatedTime
 	}
 
+	// Build default vars, then merge extra vars from overrides.
+	vars := map[string]string{
+		"SOURCE_FILES":   sourceFiles,
+		"TEST_SCRIPT":    testScript,
+		"TEST_RESULTS":   errorDocPath,
+		"SOURCE_TASK_ID": "N/A (project-wide gate)",
+	}
+	for k, v := range ov.ExtraVars {
+		vars[k] = v
+	}
+
 	opts := task.AddTaskOpts{
 		Title:         title,
 		Priority:      string(types.PriorityP0),
@@ -766,12 +903,7 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		Type:          taskType,
 		SurfaceKey:    surfaceKey,
 		SurfaceType:   surfaceType,
-		Vars: map[string]string{
-			"SOURCE_FILES":   sourceFiles,
-			"TEST_SCRIPT":    testScript,
-			"TEST_RESULTS":   errorDocPath,
-			"SOURCE_TASK_ID": "N/A (project-wide gate)",
-		},
+		Vars:          vars,
 	}
 
 	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
@@ -800,4 +932,136 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 
 	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking=%v)\n", id, breaking)
 	return id, nil
+}
+
+// addRegressionFixTasks creates independent fix tasks for each failing test file
+// extracted from the regression output. It uses extractFileLineMap to identify primary
+// test files (those with direct --- FAIL: entries) and creates one task per file with
+// the relevant filtered output lines.
+//
+// Soft cap: up to 10 independent tasks + 1 overflow task (files 11-N merged).
+// Total tasks ≤ 11, NOT subject to maxFixTasksPerStep hard cap.
+//
+// Fallback: when extractFileLineMap returns an empty map (no test files identified),
+// falls back to the existing addFixTask behavior with a structured log warning.
+//
+// Returns the first task ID on success, or ("", error) on failure.
+//
+//nolint:unparam // errorDocPath is parameterized for API consistency with addFixTask and future callers.
+func addRegressionFixTasks(projectRoot, featureSlug, output, errorDocPath string) (string, error) {
+	fileLineMap := extractFileLineMap(output)
+
+	// Fallback: no test files identified — use directory-grouped fix task.
+	if len(fileLineMap) == 0 {
+		fmt.Fprintln(os.Stderr, "WARNING: isTestFile returned zero matches for output, falling back to directory-grouped fix task")
+		return addFixTask(projectRoot, featureSlug, "test", output, errorDocPath)
+	}
+
+	// Sort files for deterministic ordering.
+	files := make([]string, 0, len(fileLineMap))
+	for f := range fileLineMap {
+		files = append(files, f)
+	}
+	sort.Strings(files)
+
+	var firstID string
+
+	// Create tasks for first 10 files (or all if ≤ 10).
+	primaryCount := len(files)
+	if primaryCount > 10 {
+		primaryCount = 10
+	}
+
+	for i := 0; i < primaryCount; i++ {
+		file := files[i]
+		lines := fileLineMap[file]
+		title := fmt.Sprintf("fix test: %s failure in quality gate", file)
+		description := fmt.Sprintf(
+			"Quality gate test regression failed.\n\n"+
+				"Test file: `%s`\n\n"+
+				"Error output saved to: `%s`\n\n"+
+				"Relevant output lines:\n```\n%s\n```",
+			file, errorDocPath, strings.Join(lines, "\n"),
+		)
+
+		id, err := createFixTask(
+			projectRoot, featureSlug, "test", file, output, errorDocPath,
+			fixTaskOverride{
+				Title:       title,
+				Description: description,
+				ExtraVars: map[string]string{
+					"SOURCE_FILES": file,
+					"TEST_SCRIPT":  "just test",
+				},
+			},
+		)
+		if err != nil {
+			return firstID, err
+		}
+		if firstID == "" {
+			firstID = id
+		}
+	}
+
+	// Overflow: merge remaining files into one task.
+	if len(files) > 10 {
+		overflowFiles := files[10:]
+		var overflowLines []string
+		for _, f := range overflowFiles {
+			overflowLines = append(overflowLines, fileLineMap[f]...)
+		}
+		overflowCount := len(overflowFiles)
+		title := fmt.Sprintf("fix test: regression overflow (%d files)", overflowCount)
+		description := fmt.Sprintf(
+			"Quality gate test regression failed — overflow group.\n\n"+
+				"Files: %s\n\n"+
+				"Error output saved to: `%s`\n\n"+
+				"Relevant output lines:\n```\n%s\n```",
+			strings.Join(overflowFiles, ", "), errorDocPath, strings.Join(overflowLines, "\n"),
+		)
+
+		id, err := createFixTask(
+			projectRoot, featureSlug, "test",
+			strings.Join(overflowFiles, ", "), output, errorDocPath,
+			fixTaskOverride{
+				Title:       title,
+				Description: description,
+				ExtraVars: map[string]string{
+					"SOURCE_FILES": strings.Join(overflowFiles, ", "),
+					"TEST_SCRIPT":  "just test",
+				},
+			},
+		)
+		if err != nil {
+			return firstID, err
+		}
+		if firstID == "" {
+			firstID = id
+		}
+	}
+
+	return firstID, nil
+}
+
+// addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
+// It performs a cap check (countFixTasks + maxFixTasksPerStep) and delegates to createFixTask.
+// Returns (taskID, nil) on success.
+// Returns ("", error) on failure: template not found, task add failure, markdown creation failure, or cap exceeded.
+func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath string) (string, error) {
+	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+
+	// Check cap before creating a new fix-task.
+	index, err := task.LoadIndex(indexPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
+		// Proceed without cap check if index can't be loaded.
+	} else {
+		active := countFixTasks(index, step)
+		if active >= maxFixTasksPerStep {
+			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
+			return "", ErrMaxFixTasks
+		}
+	}
+
+	return createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDocPath)
 }

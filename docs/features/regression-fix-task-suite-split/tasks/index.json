@@ -1,0 +1,94 @@
+{
+  "feature": "regression-fix-task-suite-split",
+  "proposal": "docs/proposals/regression-fix-task-suite-split/proposal.md",
+  "created": "2026-05-29",
+  "tasks": {
+    "1-improve-fix-task-description": {
+      "id": "1",
+      "title": "Phase 0: 改进 fix task description 信息完整性",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-improve-fix-task-description.md",
+      "record": "records/1-improve-fix-task-description.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "low"
+    },
+    "2-extract-create-fix-task-helper": {
+      "id": "2",
+      "title": "提取 createFixTask 共享 helper 函数",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-extract-create-fix-task-helper.md",
+      "record": "records/2-extract-create-fix-task-helper.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "3-implement-extract-file-line-map": {
+      "id": "3",
+      "title": "实现 extractFileLineMap 函数",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "3-implement-extract-file-line-map.md",
+      "record": "records/3-implement-extract-file-line-map.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "4-regression-fix-tasks-by-test-file": {
+      "id": "4",
+      "title": "实现 addRegressionFixTasks 按测试文件拆分 fix task",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-regression-fix-tasks-by-test-file.md",
+      "record": "records/4-regression-fix-tasks-by-test-file.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

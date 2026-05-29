@@ -9,7 +9,7 @@ Rules for the run-tasks dispatcher to maintain codebase integrity across sequent
 
 ### TECH-dispatcher-quality-001: Monitor Compilation Diagnostics After Task Completion
 
-**Requirement**: After each task completes (Step 2b verify), the dispatcher MUST check for compilation errors in the IDE diagnostics or run `just compile` (for projects with a justfile). If compilation errors exist, the dispatcher MUST create a `coding.fix` task targeting those errors before claiming the next feature task.
+**Requirement**: After each task completes (Step 2b verify), the dispatcher MUST check for compilation errors in the IDE diagnostics or run `just compile` (for projects with a justfile). If compilation errors exist, the dispatcher MUST create a fix task targeting those errors before claiming the next feature task. Fix type is derived from source task category (see derivation table below).
 
 **Scope**: [CROSS]
 
@@ -26,7 +26,8 @@ Rules for the run-tasks dispatcher to maintain codebase integrity across sequent
 **Implementation**:
 - After Step 2b (`forge task status <ID>` returns completed), collect diagnostics
 - Filter to compilation errors only (undefined symbols, redeclared names, wrong arg counts)
-- If non-empty: `forge task add --type coding.fix --title "Fix compilation errors from task X.Y"`
+- If non-empty: `forge task add --type <derived-type> --title "Fix compilation errors from task X.Y"`
+- Fix type derivation: extract `TASK_CATEGORY` from claim output, then map: `doc`/`eval` → `doc.fix`, `coding`/`test`/`validation`/`gate` → `coding.fix`
 - For fmt/lint failures (non-breaking): use `coding.cleanup` task type instead
 - Fix task gets auto-claimed on next loop iteration (priority over feature tasks)
 
