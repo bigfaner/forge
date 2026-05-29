@@ -1,0 +1,87 @@
+{
+  "feature": "derive-fix-task-type",
+  "proposal": "docs/proposals/derive-fix-task-type/proposal.md",
+  "created": "2026-05-29",
+  "tasks": {
+    "1-register-doc-fix-type": {
+      "id": "1",
+      "title": "Register doc.fix type in Go type system",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-register-doc-fix-type.md",
+      "record": "records/1-register-doc-fix-type.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2-add-doc-fix-template": {
+      "id": "2",
+      "title": "Add doc-fix task template",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-add-doc-fix-template.md",
+      "record": "records/2-add-doc-fix-template.md",
+      "type": "doc"
+    },
+    "3-update-skill-files-derivation": {
+      "id": "3",
+      "title": "Update skill files with fix-type derivation rule",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-skill-files-derivation.md",
+      "record": "records/3-update-skill-files-derivation.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
