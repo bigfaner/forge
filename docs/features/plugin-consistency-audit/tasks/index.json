@@ -64,7 +64,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-commands-agent-hooks-audit.md",
       "record": "records/5-commands-agent-hooks-audit.md",
       "type": "doc",
