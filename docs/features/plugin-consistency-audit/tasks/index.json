@@ -198,7 +198,7 @@
       "title": "Fix: eval reviser-composition incomplete entries",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "25-fix-eval-reviser-incomplete.md",
       "record": "records/25-fix-eval-reviser-incomplete.md",
       "type": "doc",
