@@ -76,7 +76,7 @@
         "3",
         "doc-fix-1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "type": "doc.review"
