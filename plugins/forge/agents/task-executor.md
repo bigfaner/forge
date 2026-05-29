@@ -47,7 +47,15 @@ All errors during execution follow a uniform **~3 attempt** threshold. Classify 
 **STOP** in any context means: evaluate error handling first — recurring (~3 same/similar attempts) → create fix task; otherwise stop and let dispatcher handle it.
 
 **Pause Protocol** — when escalating a complex error:
-1. Run: `forge task add --type coding.fix --title "Fix: <concise error>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "<error classification and summary>"`
+
+**Fix-Type Derivation**: extract `TASK_CATEGORY` from the claim output of the current task, then map to the correct fix type:
+
+| Source Task Category | Fix Task Type |
+|----------------------|---------------|
+| `doc`, `eval`        | `doc.fix`     |
+| `coding`, `test`, `validation`, `gate` | `coding.fix` |
+
+1. Run: `forge task add --type <derived-fix-type> --title "Fix: <concise error>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "<error classification and summary>"`
 2. Output: `PAUSE: <TASK_ID> | added fix-task <FIX_ID> | <reason>`
 3. STOP immediately — return to dispatcher. Do NOT continue execution.
 

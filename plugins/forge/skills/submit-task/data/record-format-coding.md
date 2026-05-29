@@ -1,6 +1,6 @@
 # Record Format: Coding Category
 
-Task types: `coding.feature`, `coding.enhancement`, `coding.cleanup`, `coding.refactor`, `coding.fix`, `code-quality.simplify`
+Task types: `coding.feature`, `coding.enhancement`, `coding.cleanup`, `coding.refactor`, `coding.fix`, `code-quality.simplify`, `doc.fix`
 
 ## JSON Example
 
