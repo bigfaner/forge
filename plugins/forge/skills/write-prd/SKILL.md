@@ -21,6 +21,24 @@ No required artifacts. If a brainstorm proposal exists, use it as optional input
 ls docs/proposals/<slug>/proposal.md 2>/dev/null  # optional, not blocking
 ```
 
+### Intent Detection
+
+Read the `intent` field from `docs/proposals/<slug>/proposal.md` frontmatter. This determines the PRD format:
+
+| Intent | PRD Format | User Stories | Test Pipeline |
+|--------|-----------|--------------|---------------|
+| `new-feature` | Full PRD (default) | Generated | Full (journey → contract → script) |
+| `refactor` | Spec-only PRD | **Skipped** | Skipped (quality-gate only) |
+| `cleanup` | Spec-only PRD | **Skipped** | Skipped (quality-gate only) |
+
+**Default**: If `intent` is missing or empty, treat as `new-feature` — full PRD pipeline unchanged.
+
+**Detection**:
+```bash
+# Read intent from proposal frontmatter
+head -20 docs/proposals/<slug>/proposal.md | grep "^intent:"
+```
+
 <HARD-GATE>
 Do NOT write any code, scaffold any project, or take any implementation action until the PRD is finalized and approved. Present the PRD and get user approval first.
 </HARD-GATE>
@@ -49,11 +67,21 @@ Do NOT write any code, scaffold any project, or take any implementation action u
 
 ## Process Flow
 
+### new-feature intent (default)
+
 ```
 Explore context → Check proposal → Assess scope → Ask questions → Propose approaches → Present PRD sections → Write PRD Spec + User Stories + UI Functions → Create Manifest → Commit
 ```
 
+### refactor / cleanup intent (spec-only PRD)
+
+```
+Explore context → Check proposal + detect intent → Assess scope → Ask questions (focused on change scope, constraints, verification) → Write Spec-only PRD → Create Manifest → Commit
+```
+
 ## Checklist
+
+### new-feature intent (default)
 
 1. **Explore project context** — check files, docs, recent commits
 2. **Check for existing proposal** — read `docs/proposals/<slug>/proposal.md` if it exists
@@ -69,7 +97,21 @@ Explore context → Check proposal → Assess scope → Ask questions → Propos
 12. **Review & Commit** — commit all documents
 13. **Adversarial Eval** — run eval-prd if configured
 
+### refactor / cleanup intent (spec-only PRD)
+
+1. **Explore project context** — check files, docs, recent commits
+2. **Check proposal + detect intent** — read `docs/proposals/<slug>/proposal.md`, extract `intent` from frontmatter
+3. **Assess scope** — determine refactoring boundaries
+4. **Ask clarifying questions** — focus on change scope, behavioral invariants, regression criteria
+5. **Write Spec-only PRD** — save to `docs/features/<slug>/prd/prd-spec.md` (must contain three mandatory fields, see Step 7A)
+6. **Create Manifest** — save to `docs/features/<slug>/manifest.md`
+7. **Self-Check** — verify PRD passes checks
+8. **Review & Commit** — commit all documents
+9. **Adversarial Eval** — run eval-prd if configured
+
 ## Output Documents
+
+### new-feature intent (default)
 
 | File | Template | Description |
 |------|----------|-------------|
@@ -77,6 +119,17 @@ Explore context → Check proposal → Assess scope → Ask questions → Propos
 | `prd/prd-user-stories.md` | `templates/prd-user-stories.md` | User stories derived from user roles identified in the PRD background |
 | `prd/prd-ui-functions.md` | `templates/prd-ui-functions.md` | UI function highlights (requirements level, **mandatory** for features with UI surface) |
 | `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
+
+### refactor / cleanup intent (spec-only PRD)
+
+| File | Template | Description |
+|------|----------|-------------|
+| `prd/prd-spec.md` | `templates/prd-spec.md` | Spec-only PRD — must contain three mandatory fields (see Step 7A) |
+| `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
+
+**Not generated for refactor/cleanup**:
+- `prd/prd-user-stories.md` — "As a user / I want / So that" format is semantically empty for pure refactoring
+- `prd/prd-ui-functions.md` — refactoring does not introduce new UI surfaces
 
 ## Step 1: Explore Project Context
 
@@ -158,7 +211,13 @@ docs/features/<slug>/
 
 ## Step 7: Write User Stories
 
-**Gate**: If all In Scope items are non-compilable artifacts (`.md`, `.yaml`, `.json` under `docs/`, `skills/`, etc.), skip this step and note that user stories are not needed for doc-only features. User stories serve gen-journeys → test script generation, which requires testable code.
+<EXTREMELY-IMPORTANT>
+**Intent Gate**: If `intent` is `refactor` or `cleanup`, **skip this entire step**. Do NOT generate `prd/prd-user-stories.md`. Proceed directly to Step 9 (Create Manifest).
+
+The "As a user / I want / So that" format is semantically empty for pure refactoring and cleanup — there is no new user-observable behavior to describe as a user story.
+</EXTREMELY-IMPORTANT>
+
+**Doc-only Gate**: If all In Scope items are non-compilable artifacts (`.md`, `.yaml`, `.json` under `docs/`, `skills/`, etc.), skip this step and note that user stories are not needed for doc-only features. User stories serve gen-journeys → test script generation, which requires testable code.
 
 **How to detect**: Examine the In Scope section of the PRD spec. If every listed item targets non-compilable, non-runnable file paths, the feature is doc-only. If any item involves compilable or runnable files (`.go`, `.ts`, `.py`, `.java`, etc.), proceed with user story generation.
 
@@ -178,7 +237,57 @@ So that [concrete benefit/goal]
 
 See `examples/user-stories.md` for concrete examples derived from Background roles.
 
+## Step 7A: Write Spec-Only PRD (refactor / cleanup intent)
+
+<EXTREMELY-IMPORTANT>
+This step applies **only** when `intent` is `refactor` or `cleanup`. If `intent` is `new-feature` (or missing), skip this step entirely.
+</EXTREMELY-IMPORTANT>
+
+When `intent` is `refactor` or `cleanup`, the PRD spec must contain three mandatory fields that provide sufficient information for `/tech-design` without relying on user stories:
+
+### Mandatory Fields
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| **变更范围 (Change Scope)** | Affected modules, files, or packages. List concrete paths or module names. | `pkg/constants/`, `internal/enum/types.go`, `cmd/convert.go` |
+| **约束条件 (Constraints)** | Behavioral invariants that must be preserved during the refactoring. These are the "things that must not break". | "All existing API endpoints return identical responses", "CLI exit codes unchanged", "No new exported symbols" |
+| **验证标准 (Verification Criteria)** | Regression acceptance criteria — how to verify the refactoring succeeded without introducing regressions. | "All existing tests pass", "No behavioral change in output of `forge task list`", `gofmt` and `golint` pass |
+
+### Writing Guidelines
+
+- **Focus questions**: In Step 4 (Ask Clarifying Questions), focus questions on:
+  1. Which modules/files are in scope for this refactoring?
+  2. What behavioral invariants must be preserved?
+  3. How should we verify no regressions were introduced?
+- **Scope section**: The In Scope / Out of Scope section should map directly to the change scope field
+- **No user stories**: Do not generate `prd/prd-user-stories.md` — the three mandatory fields above replace user stories for refactoring
+- **No UI functions**: Do not generate `prd/prd-ui-functions.md` — refactoring does not introduce new UI surfaces
+
+### PRD Spec Template Adaptation
+
+When using `templates/prd-spec.md` for a spec-only PRD:
+- Replace the "User Stories" reference in the template with the three mandatory fields section
+- Omit the Flow Description section (Mermaid diagram) unless the refactoring changes an external flow
+- Include the three mandatory fields as a prominent section, e.g.:
+
+```markdown
+## Refactoring Specification
+
+### Change Scope
+<!-- List affected modules, files, packages -->
+
+### Constraints (Behavioral Invariants)
+<!-- List things that must not change -->
+
+### Verification Criteria
+<!-- List regression acceptance criteria -->
+```
+
 ## Step 8: Write UI Functions (mandatory for UI features)
+
+<EXTREMELY-IMPORTANT>
+**Intent Gate**: If `intent` is `refactor` or `cleanup`, **skip this step**. Refactoring does not introduce new UI surfaces.
+</EXTREMELY-IMPORTANT>
 
 For features with UI surfaces, create `prd/prd-ui-functions.md` using `templates/prd-ui-functions.md`.
 This step is **mandatory** when the feature has any UI surface. Skip only for backend/API/CLI-only features with no UI surface.
@@ -191,6 +300,7 @@ Create `manifest.md` at the feature root using `templates/manifest.md`:
 - Fill in PRD entries and summaries
 - Replace `{{DATE}}` with today's date in `YYYY-MM-DD` format
 - Set status to `prd`
+- Include User Stories row only if `prd/prd-user-stories.md` was generated (skip for `refactor`/`cleanup` intent)
 - Include UI Functions row only if `prd/prd-ui-functions.md` was created
 
 ## Step 10: Self-Check
