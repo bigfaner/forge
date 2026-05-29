@@ -1,7 +1,7 @@
 ---
 feature: "plugin-consistency-audit"
 created: "2026-05-30"
-status: tasks
+status: completed
 mode: quick
 ---
 
