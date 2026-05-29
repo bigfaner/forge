@@ -35,17 +35,17 @@ func autogenTemplatePath(typeName string) string {
 	return path
 }
 
-// ValidateAutogenTemplates checks that all task types used by GenerateTestTaskMD()
-// have a corresponding template file in the autogen embed FS, that no two types
-// map to the same filename, and that each template parses as valid text/template
-// and executes without error against a zero-value autogenTemplateData struct.
+// ValidateAutogenTemplates validates the pipeline registry and autogen template integrity.
 //
-// When a template contains metadata frontmatter, it is stripped before parsing
-// and the variables field is cross-validated against autogenTemplateData using reflection.
+// Phase 1 (static) validation runs in init() and panics on failure — by the time this
+// function is called from main(), the registry is already validated. This function
+// performs additional template-level checks (parse/execute validation against embedded
+// template files) that cannot be expressed in the registry's structural validation.
 //
-// Types without an autogen template are skipped (they may exist only in the prompt FS).
 // Must be called from the CLI main() startup path, NOT from an init() function.
 func ValidateAutogenTemplates() error {
+	// Phase 1 (registry structural validation) already ran in init().
+	// Perform template-specific validation here.
 	seen := make(map[string]string) // filename -> type name (for collision detection)
 	structType := reflect.TypeOf(autogenTemplateData{})
 

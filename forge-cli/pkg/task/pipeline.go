@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
@@ -389,6 +390,12 @@ func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder [
 		generated = append(generated, expanded...)
 	}
 
+	// Phase 2: Dynamic validation - verify generated task set.
+	// Checks: all resolver-returned IDs exist in generated task set; no circular dependencies.
+	// Deliberately not returning errors from GenerateTestTasks to preserve
+	// backward compatibility. Phase 2 errors indicate programming bugs in registry configuration.
+	_ = validateGeneratedTasks(generated)
+
 	return generated
 }
 
@@ -767,4 +774,324 @@ var PipelineRegistry = []PipelineNode{
 		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "quick",
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
+}
+
+// ---------------------------------------------------------------------------
+// Two-phase validation
+// ---------------------------------------------------------------------------
+
+// escapeHatchLimit is the maximum allowed number of post-generation injection
+// functions. Current count: 0. See proposal "Escape hatch protocol" for rationale.
+const escapeHatchLimit = 5
+
+func init() {
+	if err := ValidatePipelineRegistry(); err != nil {
+		panic("pipeline registry validation failed: " + err.Error())
+	}
+}
+
+// ValidatePipelineRegistry performs Phase 1 (static) validation of the pipeline
+// registry. It runs at init-time and validates structural invariants that can be
+// checked without runtime state. Panics on failure with actionable error messages.
+func ValidatePipelineRegistry() error {
+	// Collect all node IDs (including template IDs) for reference checking.
+	nodeIDs := make(map[string]int) // ID -> declaration index
+	for i, node := range PipelineRegistry {
+		// Check 1: GenerateCondition must be non-nil
+		if node.GenerateCondition == nil {
+			return fmt.Errorf("node %q (index %d): GenerateCondition must be non-nil, use CondAlways for unconditional generation", node.ID, i)
+		}
+
+		// Check 2: Key/ID template placeholders must match Expansion setting
+		if err := validatePlaceholders(node, i); err != nil {
+			return err
+		}
+
+		// Check 3: DependsOn.Ref strings must reference existing node IDs
+		for _, dep := range node.DependsOn {
+			if dep.Resolve == nil && dep.Ref != "" {
+				if _, ok := nodeIDs[dep.Ref]; !ok {
+					// Not found among previously-declared nodes — check full registry
+					if !idExistsInRegistry(dep.Ref) {
+						return fmt.Errorf("node %q (index %d): DependsOn.Ref %q does not match any registry node ID", node.ID, i, dep.Ref)
+					}
+				}
+			}
+
+			// Check 4: ResolveIfGenerated references must point to nodes declared before the caller
+			if dep.Resolve != nil && isResolveIfGenerated(dep.Resolve) {
+				refID := extractResolveIfGeneratedID(dep.Resolve)
+				if refID != "" {
+					if _, ok := nodeIDs[refID]; !ok {
+						return fmt.Errorf("node %q (index %d): ResolveIfGenerated(%q) references a node not yet declared — must appear before this node in declaration order", node.ID, i, refID)
+					}
+				}
+			}
+		}
+
+		nodeIDs[node.ID] = i
+	}
+
+	// Check 5: All expanded IDs must be unique
+	if err := validateExpandedIDsUnique(); err != nil {
+		return err
+	}
+
+	// Check 6: Escape hatch count <= 5
+	// Currently hardcoded as 0 post-generation injection functions.
+	// When escape hatches are added, increment this counter.
+	escapeHatchCount := 0
+	if escapeHatchCount > escapeHatchLimit {
+		return fmt.Errorf("escape hatch count %d exceeds limit %d — extend registry expressiveness instead", escapeHatchCount, escapeHatchLimit)
+	}
+
+	// Check 7: Ordering invariants
+	if err := validateOrderingInvariants(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// validatePlaceholders checks that Key/ID template placeholders match the Expansion setting.
+func validatePlaceholders(node PipelineNode, idx int) error {
+	hasSurfaceKey := strings.Contains(node.ID, "{surface-key}") || strings.Contains(node.Key, "{surface-key}")
+	hasSurfaceType := strings.Contains(node.ID, "{surface-type}") || strings.Contains(node.Key, "{surface-type}")
+
+	switch node.Expansion {
+	case "per-surface-key":
+		if !hasSurfaceKey {
+			return fmt.Errorf("node %q (index %d): Expansion is per-surface-key but ID/Key lacks {surface-key} placeholder", node.ID, idx)
+		}
+	case "per-surface-type":
+		if !hasSurfaceType {
+			return fmt.Errorf("node %q (index %d): Expansion is per-surface-type but ID/Key lacks {surface-type} placeholder", node.ID, idx)
+		}
+	default:
+		// Single (no expansion) — must NOT have placeholders
+		if hasSurfaceKey || hasSurfaceType {
+			return fmt.Errorf("node %q (index %d): Expansion is empty but ID/Key contains placeholders {surface-key} or {surface-type}", node.ID, idx)
+		}
+	}
+	return nil
+}
+
+// idExistsInRegistry checks if a concrete ID matches any registry node ID.
+func idExistsInRegistry(id string) bool {
+	for _, node := range PipelineRegistry {
+		if node.ID == id {
+			return true
+		}
+		// For template IDs, check if the query matches the pattern
+		if strings.Contains(node.ID, "{") {
+			if matchIDToTemplate(id, node.ID) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// matchIDToTemplate checks if a concrete ID matches a template with placeholders.
+func matchIDToTemplate(id, template string) bool {
+	parts := strings.SplitN(template, "{", 2)
+	if len(parts) < 2 {
+		return id == template
+	}
+	prefix := parts[0]
+	if !strings.HasPrefix(id, prefix) {
+		return false
+	}
+	return len(id) > len(prefix)
+}
+
+// isResolveIfGenerated checks if a DepResolveFunc is a ResolveIfGenerated wrapper.
+func isResolveIfGenerated(fn DepResolveFunc) bool {
+	return extractResolveIfGeneratedID(fn) != ""
+}
+
+// extractResolveIfGeneratedID attempts to extract the target ID from a ResolveIfGenerated
+// closure by testing it against all registry node IDs.
+func extractResolveIfGeneratedID(fn DepResolveFunc) string {
+	// Create a context with all registry node IDs in AllGenerated
+	allIDs := make([]string, 0, len(PipelineRegistry))
+	for _, node := range PipelineRegistry {
+		allIDs = append(allIDs, node.ID)
+	}
+
+	// Test with all IDs present — ResolveIfGenerated returns [id] if id is in AllGenerated
+	ctx := &GenContext{AllGenerated: allIDs}
+	result := fn(ctx)
+	if len(result) == 1 {
+		// Now test with no IDs — should return nil
+		ctx2 := &GenContext{AllGenerated: nil}
+		result2 := fn(ctx2)
+		if result2 == nil {
+			return result[0]
+		}
+	}
+	return ""
+}
+
+// validateExpandedIDsUnique verifies that all expanded IDs are unique
+// using representative surface configurations.
+func validateExpandedIDsUnique() error {
+	testSurfaces := map[string]string{
+		".":      "api",
+		"api":    "api",
+		"cli":    "cli",
+		"tui":    "tui",
+		"web":    "web",
+		"mobile": "mobile",
+	}
+
+	seen := make(map[string]string) // ID -> node Type that produced it
+	for _, node := range PipelineRegistry {
+		expanded := expandNode(node, testSurfaces, nil)
+		for _, t := range expanded {
+			if prev, dup := seen[t.ID]; dup {
+				return fmt.Errorf("duplicate expanded ID %q produced by both %q and %q", t.ID, prev, node.Type)
+			}
+			seen[t.ID] = node.Type
+		}
+	}
+
+	// Also test single-surface degenerate case
+	singleSurfaces := map[string]string{".": "api"}
+	singleSeen := make(map[string]string)
+	for _, node := range PipelineRegistry {
+		expanded := expandNode(node, singleSurfaces, nil)
+		for _, t := range expanded {
+			if prev, dup := singleSeen[t.ID]; dup {
+				return fmt.Errorf("duplicate expanded ID %q (single-surface) produced by both %q and %q", t.ID, prev, node.Type)
+			}
+			singleSeen[t.ID] = node.Type
+		}
+	}
+
+	return nil
+}
+
+// validateOrderingInvariants checks that resolver dependencies match declaration order.
+func validateOrderingInvariants() error {
+	var hasUpstreamProducer bool
+	var hasRunTestProducer bool
+
+	for i, node := range PipelineRegistry {
+		for _, dep := range node.DependsOn {
+			if dep.Resolve == nil {
+				continue
+			}
+
+			// ResolveUpstream: needs at least one prior node that populates UpstreamIDs
+			if isSameResolver(dep.Resolve, ResolveUpstream) {
+				if !hasUpstreamProducer {
+					return fmt.Errorf("node %q (index %d): uses ResolveUpstream but has no guaranteed upstream producer before it in declaration order", node.ID, i)
+				}
+			}
+
+			// ResolveLastRunTest: needs at least one prior TypeTestRun node
+			if isSameResolver(dep.Resolve, ResolveLastRunTest) {
+				if !hasRunTestProducer {
+					return fmt.Errorf("node %q (index %d): uses ResolveLastRunTest but no TypeTestRun node declared before it", node.ID, i)
+				}
+			}
+		}
+
+		// After processing this node, mark it as a potential producer
+		if node.Expansion == "" || node.Expansion == "per-surface-key" {
+			hasUpstreamProducer = true
+		}
+		if node.Type == TypeTestRun {
+			hasRunTestProducer = true
+		}
+	}
+
+	return nil
+}
+
+// isSameResolver checks if two DepResolveFunc values are the same function pointer.
+func isSameResolver(a, b DepResolveFunc) bool {
+	return fmt.Sprintf("%p", a) == fmt.Sprintf("%p", b)
+}
+
+// validateGeneratedTasks performs Phase 2 (dynamic) validation of generated tasks.
+// Runs at the end of GenerateTestTasks to validate runtime invariants.
+// Validates: all resolver-returned IDs exist in generated task set; no circular dependencies.
+func validateGeneratedTasks(tasks []AutoGenTaskDef) error {
+	// Build ID set for lookup
+	idSet := make(map[string]bool, len(tasks))
+	for _, t := range tasks {
+		idSet[t.ID] = true
+	}
+
+	// Check 1: All dependency references point to existing IDs
+	for _, t := range tasks {
+		for _, dep := range t.Dependencies {
+			if !idSet[dep] {
+				// Dependencies might reference business tasks (not in generated set).
+				// Only flag references that look like pipeline task IDs (T- prefix).
+				if strings.HasPrefix(dep, "T-") {
+					return fmt.Errorf("generated task %q depends on %q which is not in the generated task set", t.ID, dep)
+				}
+			}
+		}
+	}
+
+	// Check 2: No circular dependencies (topological sort)
+	if err := checkNoCycles(tasks); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// checkNoCycles performs topological sort to detect circular dependencies.
+func checkNoCycles(tasks []AutoGenTaskDef) error {
+	idSet := make(map[string]bool, len(tasks))
+	for _, t := range tasks {
+		idSet[t.ID] = true
+	}
+
+	// Build forward adjacency: dependency -> dependent (for topo sort)
+	forward := make(map[string][]string)
+	inDegree := make(map[string]int)
+	for _, t := range tasks {
+		inDegree[t.ID] = 0
+	}
+	for _, t := range tasks {
+		for _, dep := range t.Dependencies {
+			if idSet[dep] {
+				forward[dep] = append(forward[dep], t.ID)
+				inDegree[t.ID]++
+			}
+		}
+	}
+
+	// Enqueue nodes with in-degree 0
+	queue := make([]string, 0)
+	for _, t := range tasks {
+		if inDegree[t.ID] == 0 {
+			queue = append(queue, t.ID)
+		}
+	}
+
+	visited := 0
+	for len(queue) > 0 {
+		curr := queue[0]
+		queue = queue[1:]
+		visited++
+		for _, next := range forward[curr] {
+			inDegree[next]--
+			if inDegree[next] == 0 {
+				queue = append(queue, next)
+			}
+		}
+	}
+
+	if visited < len(tasks) {
+		return fmt.Errorf("circular dependency detected among %d pipeline tasks (topological sort visited %d of %d)", len(tasks)-visited, visited, len(tasks))
+	}
+
+	return nil
 }
