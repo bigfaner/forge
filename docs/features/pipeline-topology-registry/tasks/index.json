@@ -58,7 +58,7 @@
         "2",
         "3"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "4-refactor-build-callers.md",
       "record": "records/4-refactor-build-callers.md",
       "breaking": true,

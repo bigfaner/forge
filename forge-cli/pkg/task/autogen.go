@@ -500,40 +500,6 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	return GenerateTestTasks("quick", surfaces, executionOrder, auto, intent, nil, nil)
 }
 
-// ResolveFirstTestDep is a legacy stub. In the registry-based pipeline, dependency
-// resolution is handled by DepRef resolvers during generation. This stub is kept
-// for backward compatibility with existing tests.
-func ResolveFirstTestDep(_ []AutoGenTaskDef, _ map[string]Task, _, _ string) {
-	// No-op: dependencies are resolved during GenerateTestTasks via registry resolvers.
-}
-
-// GetReviewDocTask returns a T-review-doc AutoGenTaskDef from the PipelineRegistry.
-// Kept for backward compatibility with existing tests.
-func GetReviewDocTask() AutoGenTaskDef {
-	for _, node := range PipelineRegistry {
-		if node.ID == "T-review-doc" {
-			return AutoGenTaskDef{
-				ID:       node.ID,
-				Key:      deriveKey(node.Key, node.ID),
-				Title:    node.Title,
-				Priority: node.Priority,
-				Type:     node.Type,
-			}
-		}
-	}
-	return AutoGenTaskDef{ID: "T-review-doc", Key: "review-doc", Type: TypeDocReview}
-}
-
-// ResolveReviewDocDep resolves T-review-doc dependencies from existing doc-category tasks.
-// Kept for backward compatibility with existing tests.
-func ResolveReviewDocDep(task *AutoGenTaskDef, existing map[string]Task) {
-	for _, t := range existing {
-		if CategoryForType(t.Type) == CategoryDoc {
-			task.Dependencies = append(task.Dependencies, t.ID)
-		}
-	}
-}
-
 // findTaskIndex returns the index of the task with the given ID, or -1.
 // Kept for backward compatibility with existing tests.
 func findTaskIndex(tasks []AutoGenTaskDef, id string) int {
@@ -545,29 +511,3 @@ func findTaskIndex(tasks []AutoGenTaskDef, id string) int {
 	return -1
 }
 
-// findTaskIndexOrPanic returns the index of the task with the given ID, or panics.
-// Kept for backward compatibility with existing tests.
-func findTaskIndexOrPanic(tasks []AutoGenTaskDef, id string) int {
-	idx := findTaskIndex(tasks, id)
-	if idx < 0 {
-		panic("task not found: " + id)
-	}
-	return idx
-}
-
-// findTaskIndexByPrefix returns the index of the first task whose ID starts with prefix, or -1.
-// Kept for backward compatibility with existing tests.
-func findTaskIndexByPrefix(tasks []AutoGenTaskDef, prefix string) int {
-	for i, t := range tasks {
-		if strings.HasPrefix(t.ID, prefix) {
-			return i
-		}
-	}
-	return -1
-}
-
-// ResolveDriftFallbackDep is a legacy stub. In the registry-based pipeline, drift/consolidate
-// dependencies are resolved by ResolveLastRunTestOrBusiness resolver during generation.
-func ResolveDriftFallbackDep(_ *TaskIndex) {
-	// No-op: dependencies are resolved during GenerateTestTasks via registry resolvers.
-}
