@@ -41,7 +41,7 @@ After brainstorm completes, extract the feature slug from the proposal directory
 
 ## Step 2: Task Generation Gate
 
-The user already approved and committed the proposal in Step 1. This gate confirms whether to proceed to **task generation** — not proposal approval.
+The user already approved the proposal in Step 1. This gate confirms whether to proceed to **task generation** — not proposal approval.
 
 <EXTREMELY-IMPORTANT>
 ### Auto-Skip Configuration Check (Step 2 Entry)

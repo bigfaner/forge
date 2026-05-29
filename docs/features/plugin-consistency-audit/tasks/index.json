@@ -30,7 +30,7 @@
       "title": "Fix: quick command Step 2 commit assumption",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "11-fix-quick-commit-assumption.md",
       "record": "records/11-fix-quick-commit-assumption.md",
       "type": "doc",
