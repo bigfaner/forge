@@ -378,14 +378,14 @@ func TestPerType_TC_008_TaskIndexQuickModePerSurfaceRunTestTasks(t *testing.T) {
 		assert.True(t, ok, "index should contain %s for quick mode", taskKey)
 	}
 
-	// Verify verify-regression depends on last run-test
+	// Verify drift depends on last run-test
 	tasksDir := filepath.Join(dir, "docs", "features", "quick-type-feat", "tasks")
-	verifyMDPath := filepath.Join(tasksDir, "verify-regression.md")
-	verifyMDData, err := os.ReadFile(verifyMDPath)
-	require.NoError(t, err, "verify-regression task .md should exist")
-	verifyContent := string(verifyMDData)
+	driftMDPath := filepath.Join(tasksDir, "quick-drift-detection.md")
+	driftMDData, err := os.ReadFile(driftMDPath)
+	require.NoError(t, err, "quick-drift-detection task .md should exist")
+	driftContent := string(driftMDData)
 
-	assert.Contains(t, verifyContent, "T-test-run-frontend", "verify-regression should depend on T-test-run-frontend (last in serial chain)")
+	assert.Contains(t, driftContent, "T-test-run-frontend", "quick-drift-detection should depend on T-test-run-frontend (last in serial chain)")
 }
 
 // ==============================================================================
