@@ -63,7 +63,7 @@
       "title": "Fix: gen-journeys test level emphasis mismatch",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "14-fix-gen-journeys-emphasis.md",
       "record": "records/14-fix-gen-journeys-emphasis.md",
       "type": "doc",
