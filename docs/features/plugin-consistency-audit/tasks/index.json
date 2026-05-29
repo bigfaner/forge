@@ -187,7 +187,7 @@
       "title": "Fix: fix-bug cross-reference precision",
       "priority": "P2",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "24-fix-fix-bug-cross-ref.md",
       "record": "records/24-fix-fix-bug-cross-ref.md",
       "type": "doc",

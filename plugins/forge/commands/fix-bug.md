@@ -257,7 +257,7 @@ Apply the "notable knowledge" heuristics below to determine if any notable knowl
 
 If `/consolidate-specs` has previously generated vocabulary (from drift-detection runs), use the domain keywords from existing `docs/conventions/` and `docs/business-rules/` files to suggest which target file each extracted item belongs to. This is a suggestion — the agent makes the final classification decision based on content.
 
-If no vocabulary exists (no prior `/consolidate-specs` run), classify unassisted using the domain-to-file mapping from `/consolidate-specs` skill Step 5.
+If no vocabulary exists (no prior `/consolidate-specs` run), classify unassisted using the domain-to-decision-file mapping from `/consolidate-specs` rules/overlap-detection.md.
 
 #### Step 4: Silent exit if no notable knowledge
 
