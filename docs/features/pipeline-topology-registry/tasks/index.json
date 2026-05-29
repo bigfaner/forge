@@ -24,13 +24,14 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "2-refactor-task-generation.md",
       "record": "records/2-refactor-task-generation.md",
       "breaking": true,
       "surface-key": ".",
       "surface-type": "cli",
       "type": "coding.refactor",
+      "blockedReason": "Blocked by fix-1: task 1 implementation has 9 deviations from proposal, pipeline.go types must be fixed first",
       "complexity": "high"
     },
     "3-refactor-infer-and-lookup": {
@@ -101,6 +102,18 @@
       "surface-type": "cli",
       "type": "coding.refactor",
       "complexity": "high"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: pipeline.go deviates from proposal on 9 points",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1",
+      "type": "coding.fix"
     }
   },
   "statusEnum": [

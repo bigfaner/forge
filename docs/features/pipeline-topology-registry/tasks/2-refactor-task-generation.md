@@ -20,7 +20,7 @@ Replace the procedural `GetBreakdownTestTasks` and `GetQuickTestTasks` functions
 Delete `GetBreakdownTestTasks`, `GetQuickTestTasks`, `resolveBreakdownDeps`, `resolveQuickDeps`, `wireRunTestChain`, `wireQuickRunTestChain`, and related helper functions.
 
 ## Reference Files
-- `forge-cli/pkg/task/autogen.go:188-310`: `GetBreakdownTestTasks` — replaced by registry-driven generation (source: proposal.md#Derived-Functions)
+- `forge-cli/pkg/task/autogen.go:188-310`: `GetBreakdownTestTasks` — replaced by registry-driven generation (source: docs/proposals/pipeline-topology-registry/proposal.md § Derived Functions)
 - `forge-cli/pkg/task/autogen.go:324-414`: `GetQuickTestTasks` — replaced by registry-driven generation
 - `forge-cli/pkg/task/autogen.go:603-702`: `resolveBreakdownDeps`/`resolveQuickDeps` — replaced by DepRef resolution
 - `forge-cli/pkg/task/autogen.go:709-784`: `wireRunTestChain`/`wireQuickRunTestChain` — replaced by per-surface-key serial chain expansion

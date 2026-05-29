@@ -18,8 +18,8 @@ mainSession: false
 Implement the two-phase validation system that ensures the PipelineRegistry is structurally correct before any task generation runs. Phase 1 is a static init-time validation via `init()` that panics on failure (replaces `ValidateAutogenTemplates`). Phase 2 is a dynamic runtime validation in `GenerateTestTasks` that returns errors.
 
 ## Reference Files
-- `forge-cli/pkg/task/pipeline.go`: Add `ValidatePipelineRegistry` (Phase 1) and runtime checks in `GenerateTestTasks` (Phase 2) (source: proposal.md#Scope item 7)
-- `forge-cli/pkg/task/autogen.go:120-175`: `ValidateAutogenTemplates` — replaced by Phase 1 validation (source: proposal.md#Scope item 7)
+- `forge-cli/pkg/task/pipeline.go`: Add `ValidatePipelineRegistry` (Phase 1) and runtime checks in `GenerateTestTasks` (Phase 2) (source: docs/proposals/pipeline-topology-registry/proposal.md § Scope > In Scope, item 7)
+- `forge-cli/pkg/task/autogen.go:120-175`: `ValidateAutogenTemplates` — replaced by Phase 1 validation (source: docs/proposals/pipeline-topology-registry/proposal.md § Scope > In Scope, item 7)
 
 ## Acceptance Criteria
 - [ ] Phase 1 `ValidatePipelineRegistry()` runs in `init()`, validates: all `DependsOn.Ref` strings reference existing node IDs; `ResolveIfGenerated` references point to nodes declared before the caller; all expanded IDs are unique; `GenerateCondition` is non-nil; `Key`/`ID` template placeholders match `Expansion` setting; escape hatch count <= 5

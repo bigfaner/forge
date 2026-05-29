@@ -18,10 +18,10 @@ mainSession: false
 Replace the 15-case InferType switch with registry iteration + prefix/suffix fallback. Refactor `isTestTaskID`, `isAutoGenForDep`, `IsAutoGenTaskID` to derive their results from the PipelineRegistry instead of hardcoded string lists.
 
 ## Reference Files
-- `forge-cli/pkg/task/infer.go:16-70`: InferType 15-case switch — replaced by registry iteration (source: proposal.md#Derived-Functions)
-- `forge-cli/pkg/task/build.go:516-530`: `isTestTaskID` 6-prefix hardcoded list — derive from registry expanded IDs (source: proposal.md#isTestTaskID)
-- `forge-cli/pkg/task/autogen.go:1080-1091`: `isAutoGenForDep` — derive from registry (source: proposal.md#isAutoGenForDep)
-- `forge-cli/pkg/task/build.go:614-626`: `IsAutoGenTaskID` — derive from registry (source: proposal.md#IsAutoGenTaskID)
+- `forge-cli/pkg/task/infer.go:16-70`: InferType 15-case switch — replaced by registry iteration (source: docs/proposals/pipeline-topology-registry/proposal.md § Derived Functions)
+- `forge-cli/pkg/task/build.go:516-530`: `isTestTaskID` 6-prefix hardcoded list — derive from registry expanded IDs (source: docs/proposals/pipeline-topology-registry/proposal.md § Derived Functions)
+- `forge-cli/pkg/task/autogen.go:1080-1091`: `isAutoGenForDep` — derive from registry (source: docs/proposals/pipeline-topology-registry/proposal.md § Derived Functions)
+- `forge-cli/pkg/task/build.go:614-626`: `IsAutoGenTaskID` — derive from registry (source: docs/proposals/pipeline-topology-registry/proposal.md § Derived Functions)
 
 ## Acceptance Criteria
 - [ ] InferType iterates PipelineRegistry, matches ID patterns with wildcard support for `{surface-key}`/`{surface-type}` placeholders

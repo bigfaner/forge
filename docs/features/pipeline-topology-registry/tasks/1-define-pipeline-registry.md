@@ -20,10 +20,10 @@ Create `pkg/task/pipeline.go` with the full Pipeline Topology Registry — the s
 This is the foundation task — all subsequent refactoring tasks depend on the registry being defined.
 
 ## Reference Files
-- `forge-cli/pkg/task/pipeline.go`: New file — all registry types and declarations (source: proposal.md#Core-Data-Structure)
-- `forge-cli/pkg/task/autogen.go:178-181`: `isSkipTestIntent` — referenced by `GateBlockSkipTest` (source: proposal.md#Intent-Gate-Functions)
-- `forge-cli/pkg/task/types.go:42-64`: Type constants referenced by registry entries (source: proposal.md#Pipeline-Registry)
-- `forge-cli/pkg/task/autogen.go:922-994`: `findHighestGateOrSummary`/`findMaxBusinessTaskID`/`phaseFromID`/`numericID` — logic migrates into resolvers (source: proposal.md#Dependency-Resolver-Functions)
+- `forge-cli/pkg/task/pipeline.go`: New file — all registry types and declarations (source: docs/proposals/pipeline-topology-registry/proposal.md § Core Data Structure)
+- `forge-cli/pkg/task/autogen.go:178-181`: `isSkipTestIntent` — referenced by `GateBlockSkipTest` (source: docs/proposals/pipeline-topology-registry/proposal.md § Predefined Gate, Condition & Resolver Functions)
+- `forge-cli/pkg/task/types.go:42-64`: Type constants referenced by registry entries (source: docs/proposals/pipeline-topology-registry/proposal.md § Pipeline Registry)
+- `forge-cli/pkg/task/autogen.go:922-994`: `findHighestGateOrSummary`/`findMaxBusinessTaskID`/`phaseFromID`/`numericID` — logic migrates into resolvers (source: docs/proposals/pipeline-topology-registry/proposal.md § Predefined Gate, Condition & Resolver Functions)
 
 ## Acceptance Criteria
 - [ ] `pkg/task/pipeline.go` exists with `PipelineNode`, `DepRef`, `GenContext`, `ConfigGateFunc`, `IntentGateFunc`, `GenerateCondFunc`, `DepResolveFunc` types

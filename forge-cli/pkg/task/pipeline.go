@@ -1,6 +1,7 @@
 package task
 
 import (
+	"sort"
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
@@ -150,7 +151,11 @@ func GateBlockSkipTest(intent string) bool {
 // ---------------------------------------------------------------------------
 
 // CondHasTestableTasks returns true when any business task has a testable type.
+// When tasks is nil, returns true (legacy compat: old procedural code did not gate on business tasks).
 func CondHasTestableTasks(tasks []Task) bool {
+	if tasks == nil {
+		return true
+	}
 	for _, t := range tasks {
 		if IsTestableType(t.Type) {
 			return true
@@ -160,6 +165,7 @@ func CondHasTestableTasks(tasks []Task) bool {
 }
 
 // CondHasDocTasks returns true when any business task has a doc-category type.
+// When tasks is nil, returns false (no doc tasks to trigger T-review-doc).
 func CondHasDocTasks(tasks []Task) bool {
 	for _, t := range tasks {
 		if CategoryForType(t.Type) == CategoryDoc {
@@ -304,6 +310,263 @@ func ResolveIfGenerated(id string) DepResolveFunc {
 }
 
 // ---------------------------------------------------------------------------
+// GenerateTestTasks — registry-driven task generation
+// ---------------------------------------------------------------------------
+
+// GenerateTestTasks filters PipelineRegistry by mode/config/intent/condition/ui constraints,
+// expands per-surface nodes, resolves dependencies via GenContext progressive population,
+// and returns the generated AutoGenTaskDef list.
+//
+// Implements the 5-step algorithm: filter -> expand -> resolve -> update -> return.
+func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string, businessTasks []Task, existingTasks map[string]Task) []AutoGenTaskDef {
+	// Do NOT early-return on empty surfaces — non-surface tasks (T-review-doc, T-clean-code,
+	// T-validate-code) can still generate when surfaces is empty. Surface-dependent nodes
+	// (per-surface-key/type expansion) naturally produce zero expanded tasks.
+
+	ctx := &GenContext{
+		Mode:           mode,
+		Intent:         intent,
+		Surfaces:       surfaces,
+		ExecutionOrder: executionOrder,
+		Auto:           auto,
+		BusinessTasks:  businessTasks,
+		ExistingTasks:  existingTasks,
+	}
+
+	var generated []AutoGenTaskDef
+
+	for _, node := range PipelineRegistry {
+		// Step 1: Filter — apply all 5 gate conditions
+		if node.Mode != "" && node.Mode != mode {
+			continue
+		}
+		if node.ConfigGate != nil && !node.ConfigGate(mode, auto) {
+			continue
+		}
+		intentGate := node.IntentGate
+		if intentGate == nil {
+			intentGate = GateBlockSkipTest
+		}
+		if !intentGate(intent) {
+			continue
+		}
+		if !node.GenerateCondition(businessTasks) {
+			continue
+		}
+		if node.UISurfaceOnly && !hasVisualUI(surfaces) {
+			continue
+		}
+
+		// Step 2: Expand — produce concrete task(s) from template
+		expanded := expandNode(node, surfaces, executionOrder)
+
+		// Step 3: Resolve dependencies for each expanded task
+		for i := range expanded {
+		if node.Expansion == "per-surface-key" && i > 0 {
+			expanded[i].Dependencies = []string{expanded[i-1].ID}
+		} else {
+			for _, dep := range node.DependsOn {
+				if dep.Resolve != nil {
+					ids := dep.Resolve(ctx)
+					if ids == nil {
+						continue
+					}
+					expanded[i].Dependencies = append(expanded[i].Dependencies, ids...)
+				} else {
+					expanded[i].Dependencies = append(expanded[i].Dependencies, dep.Ref)
+				}
+			}
+		}
+		}
+
+		// Step 4: Update GenContext (progressive population)
+		ids := pipelineTaskIDs(expanded)
+		ctx.AllGenerated = append(ctx.AllGenerated, ids...)
+		ctx.UpstreamIDs = ids
+		if node.Type == TypeTestRun {
+			ctx.RunTestChain = append(ctx.RunTestChain, ids...)
+		}
+		generated = append(generated, expanded...)
+	}
+
+	return generated
+}
+
+// hasVisualUI returns true when at least one surface has a visual UI type
+// (TUI, Web, or Mobile).
+func hasVisualUI(surfaces map[string]string) bool {
+	for _, typ := range surfaces {
+		if uiSurfaceTypes[types.SurfaceType(typ)] {
+			return true
+		}
+	}
+	return false
+}
+
+// expandNode produces concrete AutoGenTaskDef instances from a PipelineNode template.
+//
+//	"" (empty)         → single task
+//	"per-surface-key"  → one task per surface key (serial chain wiring)
+//	"per-surface-type" → one task per unique surface type (parallel)
+func expandNode(node PipelineNode, surfaces map[string]string, executionOrder []string) []AutoGenTaskDef {
+	singleSurface := isSingleSurface(surfaces)
+
+	switch node.Expansion {
+	case "per-surface-key":
+		return expandPerSurfaceKey(node, surfaces, singleSurface, executionOrder)
+	case "per-surface-type":
+		return expandPerSurfaceType(node, surfaces)
+	default:
+		// Single (no expansion)
+		key := deriveKey(node.Key, node.ID)
+		return []AutoGenTaskDef{
+			{
+				ID:            node.ID,
+				Key:           key,
+				Title:         node.Title,
+				Priority:      node.Priority,
+				EstimatedTime: node.EstimatedTime,
+				Type:          node.Type,
+				MainSession:   node.MainSession,
+				Breaking:      true,
+				StrategyKind:  node.StrategyKind,
+			},
+		}
+	}
+}
+
+// expandPerSurfaceKey creates one task per surface key.
+// When isSingleSurface is true, the surface-key suffix is stripped from ID.
+// Serial chain: expanded[i] depends on expanded[i-1] (after node-level deps).
+func expandPerSurfaceKey(node PipelineNode, surfaces map[string]string, singleSurface bool, executionOrder []string) []AutoGenTaskDef {
+	if singleSurface {
+		// Degenerate: single surface, strip suffix
+		for key, typ := range surfaces {
+			title := expandTitle(node.Title, typ)
+			stripID := strings.ReplaceAll(node.ID, "-{surface-key}", "")
+			stripKey := strings.ReplaceAll(node.Key, "-{surface-key}", "")
+			return []AutoGenTaskDef{
+				{
+					ID:            stripID,
+					Key:           deriveKey(stripKey, stripID),
+					Title:         title,
+					Priority:      node.Priority,
+					EstimatedTime: node.EstimatedTime,
+					Type:          node.Type,
+					MainSession:   node.MainSession,
+					Breaking:      true,
+					SurfaceKey:    key,
+					SurfaceType:   typ,
+					StrategyKind:  node.StrategyKind,
+				},
+			}
+		}
+	}
+
+	// Multi-surface: expand by execution order (provided by caller).
+	// Fall back to sorted keys when execution order is not available.
+	var keys []string
+	if len(executionOrder) > 0 {
+		keys = executionOrder
+	} else {
+		keys = sortedSurfaceKeys(surfaces)
+	}
+	var tasks []AutoGenTaskDef
+	for _, key := range keys {
+		typ := surfaces[key]
+		title := expandTitle(node.Title, typ)
+		id := strings.ReplaceAll(node.ID, "{surface-key}", key)
+		keyVal := strings.ReplaceAll(node.Key, "{surface-key}", key)
+		if keyVal == "" {
+			keyVal = deriveKey("", id)
+		}
+		tasks = append(tasks, AutoGenTaskDef{
+			ID:            id,
+			Key:           keyVal,
+			Title:         title,
+			Priority:      node.Priority,
+			EstimatedTime: node.EstimatedTime,
+			Type:          node.Type,
+			MainSession:   node.MainSession,
+			Breaking:      true,
+			SurfaceKey:    key,
+			SurfaceType:   typ,
+			StrategyKind:  node.StrategyKind,
+		})
+	}
+	return tasks
+}
+
+// expandPerSurfaceType creates one task per unique surface type (parallel).
+func expandPerSurfaceType(node PipelineNode, surfaces map[string]string) []AutoGenTaskDef {
+	seen := make(map[string]bool)
+	var tasks []AutoGenTaskDef
+	for _, key := range sortedSurfaceKeys(surfaces) {
+		typ := surfaces[key]
+		if seen[typ] {
+			continue
+		}
+		seen[typ] = true
+		title := expandTitle(node.Title, typ)
+		id := strings.ReplaceAll(node.ID, "{surface-type}", typ)
+		keyVal := strings.ReplaceAll(node.Key, "{surface-type}", typ)
+		if keyVal == "" {
+			keyVal = deriveKey("", id)
+		}
+		tasks = append(tasks, AutoGenTaskDef{
+			ID:            id,
+			Key:           keyVal,
+			Title:         title,
+			Priority:      node.Priority,
+			EstimatedTime: node.EstimatedTime,
+			Type:          node.Type,
+			MainSession:   node.MainSession,
+			Breaking:      true,
+			SurfaceType:   typ,
+			StrategyKind:  node.StrategyKind,
+		})
+	}
+	return tasks
+}
+
+// deriveKey derives the index.json key from the node's Key field or from the ID.
+// When key is empty, it is derived from ID by stripping "T-" prefix and lowercasing.
+func deriveKey(key, id string) string {
+	if key != "" {
+		return key
+	}
+	if strings.HasPrefix(id, "T-") {
+		return strings.TrimPrefix(id, "T-")
+	}
+	return id
+}
+
+// expandTitle substitutes {test-type-title} in the title template with the
+// TestTypeTitle for the given surface type.
+func expandTitle(titleTemplate, surfaceType string) string {
+	return strings.ReplaceAll(titleTemplate, "{test-type-title}", TestTypeTitle(surfaceType))
+}
+
+// sortedSurfaceKeys returns surface map keys in sorted order for deterministic output.
+func sortedSurfaceKeys(surfaces map[string]string) []string {
+	keys := make([]string, 0, len(surfaces))
+	for k := range surfaces {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// pipelineTaskIDs extracts IDs from a slice of AutoGenTaskDef.
+func pipelineTaskIDs(tasks []AutoGenTaskDef) []string {
+	ids := make([]string, len(tasks))
+	for i, t := range tasks {
+		ids[i] = t.ID
+	}
+	return ids
+}
+
+// ---------------------------------------------------------------------------
 // PipelineRegistry — the single source of truth for auto-generated tasks
 // ---------------------------------------------------------------------------
 
@@ -312,7 +575,7 @@ func ResolveIfGenerated(id string) DepResolveFunc {
 var PipelineRegistry = []PipelineNode{
 	// --- Doc Review (generated whenever business tasks include doc-category types) ---
 	{
-		Type: TypeDocReview, ID: "T-review-doc",
+		Type: TypeDocReview, Key: "review-doc", ID: "T-review-doc",
 		Title: "Review Documentation Quality", Priority: string(types.PriorityP1), EstimatedTime: "30min",
 		ConfigGate: nil, IntentGate: GateAllowAll,
 		GenerateCondition: CondHasDocTasks,
@@ -321,14 +584,14 @@ var PipelineRegistry = []PipelineNode{
 	// --- Clean Code (declared early for cross-stage dependency resolution;
 	//     execution still occurs after all business tasks via ResolveLastBusinessTask) ---
 	{
-		Type: TypeCleanCode, ID: "T-clean-code",
+		Type: TypeCleanCode, Key: "clean-code", ID: "T-clean-code",
 		Title: "Simplify and Clean Code", Priority: string(types.PriorityP2), EstimatedTime: "20min",
 		ConfigGate: GateCleanCode, GenerateCondition: CondAlways,
 		DependsOn: []DepRef{{Resolve: ResolveHighestGateOrLastBiz}},
 	},
 	// --- Test Generation (first test task depends on T-review-doc and T-clean-code) ---
 	{
-		Type: TypeTestGenJourneys, ID: "T-test-gen-journeys",
+		Type: TypeTestGenJourneys, Key: "gen-journeys", ID: "T-test-gen-journeys",
 		Title: "Generate Test Journeys", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, StrategyKind: "interface",
 		DependsOn: []DepRef{
@@ -338,26 +601,26 @@ var PipelineRegistry = []PipelineNode{
 	},
 	// --- Eval (breakdown only) ---
 	{
-		Type: TypeEvalJourney, ID: "T-eval-journey",
+		Type: TypeEvalJourney, Key: "eval-journey", ID: "T-eval-journey",
 		Title: "Evaluate Journey Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", MainSession: true,
 		DependsOn: []DepRef{{Ref: "T-test-gen-journeys"}},
 	},
 	{
-		Type: TypeTestGenContracts, ID: "T-test-gen-contracts",
+		Type: TypeTestGenContracts, Key: "gen-contracts", ID: "T-test-gen-contracts",
 		Title: "Generate Test Contracts", Priority: string(types.PriorityP1), EstimatedTime: "30-45min",
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown",
 		DependsOn: []DepRef{{Ref: "T-eval-journey"}},
 	},
 	{
-		Type: TypeEvalContract, ID: "T-eval-contract",
+		Type: TypeEvalContract, Key: "eval-contract", ID: "T-eval-contract",
 		Title: "Evaluate Contract Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", MainSession: true,
 		DependsOn: []DepRef{{Ref: "T-test-gen-contracts"}},
 	},
 	// --- Gen Scripts (per surface type) ---
 	{
-		Type: TypeTestGenScripts, ID: "T-test-gen-scripts-{surface-type}",
+		Type: TypeTestGenScripts, Key: "gen-test-scripts-{surface-type}", ID: "T-test-gen-scripts-{surface-type}",
 		Title: "Generate {test-type-title} Scripts", Priority: string(types.PriorityP1), EstimatedTime: "1-2h",
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", Expansion: "per-surface-type",
 		DependsOn:    []DepRef{{Ref: "T-eval-contract"}},
@@ -365,7 +628,7 @@ var PipelineRegistry = []PipelineNode{
 	},
 	// --- Run Tests (per surface key) ---
 	{
-		Type: TypeTestRun, ID: "T-test-run-{surface-key}",
+		Type: TypeTestRun, Key: "run-test-{surface-key}", ID: "T-test-run-{surface-key}",
 		Title: "Run {test-type-title}", Priority: string(types.PriorityP1), EstimatedTime: "30min-1h",
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks,
 		DependsOn: []DepRef{{Resolve: ResolveUpstream}},
@@ -373,13 +636,13 @@ var PipelineRegistry = []PipelineNode{
 	},
 	// --- Validation ---
 	{
-		Type: TypeValidationCode, ID: "T-validate-code",
+		Type: TypeValidationCode, Key: "validate-code", ID: "T-validate-code",
 		Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 		ConfigGate: GateValidation, GenerateCondition: CondAlways,
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 	{
-		Type: TypeValidationUx, ID: "T-validate-ux",
+		Type: TypeValidationUx, Key: "validate-ux", ID: "T-validate-ux",
 		Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 		ConfigGate: GateValidation, GenerateCondition: CondAlways,
 		DependsOn:     []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
@@ -387,13 +650,13 @@ var PipelineRegistry = []PipelineNode{
 	},
 	// --- Spec Consolidation/Drift ---
 	{
-		Type: TypeDocConsolidate, ID: "T-specs-consolidate",
+		Type: TypeDocConsolidate, Key: "consolidate-specs", ID: "T-specs-consolidate",
 		Title: "Consolidate Specs", Priority: string(types.PriorityP2), EstimatedTime: "20min",
 		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "breakdown",
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 	{
-		Type: TypeDocDrift, ID: "T-quick-doc-drift",
+		Type: TypeDocDrift, Key: "quick-drift-detection", ID: "T-quick-doc-drift",
 		Title: "Detect Spec Drift", Priority: string(types.PriorityP2), EstimatedTime: "15min",
 		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "quick",
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
