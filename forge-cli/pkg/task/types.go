@@ -142,7 +142,7 @@ func IsValidType(typ string) bool {
 	return false
 }
 
-// SystemTypes is the set of auto-generated system task types (13 total).
+// SystemTypes is the set of auto-generated system task types (12 total).
 // These types are created by the forge pipeline, not by users.
 // Dual-identity types (doc.consolidate, doc.drift) are excluded because
 // they can also serve as business tasks.
