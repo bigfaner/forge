@@ -81,7 +81,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-consolidated-report.md",
       "record": "records/6-consolidated-report.md",
       "mainSession": true,
@@ -96,7 +96,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "breaking": true,
