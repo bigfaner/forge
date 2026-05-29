@@ -74,7 +74,7 @@
       "title": "Fix: gen-contracts Fact Table format inconsistency",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "15-fix-gen-contracts-fact-table.md",
       "record": "records/15-fix-gen-contracts-fact-table.md",
       "type": "doc",
