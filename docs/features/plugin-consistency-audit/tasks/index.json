@@ -209,7 +209,7 @@
       "title": "Fix: ui-design TUI requirements triplication",
       "priority": "P2",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "26-fix-ui-design-tui-triplication.md",
       "record": "records/26-fix-ui-design-tui-triplication.md",
       "type": "doc",
