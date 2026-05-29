@@ -51,9 +51,10 @@ func TestInferType(t *testing.T) {
 		{"T-test-gen-scripts-tui", nil, TypeTestGenScripts},
 		{"T-test-gen-scripts-cli", nil, TypeTestGenScripts},
 		{"T-test-gen-scripts-web-ui", nil, TypeTestGenScripts},
-		{"T-test-gen-journeys-api", nil, TypeTestGenJourneys},
-		{"T-test-gen-journeys-tui", nil, TypeTestGenJourneys},
-		{"T-test-gen-journeys-cli", nil, TypeTestGenJourneys},
+		// T-test-gen-journeys suffixed IDs no longer match (gen-journeys is not expanded per-surface-type in registry)
+		{"T-test-gen-journeys-api", nil, ""},
+		{"T-test-gen-journeys-tui", nil, ""},
+		{"T-test-gen-journeys-cli", nil, ""},
 
 		// Gen-contracts exact match
 		{"T-test-gen-contracts", nil, TypeTestGenContracts},
@@ -86,8 +87,8 @@ func TestInferType(t *testing.T) {
 		{"T-test-runa", nil, ""},
 		{"T-quick-doc-drifta", nil, ""},
 
-		// Hard Rule: gen-journeys type suffix with hyphenated types
-		{"T-test-gen-journeys-web-ui", nil, TypeTestGenJourneys},
+		// T-test-gen-journeys-web-ui no longer matches (gen-journeys is not expanded per-surface-type)
+		{"T-test-gen-journeys-web-ui", nil, ""},
 
 		// Surface-key prefix matching: known key -> TypeTestRun
 		{"T-test-run-backend", multiSurfaces, TypeTestRun},

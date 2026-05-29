@@ -2850,7 +2850,7 @@ func TestGetBreakdownTestTasks_Refactor_MultiSurface_NoTestTasks(t *testing.T) {
 
 func TestGenerateTestTasks_PassesIntent_Breakdown(t *testing.T) {
 	// GenerateTestTasks with refactor should produce no test pipeline tasks
-	tasks := GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor")
+	tasks := GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor", nil, nil)
 
 	for _, task := range tasks {
 		if strings.HasPrefix(task.ID, "T-test-") {
@@ -2861,7 +2861,7 @@ func TestGenerateTestTasks_PassesIntent_Breakdown(t *testing.T) {
 
 func TestGenerateTestTasks_PassesIntent_Quick(t *testing.T) {
 	// GenerateTestTasks with cleanup should produce no test pipeline tasks
-	tasks := GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "cleanup")
+	tasks := GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "cleanup", nil, nil)
 
 	for _, task := range tasks {
 		if strings.HasPrefix(task.ID, "T-test-") {

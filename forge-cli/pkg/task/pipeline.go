@@ -362,21 +362,21 @@ func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder [
 
 		// Step 3: Resolve dependencies for each expanded task
 		for i := range expanded {
-		if node.Expansion == "per-surface-key" && i > 0 {
-			expanded[i].Dependencies = []string{expanded[i-1].ID}
-		} else {
-			for _, dep := range node.DependsOn {
-				if dep.Resolve != nil {
-					ids := dep.Resolve(ctx)
-					if ids == nil {
-						continue
+			if node.Expansion == "per-surface-key" && i > 0 {
+				expanded[i].Dependencies = []string{expanded[i-1].ID}
+			} else {
+				for _, dep := range node.DependsOn {
+					if dep.Resolve != nil {
+						ids := dep.Resolve(ctx)
+						if ids == nil {
+							continue
+						}
+						expanded[i].Dependencies = append(expanded[i].Dependencies, ids...)
+					} else {
+						expanded[i].Dependencies = append(expanded[i].Dependencies, dep.Ref)
 					}
-					expanded[i].Dependencies = append(expanded[i].Dependencies, ids...)
-				} else {
-					expanded[i].Dependencies = append(expanded[i].Dependencies, dep.Ref)
 				}
 			}
-		}
 		}
 
 		// Step 4: Update GenContext (progressive population)
@@ -564,6 +564,112 @@ func pipelineTaskIDs(tasks []AutoGenTaskDef) []string {
 		ids[i] = t.ID
 	}
 	return ids
+}
+
+// ---------------------------------------------------------------------------
+// Registry-derived lookup functions
+// ---------------------------------------------------------------------------
+
+// matchRegistryID attempts to match a task ID against registry node ID patterns.
+// Returns the node's Type if matched, or "" if no match.
+// Handles: exact match, per-surface-type suffix match, per-surface-key with
+// surfaces validation, and single-surface degenerate IDs.
+func matchRegistryID(id string, surfaces map[string]string) string {
+	for _, node := range PipelineRegistry {
+		if node.Expansion == "" {
+			// Exact match
+			if id == node.ID {
+				return node.Type
+			}
+			continue
+		}
+
+		switch node.Expansion {
+		case "per-surface-type":
+			// Match prefix + "-" + type suffix (e.g., "T-test-gen-scripts-api")
+			// Also matches degenerate form (no suffix) for backward compat.
+			if matchTypeSuffixedID(id, node.ID) {
+				return node.Type
+			}
+		case "per-surface-key":
+			// Match prefix + "-" + surface-key suffix
+			if matched := matchSurfaceKeyID(id, node.ID, surfaces); matched {
+				return node.Type
+			}
+		}
+	}
+	return ""
+}
+
+// matchTypeSuffixedID checks if id matches the pattern "baseTemplate" with
+// {surface-type} replaced by a concrete type suffix.
+// e.g., matchTypeSuffixedID("T-test-gen-scripts-api", "T-test-gen-scripts-{surface-type}")
+// returns true.
+// Also accepts the degenerate form (ID without type suffix) to maintain backward
+// compatibility with InferType's original exact match for IDs like "T-test-gen-scripts".
+func matchTypeSuffixedID(id, idTemplate string) bool {
+	// Find the placeholder in the template
+	placeholder := "{surface-type}"
+	idx := strings.Index(idTemplate, placeholder)
+	if idx < 0 {
+		return false
+	}
+	prefix := idTemplate[:idx]
+
+	// Degenerate form: ID equals prefix minus trailing "-" (e.g., "T-test-gen-scripts"
+	// matches "T-test-gen-scripts-{surface-type}")
+	stripPrefix := strings.TrimSuffix(prefix, "-")
+	if id == stripPrefix {
+		return true
+	}
+
+	if !strings.HasPrefix(id, prefix) {
+		return false
+	}
+	rem := id[len(prefix):]
+	if len(rem) == 0 {
+		return false // no suffix after prefix
+	}
+	// Validate: suffix must be lowercase letters and hyphens
+	for _, c := range rem {
+		if (c < 'a' || c > 'z') && c != '-' {
+			return false
+		}
+	}
+	return true
+}
+
+// matchSurfaceKeyID checks if id matches the pattern "baseTemplate" with
+// {surface-key} replaced by a surface key from the surfaces map.
+// Also handles single-surface degenerate case (no suffix) — accepted regardless
+// of surfaces to maintain backward compatibility with InferType's original exact match.
+func matchSurfaceKeyID(id, idTemplate string, surfaces map[string]string) bool {
+	placeholder := "{surface-key}"
+	idx := strings.Index(idTemplate, placeholder)
+	if idx < 0 {
+		return false
+	}
+	prefix := idTemplate[:idx]
+
+	// Single-surface degenerate: the template minus "-{surface-key}" should equal id.
+	// Accepted regardless of whether surfaces is nil/single/multi — matches the
+	// original InferType exact-match behavior for IDs like "T-test-run".
+	stripTemplate := strings.ReplaceAll(idTemplate, "-{surface-key}", "")
+	if id == stripTemplate {
+		return true
+	}
+
+	if !strings.HasPrefix(id, prefix) {
+		return false
+	}
+
+	// Multi-surface: extract suffix and check if it's a known surface key
+	suffix := id[len(prefix):]
+	if suffix == "" {
+		return false
+	}
+	_, ok := surfaces[suffix]
+	return ok
 }
 
 // ---------------------------------------------------------------------------
