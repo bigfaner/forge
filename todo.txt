@@ -252,11 +252,12 @@ internal/cmd/
 197、引入模板引擎：条件化构造prompt或任务模板。done
   forge-cli\pkg\task\data\test-run.md 等任务模板，或提示词模板、skill、command、task-executor等对齐最新的概念，去掉scope等过时的概念。
 198、eval-proposal只执行一轮时，必须要执行自由专家评审。done
-199、run-tests等CLI自动生成的任务，要根据forge的规范调整任务模板，指定当前feature的journey、contract、test-scripts等路径。
+199、run-tests等CLI自动生成的任务，要根据forge的规范调整任务模板，指定当前feature的journey、contract、test-scripts等路径。done
   如docs/features/<slug>/testing/journeys/<journey>/contracts
 200、梳理并重组forge cli的代码包，输出规范。
-201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。doing
-202、全面查核forge cli自动添加任务的能力，最近出现好几起bug。
+201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。done
+202、全面查核forge cli自动添加任务的能力，最近出现好几起bug。现在这一部分逻辑，很脆弱，增加或减少任务类型就会导致pipeline断裂。doing
+  如下图，在执行过程中，突然多了一个T-quick-doc-drift任务。
    Z:\project\ai\forge> forge task list skill-instruction-audit
 8 found  (feature: skill-instruction-audit)
 
