@@ -349,10 +349,14 @@ func TestGetQuickTestTasks_CleanCodeAndSpecsNoE2e(t *testing.T) {
 	if len(tasks) != 2 {
 		t.Fatalf("expected 2 tasks, got %d: %+v", len(tasks), tasks)
 	}
-	if tasks[0].ID != "T-quick-doc-drift" {
-		t.Errorf("tasks[0].ID = %q, want T-quick-doc-drift", tasks[0].ID)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
 	}
-	if tasks[1].ID != "T-clean-code" {
-		t.Errorf("tasks[1].ID = %q, want T-clean-code", tasks[1].ID)
+	if _, ok := byID["T-quick-doc-drift"]; !ok {
+		t.Error("missing T-quick-doc-drift")
+	}
+	if _, ok := byID["T-clean-code"]; !ok {
+		t.Error("missing T-clean-code")
 	}
 }

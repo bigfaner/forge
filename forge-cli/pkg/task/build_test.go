@@ -409,9 +409,10 @@ func TestBuildIndex_OrphanCleanup(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_NoSurfaces_ReturnsError(t *testing.T) {
+func TestBuildIndex_NoSurfaces_GeneratesNonSurfaceTasks(t *testing.T) {
 	// When test pipeline is needed (breakdown mode + coding tasks) but no surfaces configured,
-	// BuildIndex must return an error (not silently skip).
+	// BuildIndex still generates non-surface auto-gen tasks (review-doc, consolidate, clean-code)
+	// via the registry. Surface-dependent nodes produce zero tasks without error.
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
 	writeTaskMD(t, tasksDir, "1-foo.md", "1", "Foo", nil)
@@ -423,12 +424,25 @@ func TestBuildIndex_NoSurfaces_ReturnsError(t *testing.T) {
 		IndexPath:   indexPath,
 	}
 
-	_, err := BuildIndex(opts)
-	if err == nil {
-		t.Fatal("expected error for missing surfaces, got nil")
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex should not error for missing surfaces: %v", err)
 	}
-	if !strings.Contains(err.Error(), "no surfaces configured") {
-		t.Errorf("error should mention 'no surfaces configured', got: %v", err)
+
+	// Should have at least 1 business task + non-surface auto-gen tasks
+	total := result.NewCount + result.UpdatedCount
+	if total < 1 {
+		t.Errorf("total tasks = %d, want at least 1", total)
+	}
+
+	// Verify no surface-dependent test tasks were generated
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+	for key, task := range idx.Tasks {
+		if strings.HasPrefix(task.ID, "T-test-gen-scripts") || strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("surface-dependent task %s (id=%s) should NOT exist without surfaces", key, task.ID)
+		}
 	}
 }
 
@@ -1432,14 +1446,14 @@ func TestBuildIndex_PureDocFeature_OnlyReviewDoc(t *testing.T) {
 		t.Error("review-doc.md not generated for docs-only feature")
 	}
 
-	// No test pipeline .md files should exist
+	// No surface-dependent test pipeline .md files should exist (quick-drift-detection is expected)
 	entries, _ := os.ReadDir(tasksDir)
 	for _, e := range entries {
 		name := e.Name()
-		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "review-doc.md" {
+		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "review-doc.md" || name == "quick-drift-detection.md" {
 			continue
 		}
-		t.Errorf("unexpected file %s (docs-only should not generate test pipeline)", name)
+		t.Errorf("unexpected file %s (docs-only should not generate surface-dependent test pipeline)", name)
 	}
 }
 
@@ -1641,14 +1655,14 @@ func TestBuildIndex_DocsOnlySkipsGatesAndTests(t *testing.T) {
 		t.Error("1.gate.md should NOT exist for docs-only feature")
 	}
 
-	// No test task files should exist
+	// No surface-dependent test task files should exist (quick-drift-detection is expected)
 	entries, _ := os.ReadDir(tasksDir)
 	for _, e := range entries {
 		name := e.Name()
-		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "review-doc.md" {
+		if name == "1-doc.md" || name == "2-doc.md" || name == "index.json" || name == "review-doc.md" || name == "quick-drift-detection.md" {
 			continue
 		}
-		t.Errorf("unexpected file %s (docs-only should not generate gates or tests)", name)
+		t.Errorf("unexpected file %s (docs-only should not generate gates or surface-dependent tests)", name)
 	}
 }
 
@@ -1795,10 +1809,16 @@ func TestBuildIndex_DocsOnlyGeneratesEvalDoc(t *testing.T) {
 		}
 	}
 
-	// Count: 2 business + 1 review-doc = 3
+	// Count: 2 business + 1 review-doc + 1 quick-drift-detection = 4
+	// (quick-drift-detection generates because consolidateSpecs.quick defaults to true)
 	total := result.NewCount + result.UpdatedCount
-	if total != 3 {
-		t.Errorf("total tasks = %d (new=%d, updated=%d), want 3", total, result.NewCount, result.UpdatedCount)
+	if total != 4 {
+		t.Errorf("total tasks = %d (new=%d, updated=%d), want 4", total, result.NewCount, result.UpdatedCount)
+	}
+
+	// Verify quick-drift-detection also exists
+	if _, err := os.Stat(filepath.Join(tasksDir, "quick-drift-detection.md")); os.IsNotExist(err) {
+		t.Error("quick-drift-detection.md not generated for docs-only feature")
 	}
 }
 
@@ -1868,8 +1888,10 @@ func TestBuildIndex_MissingTypeAllowedForAutoGenTasks(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_EmptySurfaces_ReturnsError(t *testing.T) {
-	// When test pipeline is needed but no surfaces are configured, BuildIndex must error.
+func TestBuildIndex_EmptySurfaces_GeneratesNonSurfaceTasks(t *testing.T) {
+	// When test pipeline is needed but no surfaces are configured,
+	// BuildIndex still generates non-surface auto-gen tasks via the registry.
+	// Surface-dependent nodes (test scripts, run-test) produce zero tasks.
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
 
 	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
@@ -1883,15 +1905,25 @@ func TestBuildIndex_EmptySurfaces_ReturnsError(t *testing.T) {
 		IndexPath:   indexPath,
 	}
 
-	_, err := BuildIndex(opts)
-	if err == nil {
-		t.Fatal("expected error for empty surfaces, got nil")
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex should not error for empty surfaces: %v", err)
 	}
-	if !strings.Contains(err.Error(), "no surfaces configured") {
-		t.Errorf("error should mention 'no surfaces configured', got: %v", err)
+
+	// Should have business tasks + gates + non-surface auto-gen tasks
+	total := result.NewCount + result.UpdatedCount
+	if total < 3 {
+		t.Errorf("total tasks = %d, want at least 3", total)
 	}
-	if !strings.Contains(err.Error(), "forge init") {
-		t.Errorf("error should mention 'forge init', got: %v", err)
+
+	// Verify no surface-dependent test tasks were generated
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+	for key, task := range idx.Tasks {
+		if strings.HasPrefix(task.ID, "T-test-gen-scripts") || strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("surface-dependent task %s (id=%s) should NOT exist without surfaces", key, task.ID)
+		}
 	}
 }
 

@@ -266,15 +266,15 @@ var ResolveHighestGateOrLastBiz DepResolveFunc = func(ctx *GenContext) []string 
 	}
 	// Compare with last business task phase
 	var maxBizID string
-	var maxBizPhase int
+	var maxBizNum int
 	for _, t := range ctx.BusinessTasks {
-		p := phaseFromID(t.ID)
-		if p > maxBizPhase {
-			maxBizPhase = p
+		num := numericID(t.ID)
+		if num > maxBizNum {
+			maxBizNum = num
 			maxBizID = t.ID
 		}
 	}
-	if maxBizID != "" && maxBizPhase > depPhase {
+	if maxBizID != "" && maxBizNum > depPhase {
 		dep = maxBizID
 	}
 	if dep == "" {
@@ -699,7 +699,7 @@ var PipelineRegistry = []PipelineNode{
 	{
 		Type: TypeCleanCode, Key: "clean-code", ID: "T-clean-code",
 		Title: "Simplify and Clean Code", Priority: string(types.PriorityP2), EstimatedTime: "20min",
-		ConfigGate: GateCleanCode, GenerateCondition: CondAlways,
+		ConfigGate: GateCleanCode, IntentGate: GateAllowAll, GenerateCondition: CondAlways,
 		DependsOn: []DepRef{{Resolve: ResolveHighestGateOrLastBiz}},
 	},
 	// --- Test Generation (first test task depends on T-review-doc and T-clean-code) ---
@@ -751,13 +751,13 @@ var PipelineRegistry = []PipelineNode{
 	{
 		Type: TypeValidationCode, Key: "validate-code", ID: "T-validate-code",
 		Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: "15min",
-		ConfigGate: GateValidation, GenerateCondition: CondAlways,
+		ConfigGate: GateValidation, IntentGate: GateAllowAll, GenerateCondition: CondAlways,
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 	{
 		Type: TypeValidationUx, Key: "validate-ux", ID: "T-validate-ux",
 		Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: "15min",
-		ConfigGate: GateValidation, GenerateCondition: CondAlways,
+		ConfigGate: GateValidation, IntentGate: GateAllowAll, GenerateCondition: CondAlways,
 		DependsOn:     []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 		UISurfaceOnly: true, MainSession: true,
 	},
@@ -765,13 +765,13 @@ var PipelineRegistry = []PipelineNode{
 	{
 		Type: TypeDocConsolidate, Key: "consolidate-specs", ID: "T-specs-consolidate",
 		Title: "Consolidate Specs", Priority: string(types.PriorityP2), EstimatedTime: "20min",
-		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "breakdown",
+		ConfigGate: GateConsolidateSpecs, IntentGate: GateAllowAll, GenerateCondition: CondAlways, Mode: "breakdown",
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 	{
 		Type: TypeDocDrift, Key: "quick-drift-detection", ID: "T-quick-doc-drift",
 		Title: "Detect Spec Drift", Priority: string(types.PriorityP2), EstimatedTime: "15min",
-		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "quick",
+		ConfigGate: GateConsolidateSpecs, IntentGate: GateAllowAll, GenerateCondition: CondAlways, Mode: "quick",
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 }

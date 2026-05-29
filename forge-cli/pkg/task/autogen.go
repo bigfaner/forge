@@ -491,12 +491,18 @@ func validateAutogenVariables(meta *autogenMetadata, structType reflect.Type) er
 // GetBreakdownTestTasks generates breakdown-mode auto tasks via the pipeline registry.
 // Kept for backward compatibility with existing tests.
 func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
+	if len(surfaces) == 0 {
+		return nil
+	}
 	return GenerateTestTasks("breakdown", surfaces, executionOrder, auto, intent, nil, nil)
 }
 
 // GetQuickTestTasks generates quick-mode auto tasks via the pipeline registry.
 // Kept for backward compatibility with existing tests.
 func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
+	if len(surfaces) == 0 {
+		return nil
+	}
 	return GenerateTestTasks("quick", surfaces, executionOrder, auto, intent, nil, nil)
 }
 
@@ -510,4 +516,3 @@ func findTaskIndex(tasks []AutoGenTaskDef, id string) int {
 	}
 	return -1
 }
-
