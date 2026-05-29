@@ -701,18 +701,26 @@ func TestBuildIndex_MultiProfile(t *testing.T) {
 
 func TestDetectMode(t *testing.T) {
 	tests := []struct {
-		name string
-		mode string
-		want string
+		name   string
+		mode   string
+		intent string
+		want   string
 	}{
-		{"breakdown", "breakdown", "breakdown"},
-		{"quick", "quick", "quick"},
-		{"neither", "", ""},
+		{"breakdown", "breakdown", "", "breakdown"},
+		{"quick", "quick", "", "quick"},
+		{"neither", "", "", ""},
+		{"cleanup forces quick even with PRD", "breakdown", "cleanup", "quick"},
+		{"cleanup forces quick even with proposal", "quick", "cleanup", "quick"},
+		{"cleanup forces quick with no docs", "", "cleanup", "quick"},
+		{"new-feature breakdown unchanged", "breakdown", "new-feature", "breakdown"},
+		{"new-feature quick unchanged", "quick", "new-feature", "quick"},
+		{"refactor breakdown unchanged", "breakdown", "refactor", "breakdown"},
+		{"refactor quick unchanged", "quick", "refactor", "quick"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			projectRoot, _, _ := setupBuildEnv(t, tt.mode)
-			got := detectMode(projectRoot, "test-feature")
+			got := detectMode(projectRoot, "test-feature", tt.intent)
 			if got != tt.want {
 				t.Errorf("detectMode = %q, want %q", got, tt.want)
 			}
@@ -1039,9 +1047,10 @@ func TestBuildIndex_StageGatesMultiPhase(t *testing.T) {
 
 func TestNeedsTestPipeline(t *testing.T) {
 	tests := []struct {
-		name  string
-		tasks map[string]Task
-		want  bool
+		name   string
+		tasks  map[string]Task
+		intent string
+		want   bool
 	}{
 		{
 			name: "feature type needs test pipeline",
@@ -1049,21 +1058,24 @@ func TestNeedsTestPipeline(t *testing.T) {
 				"1-feat": {ID: "1.1", Type: TypeCodingFeature},
 				"2-doc":  {ID: "1.2", Type: TypeDoc},
 			},
-			want: true,
+			intent: "new-feature",
+			want:   true,
 		},
 		{
 			name: "enhancement type needs test pipeline",
 			tasks: map[string]Task{
 				"1-enh": {ID: "1.1", Type: TypeCodingEnhancement},
 			},
-			want: true,
+			intent: "new-feature",
+			want:   true,
 		},
 		{
 			name: "fix type needs test pipeline",
 			tasks: map[string]Task{
 				"1-fix": {ID: "fix-1", Type: TypeCodingFix},
 			},
-			want: true,
+			intent: "new-feature",
+			want:   true,
 		},
 		{
 			name: "documentation-only does NOT need test pipeline",
@@ -1071,21 +1083,24 @@ func TestNeedsTestPipeline(t *testing.T) {
 				"1-doc": {ID: "1.1", Type: TypeDoc},
 				"2-doc": {ID: "1.2", Type: TypeDoc},
 			},
-			want: false,
+			intent: "new-feature",
+			want:   false,
 		},
 		{
-			name: "cleanup-only needs test pipeline",
+			name: "cleanup-only needs test pipeline with new-feature intent",
 			tasks: map[string]Task{
 				"1-clean": {ID: "1.1", Type: TypeCodingCleanup},
 			},
-			want: true,
+			intent: "new-feature",
+			want:   true,
 		},
 		{
-			name: "refactor-only needs test pipeline",
+			name: "refactor-only needs test pipeline with new-feature intent",
 			tasks: map[string]Task{
 				"1-ref": {ID: "1.1", Type: TypeCodingRefactor},
 			},
-			want: true,
+			intent: "new-feature",
+			want:   true,
 		},
 		{
 			name: "only auto-generated tasks (no business tasks) returns false",
@@ -1093,7 +1108,8 @@ func TestNeedsTestPipeline(t *testing.T) {
 				"1.summary": {ID: "1.summary", Type: TypeDocSummary},
 				"1.gate":    {ID: "1.gate", Type: TypeGate},
 			},
-			want: false,
+			intent: "new-feature",
+			want:   false,
 		},
 		{
 			name: "business tasks with auto-generated tasks mixed in",
@@ -1102,12 +1118,14 @@ func TestNeedsTestPipeline(t *testing.T) {
 				"2-doc":  {ID: "1.2", Type: TypeDoc},
 				"1.gate": {ID: "1.gate", Type: TypeGate},
 			},
-			want: false,
+			intent: "new-feature",
+			want:   false,
 		},
 		{
-			name:  "empty tasks returns false",
-			tasks: map[string]Task{},
-			want:  false,
+			name:   "empty tasks returns false",
+			tasks:  map[string]Task{},
+			intent: "new-feature",
+			want:   false,
 		},
 		{
 			name: "mixed feature and cleanup needs test pipeline",
@@ -1115,13 +1133,49 @@ func TestNeedsTestPipeline(t *testing.T) {
 				"1-feat":  {ID: "1.1", Type: TypeCodingFeature},
 				"2-clean": {ID: "1.2", Type: TypeCodingCleanup},
 			},
-			want: true,
+			intent: "new-feature",
+			want:   true,
+		},
+		// Intent short-circuit tests
+		{
+			name: "refactor intent skips test pipeline even with feature tasks",
+			tasks: map[string]Task{
+				"1-feat": {ID: "1.1", Type: TypeCodingFeature},
+			},
+			intent: "refactor",
+			want:   false,
+		},
+		{
+			name: "cleanup intent skips test pipeline even with feature tasks",
+			tasks: map[string]Task{
+				"1-feat": {ID: "1.1", Type: TypeCodingFeature},
+			},
+			intent: "cleanup",
+			want:   false,
+		},
+		{
+			name:   "refactor intent with empty tasks returns false",
+			tasks:  map[string]Task{},
+			intent: "refactor",
+			want:   false,
+		},
+		{
+			name:   "cleanup intent with empty tasks returns false",
+			tasks:  map[string]Task{},
+			intent: "cleanup",
+			want:   false,
+		},
+		{
+			name:   "empty intent defaults to new-feature behavior",
+			tasks:  map[string]Task{},
+			intent: "",
+			want:   false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := needsTestPipeline(tt.tasks)
+			got := needsTestPipeline(tt.tasks, tt.intent)
 			if got != tt.want {
 				t.Errorf("needsTestPipeline() = %v, want %v", got, tt.want)
 			}
@@ -1968,7 +2022,7 @@ func TestBuildIndex_ValidationTasksGenerated(t *testing.T) {
 
 	// Verify validation tasks can be generated via GenerateTestTasks
 	// Use "tui" interface so validate-ux is generated (UI type required for UX validation)
-	tasks := GenerateTestTasks("breakdown", scalarSurface("tui"), nil, auto)
+	tasks := GenerateTestTasks("breakdown", scalarSurface("tui"), nil, auto, "")
 	var foundValidateCode, foundValidateUx bool
 	for _, task := range tasks {
 		if task.ID == "T-validate-code" {
@@ -2066,7 +2120,7 @@ func TestBuildIndex_QuickValidationTasks(t *testing.T) {
 
 	// Verify validation tasks can be generated via GenerateTestTasks
 	// Use "tui" interface so validate-ux is generated (UI type required for UX validation)
-	tasks := GenerateTestTasks("quick", scalarSurface("tui"), nil, auto)
+	tasks := GenerateTestTasks("quick", scalarSurface("tui"), nil, auto, "")
 	var foundValidateCode, foundValidateUx bool
 	for _, task := range tasks {
 		if task.ID == "T-validate-code" {
@@ -2516,4 +2570,183 @@ func TestBuildIndex_Migration_FixTasksPointToOtherSource_NoOp(t *testing.T) {
 	if fixTask.SourceTaskID != "1" {
 		t.Errorf("fix-1 SourceTaskID = %q, want %q (no migration for non-T-test-run sources)", fixTask.SourceTaskID, "1")
 	}
+}
+
+// --- Intent-driven pipeline routing tests (Task 4) ---
+
+func TestBuildIndex_IntentRefactor_SkipsTestPipeline(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task 2", TypeCodingFeature, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		Intent:      "refactor",
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// No test pipeline tasks should be generated
+	for key, task := range idx.Tasks {
+		if strings.HasPrefix(task.ID, "T-test-gen-journeys") ||
+			strings.HasPrefix(task.ID, "T-test-gen-contracts") ||
+			strings.HasPrefix(task.ID, "T-test-gen-scripts") ||
+			strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("test pipeline task %s (id=%s) should NOT exist for refactor intent", key, task.ID)
+		}
+	}
+
+	// Stage gates NOT generated when test pipeline is skipped
+	if result.StageGatesGenerated != 0 {
+		t.Errorf("StageGatesGenerated = %d, want 0 (gates skipped when test pipeline skipped)", result.StageGatesGenerated)
+	}
+
+	if result.NewCount < 2 {
+		t.Errorf("NewCount = %d, want at least 2 (business tasks)", result.NewCount)
+	}
+}
+
+func TestBuildIndex_IntentCleanup_ForcesQuickMode(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-clean.md", "1.1", "Cleanup Task", TypeCodingCleanup, nil)
+	writeTaskMDWithType(t, tasksDir, "2-clean.md", "1.2", "Cleanup Task 2", TypeCodingCleanup, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		Intent:      "cleanup",
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// No test pipeline tasks should be generated
+	for key, task := range idx.Tasks {
+		if strings.HasPrefix(task.ID, "T-test-gen-journeys") ||
+			strings.HasPrefix(task.ID, "T-test-gen-contracts") ||
+			strings.HasPrefix(task.ID, "T-test-gen-scripts") ||
+			strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("test pipeline task %s (id=%s) should NOT exist for cleanup intent", key, task.ID)
+		}
+	}
+
+	// PRD metadata should still be set (the file exists)
+	if idx.PRD != "prd/prd-spec.md" {
+		t.Errorf("PRD = %q, want prd/prd-spec.md (metadata set regardless of intent)", idx.PRD)
+	}
+
+	// Stage gates NOT generated when test pipeline is skipped
+	if result.StageGatesGenerated != 0 {
+		t.Errorf("StageGatesGenerated = %d, want 0 (gates skipped when test pipeline skipped)", result.StageGatesGenerated)
+	}
+}
+
+func TestBuildIndex_IntentNewFeature_BackwardCompat(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "breakdown")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1.1", "Feature Task", TypeCodingFeature, nil)
+	writeTaskMDWithType(t, tasksDir, "2-feat.md", "1.2", "Feature Task 2", TypeCodingFeature, []string{"1.1"})
+
+	opts := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		// Intent is empty -- should default to new-feature
+	}
+
+	result, err := BuildIndex(opts)
+	if err != nil {
+		t.Fatalf("BuildIndex error: %v", err)
+	}
+
+	data, _ := os.ReadFile(indexPath)
+	var idx taskIndexJSON
+	_ = json.Unmarshal(data, &idx)
+
+	// Test pipeline tasks SHOULD be generated for default intent
+	foundTestPipeline := false
+	for _, task := range idx.Tasks {
+		if strings.HasPrefix(task.ID, "T-test-gen-journeys") {
+			foundTestPipeline = true
+			break
+		}
+	}
+	if !foundTestPipeline {
+		t.Error("test pipeline tasks should be generated for default (new-feature) intent")
+	}
+
+	if result.StageGatesGenerated != 2 {
+		t.Errorf("StageGatesGenerated = %d, want 2", result.StageGatesGenerated)
+	}
+}
+
+func TestBuildIndex_IntentNewFeature_Explicit_BackwardCompat(t *testing.T) {
+	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
+	writeForgeConfig(t, projectRoot)
+
+	writeTaskMDWithType(t, tasksDir, "1-feat.md", "1", "Feature Task", TypeCodingFeature, nil)
+
+	optsNoIntent := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		AutoConfig:  allEnabledAuto,
+	}
+
+	result1, err := BuildIndex(optsNoIntent)
+	if err != nil {
+		t.Fatalf("BuildIndex without intent: %v", err)
+	}
+
+	data1, _ := os.ReadFile(indexPath)
+
+	// Reset index
+	_ = os.Remove(indexPath)
+
+	optsWithIntent := BuildIndexOpts{
+		FeatureSlug: "test-feature",
+		ProjectRoot: projectRoot,
+		TasksDir:    tasksDir,
+		IndexPath:   indexPath,
+		Intent:      "new-feature",
+		AutoConfig:  allEnabledAuto,
+	}
+
+	_, err = BuildIndex(optsWithIntent)
+	if err != nil {
+		t.Fatalf("BuildIndex with new-feature intent: %v", err)
+	}
+
+	data2, _ := os.ReadFile(indexPath)
+
+	if string(data1) != string(data2) {
+		t.Errorf("BuildIndex output differs between empty intent and explicit new-feature\nempty=%s\nnew-feature=%s", string(data1), string(data2))
+	}
+
+	_ = result1
 }

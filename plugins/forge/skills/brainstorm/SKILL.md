@@ -21,7 +21,7 @@ Do NOT write any code or take implementation action. This skill produces a propo
 ## Process Flow
 
 ```
-Analyze context → Walk the design tree → Propose approaches → Define scope → Write proposal → Commit → Adversarial eval
+Analyze context → Walk the design tree → Propose approaches → Define scope → Infer intent → Write proposal → Commit → Adversarial eval
 ```
 
 ## Step 1: Analyze Context
@@ -81,6 +81,31 @@ Propose 2-3 **business approaches** (not technical implementations). Lead with y
 ## Step 4: Define Scope
 
 Propose in-scope and out-of-scope boundaries. Get explicit user agreement. If too large, suggest decomposing.
+
+## Step 4.5: Infer Feature Intent
+
+After scope is defined and before writing the proposal, infer the feature intent based on the proposal's **Proposed Solution** and **Scope** content (not just the title).
+
+### Intent Mapping Rules
+
+| Task Type Pattern | Default Intent |
+|-------------------|---------------|
+| `coding.feature` / `coding.enhancement` | `new-feature` |
+| `coding.cleanup` | `cleanup` |
+| `coding.refactor` | `refactor` |
+| `coding.fix` | Heuristic: does the fix introduce new user-observable behavior? Yes → `new-feature`, internal adjustment only → `refactor` |
+
+For proposals with mixed content (both new behavior and refactoring), determine the **primary** intent by assessing whether the proposal's core goal includes any new externally observable behavior (new API, new CLI command, new output format). If yes → primary intent is `new-feature` (full test pipeline ensures new behavior has test coverage). If the core goal is purely reorganizing internal implementation → `refactor`.
+
+### Confirmation
+
+Use `AskUserQuestion` to present the inferred intent to the user:
+
+- Show the inferred intent value and the reasoning (which mapping rule or heuristic was applied)
+- The user can override to any of the three valid values: `new-feature`, `refactor`, `cleanup`
+- Once confirmed, the intent value is written into the proposal frontmatter's `intent` field
+
+**Example prompt**: "Based on the proposed solution and scope, I infer this feature's intent as **`new-feature`** (introduces new user-observable behavior). Is this correct, or would you like to override to `refactor` or `cleanup`?"
 
 ## Step 5: Write Proposal
 

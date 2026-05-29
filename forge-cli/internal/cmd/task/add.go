@@ -10,6 +10,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/proposal"
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/types"
 
@@ -206,11 +207,18 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 
 	// Rebuild index from all .md files (canonical merge)
 
+	// Resolve intent from proposal (defaults to "new-feature" when proposal missing)
+	var addIntent string
+	if p, err := proposal.FindBySlug(projectRoot, featureSlug); err == nil && p.Intent != "" {
+		addIntent = p.Intent
+	}
+
 	buildOpts := task.BuildIndexOpts{
 		FeatureSlug: featureSlug,
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
+		Intent:      addIntent,
 	}
 	if _, err := task.BuildIndex(buildOpts); err != nil {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to rebuild index: %v\n", err)

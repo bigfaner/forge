@@ -168,11 +168,23 @@ Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于
               /eval-prd     /eval-ui      /eval-design
 ```
 
-### Quick Pipeline（1-15 个 coding 任务）
+### Quick Pipeline（coding 和 doc 任务，无数量上限）
 
 ```
 /brainstorm → /quick-tasks → /run-tasks → /submit-task
 ```
+
+### Intent-Driven Pipeline Branching
+
+每个 feature 有一个 intent（`new-feature`、`refactor`、`cleanup`），决定 pipeline 的路径：
+
+| Intent | Mode | Test Pipeline | 说明 |
+|--------|------|--------------|------|
+| `new-feature` | Breakdown（有 PRD+Design）或 Quick（有 Proposal） | 正常生成 | 默认值，根据文档存在自动选择 mode |
+| `refactor` | 同上 | 跳过 | 不生成测试 pipeline 任务 |
+| `cleanup` | 强制 Quick | 跳过 | 忽略文档存在，始终走 Quick mode |
+
+Intent 存储在 proposal frontmatter 的 `intent` 字段，`forge task index` 通过 `BuildIndexOpts.Intent` 传递。
 
 ### 测试 Pipeline
 

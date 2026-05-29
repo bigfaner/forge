@@ -20,6 +20,7 @@ type BuildIndexOpts struct {
 	TasksDir    string                 // absolute path to tasks/
 	IndexPath   string                 // absolute path to index.json
 	AutoConfig  forgeconfig.AutoConfig // auto-behavior config (defaults filled by caller)
+	Intent      string                 // feature intent: "new-feature" (default), "refactor", "cleanup"
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -57,8 +58,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		index = NewTaskIndex(opts.FeatureSlug)
 	}
 
+	// 1.5 Resolve intent (default to new-feature if not set)
+	intent := opts.Intent
+	if intent == "" {
+		intent = "new-feature"
+	}
+
 	// 2. Detect mode
-	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug)
+	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug, intent)
 
 	// 3. Set feature metadata
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
@@ -174,7 +181,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	}
 
 	// 5.5.1 Detect pipeline needs
-	needsTest := needsTestPipeline(index.TasksMap())
+	needsTest := needsTestPipeline(index.TasksMap(), intent)
 	needsEval := needsReviewDoc(index.TasksMap())
 
 	// 5.5.2 Extract AC from doc tasks for review-doc template
@@ -357,7 +364,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			return nil, fmt.Errorf("no surfaces configured in .forge/config.yaml. Run `forge init` to configure surfaces")
 		}
 		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(surfaces, executionOrder)
-		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig)
+		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig, intent)
 		for _, td := range testTasks {
 			ttKey := td.Key
 			existingKeys[ttKey] = true
@@ -390,7 +397,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		// Resolve first-test-task dependency and inject T-review-doc in a single
 		// atomic operation. This eliminates the ordering coupling that existed
 		// when these were separate steps.
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, mode, needsEval)
+		resolveTestDepsAndInjectReviewDoc(testTasks, index, mode, needsEval, intent)
 
 		// Write the modified first-test-task deps back to the index.
 		firstTestIdx := findFirstTestTaskIdx(testTasks)
@@ -448,8 +455,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	return result, nil
 }
 
-// detectMode determines the feature mode from file existence.
-func detectMode(projectRoot, slug string) string {
+// detectMode determines the feature mode from file existence and intent.
+// When intent is "cleanup", it forces Quick mode regardless of document existence.
+func detectMode(projectRoot, slug, intent string) string {
+	// cleanup intent always forces Quick mode, ignoring document existence
+	if intent == "cleanup" {
+		return "quick"
+	}
+
 	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
 	if _, err := os.Stat(filepath.Join(featureDir, "prd", "prd-spec.md")); err == nil {
 		return "breakdown"
@@ -475,14 +488,14 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode, surfaces, and execution order.
+// GenerateTestTasks returns test task definitions for the given mode, surfaces, execution order, and intent.
 // Exported for use by caller (task 1.4).
-func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
 	switch mode {
 	case "breakdown":
-		return GetBreakdownTestTasks(surfaces, executionOrder, auto)
+		return GetBreakdownTestTasks(surfaces, executionOrder, auto, intent)
 	case "quick":
-		return GetQuickTestTasks(surfaces, executionOrder, auto)
+		return GetQuickTestTasks(surfaces, executionOrder, auto, intent)
 	default:
 		return nil
 	}
@@ -522,8 +535,15 @@ func IsTestableType(typ string) bool {
 
 // needsTestPipeline returns true when any non-auto-gen task has a testable
 // runtime behavior type (feature, enhancement, or fix).
+// When intent is "refactor" or "cleanup", it returns false immediately
+// without iterating tasks — these intents skip the test pipeline entirely.
 // An empty task map returns false.
-func needsTestPipeline(tasks map[string]Task) bool {
+func needsTestPipeline(tasks map[string]Task, intent string) bool {
+	// Intent short-circuit: refactor/cleanup skip test pipeline entirely
+	if intent == "refactor" || intent == "cleanup" {
+		return false
+	}
+
 	for _, t := range tasks {
 		if IsAutoGenTaskID(t.ID) {
 			continue
@@ -565,14 +585,14 @@ func findFirstTestTaskIdx(tasks []AutoGenTaskDef) int {
 // When needsEval is true, T-review-doc is prepended to the first test task's deps
 // (it depends on the last business task; the original dep flows through T-review-doc).
 // When needsEval is false, this behaves identically to ResolveFirstTestDep alone.
-func resolveTestDepsAndInjectReviewDoc(testTasks []AutoGenTaskDef, index *TaskIndex, mode string, needsEval bool) {
+func resolveTestDepsAndInjectReviewDoc(testTasks []AutoGenTaskDef, index *TaskIndex, mode string, needsEval bool, intent string) {
 	if len(testTasks) == 0 {
 		return
 	}
 
 	// Resolve base dependency (same logic as ResolveFirstTestDep)
 	existingTasks := index.TasksMap()
-	ResolveFirstTestDep(testTasks, existingTasks, mode)
+	ResolveFirstTestDep(testTasks, existingTasks, mode, intent)
 
 	if !needsEval {
 		return

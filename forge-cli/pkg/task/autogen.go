@@ -175,11 +175,17 @@ func runTestTitle(surfaceType string) string {
 	return fmt.Sprintf("Run %ss", TestTypeTitle(surfaceType))
 }
 
+// isSkipTestIntent returns true when the intent should skip test pipeline tasks.
+func isSkipTestIntent(intent string) bool {
+	return intent == "refactor" || intent == "cleanup"
+}
+
 // GetBreakdownTestTasks returns test task definitions for breakdown mode.
 // surfaces is the surfaces map from config (e.g., {".": "api"} or {"backend": "api", "frontend": "web"}).
 // executionOrder is the resolved execution order of surface keys (may be nil for single-surface).
 // auto controls which task categories are generated.
-func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+// intent controls pipeline branching: "refactor"/"cleanup" skip test tasks but keep validation/consolidate/clean-code.
+func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
 	if len(surfaces) == 0 {
 		return nil
 	}
@@ -190,11 +196,12 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 	}
 
 	singleSurface := isSingleSurface(surfaces)
+	skipTest := isSkipTestIntent(intent)
 
 	var tasks []AutoGenTaskDef
 
-	// Shared tasks (gated by auto.Test.Full)
-	if auto.Test.Full {
+	// Shared tasks (gated by auto.Test.Full) — skipped for refactor/cleanup
+	if auto.Test.Full && !skipTest {
 		// Single gen-journeys task covering all configured surfaces
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-journeys", ID: "T-test-gen-journeys",
@@ -262,7 +269,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		}
 	}
 
-	// Validation tasks (gated by auto.Validation.Full)
+	// Validation tasks (gated by auto.Validation.Full) — always generated regardless of intent
 	if auto.Validation.Full {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "validate-code", ID: "T-validate-code",
@@ -278,7 +285,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		}
 	}
 
-	// Spec consolidation (gated by auto.ConsolidateSpecs.Full)
+	// Spec consolidation (gated by auto.ConsolidateSpecs.Full) — always generated regardless of intent
 	if auto.ConsolidateSpecs.Full {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "consolidate-specs", ID: "T-specs-consolidate",
@@ -287,7 +294,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 		})
 	}
 
-	// Clean code task (gated by auto.CleanCode.Full)
+	// Clean code task (gated by auto.CleanCode.Full) — always generated regardless of intent
 	if auto.CleanCode.Full {
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "clean-code", ID: "T-clean-code",
@@ -297,7 +304,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 	}
 
 	// Set dependency chains
-	resolveBreakdownDeps(tasks, surfaceTypes, surfaces, executionOrder, auto)
+	resolveBreakdownDeps(tasks, surfaceTypes, surfaces, executionOrder, auto, intent)
 
 	return tasks
 }
@@ -306,6 +313,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 // surfaces is the surfaces map from config (e.g., {".": "api"} or {"backend": "api", "frontend": "web"}).
 // executionOrder is the resolved execution order of surface keys (may be nil for single-surface).
 // auto controls which task categories are generated.
+// intent controls pipeline branching: "refactor"/"cleanup" skip test tasks but keep clean-code/doc-drift.
 //
 // Quick mode uses staged across types topology:
 //
@@ -313,7 +321,7 @@ func GetBreakdownTestTasks(surfaces map[string]string, executionOrder []string, 
 //
 // This replaces the old gen-and-run combined tasks with independent staged tasks,
 // sharing the same task definitions as Breakdown mode (without eval quality gates).
-func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) []AutoGenTaskDef {
+func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
 	if len(surfaces) == 0 {
 		return nil
 	}
@@ -324,13 +332,14 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 	}
 
 	singleSurface := isSingleSurface(surfaces)
+	skipTest := isSkipTestIntent(intent)
 
 	var tasks []AutoGenTaskDef
 
-	// Staged test pipeline (gated by auto.Test.Quick)
+	// Staged test pipeline (gated by auto.Test.Quick) — skipped for refactor/cleanup
 	// Quick mode: gen-journeys -> run-tests(serial)
 	// (no gen-contracts or gen-scripts in Quick mode)
-	if auto.Test.Quick {
+	if auto.Test.Quick && !skipTest {
 		// Single gen-journeys task covering all configured surfaces (Stage 1)
 		tasks = append(tasks, AutoGenTaskDef{
 			Key: "gen-journeys", ID: "T-test-gen-journeys",
@@ -399,7 +408,7 @@ func GetQuickTestTasks(surfaces map[string]string, executionOrder []string, auto
 		})
 	}
 
-	resolveQuickDeps(tasks, surfaceTypes, surfaces, executionOrder, auto)
+	resolveQuickDeps(tasks, surfaceTypes, surfaces, executionOrder, auto, intent)
 
 	return tasks
 }
@@ -588,13 +597,18 @@ func formatYAMLList(items []string) string {
 }
 
 // resolveBreakdownDeps sets dependency chains for breakdown test tasks.
-func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) {
+// When intent is refactor/cleanup, test tasks are skipped and downstream tasks
+// (validate-code, consolidate-specs, clean-code) have no run-test dependency;
+// they will be wired to the last business task by ResolveFirstTestDep.
+func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) {
 	if !auto.Test.Full && !auto.ConsolidateSpecs.Full && !auto.CleanCode.Full && !auto.Validation.Full {
 		return // no tasks to wire
 	}
 
+	skipTest := isSkipTestIntent(intent)
+
 	var lastRunID string
-	if auto.Test.Full {
+	if auto.Test.Full && !skipTest {
 		// Pipeline: gen-journeys -> eval-journey -> gen-contracts -> eval-contract -> gen-scripts-per-type -> run-test(s)
 		evalJourneyIdx := findTaskIndexOrPanic(tasks, "T-eval-journey")
 		genContractsIdx := findTaskIndexOrPanic(tasks, "T-test-gen-contracts")
@@ -620,20 +634,21 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 		lastRunID = wireRunTestChain(tasks, surfaceTypes, surfaces, executionOrder)
 	}
 
-	// Downstream tasks depend on last run-test
+	// Downstream tasks depend on last run-test (only when test pipeline ran)
+	// For refactor/cleanup: these tasks have no deps here; they get wired by ResolveFirstTestDep
 	validateIdx := findTaskIndex(tasks, "T-validate-code")
-	if validateIdx >= 0 && auto.Test.Full && lastRunID != "" {
+	if validateIdx >= 0 && !skipTest && auto.Test.Full && lastRunID != "" {
 		tasks[validateIdx].Dependencies = []string{lastRunID}
 	}
 	uxIdx := findTaskIndex(tasks, "T-validate-ux")
-	if uxIdx >= 0 && auto.Test.Full && lastRunID != "" {
+	if uxIdx >= 0 && !skipTest && auto.Test.Full && lastRunID != "" {
 		tasks[uxIdx].Dependencies = []string{lastRunID}
 	}
 
-	// T-specs-consolidate depends on last run-test
+	// T-specs-consolidate depends on last run-test (or nothing for refactor — wired by ResolveFirstTestDep)
 	if auto.ConsolidateSpecs.Full {
 		specsIdx := findTaskIndex(tasks, "T-specs-consolidate")
-		if specsIdx >= 0 && auto.Test.Full && lastRunID != "" {
+		if specsIdx >= 0 && !skipTest && auto.Test.Full && lastRunID != "" {
 			tasks[specsIdx].Dependencies = []string{lastRunID}
 		}
 	}
@@ -646,35 +661,39 @@ func resolveBreakdownDeps(tasks []AutoGenTaskDef, surfaceTypes []string, surface
 // For multi-surface projects: T-test-gen-journeys is the direct upstream of all T-test-run-{key} tasks.
 // T-test-run-{key} tasks form a serial chain ordered by executionOrder.
 // Downstream tasks (drift, validation) depend on the last run-test in the chain.
-func resolveQuickDeps(tasks []AutoGenTaskDef, _ []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig) {
+// When intent is refactor/cleanup, test tasks are skipped and downstream tasks
+// have no run-test dependency; they will be wired to the last business task by ResolveFirstTestDep.
+func resolveQuickDeps(tasks []AutoGenTaskDef, _ []string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) {
 	if !auto.Test.Quick && !auto.ConsolidateSpecs.Quick && !auto.CleanCode.Quick && !auto.Validation.Quick {
 		return // no tasks to wire
 	}
 
+	skipTest := isSkipTestIntent(intent)
+
 	var lastRunID string
-	if auto.Test.Quick {
+	if auto.Test.Quick && !skipTest {
 		// Wire run-test task(s): first run-test depends on gen-journeys
 		// (no gen-contracts/gen-scripts in Quick mode)
 		// Serial chain: T-test-run-{key1} -> T-test-run-{key2} -> ...
 		lastRunID = wireQuickRunTestChain(tasks, surfaces, executionOrder)
 	}
 
-	// Downstream tasks depend on last run-test
+	// Downstream tasks depend on last run-test (only when test pipeline ran)
 	if auto.Validation.Quick {
 		validateIdx := findTaskIndex(tasks, "T-validate-code")
-		if validateIdx >= 0 && auto.Test.Quick && lastRunID != "" {
+		if validateIdx >= 0 && !skipTest && auto.Test.Quick && lastRunID != "" {
 			tasks[validateIdx].Dependencies = []string{lastRunID}
 		}
 		uxIdx := findTaskIndex(tasks, "T-validate-ux")
-		if uxIdx >= 0 && auto.Test.Quick && lastRunID != "" {
+		if uxIdx >= 0 && !skipTest && auto.Test.Quick && lastRunID != "" {
 			tasks[uxIdx].Dependencies = []string{lastRunID}
 		}
 	}
 
-	// T-quick-doc-drift depends on last run-test
+	// T-quick-doc-drift depends on last run-test (or nothing for refactor — wired by ResolveFirstTestDep)
 	if auto.ConsolidateSpecs.Quick {
 		idx := findTaskIndex(tasks, "T-quick-doc-drift")
-		if idx >= 0 && auto.Test.Quick && lastRunID != "" {
+		if idx >= 0 && !skipTest && auto.Test.Quick && lastRunID != "" {
 			tasks[idx].Dependencies = []string{lastRunID}
 		}
 	}
@@ -816,9 +835,39 @@ func findTaskIndexByPrefixOrPanic(tasks []AutoGenTaskDef, prefix string) int {
 // For breakdown: depends on the highest-phase gate, or last summary if no gate.
 // For quick: depends on the max business task ID.
 // When T-clean-code exists, it is inserted between business tasks and test tasks.
+// When intent is refactor/cleanup, test tasks (gen-journeys) are not generated, so
+// this function wires the first downstream task (validate-code or clean-code) to
+// the last business task instead. If there are no business tasks, it returns without
+// wiring (zero business task protection).
 // Returns the updated tasks with first-test-task deps set.
-func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, mode string) {
+func ResolveFirstTestDep(tasks []AutoGenTaskDef, existingTasks map[string]Task, mode string, intent string) {
 	if len(tasks) == 0 {
+		return
+	}
+
+	// For refactor/cleanup: no gen-journeys task, wire downstream tasks to last business task
+	if isSkipTestIntent(intent) {
+		lastBiz := findMaxBusinessTaskID(existingTasks)
+		if lastBiz == "" {
+			return // zero business task protection: no downstream deps
+		}
+
+		// Find the first downstream task (validate-code for breakdown, clean-code for quick)
+		// These are the tasks that would normally depend on the last business task
+		switch mode {
+		case "breakdown":
+			// Wire validate-code to last business task
+			validateIdx := findTaskIndex(tasks, "T-validate-code")
+			if validateIdx >= 0 {
+				tasks[validateIdx].Dependencies = []string{lastBiz}
+			}
+		case "quick":
+			// Wire clean-code to last business task
+			cleanIdx := findTaskIndex(tasks, "T-clean-code")
+			if cleanIdx >= 0 {
+				tasks[cleanIdx].Dependencies = []string{lastBiz}
+			}
+		}
 		return
 	}
 

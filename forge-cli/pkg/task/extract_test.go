@@ -366,7 +366,7 @@ func TestExtractBodyContext(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mode := detectMode(projectRoot, "test-feature")
+		mode := detectMode(projectRoot, "test-feature", "")
 		ctx := extractBodyContext(projectRoot, "test-feature", mode, []string{"api", "cli"})
 
 		if ctx.FeatureSlug != "test-feature" {
@@ -397,7 +397,7 @@ func TestExtractBodyContext(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		mode := detectMode(projectRoot, "test-feature")
+		mode := detectMode(projectRoot, "test-feature", "")
 		ctx := extractBodyContext(projectRoot, "test-feature", mode, []string{"api"})
 
 		if ctx.Mode != "breakdown" {

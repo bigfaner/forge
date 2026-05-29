@@ -39,7 +39,7 @@ func multiSurface(keyTypes ...string) map[string]string {
 }
 
 func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
-	tasks := GetBreakdownTestTasks(nil, nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(nil, nil, defaultAuto, "")
 
 	if len(tasks) != 0 {
 		t.Fatalf("expected 0 tasks with empty interfaces, got %d", len(tasks))
@@ -47,7 +47,7 @@ func TestGetBreakdownTestTasks_EmptyInterfaces(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-cli + run + consolidate = 7
 	if len(tasks) != 7 {
@@ -83,7 +83,7 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
-	tasks := GetQuickTestTasks(nil, nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(nil, nil, allEnabledAuto, "")
 
 	if len(tasks) != 0 {
 		t.Fatalf("expected 0 tasks with empty interfaces, got %d", len(tasks))
@@ -91,7 +91,7 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
 	// gen-journeys + run + drift = 3
 	if len(tasks) != 3 {
@@ -172,8 +172,8 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-gate":  {ID: "2.gate"},
 			"1.1-foo": {ID: "1.1"},
 		}
-		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
-		ResolveFirstTestDep(tasks, existing, "breakdown")
+		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
+		ResolveFirstTestDep(tasks, existing, "breakdown", "")
 		if tasks[0].Dependencies[0] != "2.gate" {
 			t.Errorf("first test task should depend on highest gate, got %v", tasks[0].Dependencies)
 		}
@@ -189,8 +189,8 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2.1-bar": {ID: "2.1"},
 			"3.1-baz": {ID: "3.1"},
 		}
-		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
-		ResolveFirstTestDep(tasks, existing, "breakdown")
+		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
+		ResolveFirstTestDep(tasks, existing, "breakdown", "")
 		if tasks[0].Dependencies[0] != "3.1" {
 			t.Errorf("first test task should depend on last business task (3.1) when it's in a higher phase than highest gate (2.gate), got %v", tasks[0].Dependencies)
 		}
@@ -202,8 +202,8 @@ func TestResolveFirstTestDep(t *testing.T) {
 			"2-bar": {ID: "2"},
 			"3-baz": {ID: "3"},
 		}
-		tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
-		ResolveFirstTestDep(tasks, existing, "quick")
+		tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
+		ResolveFirstTestDep(tasks, existing, "quick", "")
 		if tasks[0].Dependencies[0] != "3" {
 			t.Errorf("first quick test task should depend on max business task, got %v", tasks[0].Dependencies)
 		}
@@ -297,7 +297,7 @@ func TestResolveReviewDocDep(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + 2 run-test(api,tui) + consolidate = 9
 	if len(tasks) != 9 {
@@ -385,7 +385,7 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + consolidate = 7
 	if len(tasks) != 7 {
@@ -412,7 +412,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli"), []string{"api", "tui", "cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli", ""), []string{"api", "tui", "cli"}, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + 3 run-tests + consolidate = 11
 	if len(tasks) != 11 {
@@ -480,7 +480,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
-	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, allEnabledAuto, "")
 
 	// gen-journeys + 2 run-tests(api,tui) + drift = 4
 	if len(tasks) != 4 {
@@ -523,7 +523,7 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto, "")
 
 	// gen-journeys + run + drift = 3
 	if len(tasks) != 3 {
@@ -553,7 +553,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
-	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli"), []string{"api", "tui", "cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli", ""), []string{"api", "tui", "cli"}, allEnabledAuto, "")
 
 	// gen-journeys + 3 run-tests + drift = 5
 	if len(tasks) != 5 {
@@ -583,7 +583,7 @@ func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 // --- validate-ux should only be generated when interfaces include UI types ---
 
 func TestGetBreakdownTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, validationAuto, "")
 
 	for _, task := range tasks {
 		if task.ID == "T-validate-ux" {
@@ -593,7 +593,7 @@ func TestGetBreakdownTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, validationAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, validationAuto, "")
 
 	for _, task := range tasks {
 		if task.ID == "T-validate-ux" {
@@ -603,7 +603,7 @@ func TestGetQuickTestTasks_ValidateUx_SkippedForCLIOnly(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_SkippedForAPIOnly(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, validationAuto, "")
 
 	for _, task := range tasks {
 		if task.ID == "T-validate-ux" {
@@ -613,7 +613,7 @@ func TestGetBreakdownTestTasks_ValidateUx_SkippedForAPIOnly(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_IncludedForTUI(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("tui"), nil, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("tui"), nil, validationAuto, "")
 
 	found := false
 	for _, task := range tasks {
@@ -628,7 +628,7 @@ func TestGetBreakdownTestTasks_ValidateUx_IncludedForTUI(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_IncludedForMixed(t *testing.T) {
-	tasks := GetBreakdownTestTasks(multiSurface("cli", "cli", "tui", "tui"), []string{"tui", "cli"}, validationAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("cli", "cli", "tui", "tui", ""), []string{"tui", "cli"}, validationAuto, "")
 
 	found := false
 	for _, task := range tasks {
@@ -643,7 +643,7 @@ func TestGetBreakdownTestTasks_ValidateUx_IncludedForMixed(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_ValidateUx_CodeStillGenerated(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, validationAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, validationAuto, "")
 
 	found := false
 	for _, task := range tasks {
@@ -658,7 +658,7 @@ func TestGetBreakdownTestTasks_ValidateUx_CodeStillGenerated(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_DefaultAuto_IncludesSpecDrift(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	if len(tasks) != 1 {
 		t.Fatalf("expected 1 task (spec drift only), got %d", len(tasks))
@@ -1334,7 +1334,7 @@ func TestAutogenTemplateDiscovery(t *testing.T) {
 // --- Tests for gen-journeys/gen-contracts in Breakdown mode (Task 3) ---
 
 func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
-	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, defaultAuto, "")
 
 	foundGenJourneys := false
 	for _, task := range tasks {
@@ -1357,7 +1357,7 @@ func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_GenContracts(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	found := false
 	for _, task := range tasks {
@@ -1374,7 +1374,7 @@ func TestGetBreakdownTestTasks_GenContracts(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	wantOrder := []string{
 		"T-test-gen-journeys",
@@ -1394,7 +1394,7 @@ func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
-	tasks := GetBreakdownTestTasks(multiSurface("cli", "cli", "api", "api"), []string{"api", "cli"}, defaultAuto)
+	tasks := GetBreakdownTestTasks(multiSurface("cli", "cli", "api", "api", ""), []string{"api", "cli"}, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -1551,7 +1551,7 @@ func TestGetBreakdownTestTasks_GenContractsUsesEmbedTemplate(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_NoHardcodedIndices(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	idSet := make(map[string]bool)
 	for _, t := range tasks {
@@ -1568,7 +1568,7 @@ func TestGetBreakdownTestTasks_NoHardcodedIndices(t *testing.T) {
 }
 
 func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -1587,7 +1587,7 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 // --- Quick mode staged across types topology tests (Task 4) ---
 
 func TestGetQuickTestTasks_StagedPipelineTypesOnly(t *testing.T) {
-	tasks := GetQuickTestTasks(multiSurface("cli", "cli", "api", "api"), []string{"api", "cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("cli", "cli", "api", "api", ""), []string{"api", "cli"}, allEnabledAuto, "")
 
 	// Quick mode should only generate test pipeline or doc task types
 	validPrefixes := []string{"test.", "doc.", "code-quality."}
@@ -1606,7 +1606,7 @@ func TestGetQuickTestTasks_StagedPipelineTypesOnly(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
-	tasks := GetQuickTestTasks(multiSurface("cli", "cli", "api", "api"), []string{"api", "cli"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("cli", "cli", "api", "api", ""), []string{"api", "cli"}, allEnabledAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -1638,7 +1638,7 @@ func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
 	}
 }
 func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
-	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api"), []string{"api", "tui"}, allEnabledAuto)
+	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, allEnabledAuto, "")
 
 	foundGenJourneys := false
 	for _, task := range tasks {
@@ -1658,7 +1658,7 @@ func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_NoGenContractsOrScripts(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
 	// Quick mode should NOT generate gen-contracts or gen-scripts
 	for _, task := range tasks {
@@ -1672,7 +1672,7 @@ func TestGetQuickTestTasks_NoGenContractsOrScripts(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_NoHardcodedIndices(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
 	idSet := make(map[string]bool)
 	for _, t := range tasks {
@@ -1689,7 +1689,7 @@ func TestGetQuickTestTasks_NoHardcodedIndices(t *testing.T) {
 }
 
 func TestGetQuickTestTasks_DriftDependsOnLastRunTest(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
@@ -1717,7 +1717,7 @@ func TestResolveFirstTestDep_BreakdownGracefulOnMissingGenJourneys(_ *testing.T)
 		"1-gate": {ID: "1.gate"},
 	}
 	// Should not panic
-	ResolveFirstTestDep(tasks, existing, "breakdown")
+	ResolveFirstTestDep(tasks, existing, "breakdown", "")
 }
 
 func TestResolveFirstTestDep_QuickGracefulOnMissingGenJourneys(_ *testing.T) {
@@ -1730,7 +1730,7 @@ func TestResolveFirstTestDep_QuickGracefulOnMissingGenJourneys(_ *testing.T) {
 		"1-foo": {ID: "1"},
 	}
 	// Should not panic
-	ResolveFirstTestDep(tasks, existing, "quick")
+	ResolveFirstTestDep(tasks, existing, "quick", "")
 }
 
 func TestResolveFirstTestDep_BreakdownWithCleanCode(t *testing.T) {
@@ -1738,12 +1738,12 @@ func TestResolveFirstTestDep_BreakdownWithCleanCode(t *testing.T) {
 		"1-gate":  {ID: "1.gate"},
 		"1.1-foo": {ID: "1.1"},
 	}
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
 
 	// Add a clean-code task
 	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
 
-	ResolveFirstTestDep(tasks, existing, "breakdown")
+	ResolveFirstTestDep(tasks, existing, "breakdown", "")
 
 	cleanIdx := findTaskIndex(tasks, "T-clean-code")
 	if cleanIdx < 0 {
@@ -1767,12 +1767,12 @@ func TestResolveFirstTestDep_QuickWithCleanCode(t *testing.T) {
 		"1-foo": {ID: "1"},
 		"2-bar": {ID: "2"},
 	}
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
 	// Add a clean-code task
 	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
 
-	ResolveFirstTestDep(tasks, existing, "quick")
+	ResolveFirstTestDep(tasks, existing, "quick", "")
 
 	cleanIdx := findTaskIndex(tasks, "T-clean-code")
 	if cleanIdx < 0 {
@@ -1793,14 +1793,14 @@ func TestResolveFirstTestDep_QuickWithCleanCode(t *testing.T) {
 
 func TestResolveFirstTestDep_EmptyTasks_NoPanic(_ *testing.T) {
 	// Empty tasks should return without panic
-	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "breakdown")
-	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "quick")
+	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "breakdown", "")
+	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "quick", "")
 }
 
 func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
 	// No existing business tasks → return without panic
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto)
-	ResolveFirstTestDep(tasks, map[string]Task{}, "breakdown")
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
+	ResolveFirstTestDep(tasks, map[string]Task{}, "breakdown", "")
 
 	// gen-journeys should have no deps set (no business tasks to depend on)
 	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
@@ -2066,7 +2066,7 @@ func TestGetBreakdownTestTasks_DefaultExecutionOrder_BackendBeforeFrontend(t *te
 		t.Fatalf("ResolveExecutionOrder: %v", err)
 	}
 
-	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
 
 	backendIdx := findTaskIndex(tasks, "T-test-run-backend")
 	frontendIdx := findTaskIndex(tasks, "T-test-run-frontend")
@@ -2093,7 +2093,7 @@ func TestGetBreakdownTestTasks_SerialChain_BlockedOnUpstreamFailure(t *testing.T
 	surfaces := multiSurface("backend", "api", "frontend", "web")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2114,7 +2114,7 @@ func TestGetBreakdownTestTasks_SerialChain_BlockedOnUpstreamFailure(t *testing.T
 
 // AC3: Single surface project degenerates to no-suffix T-test-run
 func TestGetBreakdownTestTasks_SingleSurfaceDegeneration(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto)
+	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto, "")
 
 	for _, task := range tasks {
 		if strings.HasPrefix(task.ID, "T-test-run-") {
@@ -2137,7 +2137,7 @@ func TestGetQuickTestTasks_GenJourneysUpstreamOfRunTests(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2195,7 +2195,7 @@ func TestGetBreakdownTestTasks_ConsolidateDependsOnChainTail(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2216,7 +2216,7 @@ func TestGetQuickTestTasks_DriftDependsOnChainTail(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2236,7 +2236,7 @@ func TestGetBreakdownTestTasks_KeyNotType_SetsSurfaceFields(t *testing.T) {
 	surfaces := multiSurface("admin-panel", "web", "payment-service", "api")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2271,7 +2271,7 @@ func TestGetBreakdownTestTasks_ExplicitExecutionOrder(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web")
 	execOrder := []string{"frontend", "backend"}
 
-	tasks := GetBreakdownTestTasks(surfaces, execOrder, defaultAuto)
+	tasks := GetBreakdownTestTasks(surfaces, execOrder, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2308,7 +2308,7 @@ func TestGetBreakdownTestTasks_AC1_FullDAG(t *testing.T) {
 	surfaces := multiSurface("auth-service", "api", "admin", "web", "cli", "cli")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2348,7 +2348,7 @@ func TestGetQuickTestTasks_AC2_DirectDependencyChain(t *testing.T) {
 	surfaces := multiSurface("auth-service", "api", "admin", "web", "cli", "cli")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2387,7 +2387,7 @@ func TestDownstreamDependsOnlyOnLastRunTest(t *testing.T) {
 		surfaces := multiSurface("backend", "api", "frontend", "web")
 		resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-		tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto)
+		tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
 		byID := make(map[string]AutoGenTaskDef)
 		for _, t := range tasks {
 			byID[t.ID] = t
@@ -2408,7 +2408,7 @@ func TestDownstreamDependsOnlyOnLastRunTest(t *testing.T) {
 		surfaces := multiSurface("backend", "api", "frontend", "web")
 		resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-		tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+		tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto, "")
 		byID := make(map[string]AutoGenTaskDef)
 		for _, t := range tasks {
 			byID[t.ID] = t
@@ -2427,7 +2427,7 @@ func TestDownstreamDependsOnlyOnLastRunTest(t *testing.T) {
 
 // Quick mode single surface: run depends directly on gen-journeys
 func TestGetQuickTestTasks_SingleSurface_RunDependsOnGenJourneys(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto)
+	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
@@ -2445,7 +2445,7 @@ func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
 
-	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto)
+	tasks := GetQuickTestTasks(surfaces, resolved, allEnabledAuto, "")
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
 		byID[t.ID] = t
@@ -2464,4 +2464,417 @@ func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
 	if byID["T-quick-doc-drift"].Dependencies[0] != "T-test-run-mobile-app" {
 		t.Errorf("drift should depend on T-test-run-mobile-app (chain tail), got %v", byID["T-quick-doc-drift"].Dependencies)
 	}
+}
+
+// --- Intent-driven pipeline branching tests (Task 5) ---
+
+// Helper: auto config with validation + clean-code + consolidate enabled for refactor tests
+var refactorAuto = forgeconfig.AutoConfig{
+	Test:             forgeconfig.ModeToggle{Quick: false, Full: true},
+	ConsolidateSpecs: forgeconfig.ModeToggle{Quick: true, Full: true},
+	CleanCode:        forgeconfig.ModeToggle{Quick: true, Full: true},
+	Validation:       forgeconfig.ModeToggle{Quick: true, Full: true},
+}
+
+// AC1: GetBreakdownTestTasks skips test tasks for refactor/cleanup intent but keeps validation/consolidate/clean-code
+
+func TestGetBreakdownTestTasks_Refactor_SkipsTestTasks(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+
+	// Should NOT contain test pipeline tasks
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-journeys" {
+			t.Error("refactor should not generate T-test-gen-journeys")
+		}
+		if task.ID == "T-eval-journey" {
+			t.Error("refactor should not generate T-eval-journey")
+		}
+		if task.ID == "T-test-gen-contracts" {
+			t.Error("refactor should not generate T-test-gen-contracts")
+		}
+		if task.ID == "T-eval-contract" {
+			t.Error("refactor should not generate T-eval-contract")
+		}
+		if strings.HasPrefix(task.ID, "T-test-gen-scripts-") {
+			t.Errorf("refactor should not generate %q", task.ID)
+		}
+		if strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("refactor should not generate %q", task.ID)
+		}
+	}
+
+	// Should still contain validation, consolidate-specs, clean-code
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+	if _, ok := byID["T-validate-code"]; !ok {
+		t.Error("refactor should still generate T-validate-code")
+	}
+	if _, ok := byID["T-specs-consolidate"]; !ok {
+		t.Error("refactor should still generate T-specs-consolidate")
+	}
+	if _, ok := byID["T-clean-code"]; !ok {
+		t.Error("refactor should still generate T-clean-code")
+	}
+}
+
+func TestGetBreakdownTestTasks_Cleanup_SkipsTestTasks(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "cleanup")
+
+	// Should NOT contain test pipeline tasks
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-journeys" {
+			t.Error("cleanup should not generate T-test-gen-journeys")
+		}
+		if strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("cleanup should not generate %q", task.ID)
+		}
+	}
+
+	// Should still contain validation, consolidate-specs, clean-code
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+	if _, ok := byID["T-validate-code"]; !ok {
+		t.Error("cleanup should still generate T-validate-code")
+	}
+	if _, ok := byID["T-specs-consolidate"]; !ok {
+		t.Error("cleanup should still generate T-specs-consolidate")
+	}
+	if _, ok := byID["T-clean-code"]; !ok {
+		t.Error("cleanup should still generate T-clean-code")
+	}
+}
+
+// AC4: new-feature intent produces identical results to current behavior (backward compat)
+
+func TestGetBreakdownTestTasks_NewFeature_IdenticalToCurrent(t *testing.T) {
+	// Call with explicit "new-feature" intent -- should produce identical results to empty intent
+	tasksNewFeature := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "new-feature")
+	tasksCurrent := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
+
+	if len(tasksNewFeature) != len(tasksCurrent) {
+		t.Fatalf("new-feature intent: got %d tasks, current behavior: %d tasks", len(tasksNewFeature), len(tasksCurrent))
+	}
+
+	for i := range tasksNewFeature {
+		if tasksNewFeature[i].ID != tasksCurrent[i].ID {
+			t.Errorf("tasks[%d]: new-feature=%q, current=%q", i, tasksNewFeature[i].ID, tasksCurrent[i].ID)
+		}
+		if len(tasksNewFeature[i].Dependencies) != len(tasksCurrent[i].Dependencies) {
+			t.Errorf("tasks[%d] deps length: new-feature=%d, current=%d", i, len(tasksNewFeature[i].Dependencies), len(tasksCurrent[i].Dependencies))
+		}
+		for j := range tasksNewFeature[i].Dependencies {
+			if tasksNewFeature[i].Dependencies[j] != tasksCurrent[i].Dependencies[j] {
+				t.Errorf("tasks[%d].Dependencies[%d]: new-feature=%q, current=%q", i, j, tasksNewFeature[i].Dependencies[j], tasksCurrent[i].Dependencies[j])
+			}
+		}
+	}
+}
+
+func TestGetQuickTestTasks_NewFeature_IdenticalToCurrent(t *testing.T) {
+	tasksNewFeature := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "new-feature")
+	tasksCurrent := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
+
+	if len(tasksNewFeature) != len(tasksCurrent) {
+		t.Fatalf("new-feature intent: got %d tasks, current behavior: %d tasks", len(tasksNewFeature), len(tasksCurrent))
+	}
+
+	for i := range tasksNewFeature {
+		if tasksNewFeature[i].ID != tasksCurrent[i].ID {
+			t.Errorf("tasks[%d]: new-feature=%q, current=%q", i, tasksNewFeature[i].ID, tasksCurrent[i].ID)
+		}
+	}
+}
+
+// AC2: resolveBreakdownDeps for refactor wires to last business task (no run-tests lookup)
+
+func TestResolveBreakdownDeps_Refactor_NoRunTestDep(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// For refactor: validate-code should NOT depend on run-tests (no lastRunID lookup)
+	validateTask, ok := byID["T-validate-code"]
+	if !ok {
+		t.Fatal("T-validate-code should exist for refactor")
+	}
+
+	// validate-code should NOT have run-test as dependency (run-tests don't exist)
+	for _, dep := range validateTask.Dependencies {
+		if strings.HasPrefix(dep, "T-test-run") {
+			t.Errorf("refactor validate-code should not depend on run-test, got dep %q", dep)
+		}
+	}
+}
+
+// AC2: resolveQuickDeps for refactor/cleanup wires to last business task
+
+func TestResolveQuickDeps_Refactor_SkipsTestTasks(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+
+	// Should NOT contain test pipeline tasks
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-journeys" {
+			t.Error("refactor quick should not generate T-test-gen-journeys")
+		}
+		if strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("refactor quick should not generate %q", task.ID)
+		}
+	}
+
+	// Should still contain clean-code and doc-drift
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+	if _, ok := byID["T-clean-code"]; !ok {
+		t.Error("refactor quick should still generate T-clean-code")
+	}
+	if _, ok := byID["T-quick-doc-drift"]; !ok {
+		t.Error("refactor quick should still generate T-quick-doc-drift")
+	}
+}
+
+func TestResolveQuickDeps_Cleanup_SkipsTestTasks(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "cleanup")
+
+	// Same as refactor quick: no test tasks, but clean-code and doc-drift present
+	for _, task := range tasks {
+		if task.ID == "T-test-gen-journeys" {
+			t.Error("cleanup quick should not generate T-test-gen-journeys")
+		}
+		if strings.HasPrefix(task.ID, "T-test-run") {
+			t.Errorf("cleanup quick should not generate %q", task.ID)
+		}
+	}
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+	if _, ok := byID["T-clean-code"]; !ok {
+		t.Error("cleanup quick should still generate T-clean-code")
+	}
+	if _, ok := byID["T-quick-doc-drift"]; !ok {
+		t.Error("cleanup quick should still generate T-quick-doc-drift")
+	}
+}
+
+// AC5: Full wiring verification for all 5 scenarios
+
+func TestIntent_RefactorBreakdown_FullWiring(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Expected tasks: validate-code, consolidate-specs, clean-code
+	if len(tasks) != 3 {
+		t.Fatalf("refactor breakdown should generate 3 tasks, got %d: %v", len(tasks), taskIDs(tasks))
+	}
+
+	// Wiring: no task should depend on run-test
+	for _, task := range tasks {
+		for _, dep := range task.Dependencies {
+			if strings.HasPrefix(dep, "T-test-run") {
+				t.Errorf("%s should not depend on run-test, got %v", task.ID, task.Dependencies)
+			}
+		}
+	}
+}
+
+func TestIntent_RefactorQuick_FullWiring(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Expected tasks: validate-code, doc-drift, clean-code (refactorAuto has Validation.Quick=true)
+	if len(tasks) != 3 {
+		t.Fatalf("refactor quick should generate 3 tasks, got %d: %v", len(tasks), taskIDs(tasks))
+	}
+
+	// No task should depend on run-test
+	for _, task := range tasks {
+		for _, dep := range task.Dependencies {
+			if strings.HasPrefix(dep, "T-test-run") {
+				t.Errorf("%s should not depend on run-test, got %v", task.ID, task.Dependencies)
+			}
+		}
+	}
+}
+
+func TestIntent_CleanupQuick_FullWiring(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "cleanup")
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Expected tasks: validate-code, doc-drift, clean-code (refactorAuto has Validation.Quick=true)
+	if len(tasks) != 3 {
+		t.Fatalf("cleanup quick should generate 3 tasks, got %d: %v", len(tasks), taskIDs(tasks))
+	}
+
+	for _, task := range tasks {
+		for _, dep := range task.Dependencies {
+			if strings.HasPrefix(dep, "T-test-run") {
+				t.Errorf("%s should not depend on run-test, got %v", task.ID, task.Dependencies)
+			}
+		}
+	}
+}
+
+// AC3: Zero business task protection -- ResolveFirstTestDep with refactor/cleanup and empty business tasks
+
+func TestResolveFirstTestDep_Refactor_NoBusinessTasks_NoPanic(_ *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+	existing := map[string]Task{}
+
+	// Should not panic with empty business tasks
+	ResolveFirstTestDep(tasks, existing, "breakdown", "refactor")
+}
+
+func TestResolveFirstTestDep_Cleanup_NoBusinessTasks_NoPanic(_ *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "cleanup")
+	existing := map[string]Task{}
+
+	// Should not panic with empty business tasks
+	ResolveFirstTestDep(tasks, existing, "quick", "cleanup")
+}
+
+// ResolveFirstTestDep with refactor/cleanup wires validate-code/clean-code to last business task
+
+func TestResolveFirstTestDep_Refactor_WiresValidateCodeToLastBiz(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+	existing := map[string]Task{
+		"1-foo": {ID: "1"},
+		"2-bar": {ID: "2"},
+	}
+
+	ResolveFirstTestDep(tasks, existing, "breakdown", "refactor")
+
+	// For refactor breakdown: validate-code should depend on last business task
+	validateIdx := findTaskIndex(tasks, "T-validate-code")
+	if validateIdx < 0 {
+		t.Fatal("T-validate-code not found")
+	}
+
+	if len(tasks[validateIdx].Dependencies) != 1 || tasks[validateIdx].Dependencies[0] != "2" {
+		t.Errorf("validate-code should depend on last business task '2', got %v", tasks[validateIdx].Dependencies)
+	}
+}
+
+// ResolveFirstTestDep for refactor/cleanup with business tasks wires the first validation/clean-code task
+
+func TestResolveFirstTestDep_Refactor_WiresValidateCode(t *testing.T) {
+	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+	existing := map[string]Task{
+		"1-foo": {ID: "1"},
+		"2-bar": {ID: "2"},
+	}
+
+	ResolveFirstTestDep(tasks, existing, "breakdown", "refactor")
+
+	// For refactor breakdown: first downstream task (validate-code) should depend on last business task
+	validateIdx := findTaskIndex(tasks, "T-validate-code")
+	if validateIdx < 0 {
+		t.Fatal("T-validate-code not found")
+	}
+
+	if len(tasks[validateIdx].Dependencies) == 0 {
+		t.Error("validate-code should have dependencies for refactor with business tasks")
+	} else if tasks[validateIdx].Dependencies[0] != "2" {
+		t.Errorf("validate-code should depend on last business task '2', got %v", tasks[validateIdx].Dependencies)
+	}
+}
+
+func TestResolveFirstTestDep_RefactorQuick_WiresCleanCode(t *testing.T) {
+	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
+	existing := map[string]Task{
+		"1-foo": {ID: "1"},
+		"3-bar": {ID: "3"},
+	}
+
+	ResolveFirstTestDep(tasks, existing, "quick", "refactor")
+
+	// For refactor quick: first downstream task (clean-code) should depend on last business task
+	cleanIdx := findTaskIndex(tasks, "T-clean-code")
+	if cleanIdx < 0 {
+		t.Fatal("T-clean-code not found")
+	}
+
+	if len(tasks[cleanIdx].Dependencies) == 0 {
+		t.Error("clean-code should have dependencies for refactor with business tasks")
+	} else if tasks[cleanIdx].Dependencies[0] != "3" {
+		t.Errorf("clean-code should depend on last business task '3', got %v", tasks[cleanIdx].Dependencies)
+	}
+}
+
+// Multi-surface refactor: ensure no run-test tasks generated
+
+func TestGetBreakdownTestTasks_Refactor_MultiSurface_NoTestTasks(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, refactorAuto, "refactor")
+
+	for _, task := range tasks {
+		if strings.HasPrefix(task.ID, "T-test-") {
+			t.Errorf("refactor multi-surface should not generate test tasks, got %q", task.ID)
+		}
+	}
+
+	// Should still have validate-code, consolidate-specs, clean-code
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+	if _, ok := byID["T-validate-code"]; !ok {
+		t.Error("refactor multi-surface should still generate T-validate-code")
+	}
+}
+
+// Verify GenerateTestTasks passes intent through
+
+func TestGenerateTestTasks_PassesIntent_Breakdown(t *testing.T) {
+	// GenerateTestTasks with refactor should produce no test pipeline tasks
+	tasks := GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor")
+
+	for _, task := range tasks {
+		if strings.HasPrefix(task.ID, "T-test-") {
+			t.Errorf("GenerateTestTasks breakdown refactor should not generate test tasks, got %q", task.ID)
+		}
+	}
+}
+
+func TestGenerateTestTasks_PassesIntent_Quick(t *testing.T) {
+	// GenerateTestTasks with cleanup should produce no test pipeline tasks
+	tasks := GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "cleanup")
+
+	for _, task := range tasks {
+		if strings.HasPrefix(task.ID, "T-test-") {
+			t.Errorf("GenerateTestTasks quick cleanup should not generate test tasks, got %q", task.ID)
+		}
+	}
+}
+
+// Helper to collect task IDs for error messages
+func taskIDs(tasks []AutoGenTaskDef) []string {
+	ids := make([]string, len(tasks))
+	for i, t := range tasks {
+		ids[i] = t.ID
+	}
+	return ids
 }
