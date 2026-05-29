@@ -187,5 +187,6 @@ func isActiveFixTask(t Task) bool {
 
 // isFixType checks if a task type indicates a fix task.
 func isFixType(typ string) bool {
-	return typ == TypeCodingFix || strings.HasPrefix(typ, "coding.fix")
+	return typ == TypeCodingFix || strings.HasPrefix(typ, "coding.fix") ||
+		typ == TypeDocFix
 }

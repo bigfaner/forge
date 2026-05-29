@@ -52,7 +52,7 @@ forge task claim
 
 **Output**: `ACTION: CLAIMED` (new) | `ACTION: CONTINUE` (resume) | Error (no task, end loop).
 
-**Extract**: `TASK_ID`, `FILE`, `MAIN_SESSION`, `SURFACE_KEY`, `SURFACE_TYPE`, `FEATURE`.
+**Extract**: `TASK_ID`, `TYPE`, `FILE`, `MAIN_SESSION`, `TASK_CATEGORY`, `SURFACE_KEY`, `SURFACE_TYPE`, `FEATURE`.
 
 ### Step 1.5: Main Session Routing
 
@@ -60,13 +60,13 @@ If `MAIN_SESSION == "true"`:
 
 1. Read task file at `FILE`, find `## Main Session Instructions` section.
 2. Follow instructions exactly (task document specifies skill, outcome, record logic).
-3. If section missing: report error, create fix task to block it, then continue to Step 3:
+3. If section missing: report error, create fix task to block it (derive fix type from `TASK_CATEGORY` per table in Error Handling), then continue to Step 3:
    ```bash
-   forge task add --type coding.fix --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "MAIN_SESSION task missing Main Session Instructions section"
+   forge task add --type <derived-fix-type> --title "Fix: MAIN_SESSION missing instructions" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "MAIN_SESSION task missing Main Session Instructions section"
    ```
-4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source`:
+4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using `--block-source` (derive fix type from `TASK_CATEGORY` per table in Error Handling):
    ```bash
-   forge task add --type coding.fix --title "Fix: MAIN_SESSION task failed" \
+   forge task add --type <derived-fix-type> --title "Fix: MAIN_SESSION task failed" \
      --source-task-id <TASK_ID> \
      --block-source \
      --var SOURCE_FILES="<affected-files>" \
@@ -84,9 +84,9 @@ Else: proceed to Step 2.
 
 **2b. Verify Record** — Run `forge task status <TASK_ID>`:
 - **STATUS == "completed"**: proceed to Step 3 (Continue Loop).
-- **STATUS == "blocked"** (auto-downgraded): create fix task using `--block-source`:
+- **STATUS == "blocked"** (auto-downgraded): create fix task using `--block-source` (derive fix type from `TASK_CATEGORY` per table in Error Handling):
   ```bash
-  forge task add --type coding.fix --title "Fix: <failure>" \
+  forge task add --type <derived-fix-type> --title "Fix: <failure>" \
     --source-task-id <TASK_ID> \
     --block-source \
     --var SOURCE_FILES="<affected-files>" \
@@ -105,13 +105,20 @@ Return to Step 1.
 
 ## Error Handling
 
+**Fix-Type Derivation**: When creating a fix task, extract `TASK_CATEGORY` from the claim output of the source task and derive the fix type:
+
+| Source Task Category | Fix Task Type |
+|----------------------|---------------|
+| `doc`, `eval`        | `doc.fix`     |
+| `coding`, `test`, `validation`, `gate` | `coding.fix` |
+
 | Situation | Action |
 |-----------|--------|
 | No available task | End loop, print summary (see format below) |
-| Agent timeout | Create fix task to block the timed-out task, increment `consecutive_failures`, continue loop: `forge task add --type coding.fix --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Agent timed out after 30 minutes"` |
+| Agent timeout | Create fix task to block the timed-out task, increment `consecutive_failures`, continue loop: `forge task add --type <derived-fix-type> --title "Fix: agent timeout" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Agent timed out after 30 minutes"` |
 | Record missing | Dispatch fix-record subagent (2c) |
 | 3 consecutive failures | STOP |
-| Main session fails | Follow task doc's error section; if missing, `forge task add --type coding.fix --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Main session task failed"` then continue |
+| Main session fails | Follow task doc's error section; if missing, `forge task add --type <derived-fix-type> --title "Fix: main session task failed" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "Main session task failed"` then continue |
 
 ### Summary Format
 

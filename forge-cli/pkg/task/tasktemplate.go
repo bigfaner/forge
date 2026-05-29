@@ -53,6 +53,13 @@ var taskTemplateDefaults = map[string]Defaults{
 		Type:          "coding.cleanup",
 		IDPrefix:      "fix",
 	},
+	"doc.fix": {
+		Priority:      string(types.PriorityP0),
+		Breaking:      false,
+		EstimatedTime: "30min",
+		Type:          "doc.fix",
+		IDPrefix:      "doc-fix",
+	},
 }
 
 // GetTaskTemplate returns the template content for the given name (without .md extension).
