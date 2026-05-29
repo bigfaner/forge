@@ -1,6 +1,6 @@
 ---
 name: pipeline-topology-registry
-status: draft
+status: Approved
 created: 2026-05-29
 intent: refactor
 ---
