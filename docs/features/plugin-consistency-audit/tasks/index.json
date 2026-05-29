@@ -85,7 +85,7 @@
       "title": "Fix: extract-design-md missing TUI match strategy in SKILL.md",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "16-fix-extract-design-md-tui.md",
       "record": "records/16-fix-extract-design-md-tui.md",
       "type": "doc",
