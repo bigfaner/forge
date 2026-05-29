@@ -8,7 +8,7 @@
       "title": "Define pipeline registry core types and declarations",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-define-pipeline-registry.md",
       "record": "records/1-define-pipeline-registry.md",
       "surface-key": ".",
