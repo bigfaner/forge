@@ -103,7 +103,13 @@ Load test framework knowledge from Convention files. This provides the informati
 6. Also extract the **Result Format** section for output flags and format type.
 
 <HARD-RULE>
-Do NOT use framework-specific recipe templates. Generate `unit-test` and surface-level test recipes from Convention content and LLM knowledge of the framework. The LLM constructs recipes based on the Convention description, not from hardcoded templates.
+Use the language-specific template from `templates/<lang>.just` as the **starting point** for language-level recipe generation. Then customize recipes using Convention knowledge (from Step 0) and LLM understanding of the detected language/framework. The generation process is:
+
+1. **Load template**: Read `templates/<lang>.just` (where `<lang>` is one of: `go`, `node`, `python`, `rust`, `mixed`). Use `templates/generic.just` as fallback when no language-specific template matches.
+2. **Apply Convention overrides**: Replace recipe bodies with Convention-sourced commands where available (e.g., test runner, build tags, output flags from the Framework and Result Format sections).
+3. **LLM customization**: Adjust remaining recipes based on detected project structure (entry points, dependency managers, tool presence).
+
+Templates define the **recipe structure** (names, groups, boundary markers, shared recipes like `probe` and `test-setup`). The LLM customizes **recipe bodies** (actual commands) based on Convention content and project signals.
 </HARD-RULE>
 
 **If no Convention files found** (cold start):
@@ -188,25 +194,34 @@ If an existing justfile lacks forge boundary markers and `--force` is not set, y
 
 ### Step 3: Generate Recipes and Assemble Justfile
 
-This step generates language-level recipes (from language templates + Convention knowledge) and surface-level recipes (from surface rule files).
+This step generates language-level recipes (from language templates via Step 0 HARD-RULE + Convention knowledge) and surface-level recipes (from surface rule files).
 
 #### 3a. Generate language-level recipes
 
-Generate `unit-test`, `compile`, `build`, `lint`, `fmt`, `check`, `clean`, `install`, `ci` recipes from Convention knowledge and LLM understanding of the detected language/framework.
+Generate `unit-test`, `compile`, `build`, `lint`, `fmt`, `check`, `clean`, `install`, `ci` recipes using the three-layer approach defined in Step 0's HARD-RULE:
 
-**unit-test recipe**: Generate a language-level unit test recipe:
+1. **Load language template**: Read the corresponding template file from `templates/<lang>.just`:
+   - `go.just` for Go projects
+   - `node.just` for Node/TypeScript projects
+   - `python.just` for Python projects
+   - `rust.just` for Rust projects
+   - `mixed.just` for mixed frontend+backend projects
+   - `generic.just` as fallback when no language-specific template matches
 
-| Language | `unit-test` recipe body |
-| -------- | ----------------------- |
-| Go       | `go test ./...`         |
-| Rust     | `cargo test`            |
-| Python   | `pytest`                |
-| Node     | `npm test`              |
+2. **Apply Convention overrides**: For each recipe body, check if Convention (loaded in Step 0) provides a more precise command:
+   - `unit-test`: Use Convention's test runner + file pattern + output flags (e.g., `go test -json -v ./...` with `-tags` from Tags section)
+   - Other recipes: Override template defaults with Convention-sourced commands where available
 
-- If Convention provides a specific test runner and file pattern, construct the appropriate command.
-- The `unit-test` recipe takes no parameters: `just unit-test`.
+3. **LLM customization**: Adjust remaining recipe bodies based on detected project structure:
+   - Entry point detection from Step 1 (replace `ENTRY_POINT` / `ENTRY_SCRIPT` placeholders)
+   - Dependency manager detection (npm vs pnpm vs yarn, pip vs poetry, etc.)
+   - Tool presence checks (golangci-lint, prettier, ruff, etc.)
 
-**Other language-level recipes** (compile, build, lint, fmt, check, clean, install, ci): Generate based on detected language per Step 1. The LLM constructs these from its knowledge of common tooling per language.
+**unit-test recipe**: The template provides a language-appropriate default. Override with Convention's test runner + output flags if available. The `unit-test` recipe takes no parameters: `just unit-test`.
+
+**Other language-level recipes** (compile, build, lint, fmt, check, clean, install, ci): Use template defaults as baseline, customize based on Convention and detected tooling.
+
+**Template extras** (`run`, `dev`, `test`, `test-setup`, `probe`): Templates include additional convenience recipes beyond the Standard Target Contract. These are **project-level convenience targets** (not invoked by forge skills) and should be included in the generated justfile. Note: `test` and `probe` in templates are legacy pre-surface recipes — when surfaces are configured (Step 1s), these are superseded by surface-specific `<key>-test` and `<key>-probe` recipes generated in Step 3b.
 
 #### 3b. Generate surface-level recipes
 
@@ -260,11 +275,11 @@ web:
 ```
 
 **Recipe content generation**: The LLM fills in recipe bodies based on:
-1. **Language template** (from Step 1): determines the underlying command (e.g., `go run`, `npm run dev`, `cargo run`).
-2. **Convention knowledge** (from Step 0): provides framework-specific test runners and patterns.
-3. **Surface rule file**: provides the orchestration sequence and exit code semantics.
+1. **Language template** (from Step 3a): provides the underlying command patterns (e.g., `go run`, `npm run dev`, `cargo run`) loaded from `templates/<lang>.just`.
+2. **Convention knowledge** (from Step 0): provides framework-specific test runners and patterns to override template defaults.
+3. **Surface rule file**: provides the orchestration sequence, exit code semantics, and recipe templates with `[linux]`/`[windows]` dual-platform structure.
 
-The LLM synthesizes these three sources to produce concrete recipe bodies. For example, a web surface in a Go project would generate:
+The LLM synthesizes these three sources to produce concrete recipe bodies. The surface rule files provide TODO-stub templates as the structural skeleton; the LLM replaces stubs with actual commands derived from the language template and Convention knowledge. For example, a web surface in a Go project would generate:
 
 ```just
 web-dev:
@@ -467,7 +482,7 @@ Run `/forge:test-guide` to create a Convention file for consistent future genera
 - If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
-- Do NOT use framework-specific recipe templates. Generate test recipes from Convention content, surface rule files, and LLM knowledge only.
+- Use language-specific templates from `templates/<lang>.just` as the starting point for recipe generation. Customize with Convention overrides and LLM knowledge. See Step 0 HARD-RULE for the three-layer generation process.
 - Surface-key MUST match `[a-zA-Z0-9_-]+`. Abort on invalid keys — never generate recipes for invalid surface names.
 - CLI/TUI surfaces MUST NOT generate dev, probe, or aggregate recipes.
 - `# user-customized` marked recipes MUST be preserved during re-generation.

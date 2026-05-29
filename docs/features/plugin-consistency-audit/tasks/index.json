@@ -41,7 +41,7 @@
       "title": "Fix: resolve init-justfile template vs SKILL.md design contradiction",
       "priority": "P1",
       "estimatedTime": "45min",
-      "status": "pending",
+      "status": "completed",
       "file": "12-fix-init-justfile-design.md",
       "record": "records/12-fix-init-justfile-design.md",
       "type": "doc",
