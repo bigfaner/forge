@@ -13,7 +13,7 @@ auto:
     quick: false
     full: true
   runTasks:
-    quick: true
+    quick: false
     full: false
   gitPush: true
   knowledgeSave:
