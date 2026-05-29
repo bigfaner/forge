@@ -197,7 +197,7 @@
       "dependencies": [
         "T-test-run"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "consolidate-specs.md",
       "record": "records/consolidate-specs.md",
       "type": "doc.consolidate"
@@ -210,7 +210,7 @@
       "dependencies": [
         "T-test-gen-contracts"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "eval-contract.md",
       "record": "records/eval-contract.md",
       "mainSession": true,
@@ -224,7 +224,7 @@
       "dependencies": [
         "T-test-gen-journeys"
       ],
-      "status": "suspended",
+      "status": "skipped",
       "file": "eval-journey.md",
       "record": "records/eval-journey.md",
       "mainSession": true,
@@ -243,6 +243,19 @@
       "sourceTaskID": "2.1",
       "type": "coding.fix"
     },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
     "gen-contracts": {
       "id": "T-test-gen-contracts",
       "title": "Generate Test Contracts",
@@ -251,7 +264,7 @@
       "dependencies": [
         "T-eval-journey"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "gen-contracts.md",
       "record": "records/gen-contracts.md",
       "type": "test.gen-contracts"
@@ -277,7 +290,7 @@
       "dependencies": [
         "T-eval-contract"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "gen-test-scripts-cli.md",
       "record": "records/gen-test-scripts-cli.md",
       "surface-type": "cli",
@@ -291,7 +304,7 @@
       "dependencies": [
         "T-test-gen-scripts-cli"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "run-test.md",
       "record": "records/run-test.md",
       "surface-type": "cli",
@@ -305,7 +318,7 @@
       "dependencies": [
         "T-test-run"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "validate-code.md",
       "record": "records/validate-code.md",
       "type": "validation.code"
