@@ -107,7 +107,7 @@
       "title": "Fix: move eval deprecated freeform-injection.md",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "18-fix-eval-deprecated-file.md",
       "record": "records/18-fix-eval-deprecated-file.md",
       "type": "doc",

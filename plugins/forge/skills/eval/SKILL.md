@@ -148,7 +148,7 @@ Load: `rules/freeform-pipeline.md`
 
 **Additional freeform rules** (loaded by freeform-pipeline.md at runtime):
 - `rules/freeform-expert-persistence.md` — expert reuse matching, quality tracking, auto-deprecation (referenced by freeform-pipeline.md P0.1 and P0.5g)
-- `rules/freeform-injection.md` — **DEPRECATED**: legacy injection logic inlined into `rules/scorer-composition.md` (kept for historical reference only)
+- `rules/_deprecated/freeform-injection.md` — **DEPRECATED**: legacy injection logic inlined into `rules/scorer-composition.md` (kept for historical reference only)
 
 Execute when the resolved type is `proposal`. For all other types, skip directly to the Expert Dispatch Table.
 
