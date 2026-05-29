@@ -47,7 +47,7 @@
       "title": "build.go — intent-driven pipeline routing",
       "priority": "P0",
       "estimatedTime": "2-3h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-build-go-intent-routing.md",
       "record": "records/4-build-go-intent-routing.md",
       "breaking": true,

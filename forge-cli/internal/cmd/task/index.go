@@ -10,6 +10,7 @@ import (
 	"forge-cli/pkg/forgeconfig"
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
+	"forge-cli/pkg/proposal"
 	"forge-cli/pkg/task"
 
 	"github.com/spf13/cobra"
@@ -57,12 +58,19 @@ func runIndex(_ *cobra.Command, _ []string) error {
 		fmt.Fprintf(os.Stderr, "WARNING: failed to read auto config: %v\n", err)
 	}
 
+	// Resolve intent from proposal (defaults to "new-feature" when proposal missing)
+	var intent string
+	if p, err := proposal.FindBySlug(projectRoot, indexFeatureSlug); err == nil && p.Intent != "" {
+		intent = p.Intent
+	}
+
 	opts := task.BuildIndexOpts{
 		FeatureSlug: indexFeatureSlug,
 		ProjectRoot: projectRoot,
 		TasksDir:    tasksDir,
 		IndexPath:   indexPath,
 		AutoConfig:  auto,
+		Intent:      intent,
 	}
 
 	result, err := task.BuildIndex(opts)

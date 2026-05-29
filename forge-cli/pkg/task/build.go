@@ -20,6 +20,7 @@ type BuildIndexOpts struct {
 	TasksDir    string                 // absolute path to tasks/
 	IndexPath   string                 // absolute path to index.json
 	AutoConfig  forgeconfig.AutoConfig // auto-behavior config (defaults filled by caller)
+	Intent      string                 // feature intent: "new-feature" (default), "refactor", "cleanup"
 }
 
 // BuildIndexResult holds the result of a BuildIndex operation.
@@ -57,8 +58,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		index = NewTaskIndex(opts.FeatureSlug)
 	}
 
+	// 1.5 Resolve intent (default to new-feature if not set)
+	intent := opts.Intent
+	if intent == "" {
+		intent = "new-feature"
+	}
+
 	// 2. Detect mode
-	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug)
+	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug, intent)
 
 	// 3. Set feature metadata
 	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
@@ -174,7 +181,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	}
 
 	// 5.5.1 Detect pipeline needs
-	needsTest := needsTestPipeline(index.TasksMap())
+	needsTest := needsTestPipeline(index.TasksMap(), intent)
 	needsEval := needsReviewDoc(index.TasksMap())
 
 	// 5.5.2 Extract AC from doc tasks for review-doc template
@@ -448,8 +455,14 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 	return result, nil
 }
 
-// detectMode determines the feature mode from file existence.
-func detectMode(projectRoot, slug string) string {
+// detectMode determines the feature mode from file existence and intent.
+// When intent is "cleanup", it forces Quick mode regardless of document existence.
+func detectMode(projectRoot, slug, intent string) string {
+	// cleanup intent always forces Quick mode, ignoring document existence
+	if intent == "cleanup" {
+		return "quick"
+	}
+
 	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
 	if _, err := os.Stat(filepath.Join(featureDir, "prd", "prd-spec.md")); err == nil {
 		return "breakdown"
@@ -522,8 +535,15 @@ func IsTestableType(typ string) bool {
 
 // needsTestPipeline returns true when any non-auto-gen task has a testable
 // runtime behavior type (feature, enhancement, or fix).
+// When intent is "refactor" or "cleanup", it returns false immediately
+// without iterating tasks — these intents skip the test pipeline entirely.
 // An empty task map returns false.
-func needsTestPipeline(tasks map[string]Task) bool {
+func needsTestPipeline(tasks map[string]Task, intent string) bool {
+	// Intent short-circuit: refactor/cleanup skip test pipeline entirely
+	if intent == "refactor" || intent == "cleanup" {
+		return false
+	}
+
 	for _, t := range tasks {
 		if IsAutoGenTaskID(t.ID) {
 			continue
