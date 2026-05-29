@@ -1,5 +1,5 @@
 ---
-created: "2026-05-28"
+created: "2026-05-29"
 iteration: 1
 role: adversary
 reviewer: CTO-adversary
@@ -10,202 +10,215 @@ previous_report: iteration-0-report.md
 
 ## Bias Detection Report
 
-- Annotated regions (`<!-- pre-revised -->`): 6 attack points / 10 annotated paragraphs = density 0.60
-- Unannotated regions: 9 attack points / 15 unannotated paragraphs = density 0.60
-- Ratio (annotated/unannotated): 1.00
+- Annotated regions (`<!-- pre-revised -->`): 4 attack points / 7 annotated paragraphs = density 0.57
+- Unannotated regions: 13 attack points / 24 unannotated paragraphs = density 0.54
+- Ratio (annotated/unannotated): 1.06
 
-Conclusion: No bias detected. Attack density is uniform across annotated and unannotated regions, indicating pre-revision improvements did not receive disproportionate scrutiny or leniency.
+Conclusion: No significant bias detected. Attack density is nearly uniform across annotated and unannotated regions, indicating pre-revision improvements were evaluated on the same standard as the rest of the document.
 
 ## Phase 1: Reasoning Audit
 
 ### Argument Chain Trace
 
-**Problem -> Solution**: The problem states that a single fix task covering 20+ failures across 4 test suites causes the agent to stall. The solution proposes splitting by test file. The link is directionally correct but suffers from a precision gap: the lesson document (`gotcha-fix-task-broad-scope.md`) identifies the root cause as "quality-gate hook 创建 fix 任务的粒度为'整次 test 运行'" and prescribes two layers of improvement — (1) suite splitting and (2) baseline filtering. The proposal implements only layer 1 but positions itself as the solution without acknowledging that layer 2 (baseline filtering) is necessary to address the full problem scope described in the lesson. The lesson itself states "即使第一层不拆分，基线过滤也能将 scope 自然收窄到与当前改动相关的失败" — suggesting layer 2 may be the higher-value improvement.
+**Problem → Solution**: The problem states that a single fix task covering 20+ failures across 4 test suites causes the agent to stall. The solution proposes splitting by test file. The causal chain is plausible: scope narrowing → agent can process output → agent completes. However, the proposal itself identifies a confounding variable — the lesson document's direct cause is "concise error 只展示输出尾部, agent 看不到完整失败列表." The proposal wisely adds Phase 0 to test this, but then proceeds to fully specify Phase 1 without making Phase 1 conditional on Phase 0's outcome. If Phase 0 solves the stall, Phase 1 is unnecessary — yet the proposal specifies Phase 1 in full detail and allocates scope for it.
 
-**Solution -> Evidence**: The revised proposal now correctly states it will build `extractFileLineMap` rather than reusing `extractSourceFiles` (addressing the iteration-0 finding). However, the Feasibility section still references "`extractSourceFiles` 和 `groupFilesByDir` 已有完善的单元测试覆盖" as evidence of technical feasibility. Since the core mechanism is now `extractFileLineMap` (a new function), the existing test coverage is irrelevant to the new function's feasibility. This is evidence from the old plan being carried forward without updating.
+**Solution → Evidence**: The proposal references `quality_gate.go:614-628` and `sourceFileRe` as implementation baselines. The `extractFileLineMap` function signature is now specified (`func extractFileLineMap(output string) map[string][]string`). Evidence is adequate for the technical approach. However, the proposal claims "解析 test output 的时间可忽略（现有 `extractSourceFiles` 已优化）" — but `extractFileLineMap` is a NEW function with more complex logic (context window expansion, overlapping deduplication), so citing `extractSourceFiles`'s performance as evidence is misleading.
 
-**Evidence -> Success Criteria**: SC-2 ("每个 fix task 的 description 包含该测试文件相关的输出行") is now partially specified by the algorithm in the Scope section (lines 103-107). However, the algorithm says "一行匹配多个测试文件时，该行及其上下文归入所有匹配的测试文件" while Risk 4 says "一行仅匹配唯一测试文件时才纳入该文件 task." These two statements contradict each other — the Scope says multi-matching lines go to ALL matching files, the Risk mitigation says ONLY uniquely-matching lines are included.
+**Evidence → Success Criteria**: SC items are traceable to the solution. The algorithm in In Scope (steps 1-6) maps to SC-2 ("每个 fix task 的 description 包含该测试文件相关的输出行"). However, step 5 states "一行匹配多个'主文件'时，该行及其上下文归入所有匹配的主文件" — this means a single output line could appear in multiple fix tasks, creating duplication. No SC verifies that output is not duplicated across tasks.
 
-### Self-Contradiction Check
-
-1. **Scope algorithm vs Risk 4 mitigation contradiction**: The In Scope section (line 107) states "一行匹配多个测试文件时，该行及其上下文归入所有匹配的测试文件." But Risk 4's mitigation (line 130) states "一行仅匹配唯一测试文件时才纳入该文件 task." These prescribe opposite behaviors for multi-matching lines. One includes them in all matching tasks; the other excludes them from all tasks unless uniquely matched.
-
-2. **Assumptions Challenged partially corrected but still misleading**: The revised entry says cap was "防止 fix task 循环创建导致失控（loop-breaker），而非仅限制 scope." This is correct. But then it says "Partially Overridden: `addRegressionFixTasks` 绕过 cap." The "Partially" qualifier is misleading — the proposal removes the cap entirely for the regression path. The forensic report (`fix-task-loop/report.md`) explicitly shows the loop occurred in regression context. Bypassing the cap on the path where the loop historically occurred is not "partial" — it's removing the defense from the exact attack surface.
-
-3. **"复用现有代码" claim persists in comparison table**: The comparison table (line 69) still lists "复用现有代码" as a pro for the selected approach. But the proposal now explicitly builds `extractFileLineMap` as a NEW function. This pro is inaccurate — the proposal is building new code, not reusing existing code.
-
-4. **Feasibility timeline not updated for new scope**: The original proposal estimated 2-3 hours based on reusing `extractSourceFiles`. The revised proposal introduces `extractFileLineMap` (a new function), the output-line association algorithm (4-step specification), and the cap bypass logic. The estimate was revised to 4-6 hours, but building a correct file-line mapping parser + multi-window deduplication algorithm + per-language test output handling + cap bypass + new tests is realistically 1-2 days of work.
+**Self-contradiction check**: The proposal is internally consistent after revision. The previous iteration-0 contradiction on multi-matching lines appears resolved — the current document consistently states that multi-matching lines go to ALL matching files (step 5 in In Scope). The Risk 4 mitigation does not contradict this; it says "仅为有直接 `--- FAIL:` 条目的文件创建 fix task" which is about WHICH FILES get tasks, not about which lines go where. The Assumptions Challenged table correctly uses "Overridden for regression path" language.
 
 ### SC Consistency Deep-Dive
 
 Cluster SC entries by affected area:
 
-**Cluster A — `addRegressionFixTasks` function**: SC-1 (4 fix tasks), SC-2 (per-file output lines)
-- SC-1 + SC-2: Internally satisfiable. Creating 4 tasks with per-file output lines is achievable.
-- **Ambiguous**: SC-2 references "该测试文件相关的输出行" but the algorithm in Scope and the Risk 4 mitigation contradict each other on multi-matching lines. The testability of SC-2 depends on which rule is applied.
+**Cluster A — Task creation**: SC-1 (4 fix tasks for 4 files), SC-2 (per-file output lines), SC-3 (per-file context)
+- Satisfiable as a set. The algorithm is specified.
 
-**Cluster B — Cap policy**: SC-3 (bypass cap for regression), SC-5 (other steps unaffected)
-- SC-3 + SC-5: Internally satisfiable in the revised proposal. The proposal now states `addRegressionFixTasks` bypasses cap while `addFixTask` retains it. This resolves the iteration-0 contradiction. However, it introduces a new issue: the existing `addSingleFixTask` function (line 708-722) contains the cap check. The proposal does not specify whether `addRegressionFixTasks` calls `addSingleFixTask` (which would re-apply the cap) or has its own task creation path that bypasses `addSingleFixTask` entirely.
+**Cluster B — Cap policy**: SC-4 (regression soft cap 10), SC-5 (maxFixTasksPerStep retained for other steps)
+- Satisfiable. The `createFixTask` helper extraction pattern allows both paths to share code while having different cap policies.
 
-**Cluster C — Language coverage**: SC-4 (fallback behavior), SC-6 (5 languages)
-- SC-4 + SC-6: Internally satisfiable. Fallback for unrecognized languages + 5 explicit naming conventions.
+**Cluster C — Fallback behavior**: SC-6 (fallback to directory grouping), SC-7 (structured log warning)
+- Satisfiable.
 
-**Cross-cluster**: SC-1 (4 fix tasks) + SC-3 (no cap) + SC-5 (other steps unaffected)
-- The proposal now says `addRegressionFixTasks` bypasses cap. But `addSingleFixTask` (the only task creation function in the codebase) enforces the cap. The proposal does not specify whether it adds a new task creation path or modifies `addSingleFixTask`. If it modifies `addSingleFixTask`, SC-5 is at risk. If it creates a parallel path, the codebase has duplicated task creation logic.
+**Cluster D — Phase 0**: SC-Phase-0 (description contains all `--- FAIL` lines)
+- Independent and satisfiable.
+
+**Cross-cluster**: SC-1 + SC-4 — 4 files with failures, each gets its own task. If there are 12 failing test files, SC-4 caps at 10, with remaining 2 merged. This is internally consistent.
+
+**Gap**: No SC verifies correctness of line association (that the RIGHT lines go to the RIGHT file's task). SC-2 only verifies lines are included, not that they are correct.
 
 ## Phase 2: Rubric Scoring with Verification Stance
 
-### 1. Problem Definition: 72/110
+### 1. Problem Definition: 78/110
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Problem stated clearly | 30/40 | Core problem is identifiable: single fix task with broad scope causes agent stall. Deduction: "agent 执行时卡住" is imprecise — the lesson document clarifies "长时间无响应被用户手动中断" but the proposal itself does not distinguish between timeout, infinite loop, or poor output quality. A reader unfamiliar with the lesson cannot determine the failure mode. |
-| Evidence provided | 24/40 | One concrete incident referenced with a lesson document. Deduction: no frequency data (how often does multi-file regression failure occur?), no severity classification beyond "高", no data on how many user sessions are affected. Single data point from one incident. The "20+" count is imprecise. |
-| Urgency justified | 18/30 | "每次 regression 测试出现多文件失败都会触发此问题" — but no data on how often multi-file regression failure actually occurs. If Forge's own regression suite has this happen once every 50 sessions, urgency is overstated. The cost of delay (wasted token/time) is stated but not quantified. |
+| Problem stated clearly | 32/40 | Core problem is identifiable: single fix task with broad scope causes agent stall when multiple unrelated files fail. The example is concrete (4 test suites, 20+ failures). Deduction: "agent 执行时卡住" is imprecise — it conflates timeout, infinite loop, and poor output quality. The lesson document clarifies "长时间无响应被用户手动中断" but the proposal does not reproduce this distinction. |
+| Evidence provided | 24/40 | One concrete incident referenced with a lesson document path. The "20+" count is imprecise. Deduction: no frequency data (how often does multi-file regression failure occur in production?), no severity classification beyond "高", no data on how many user sessions are affected. Single data point. |
+| Urgency justified | 22/30 | "每次 regression 测试出现多文件失败都会触发此问题，agent 卡死浪费时间和 token" — the cost is stated qualitatively but not quantified. The proposal adds Phase 0 as a lower-cost alternative, which is good practice. Deduction: no data on how often this scenario occurs, making "高" urgency potentially overstated. |
 
-### 2. Solution Clarity: 72/120
-
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Approach is concrete | 28/40 | Function names given (`extractFileLineMap`, `isTestFile`, `addRegressionFixTasks`). Algorithm for output line association now specified (4 steps in Scope). Deduction: the algorithm contradicts itself (Scope line 107 vs Risk 4 line 130 on multi-matching lines), so the reader cannot implement a consistent version. The `extractFileLineMap` function's interface is unspecified (input/output types, error handling). |
-| User-facing behavior described | 32/45 | "创建 4 个独立 fix task" is observable. Fallback behavior described. Deduction: what the agent SEES inside each task's description is unclear — the proposal says "该测试文件相关的输出行" but does not specify the format. Is it raw output lines? Filtered lines with context markers? A summary? The agent's ability to actually fix the bug depends entirely on what context it receives. |
-| Technical direction clear | 12/35 | The proposal now correctly identifies the need for `extractFileLineMap` (fixing the iteration-0 error). But the most critical implementation question — how `addRegressionFixTasks` bypasses the cap without affecting `addSingleFixTask`'s cap enforcement — is entirely unaddressed. The existing `addSingleFixTask` (line 708-722) contains the cap check. Does the new function call `addSingleFixTask` with a bypass flag? Create a parallel path? Modify the existing function? This architectural decision has significant implications for code complexity and SC-5 (other steps unaffected). |
-
-### 3. Industry Benchmarking: 48/120
+### 2. Solution Clarity: 82/120
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Industry solutions referenced | 18/40 | Two parenthetical mentions: "GitHub Actions test grouping、JUnit XML testsuite 元素." No analysis of how these systems group, what output formats they use, or what patterns can be borrowed. Surface-level name-dropping without substance. The proposal could have cited specific patterns: JUnit XML's `<testsuite>` -> `<testcase>` hierarchy, GitHub Actions' `::error file=...` annotation format, or Sentry's fingerprint-based error grouping. |
-| At least 3 meaningful alternatives | 15/30 | 4 alternatives listed. "Go 专属 suite 解析（原提案 v1）" is a straw man — it is the proposal's own previous version, presented as a separate alternative to be rejected. "按目录分组（现有行为）" is the baseline, not a genuinely different alternative. "Do nothing" is valid. Only 2 genuinely distinct alternatives exist, not 3. |
-| Honest trade-off comparison | 8/25 | Pros/cons are cherry-picked. The selected approach lists "复用现有代码" as a pro — but the proposal now builds `extractFileLineMap` as a new function, so this pro is inaccurate. The con "同一根因 bug 创建多任务" is acknowledged in the comparison table but not in the Key Risks section of the original proposal (it was added in the revised version as a new risk row, which is good). However, the mitigation "agent 并发执行时已有文件锁机制避免写冲突" is stated without evidence — there is no documented file-lock mechanism in the codebase. |
-| Chosen approach justified against benchmarks | 7/25 | "最小改动，最大通用性" is a slogan without substantiation. No quantitative comparison against JUnit-style parsing (which would handle multi-language output natively via XML). No analysis of why naming-convention detection was chosen over structured output parsing. |
+| Approach is concrete | 34/40 | Function names and signatures provided: `extractFileLineMap(output string) map[string][]string`, `isTestFile`, `addRegressionFixTasks`, `createFixTask`. The output line association algorithm is specified in 6 steps with an example. The `createFixTask` helper extraction pattern is described. Deduction: the algorithm step 5 ("一行匹配多个'主文件'时，该行及其上下文归入所有匹配的主文件") creates output duplication across tasks — if a stack trace line mentions two test files, both tasks get the same context. The proposal does not discuss whether this is acceptable or problematic. |
+| User-facing behavior described | 30/45 | "创建 4 个独立 fix task（而非 1 个综合 task）" is observable. Fallback behavior described. Deduction: what the agent SEES inside each task's description is partially specified — the example shows `handler_test.go` with `--- FAIL:` lines and stack trace. But the format is shown as a single example, not a template. The proposal does not specify whether the description includes a header, delimiters, or metadata beyond the raw output lines. |
+| Technical direction clear | 18/35 | The `createFixTask` helper extraction pattern is now specified, addressing the previous architectural gap. However: (1) the proposal says `addRegressionFixTasks` uses "regression 专用软上限（10 个），不受 `maxFixTasksPerStep` 硬上限约束" but does not specify WHERE the soft cap is enforced — is it in `addRegressionFixTasks` before calling `createFixTask`, or in `createFixTask` itself? (2) The proposal says "超出部分按目录合并为综合 task" but does not specify how the merging works — does it create a single catch-all task, or group remaining files by directory? (3) The interaction between `extractFileLineMap` and `isTestFile` is implicit — `extractFileLineMap` presumably calls `isTestFile` to filter, but the proposal does not state this explicitly. |
 
-### 4. Requirements Completeness: 68/110
-
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Scenario coverage | 28/40 | Happy path, single file, non-standard naming, all-passing covered. Added risk for "同一根因 bug" scenario (addressing iteration-0 finding). Missing scenarios: (1) test output contains file paths in stack traces that reference files not in `sourceExts` (e.g., `.mod` files, vendor paths), (2) very large output (1000+ lines) performance, (3) test file path appears in output but was not the failing test (false positive from stack trace mentioning the file), (4) concurrent quality-gate runs producing interleaved output. |
-| Non-functional requirements | 20/40 | Performance: "时间可忽略" without measurement or evidence. Compatibility: "不影响 compile/fmt/lint/unit-test" — satisfiable in the revised proposal but the implementation mechanism (how to bypass cap without affecting `addSingleFixTask`) is unspecified. No mention of: correctness of line association, maximum output size handling, memory usage for large test outputs. |
-| Constraints & dependencies | 20/30 | Naming convention dependency named. `extractFileLineMap` dependency on `sourceFileRe` regex (which matches `file.ext:line` patterns) is implicit but not stated. Missing: constraint on output format variability across test frameworks (Go vs Python vs Java produce fundamentally different failure output), constraint on `sourceFileRe` regex's ability to parse all test output formats. |
-
-### 5. Solution Creativity: 32/100
+### 3. Industry Benchmarking: 55/120
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Novelty over industry baseline | 15/40 | The proposal says "无创新" — acknowledged. The solution is a straightforward implementation of industry-standard test grouping. The `extractFileLineMap` addition (preserving file-to-line mapping) is a necessary engineering detail, not a creative contribution. |
-| Cross-domain inspiration | 5/35 | No cross-domain ideas. The proposal stays entirely within CI/test-reporting patterns. Could have drawn from: Sentry's fingerprint-based error grouping (deduplicating same root cause), distributed tracing's span-linking (cross-referencing related failures), or IDE test runners' failure tree views. |
-| Simplicity of insight | 12/25 | The insight ("split by test file") is simple but creates new coordination problems (duplicate fix tasks, cap bypass mechanism complexity). The revised proposal's algorithm for line association (4-step specification with deduplication) adds complexity that the original "simple" insight did not anticipate. |
+| Industry solutions referenced | 22/40 | References GitHub Actions test grouping, JUnit XML testsuite, Sentry error fingerprinting. The fingerprinting analogy ("以测试文件路径作为'指纹键'将输出行分配到独立 bucket") is apt. Deduction: no analysis of how these systems handle edge cases (Sentry's fingerprint collision, JUnit's suite nesting), no citation of specific API patterns or documentation. Surface-level references without substantive analysis of what can be borrowed. |
+| At least 3 meaningful alternatives | 13/30 | 6 alternatives listed in comparison table including "Do nothing." However: "改进 description 信息呈现" is presented as Phase 0 (already selected for implementation), not a true alternative to be compared against. "按目录分组（现有行为）" is the baseline. "Go 专属 suite 解析（原提案 v1）" is the proposal's own previous version. Only 3 genuinely distinct alternatives remain: LLM analysis, JUnit XML parsing, Sentry fingerprinting. The bar of "at least 3 meaningful alternatives" is technically met but barely. |
+| Honest trade-off comparison | 10/25 | The comparison table for the selected approach lists cons: "依赖命名约定识别；同一根因 bug 创建多任务；加剧 claim priority 和 cross-feature pollution." This is honest. Deduction: the Phase 0 alternative ("改进 description 信息呈现") is listed as "Phase 0" rather than "Alternative" — this is a design choice masquerading as evaluation. The proposal has already decided to do Phase 0, so it is not genuinely being compared. The "Cons" for this approach list "scope 仍为单 task 覆盖所有失败，未拆分" but this con is only relevant if the stall is caused by scope, not by information deficiency — which is exactly what Phase 0 is designed to test. |
+| Chosen approach justified | 10/25 | The comparison table provides verdicts with brief rationale. The selected approach is justified by "scope 最窄、新代码量可控." Deduction: no quantitative comparison of implementation complexity (lines of code, test cases needed). The "Rejected" rationales are single-sentence dismissals ("引入非确定性与额外开销," "过度工程化") without deeper analysis. |
 
-### 6. Feasibility: 62/100
-
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Technical feasibility | 25/40 | The core mechanism (`extractFileLineMap`) is buildable. The `sourceFileRe` regex already matches file:line patterns, so building a map is straightforward. Deduction: (1) the cap bypass mechanism is architecturally unspecified — does the new function call `addSingleFixTask` (which enforces cap) or create a parallel task creation path? (2) The output line association algorithm's multi-matching rule contradicts itself (Scope vs Risk 4). (3) Per-language test output format handling is not addressed — the regex-based approach works for `file:line` patterns but misses framework-specific failure indicators (e.g., pytest's `FAILED` prefix, Go's `--- FAIL:` block headers). |
-| Resource & timeline | 18/30 | "4-6 小时" is more realistic than the original 2-3 hours, but still likely underestimated. Building `extractFileLineMap` + the 4-step line association algorithm + `isTestFile` + `addRegressionFixTasks` with cap bypass + unit tests + integration tests is realistically 1-2 days. The estimate does not account for the cap bypass architectural decision or testing edge cases. |
-| Dependency readiness | 19/30 | No external dependencies. `sourceFileRe` and `sourceExts` exist and are stable. Deduction: the proposal depends on `sourceFileRe` matching test output across all 5 supported languages, but this regex was designed for error output (stack traces), not test runner output. Different test runners format file references differently — the regex may miss or misparse some formats. |
-
-### 7. Scope Definition: 58/80
+### 4. Requirements Completeness: 72/110
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| In-scope items are concrete | 24/30 | `isTestFile`, `extractFileLineMap`, `addRegressionFixTasks` are concrete deliverables. The output line association algorithm is now specified (4 steps). Deduction: the algorithm contradicts itself on multi-matching lines. |
-| Out-of-scope explicitly listed | 20/25 | Four items explicitly out of scope. Good. The revised proposal correctly removes "移除 `maxFixTasksPerStep` 变量和 `countFixTasks` 函数" from In Scope (which was in the baseline version) and replaces it with "保留 `maxFixTasksPerStep` 用于非 regression 步骤." This resolves the iteration-0 scope contradiction. |
-| Scope is bounded | 14/25 | "改动集中在 `quality_gate.go`" — but `addSingleFixTask` (which the proposal must modify or bypass) is also in `quality_gate.go`, so scope creep risk is low. Deduction: the cap bypass mechanism requires either modifying `addSingleFixTask` (affecting all callers) or duplicating task creation logic (increasing maintenance burden). Neither option is scoped. |
+| Scenario coverage | 28/40 | Happy path (4 files), single file, non-standard naming, all-passing, stack trace references covered. The stack trace scenario (line 45-46) is well-specified with the `handler_test.go` / `utils_test.go` example and cost analysis of false positives. Deduction: missing scenarios: (1) very large output with 1000+ failing tests across 50+ files (how does the soft cap interact with the merging logic?), (2) test file path appears in multiple stack traces from different primary failures (the proposal says its context goes to ALL matching files, but does not analyze the memory impact), (3) concurrent quality-gate runs, (4) test output with no file:line references at all (e.g., panic with no stack trace). |
+| Non-functional requirements | 24/40 | Performance: "时间可忽略" is asserted. Memory: "10000 行 output 的内存占用 < 50MB" — this is quantified, which is good. Concurrency: dispatcher-level suggestion documented as out-of-scope NFR. Compatibility: "不影响 compile/fmt/lint/unit-test 步骤." Deduction: (1) "时间可忽略" is vague — no benchmark or estimate. (2) The 50MB memory estimate is for `extractFileLineMap` alone, but the proposal does not account for the memory overhead of creating 10 fix tasks each with their own context windows. (3) No NFR for correctness of line association — what percentage of output lines must be correctly attributed? |
+| Constraints & dependencies | 20/30 | Naming convention dependency explicitly stated. `extractFileLineMap` dependency on `sourceFileRe` regex stated. MVP scope limited to Go. Deduction: the constraint that `sourceFileRe` was designed for error output (stack traces) and not test runner output is not acknowledged. The multi-language extension plan says "扩展时所有模式同时执行，结果合并去重，不尝试识别输出使用的语言" — this is a design decision presented as fact without analyzing whether simultaneous pattern matching could produce false positives across language patterns. |
 
-### 8. Risk Assessment: 55/90
-
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Risks identified | 22/30 | 5 risks listed (up from 4 in baseline, adding "同一根因 bug" risk). The revised proposal addresses 3 of the 4 iteration-0 blind spots. Missing: (1) `addSingleFixTask` cap enforcement interference with the bypass mechanism, (2) `extractFileLineMap` regex failing on framework-specific output formats, (3) no rollback plan. |
-| Likelihood + impact rated | 16/30 | "同一根因 bug" risk rated M/M — reasonable. Cap bypass risk rated M/M — improved from L/M in baseline, addressing iteration-0 finding. Rust/fallback risk rated M/L — improved from L/L. Output line association accuracy rated M/L — reasonable. Deduction: the Rust risk impact should be H, not L, since Rust is explicitly in the project's `sourceExts` whitelist and gets zero improvement from the feature. The cap bypass risk "若实际并发量过高可引入 regression 专用上限" is an implicit admission that the impact could be higher than rated. |
-| Mitigations are actionable | 17/30 | "fallback 到按目录分组，零功能损失" — actionable. "上下文窗口固定为前后各 2 行，重叠窗口合并去重" — actionable and specific (improvement from baseline). "agent 并发执行时已有文件锁机制避免写冲突" — stated as fact but no evidence of file-lock mechanism in the codebase. `conflict-with-pre-revision`: The pre-revision added this risk row, but the mitigation references an undocumented mechanism. "显式限定支持范围为 Go/Python/JS-TS/Java/Ruby" — actionable but is a scope limitation, not a mitigation. No rollback mitigation. |
-
-### 9. Success Criteria: 50/80
+### 5. Solution Creativity: 30/100
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Criteria are measurable and testable | 22/30 | SC-1 (4 fix tasks) is testable. SC-3 (cap bypass) is testable. SC-4 (fallback) is testable. SC-5 (other steps unaffected) is testable. SC-6 (5 languages) is testable. Deduction: SC-2 ("包含该测试文件相关的输出行") is not objectively verifiable because the algorithm contradicts itself (Scope line 107 vs Risk 4 line 130). "相关的" is subjective until the contradiction is resolved. |
-| Coverage is complete | 14/25 | Missing SC for: (1) maximum number of fix tasks created (the cap bypass has no stated upper bound — could 30 fix tasks be created?), (2) correctness of line association algorithm (SC-2 tests that output lines are included but not that the RIGHT lines are included or that overlapping context is correctly deduplicated), (3) what happens when two test files share a production code root cause (the risk is identified but no SC addresses it). |
-| SC internal consistency | 14/25 | The SC-3 vs SC-5 contradiction from iteration-0 is resolved in the revised proposal. However: (1) SC-2 references an algorithm that contradicts itself (multi-matching line behavior). (2) SC-1 ("创建 4 个独立 fix task") combined with SC-3 (no cap for regression) means there is no upper bound on fix task count. The proposal should add a SC like "no more than N regression fix tasks created per step." **Ambiguous — requires author clarification** on whether an upper bound for regression fix tasks exists. |
+| Novelty over industry baseline | 10/40 | The proposal self-assesses "无创新" — acknowledged. The solution is a straightforward implementation of test-grouping-by-file, a pattern used by every major CI system. The `extractFileLineMap` approach (preserving file-to-line mapping with context windows) is a necessary engineering refinement, not a creative contribution. |
+| Cross-domain inspiration | 10/35 | The fingerprinting analogy to Sentry is noted but not deeply explored. The proposal stays within CI/test-reporting patterns. No borrowing from: distributed tracing's span-linking for cross-referencing related failures, IDE test runners' failure tree views for hierarchical grouping, or build systems' incremental compilation for change-set-scoped testing. |
+| Simplicity of insight | 10/25 | The core insight ("split by test file") is simple but the implementation is not — the 6-step line association algorithm, context window expansion, overlapping deduplication, and soft cap with fallback merging add complexity that the "simple" insight did not anticipate. The proposal acknowledges this complexity but does not explore whether a simpler approach could achieve the same result. |
 
-### 10. Logical Consistency: 48/90
+### 6. Feasibility: 72/100
 
 | Criterion | Score | Justification |
 |-----------|-------|---------------|
-| Solution addresses the stated problem | 22/35 | Partially. Splitting by test file addresses scope, but: (1) the lesson document identifies two layers of improvement and this only addresses one, (2) the "同一根因 bug" problem (acknowledged in the revised proposal) means the solution can create WORSE outcomes than the current behavior — two agents editing the same production file simultaneously vs one agent handling all failures. |
-| Scope <-> Solution <-> SC aligned | 14/30 | Significantly improved from baseline. The revised proposal resolves the cap removal contradiction. Remaining misalignment: (1) the Scope algorithm and Risk 4 mitigation contradict each other on multi-matching lines, creating ambiguity in both SC-2 and the implementation specification. (2) The In Scope says "`addRegressionFixTasks` 绕过 cap" but does not specify HOW — the only task creation function (`addSingleFixTask`) enforces the cap, and modifying or bypassing it has implications not addressed in Scope. |
-| Requirements <-> Solution coherent | 12/25 | The naming convention constraint is coherent with the solution. The performance NFR ("时间可忽略") is asserted without evidence. The compatibility NFR ("不影响 compile/fmt/lint/unit-test") is achievable in the revised proposal but the implementation mechanism is unspecified. The comparison table's "复用现有代码" pro is inaccurate since `extractFileLineMap` is new code. |
+| Technical feasibility | 32/40 | The core mechanism is buildable. `extractFileLineMap` has a clear signature and algorithm. `createFixTask` helper extraction is a standard refactor pattern. `isTestFile` is trivial. The `sourceFileRe` regex provides a working baseline for Go output parsing. Deduction: (1) the context window expansion + overlapping deduplication algorithm is the most complex part and has no prototype or proof-of-concept. (2) The "超出部分按目录合并为综合 task" logic is specified at a high level but the merging algorithm is unspecified — how are the remaining files grouped? By directory? Into a single catch-all? |
+| Resource & timeline | 22/30 | Phase 0: "半天" — reasonable for changing description generation logic. Phase 1: "1-2 天实现 + 测试" — more realistic than the baseline estimate. The breakdown lists concrete deliverables: `extractFileLineMap`, `isTestFile`, `createFixTask`, `addRegressionFixTasks`. Deduction: the estimate does not separate implementation time from testing time, and the 6-step line association algorithm with deduplication is the kind of logic that typically requires more testing than implementation. |
+| Dependency readiness | 18/30 | No external dependencies. `sourceFileRe` exists and is stable. The `countFixTasks` title prefix matching is verified. Deduction: `sourceFileRe` matches `file.ext:line` patterns but test framework output may include file references in formats the regex cannot parse (e.g., Go's `--- FAIL: TestName (0.00s)` header has no file:line pattern). The proposal addresses this by saying it will "叠加 `--- FAIL:` 块的缩进行解析" but this means the MVP requires TWO parsing patterns, not one. |
+
+### 7. Scope Definition: 62/80
+
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| In-scope items are concrete | 26/30 | Each in-scope item names a specific deliverable: `isTestFile`, `extractFileLineMap` (with signature), `addRegressionFixTasks`, `createFixTask` helper, Phase 0 description change, unit tests. The line association algorithm is specified in 6 steps with an example. Deduction: the "超出部分按目录合并为综合 task" item in the soft cap risk is referenced in Scope but the merging logic itself is not scoped as a deliverable. |
+| Out-of-scope explicitly listed | 22/25 | Seven items explicitly out of scope: baseline filtering, claim priority fix, cross-feature pollution fix, unit-test/compile/lint step changes, surface inference improvements, template changes, non-Go language support. Good coverage. Deduction: dispatcher-level concurrency limiting is mentioned in NFR as "建议" but not explicitly listed as out-of-scope — this creates ambiguity about whether it is a future commitment or a suggestion. |
+| Scope is bounded | 14/25 | "改动集中在 `quality_gate.go`" — the scope is bounded to a single file. Timeline is 1-2 days for Phase 1. Deduction: the proposal includes both Phase 0 and Phase 1, and the relationship between them is ambiguous — Phase 0 is described as a prerequisite validation ("先验证信息不足是否是卡死的真正原因"), but Phase 1 is fully specified and scoped regardless. If Phase 0 succeeds, Phase 1 scope becomes unnecessary — yet it is counted in the current scope estimate. |
+
+### 8. Risk Assessment: 62/90
+
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Risks identified | 24/30 | 8 risks listed. Good coverage including: naming convention failure, same-root-cause duplicates, soft cap overflow, output line association accuracy, claim priority exacerbation, cross-feature pollution exacerbation, Rust language gap, rollback complexity. Deduction: missing risk — `extractFileLineMap` regex patterns fail to parse Go test output correctly (e.g., sub-test formatting, parallel test output interleaving). This is a different risk from "命名不规范导致识别失败" — it is about parser correctness, not file naming. |
+| Likelihood + impact rated | 18/30 | Ratings are generally reasonable: same-root-cause duplicates (M/M), soft cap overflow (M/M), claim priority exacerbation (H/M), cross-feature pollution (H/M). Deduction: (1) The claim priority risk is rated H likelihood — but this problem already exists before the proposal, so the risk is not that it occurs but that it gets WORSE. The "H" should be "H worsening of existing H." (2) The rollback complexity is rated L/M — but the proposal itself says rollback is "将 `addRegressionFixTasks` 调用替换回 `addFixTask`，删除新增函数即可恢复原有行为" which is trivially easy. The L likelihood is correct but M impact seems overstated for a 5-minute rollback. |
+| Mitigations are actionable | 20/30 | Fallback to directory grouping — actionable and well-specified. Soft cap at 10 — actionable. Context window at ±2 lines — actionable. Rollback plan ("替换回 `addFixTask`") — actionable. Deduction: (1) The same-root-cause duplicate mitigation says "接受此 trade-off" and references dispatcher-level limiting — the "accept" part is honest but the dispatcher suggestion is out-of-scope and non-actionable within this proposal. (2) The cross-feature pollution mitigation says "沿袭现有 mark as skipped 工作流" — this is maintaining the status quo, not a mitigation for the WORSENING of the problem caused by creating more fix tasks. |
+
+### 9. Success Criteria: 55/80
+
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Criteria are measurable and testable | 24/30 | Most SC are testable: Phase 0 SC (all `--- FAIL` lines in description), SC-1 (4 fix tasks for 4 files), SC-4 (soft cap at 10), SC-6 (fallback behavior), SC-7 (other steps unaffected), SC-8 (Go naming convention). Deduction: SC-2 ("每个 fix task 的 description 包含该测试文件相关的输出行（包含该文件路径的行及上下文）") — "相关" is partially defined by the 6-step algorithm but there is no objective verification criteria for "correct" attribution. How many lines of context is "correct"? The algorithm says ±2 but the SC does not reference this. |
+| Coverage is complete | 16/25 | Covers: task count, output content, cap policy, fallback, compatibility, language scope, Phase 0. Deduction: missing SC for: (1) correctness of line association — no SC verifies that output lines are attributed to the correct file (not just included), (2) soft cap overflow behavior — no SC verifies what happens when there are more than 10 failing test files, (3) non-duplication across tasks — step 5 says multi-matching lines go to all matching files, but no SC verifies this is acceptable or measures the duplication rate. |
+| SC internal consistency | 15/25 | SC items are internally consistent as a set. Phase 0 SC + Phase 1 SCs can be satisfied together. SC-4 (soft cap 10) + SC-6 (fallback to directory grouping) are compatible. Deduction: (1) Phase 0 SC is a prerequisite for Phase 1, but no SC specifies the decision gate — what result from Phase 0 triggers Phase 1 vs. skipping Phase 1? (2) SC-1 ("4 个测试文件各有失败时，创建 4 个独立 fix task") assumes exactly 4 files, but the proposal should generalize: "N 个测试文件各有失败时，创建 min(N, 10) 个 fix task." The specific number "4" ties the SC to the example scenario, making it not generalizable. |
+
+### 10. Logical Consistency: 68/90
+
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Solution addresses stated problem | 28/35 | The solution directly addresses the stated problem: single broad-scope fix task → per-file fix tasks. The Phase 0 addition shows intellectual honesty about the causal chain. Deduction: the proposal acknowledges that "同一根因 bug 创建多任务" means the solution can create MORE fix tasks than before (4 tasks vs 1), which could exacerbate the claim priority and cross-feature pollution problems. The solution partially solves the problem while potentially worsening two related problems. |
+| Scope ↔ Solution ↔ SC aligned | 22/30 | Significantly improved. The `createFixTask` helper extraction resolves the previous architectural ambiguity. The soft cap mechanism (10 tasks for regression) is specified. SC items map to in-scope deliverables. Deduction: (1) Phase 0 is in scope but its relationship to Phase 1 is not expressed as a dependency — Phase 1 is scoped and estimated regardless of Phase 0's outcome. (2) The soft cap overflow behavior ("超出部分按目录合并为综合 task") is described in the risk table but has no corresponding SC to verify it works. |
+| Requirements ↔ Solution coherent | 18/25 | The naming convention constraint is coherent with the `isTestFile` solution. The compatibility NFR is coherent with the `createFixTask` helper extraction pattern (shared code path). Deduction: (1) The performance NFR ("时间可忽略") cites `extractSourceFiles` optimization but `extractFileLineMap` is a new function — the cited evidence does not support the claim. (2) The comparison table lists "scope 最窄" as a pro, but the same-root-cause risk means the EFFECTIVE scope (number of concurrent agents touching the same production code) is wider than before. |
 
 ## Phase 3: Blindspot Hunt
 
-### [blindspot-1] Self-contradicting line association algorithm
+### [blindspot-1] Phase 0 success gate undefined
 
-The In Scope section (line 107) says "一行匹配多个测试文件时，该行及其上下文归入所有匹配的测试文件." The Risk 4 mitigation (line 130) says "一行仅匹配唯一测试文件时才纳入该文件 task." These prescribe opposite behaviors. Neither the pre-revision nor the post-revision text caught this internal contradiction within the revised paragraphs. This is the single most important specification in the proposal and it is self-contradictory.
+The proposal states Phase 0 is meant to "先验证信息不足是否是卡死的真正原因，如解决则无需拆分" (comparison table, Phase 0 verdict). But the In Scope section fully specifies Phase 1 deliverables, and the Success Criteria section lists both Phase 0 and Phase 1 SCs without conditional language. If Phase 0 succeeds (agent no longer stalls with improved description), Phase 1 becomes unnecessary — but the proposal commits to Phase 1 scope estimation and full specification regardless. This creates a logical gap: either Phase 0 is a true prerequisite with a decision gate (what constitutes "success"?), or Phase 1 is committed regardless and Phase 0 is just an optimization.
 
-### [blindspot-2] `addSingleFixTask` is the only task creation function — cap bypass architectural gap
+Quote: "Phase 0: 先验证信息不足是否是卡死的真正原因，如解决则无需拆分" vs In Scope section fully listing Phase 1 deliverables with no conditional language.
 
-The codebase has exactly one function that creates tasks: `addSingleFixTask` (line 708). This function enforces the cap check (lines 717-722). The proposal introduces `addRegressionFixTasks` that must "bypass cap." This requires either: (a) modifying `addSingleFixTask` to accept a bypass flag (affecting ALL callers), (b) duplicating task creation logic in a new function (maintenance burden), or (c) having `addRegressionFixTasks` call the low-level task creation API directly (bypassing `addSingleFixTask`). The proposal does not address this architectural decision, yet it affects SC-5 (other steps unaffected), scope boundary, and implementation timeline.
+### [blindspot-2] Soft cap overflow merging algorithm unspecified
 
-### [blindspot-3] File-lock mechanism claim is unsubstantiated
+The proposal states "regression 路径最多创建 10 个 fix task，超出部分按目录合并为综合 task" (risk table, row 3). But this merging algorithm is not specified anywhere in In Scope or the algorithm steps. How are the "超出部分" files selected? Are they the 11th-through-Nth files sorted by failure count? Are they randomly selected? Is the "综合 task" a single catch-all task, or multiple directory-grouped tasks? This is a runtime behavior that needs specification.
 
-Risk 2 mitigation states "agent 并发执行时已有文件锁机制避免写冲突." There is no documented file-lock mechanism in the Forge codebase. The `forge task add` command and task execution system do not implement file locking. If two agents simultaneously attempt to edit `auth.go` (the same root cause scenario), they will create conflicting changes. This is an unsubstantiated claim presented as a mitigation.
+Quote: "超出部分按目录合并为综合 task" — "按目录合并" references the existing `groupFilesByDir` logic but does not specify whether it produces one task or multiple.
 
-### [blindspot-4] `extractFileLineMap` must parse output that `sourceFileRe` was not designed for
+### [blindspot-3] Context window overlap creates ambiguous attribution
 
-The `sourceFileRe` regex (`([\w][\w./-]*\.\w{1,10})(?::\d+){1,2}`) matches `file.ext:line` patterns in error output. But test framework output includes many patterns this regex cannot parse: pytest's `FAILED tests/test_foo.py::TestClass::test_method` (no `:line` suffix), Jest's `● TestSuite > test name` (file path in header, not per-line), Ruby's Minitest output (file path only in backtrace, not in failure summary). The proposal assumes `extractFileLineMap` can work with `sourceFileRe` across all 5 languages, but test framework output is not error output — it has different formatting conventions.
+The algorithm step 5 states "一行匹配多个'主文件'时，该行及其上下文归入所有匹配的主文件." This means a single output line can appear in multiple fix tasks. Step 4 says "同一测试文件的多处匹配，合并重叠的上下文窗口." But the interaction between step 4 (deduplication WITHIN a file) and step 5 (duplication ACROSS files) is not analyzed. If file A has failures at lines 10 and 50, and file B has a failure at line 30 of the same output, and the context windows (±2 lines) around lines 10, 30, and 50 overlap, then the output line at line 29 could appear in both file A's task and file B's task. This is correct behavior per the algorithm, but it means two agents receive overlapping context and may attempt overlapping fixes.
 
-### [blindspot-5] No rollback plan
+Quote: "一行匹配多个'主文件'时，该行及其上下文归入所有匹配的主文件" — this is a deliberate design choice but its interaction with the same-root-cause duplicate risk (Risk 2) is not analyzed.
 
-If per-file splitting causes problems (duplicate tasks for same root cause, incorrect line associations, accelerated feedback loops due to cap bypass), there is no documented rollback strategy. The proposal should specify: "Revert to `addFixTask` by replacing the `addRegressionFixTasks` call in `runTestRegression` and removing the new function." This is a 5-minute rollback that should be documented.
+### [blindspot-4] `--- FAIL:` block parsing complexity underestimated
 
-### [blindspot-6] Comparison table "复用现有代码" pro is stale
+The proposal says `extractFileLineMap` will use `sourceFileRe` plus "叠加 `--- FAIL:` 块的缩进行解析." Go's test output format for `--- FAIL:` blocks includes nested sub-test output, parallel test output interleaving, and panic output. The proposal does not analyze how these edge cases affect the parser. For example, a sub-test failure produces output like `--- FAIL: TestFoo/SubTest (0.00s)` which has no file:line reference — the file reference only appears in the nested stack trace. The proposal says it will handle "缩进行" but sub-test output has variable indentation that is not consistent across Go versions.
 
-The comparison table (line 69) lists "复用现有代码" as a pro for the selected approach. But the revised proposal explicitly builds `extractFileLineMap` as a NEW function because `extractSourceFiles` cannot serve the purpose. This pro should be updated to "最小化新代码" or similar, reflecting the revised reality. The pre-revision corrected the solution text but did not propagate the correction to the comparison table.
+Quote: "叠加 `--- FAIL:` 块的缩进行解析（处理多行栈 trace 中文件引用仅出现在缩进行的情况）" — the parenthetical acknowledges the complexity but does not analyze sub-test output or parallel test interleaving.
+
+### [blindspot-5] Memory estimate does not account for context window expansion
+
+The NFR states "10000 行 output 的内存占用 < 50MB（纯字符串操作，无复杂对象）." But the context window algorithm (±2 lines per match) can expand the output significantly if there are many matches. For 10000 lines of output with 200 failing tests across 15 files, each match produces 5 lines of context (1 match + 2 before + 2 after), with overlap deduplication. The resulting `map[string][]string` could contain significantly more data than the raw output if many matches share context lines that get attributed to multiple files (step 5). The 50MB estimate does not account for this expansion.
+
+Quote: "10000 行 output 的内存占用 < 50MB（纯字符串操作，无复杂对象）" — the estimate assumes near-linear memory usage but step 5 creates cross-file duplication that is not bounded.
+
+### [blindspot-6] `createFixTask` helper extraction has implicit scope
+
+The In Scope section states "将 `addSingleFixTask` 的 task 创建逻辑（surface inference、template defaults、opts 构造、task 创建、markdown 生成、state 更新）提取为共享 helper（如 `createFixTask`）." This is a refactoring of the existing `addSingleFixTask` function. The proposal correctly notes this needs "独立单元测试覆盖，确保 `addRegressionFixTasks` 和 `addSingleFixTask` 两条调用路径的行为一致." However, this refactoring is listed as an in-scope item for the proposal but it is also a change to the existing `addSingleFixTask` code path. If the refactoring introduces a regression in the existing compile/fmt/lint/unit-test fix task creation, it contradicts SC-7 ("现有 compile/fmt/lint/unit-test 步骤的 fix task 创建不受影响"). The proposal should acknowledge this risk and specify that the refactoring must be tested in isolation before the new regression path is added.
+
+Quote: "共享 helper 须有独立单元测试覆盖，确保 `addRegressionFixTasks` 和 `addSingleFixTask` 两条调用路径的行为一致（task 字段填充、markdown 生成、state 更新），防止提取重构后行为漂移" — the acknowledgment is present but the risk to existing functionality from the refactoring itself is not listed in the Risk table.
 
 ## Score Summary
 
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| Problem Definition | 72 | 110 |
-| Solution Clarity | 72 | 120 |
-| Industry Benchmarking | 48 | 120 |
-| Requirements Completeness | 68 | 110 |
-| Solution Creativity | 32 | 100 |
-| Feasibility | 62 | 100 |
-| Scope Definition | 58 | 80 |
-| Risk Assessment | 55 | 90 |
-| Success Criteria | 50 | 80 |
-| Logical Consistency | 48 | 90 |
-| **Total** | **565** | **1000** |
+| Problem Definition | 78 | 110 |
+| Solution Clarity | 82 | 120 |
+| Industry Benchmarking | 55 | 120 |
+| Requirements Completeness | 72 | 110 |
+| Solution Creativity | 30 | 100 |
+| Feasibility | 72 | 100 |
+| Scope Definition | 62 | 80 |
+| Risk Assessment | 62 | 90 |
+| Success Criteria | 55 | 80 |
+| Logical Consistency | 68 | 90 |
+| **Total** | **636** | **1000** |
 
 ## Attack Points
 
-1. **Logical Consistency**: Scope algorithm contradicts Risk 4 mitigation on multi-matching lines — Scope line 107: "一行匹配多个测试文件时，该行及其上下文归入所有匹配的测试文件" vs Risk 4 line 130: "一行仅匹配唯一测试文件时才纳入该文件 task." These prescribe opposite behaviors for the same scenario. Must resolve to one rule and remove the other. `conflict-with-pre-revision`
+1. **Solution Clarity**: Soft cap overflow merging algorithm unspecified — "超出部分按目录合并为综合 task" — how are remaining files selected and grouped? Must specify the merging logic as a concrete algorithm step.
 
-2. **Feasibility**: Cap bypass mechanism architecturally unspecified — `addSingleFixTask` (line 708-722) is the only task creation function and enforces the cap. The proposal says `addRegressionFixTasks` "bypasses cap" but does not specify how. Must specify: (a) modify `addSingleFixTask` with a bypass parameter, (b) create a parallel task creation path, or (c) call the low-level API directly. Each option has different implications for SC-5 and maintenance.
+2. **Solution Clarity**: Description format shown as single example, not a template — "每个 fix task 只包含该测试文件相关的输出行" — the agent's ability to fix the bug depends on the description format, but only one example is shown. Must specify a description template with structure, headers, and delimiters.
 
-3. **Risk Assessment**: File-lock mechanism claim is unsubstantiated — Risk 2 mitigation states "agent 并发执行时已有文件锁机制避免写冲突" but no such mechanism exists in the codebase. Must either (a) provide evidence of the file-lock mechanism, or (b) change mitigation to "接受此 trade-off：两个 agent 可能产生冲突编辑，需要人工介入解决."
+3. **Feasibility**: Context window expansion + deduplication algorithm is the most complex part and has no prototype — "前后各 2 行作为上下文窗口（共 5 行），同一测试文件的多处匹配，合并重叠的上下文窗口" — this is the core parsing logic and its correctness determines the entire proposal's value. Must add a proof-of-concept or at minimum edge case analysis.
 
-4. **Solution Clarity**: `extractFileLineMap` interface unspecified — the proposal introduces this as a new function but does not define its input type (raw output string? line-split array?), output type (map[string][]int? map[string][]string?), or error handling. Must specify function signature.
+4. **Success Criteria**: No SC for soft cap overflow behavior — the risk table identifies this scenario but no SC verifies what happens when there are more than 10 failing test files. Must add SC: "当失败测试文件数 > 10 时，超出部分合并为综合 task，总 task 数 = 10 + merge_count."
 
-5. **Industry Benchmarking**: Comparison table "复用现有代码" pro is stale — the revised proposal builds `extractFileLineMap` as new code, making this pro inaccurate. Must update to reflect that the core mechanism requires new code. `conflict-with-pre-revision`
+5. **Success Criteria**: SC-1 tied to specific example number — "4 个测试文件各有失败时，创建 4 个独立 fix task" — this is not a generalizable SC. Must generalize to: "N 个测试文件各有失败时，创建 min(N, 10) 个 fix task."
 
-6. **Feasibility**: Timeline estimate does not account for cap bypass complexity — "4-6 小时" does not include time for the architectural decision and implementation of cap bypass (modifying or bypassing `addSingleFixTask`). Must add 2-4 hours for this work item.
+6. **Logical Consistency**: Phase 0 success gate undefined — "先验证信息不足是否是卡死的真正原因，如解决则无需拆分" — but Phase 1 is fully scoped and estimated regardless. Must add a decision gate: "Phase 0 成功标准 = [measurable criterion], 若 Phase 0 达标则 Phase 1 不执行."
 
-7. **Success Criteria**: No upper bound on regression fix tasks — SC-3 removes the cap for regression, SC-1 rewards splitting, but nothing bounds the total count. Must add SC: "regression 路径创建的 fix task 总数不超过 [N]" or document that the count is unbounded by design.
+7. **Risk Assessment**: `createFixTask` helper refactoring risk not listed — extracting `addSingleFixTask`'s logic into a shared helper changes the existing code path for compile/fmt/lint/unit-test fix tasks. If the refactoring introduces a regression, SC-7 is violated. Must add risk: "refactoring `addSingleFixTask` 引入回归影响现有 fix task 创建路径."
 
-8. **Requirements Completeness**: `sourceFileRe` regex not designed for test framework output — the regex matches `file.ext:line` patterns in error output but test frameworks format failures differently (pytest `FAILED file::class::method`, Jest `● TestSuite > test`). Must identify which output formats `extractFileLineMap` must handle across the 5 languages.
+8. **Requirements Completeness**: Memory estimate does not bound cross-file context duplication — "10000 行 output 的内存占用 < 50MB" — but step 5 duplicates context lines across multiple files. For dense failures, the total context output could exceed the raw input size. Must analyze worst-case expansion factor.
 
-9. **Problem Definition**: Proposal addresses only layer 1 of the lesson's two-layer prescription — the lesson document (`gotcha-fix-task-broad-scope.md`) prescribes suite splitting AND baseline filtering. The proposal implements only splitting. Must either (a) acknowledge this as partial solution with explicit plan for layer 2, or (b) justify why layer 2 is deferred.
+9. **Industry Benchmarking**: Phase 0 alternative presented as alternative but already committed to implementation — "Phase 0: 先验证信息不足是否是卡死的真正原因" — this is not a genuine alternative being evaluated; it is a committed first step. Must move to the solution section or present as a true alternative with decision criteria.
 
-10. **Solution Clarity**: What the agent sees inside each fix task is unspecified — the proposal says "该测试文件相关的输出行" but does not specify the format. Raw grep output? Annotated context with markers? A summary? The agent's ability to fix the bug depends entirely on the description format. Must specify the description template.
+10. **Feasibility**: `--- FAIL:` block parsing complexity underestimated — "叠加 `--- FAIL:` 块的缩进行解析" — Go sub-test output (`--- FAIL: TestFoo/SubTest`), parallel test interleaving, and panic output produce formatting variations not analyzed. Must specify which Go test output formats are supported and which are excluded.
 
-11. **Risk Assessment**: No rollback plan — if per-file splitting causes problems, there is no documented revert path. Must add: "Rollback: replace `addRegressionFixTasks` call with `addFixTask` in regression path."
+11. **Problem Definition**: "agent 执行时卡住" conflates multiple failure modes — the lesson document distinguishes "长时间无响应被用户手动中断" but the proposal does not. Is the agent timing out? In an infinite loop? Producing poor output? The solution differs for each. Must specify the failure mode.
 
-12. **Industry Benchmarking**: Straw-man alternative — "Go 专属 suite 解析（原提案 v1）" is the proposal's own previous iteration presented as a separate alternative. Must replace with a genuinely different approach: e.g., JUnit XML structured parsing, stack-trace fingerprint grouping, or Sentry-style error deduplication.
+12. **Solution Clarity**: Multi-matching line duplication creates overlapping agent context — "一行匹配多个'主文件'时，该行及其上下文归入所有匹配的主文件" — this is correct per the algorithm but its interaction with the same-root-cause duplicate risk (creating overlapping agent work) is not analyzed. Must discuss whether duplication is intentional and acceptable.
 
-13. **Logical Consistency**: Assumptions Challenged "Partially Overridden" qualifier misrepresents the scope of cap removal — the forensic report shows the loop occurred in regression context, and the proposal removes the cap from exactly that path. Must change "Partially Overridden" to "Overridden for regression path" and acknowledge that the loop-defense is removed from the path where the loop historically occurred.
+13. **Requirements Completeness**: No correctness NFR for line association — "每个 task 只包含该测试文件相关的输出行" — but no NFR specifies what percentage of lines must be correctly attributed. A 90% accuracy rate is different from 99%. Must add a correctness threshold or accept that accuracy is best-effort.
 
-14. **Feasibility**: Feasibility section cites existing test coverage as evidence, but tests are for old mechanism — "`extractSourceFiles` 和 `groupFilesByDir` 已有完善的单元测试覆盖" is irrelevant since the proposal now builds `extractFileLineMap` (a new function). Must update evidence to assess the new function's feasibility, not the replaced function's test coverage.
+14. **Scope Definition**: Dispatcher concurrency suggestion creates scope ambiguity — "建议 dispatcher 层面限制同一 feature 下同时被 claim 的 fix task 不超过 3 个（见 NFR 并发执行预算），此为 dispatcher 层约束，不在本提案实现范围内" — this is listed in NFR (requirements) but marked as out-of-scope. Should be explicitly listed in Out of Scope, not embedded in NFR with a disclaimer.
 
-15. **Requirements Completeness**: Missing scenario — test file path appears in output but was not the failing test (false positive from stack trace mentioning the file in a helper function). If `handler_test.go` calls a helper in `utils_test.go`, and `utils_test.go:42` appears in the stack trace, both files get their own fix tasks even though only `handler_test.go` has the actual failure. Must add this as an edge case with mitigation.
+15. **Logical Consistency**: Performance NFR cites irrelevant evidence — "解析 test output 的时间可忽略（现有 `extractSourceFiles` 已优化）" — but `extractFileLineMap` is a NEW function with different (more complex) logic. Citing `extractSourceFiles`'s performance is not evidence for `extractFileLineMap`'s performance. Must either benchmark or provide complexity analysis for the new function.
+
+16. **Feasibility**: Timeline estimate does not separate implementation from testing — "1-2 天实现 + 测试" — the 6-step line association algorithm with overlapping context window deduplication and multi-file attribution is the kind of logic where edge case testing typically exceeds implementation time. Must break down into implementation (1 day) and testing (1 day) with explicit edge case list.
+
+17. **Logical Consistency**: [blindspot-1] Phase 0/Phase 1 relationship is logically inconsistent — Phase 0 is framed as "验证" but Phase 1 is scoped unconditionally. The proposal cannot both (a) not know whether Phase 1 is needed and (b) commit to Phase 1's full scope. Must resolve this contradiction by either making Phase 1 conditional on Phase 0 outcome, or committing to Phase 1 regardless and removing the "验证" framing.
+
+18. **Industry Benchmarking**: Comparison table verdicts are single-sentence dismissals — "Rejected: 引入非确定性与额外开销" for LLM analysis, "Rejected: 过度工程化" for Sentry fingerprinting. These are opinion statements, not comparative analysis. Must provide at least one concrete comparison metric (e.g., implementation complexity, accuracy, maintenance cost) for each rejected alternative.
