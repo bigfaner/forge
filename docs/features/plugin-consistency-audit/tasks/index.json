@@ -302,7 +302,7 @@
       "title": "Fix: fix-bug command - add AskUserQuestion, replace Playwright, add mobile/tui",
       "priority": "P1",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "9-fix-fix-bug-command.md",
       "record": "records/9-fix-fix-bug-command.md",
       "type": "doc",
