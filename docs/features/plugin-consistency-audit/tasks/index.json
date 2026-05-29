@@ -96,7 +96,7 @@
       "title": "Fix: submit-task AC vs testsFailed rule conflict",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "17-fix-submit-task-ac-rule.md",
       "record": "records/17-fix-submit-task-ac-rule.md",
       "type": "doc",

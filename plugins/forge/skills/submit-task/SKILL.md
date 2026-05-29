@@ -22,9 +22,9 @@ All categories share these fields:
 
 ## Common Rules
 
-- Format file rules take precedence over Common Fields when they conflict.
+- **Priority hierarchy**: Category-specific rules (from `data/record-format-*.md` files) override Common Rules when they conflict. Common Rules provide the baseline; category-specific rules refine or replace them per task type.
 - `acceptanceCriteria` with any `met: false` entry is rejected for `completed` status — use `blocked` instead.
-- `testsPassed`, `testsFailed`, `coverage` are coding-only. Do NOT include them in doc, test, validation, or gate records.
+- `testsPassed`, `testsFailed`, `coverage` are coding-only (conditional on `status: completed`; omit when `status: blocked`). Do NOT include them in doc, test, validation, or gate records.
 
 ## File Locations
 
