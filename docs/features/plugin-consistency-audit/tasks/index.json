@@ -118,7 +118,7 @@
       "title": "Fix: gen-sitemap Step 2b/4 overlap handling",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "19-fix-gen-sitemap-overlap.md",
       "record": "records/19-fix-gen-sitemap-overlap.md",
       "type": "doc",
