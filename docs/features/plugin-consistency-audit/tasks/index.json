@@ -1,0 +1,139 @@
+{
+  "feature": "plugin-consistency-audit",
+  "proposal": "docs/proposals/plugin-consistency-audit/proposal.md",
+  "created": "2026-05-30",
+  "tasks": {
+    "1-inventory-structural-scan": {
+      "id": "1",
+      "title": "Component inventory and Layer 1 structural scan",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-inventory-structural-scan.md",
+      "record": "records/1-inventory-structural-scan.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "2-skills-audit-batch-a": {
+      "id": "2",
+      "title": "Skills deep audit - batch A (eval, gen-test-scripts, run-tests, tech-design, write-prd, brainstorm, breakdown-tasks)",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-skills-audit-batch-a.md",
+      "record": "records/2-skills-audit-batch-a.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "3-skills-audit-batch-b": {
+      "id": "3",
+      "title": "Skills deep audit - batch B (quick-tasks, consolidate-specs, clean-code, deep-research, forensic, ui-design, learn)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-skills-audit-batch-b.md",
+      "record": "records/3-skills-audit-batch-b.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "4-skills-audit-batch-c": {
+      "id": "4",
+      "title": "Skills deep audit - batch C (extract-design-md, gen-contracts, gen-journeys, gen-sitemap, init-justfile, submit-task, test-guide)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-skills-audit-batch-c.md",
+      "record": "records/4-skills-audit-batch-c.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "5-commands-agent-hooks-audit": {
+      "id": "5",
+      "title": "Commands + Agent + Hooks deep audit",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-commands-agent-hooks-audit.md",
+      "record": "records/5-commands-agent-hooks-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "6-consolidated-report": {
+      "id": "6",
+      "title": "Consolidated audit report and effectiveness validation",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-consolidated-report.md",
+      "record": "records/6-consolidated-report.md",
+      "mainSession": true,
+      "type": "doc",
+      "complexity": "high"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "6",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
