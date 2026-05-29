@@ -1,7 +1,7 @@
 ---
 feature: "derive-fix-task-type"
 created: "2026-05-29"
-status: tasks
+status: completed
 mode: quick
 ---
 
