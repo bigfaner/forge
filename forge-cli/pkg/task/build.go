@@ -327,44 +327,25 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 	}
 
-	// 7. Generate test tasks or T-review-doc
-	if needsEval {
-		// Docs-only: generate T-review-doc instead of test pipeline
-		evalTask := GetReviewDocTask()
-		ResolveReviewDocDep(&evalTask, index.TasksMap())
+	// 7. Generate auto-gen tasks via registry (T-review-doc + test pipeline + validation + consolidation + clean-code)
+	// The registry handles mode/config/intent/condition filtering, expansion, and dependency resolution.
+	// Step 7 (T-review-doc only) and Step 7.5 (test pipeline only) are now unified.
+	if mode != "" && (needsTest || needsEval) {
+		// Note: surfaces may be empty for docs-only features — that's fine.
+		// GenerateTestTasks generates non-surface tasks (T-review-doc, T-clean-code,
+		// T-validate-code) even with empty surfaces; surface-dependent nodes produce zero tasks.
 
-		evalKey := evalTask.Key
-		existingKeys[evalKey] = true
-
-		// Generate .md if missing
-		mdPath := filepath.Join(opts.TasksDir, evalKey+".md")
-		if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-			evalContent, err := GenerateTestTaskMD(evalTask, bodyCtx)
-			if err != nil {
-				result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", evalKey, err))
-			} else if err := os.WriteFile(mdPath, evalContent, 0644); err != nil {
-				result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", evalKey, err))
+		// Collect business tasks for GenerateCondition and dependency resolvers
+		var businessTasks []Task
+		for _, t := range index.TasksMap() {
+			if !IsAutoGenTaskID(t.ID) {
+				businessTasks = append(businessTasks, t)
 			}
 		}
 
-		task := evalTask.TaskFromFile()
-		if existing, found := index.ByID(evalTask.ID); found {
-			PreserveRuntimeFields(&existing, &task)
-			index.SetTask(evalKey, task)
-			result.UpdatedCount++
-		} else {
-			index.SetTask(evalKey, task)
-			result.NewCount++
-		}
-	}
-
-	// 7.5 Generate test pipeline tasks
-	if needsTest && mode != "" {
-		if len(capabilities) == 0 {
-			return nil, fmt.Errorf("no surfaces configured in .forge/config.yaml. Run `forge init` to configure surfaces")
-		}
 		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(surfaces, executionOrder)
-		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig, intent)
+		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig, intent, businessTasks, index.TasksMap())
+
 		for _, td := range testTasks {
 			ttKey := td.Key
 			existingKeys[ttKey] = true
@@ -394,29 +375,11 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			}
 		}
 
-		// Resolve first-test-task dependency and inject T-review-doc in a single
-		// atomic operation. This eliminates the ordering coupling that existed
-		// when these were separate steps.
-		resolveTestDepsAndInjectReviewDoc(testTasks, index, mode, needsEval, intent)
-
-		// Write the modified first-test-task deps back to the index.
-		firstTestIdx := findFirstTestTaskIdx(testTasks)
-		if firstTestIdx >= 0 {
-			firstKey := testTasks[firstTestIdx].Key
-			if t, found := index.ByID(testTasks[firstTestIdx].ID); found {
-				t.Dependencies = testTasks[firstTestIdx].Dependencies
-				index.SetTask(firstKey, t)
-			}
-		}
-
 		// Phase 2 of migration: apply saved T-test-run state to the first run-test task
 		if migratedState != nil {
 			applyMigratedRunTestState(index, migratedState)
 		}
 	}
-
-	// 7.6 Resolve drift/consolidate fallback deps (when test pipeline is disabled)
-	ResolveDriftFallbackDep(index)
 
 	// 8. Normalize task files (remove empty ## Hard Rules sections)
 	for _, entry := range entries {
@@ -488,19 +451,6 @@ func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
 	}
 }
 
-// GenerateTestTasks returns test task definitions for the given mode, surfaces, execution order, and intent.
-// Exported for use by caller (task 1.4).
-func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder []string, auto forgeconfig.AutoConfig, intent string) []AutoGenTaskDef {
-	switch mode {
-	case "breakdown":
-		return GetBreakdownTestTasks(surfaces, executionOrder, auto, intent)
-	case "quick":
-		return GetQuickTestTasks(surfaces, executionOrder, auto, intent)
-	default:
-		return nil
-	}
-}
-
 // shouldSkipFile returns true for files that should not be parsed as task files.
 func shouldSkipFile(name string) bool {
 	switch {
@@ -512,14 +462,21 @@ func shouldSkipFile(name string) bool {
 	return false
 }
 
-// isTestTaskID returns true for test pipeline task IDs.
+// isTestTaskID returns true for auto-generated pipeline task IDs (excluding
+// gate/summary/T-review-doc). Derived from PipelineRegistry: all registry nodes
+// with a "T-" prefix are test pipeline tasks.
 func isTestTaskID(id string) bool {
-	return strings.HasPrefix(id, "T-test-") ||
-		strings.HasPrefix(id, "T-quick-") ||
-		strings.HasPrefix(id, "T-specs-") ||
-		strings.HasPrefix(id, "T-clean-") ||
-		strings.HasPrefix(id, "T-validate-") ||
-		strings.HasPrefix(id, "T-eval-")
+	if !strings.HasPrefix(id, "T-") {
+		return false
+	}
+	if id == "T-review-doc" {
+		return false // review-doc is auto-gen but not a test task
+	}
+	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
+		return false // gate/summary handled separately
+	}
+	// Check if the ID matches any registry node pattern
+	return matchRegistryID(id, nil) != ""
 }
 
 // isFixTaskID returns true for fix-task IDs (auto-generated by quality gate pipeline).
@@ -570,43 +527,6 @@ func needsReviewDoc(tasks map[string]Task) bool {
 		}
 	}
 	return false
-}
-
-// findFirstTestTaskIdx returns the index of the first test pipeline task in the
-// generated task list. Uses findTaskIndexByPrefix to locate T-test-gen-journeys,
-// which is the stable first task in both breakdown and quick staged pipelines.
-func findFirstTestTaskIdx(tasks []AutoGenTaskDef) int {
-	return findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
-}
-
-// resolveTestDepsAndInjectReviewDoc combines first-test-task dependency resolution
-// and T-review-doc injection into a single atomic operation, eliminating the
-// ordering coupling that existed when these were separate steps.
-// When needsEval is true, T-review-doc is prepended to the first test task's deps
-// (it depends on the last business task; the original dep flows through T-review-doc).
-// When needsEval is false, this behaves identically to ResolveFirstTestDep alone.
-func resolveTestDepsAndInjectReviewDoc(testTasks []AutoGenTaskDef, index *TaskIndex, mode string, needsEval bool, intent string) {
-	if len(testTasks) == 0 {
-		return
-	}
-
-	// Resolve base dependency (same logic as ResolveFirstTestDep)
-	existingTasks := index.TasksMap()
-	ResolveFirstTestDep(testTasks, existingTasks, mode, intent)
-
-	if !needsEval {
-		return
-	}
-
-	// Inject T-review-doc as the first dependency of the first test pipeline task.
-	// T-review-doc depends on the last business task; the original dep is preserved
-	// through T-review-doc's own dependency chain.
-	firstTestIdx := findFirstTestTaskIdx(testTasks)
-	if firstTestIdx < 0 {
-		return
-	}
-	testTasks[firstTestIdx].Dependencies = append(
-		[]string{"T-review-doc"}, testTasks[firstTestIdx].Dependencies...)
 }
 
 // IsAutoGenTaskID returns true for task IDs that are auto-generated

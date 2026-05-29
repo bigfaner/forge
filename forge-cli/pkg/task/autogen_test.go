@@ -1,7 +1,6 @@
 package task
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -165,133 +164,148 @@ func TestGenerateTestTaskMD_SharedTask(t *testing.T) {
 	}
 }
 
-func TestResolveFirstTestDep(t *testing.T) {
-	t.Run("breakdown finds gate", func(t *testing.T) {
+// --- Registry-driven resolver tests (replacing deleted ResolveFirstTestDep/GetReviewDocTask/ResolveReviewDocDep) ---
+
+func TestResolveHighestGateOrLastBiz(t *testing.T) {
+	t.Run("returns highest gate", func(t *testing.T) {
 		existing := map[string]Task{
-			"1-gate":  {ID: "1.gate"},
-			"2-gate":  {ID: "2.gate"},
-			"1.1-foo": {ID: "1.1"},
+			"1-gate": {ID: "1.gate"},
+			"2-gate": {ID: "2.gate"},
 		}
-		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
-		ResolveFirstTestDep(tasks, existing, "breakdown", "")
-		if tasks[0].Dependencies[0] != "2.gate" {
-			t.Errorf("first test task should depend on highest gate, got %v", tasks[0].Dependencies)
+		ctx := &GenContext{ExistingTasks: existing, BusinessTasks: nil}
+		result := ResolveHighestGateOrLastBiz(ctx)
+		if len(result) != 1 || result[0] != "2.gate" {
+			t.Errorf("should return highest gate 2.gate, got %v", result)
 		}
 	})
 
-	t.Run("breakdown picks last business task over lower gate", func(t *testing.T) {
-		// Phase 3 has 1 task (no gate generated), phase 2 has a gate.
-		// Test chain must depend on the last business task (3.1), not the highest gate (2.gate).
+	t.Run("picks last business task over lower gate", func(t *testing.T) {
 		existing := map[string]Task{
-			"1-gate":  {ID: "1.gate"},
-			"2-gate":  {ID: "2.gate"},
-			"1.1-foo": {ID: "1.1"},
-			"2.1-bar": {ID: "2.1"},
-			"3.1-baz": {ID: "3.1"},
+			"1-gate": {ID: "1.gate"},
+			"2-gate": {ID: "2.gate"},
 		}
-		tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
-		ResolveFirstTestDep(tasks, existing, "breakdown", "")
-		if tasks[0].Dependencies[0] != "3.1" {
-			t.Errorf("first test task should depend on last business task (3.1) when it's in a higher phase than highest gate (2.gate), got %v", tasks[0].Dependencies)
+		biz := []Task{{ID: "3.1"}}
+		ctx := &GenContext{ExistingTasks: existing, BusinessTasks: biz}
+		result := ResolveHighestGateOrLastBiz(ctx)
+		if len(result) != 1 || result[0] != "3.1" {
+			t.Errorf("should return last business task 3.1 (phase > 2.gate), got %v", result)
 		}
 	})
 
-	t.Run("quick finds max business task", func(t *testing.T) {
+	t.Run("falls back to summary when no gate", func(t *testing.T) {
 		existing := map[string]Task{
-			"1-foo": {ID: "1"},
-			"2-bar": {ID: "2"},
-			"3-baz": {ID: "3"},
+			"1-summary": {ID: "1.summary"},
+			"2-summary": {ID: "2.summary"},
 		}
-		tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
-		ResolveFirstTestDep(tasks, existing, "quick", "")
-		if tasks[0].Dependencies[0] != "3" {
-			t.Errorf("first quick test task should depend on max business task, got %v", tasks[0].Dependencies)
+		ctx := &GenContext{ExistingTasks: existing, BusinessTasks: nil}
+		result := ResolveHighestGateOrLastBiz(ctx)
+		if len(result) != 1 || result[0] != "2.summary" {
+			t.Errorf("should return highest summary 2.summary, got %v", result)
+		}
+	})
+
+	t.Run("returns nil when empty", func(t *testing.T) {
+		ctx := &GenContext{ExistingTasks: map[string]Task{}, BusinessTasks: nil}
+		result := ResolveHighestGateOrLastBiz(ctx)
+		if result != nil {
+			t.Errorf("should return nil for empty, got %v", result)
 		}
 	})
 }
 
-func TestGetReviewDocTask(t *testing.T) {
-	task := GetReviewDocTask()
+func TestResolveIfGenerated(t *testing.T) {
+	resolver := ResolveIfGenerated("T-review-doc")
 
-	if task.ID != "T-review-doc" {
-		t.Errorf("ID = %q, want T-review-doc", task.ID)
-	}
-	if task.Key != "review-doc" {
-		t.Errorf("Key = %q, want review-doc", task.Key)
-	}
-	if task.Type != TypeDocReview {
-		t.Errorf("Type = %q, want %q", task.Type, TypeDocReview)
-	}
-	if task.Title == "" {
-		t.Error("Title should not be empty")
-	}
-	if len(task.Dependencies) != 0 {
-		t.Errorf("Dependencies should be empty (resolved later), got %v", task.Dependencies)
-	}
+	t.Run("returns ID when generated", func(t *testing.T) {
+		ctx := &GenContext{AllGenerated: []string{"T-review-doc", "T-clean-code"}}
+		result := resolver(ctx)
+		if len(result) != 1 || result[0] != "T-review-doc" {
+			t.Errorf("should return [T-review-doc], got %v", result)
+		}
+	})
+
+	t.Run("returns nil when not generated", func(t *testing.T) {
+		ctx := &GenContext{AllGenerated: []string{"T-clean-code"}}
+		result := resolver(ctx)
+		if result != nil {
+			t.Errorf("should return nil when not generated, got %v", result)
+		}
+	})
 }
 
-func TestResolveReviewDocDep(t *testing.T) {
-	t.Run("depends on all doc-type tasks, not just the last", func(t *testing.T) {
-		existing := map[string]Task{
-			"1-doc":              {ID: "1.1", Type: TypeDoc},
-			"2-doc":              {ID: "1.2", Type: TypeDoc},
-			"3-code":             {ID: "2.1", Type: TypeCodingFeature},
-			"4-doc":              {ID: "3.1", Type: TypeDoc},
-			"T-test-gen-scripts": {ID: "T-test-gen-scripts-cli", Type: TypeTestGenScripts},
+func TestResolveLastRunTestOrBusiness(t *testing.T) {
+	t.Run("returns last run test when chain exists", func(t *testing.T) {
+		ctx := &GenContext{RunTestChain: []string{"T-test-run-api", "T-test-run-cli"}}
+		result := ResolveLastRunTestOrBusiness(ctx)
+		if len(result) != 1 || result[0] != "T-test-run-cli" {
+			t.Errorf("should return last run-test, got %v", result)
 		}
-		task := GetReviewDocTask()
-		ResolveReviewDocDep(&task, existing)
+	})
 
-		if len(task.Dependencies) != 3 {
-			t.Fatalf("Dependencies = %v, want exactly 3 doc tasks", task.Dependencies)
+	t.Run("falls back to last business task", func(t *testing.T) {
+		biz := []Task{{ID: "1"}, {ID: "2"}, {ID: "3"}}
+		ctx := &GenContext{RunTestChain: nil, BusinessTasks: biz}
+		result := ResolveLastRunTestOrBusiness(ctx)
+		if len(result) != 1 || result[0] != "3" {
+			t.Errorf("should return last business task 3, got %v", result)
 		}
+	})
 
+	t.Run("returns nil when both empty", func(t *testing.T) {
+		ctx := &GenContext{}
+		result := ResolveLastRunTestOrBusiness(ctx)
+		if result != nil {
+			t.Errorf("should return nil, got %v", result)
+		}
+	})
+}
+
+func TestResolveUpstream(t *testing.T) {
+	t.Run("returns upstream IDs", func(t *testing.T) {
+		ctx := &GenContext{UpstreamIDs: []string{"T-test-gen-scripts-api", "T-test-gen-scripts-cli"}}
+		result := ResolveUpstream(ctx)
+		if len(result) != 2 {
+			t.Errorf("should return 2 upstream IDs, got %v", result)
+		}
+	})
+
+	t.Run("returns nil when empty", func(t *testing.T) {
+		ctx := &GenContext{UpstreamIDs: nil}
+		result := ResolveUpstream(ctx)
+		if result != nil {
+			t.Errorf("should return nil, got %v", result)
+		}
+	})
+}
+
+func TestResolveDocTasks(t *testing.T) {
+	t.Run("returns doc task IDs only", func(t *testing.T) {
+		biz := []Task{
+			{ID: "1.1", Type: TypeDoc},
+			{ID: "1.2", Type: TypeDoc},
+			{ID: "2.1", Type: TypeCodingFeature},
+			{ID: "3.1", Type: TypeDoc},
+		}
+		ctx := &GenContext{BusinessTasks: biz}
+		result := ResolveDocTasks(ctx)
+		if len(result) != 3 {
+			t.Fatalf("should return 3 doc task IDs, got %v", result)
+		}
 		depSet := make(map[string]bool)
-		for _, dep := range task.Dependencies {
-			depSet[dep] = true
+		for _, id := range result {
+			depSet[id] = true
 		}
-
 		if !depSet["1.1"] || !depSet["1.2"] || !depSet["3.1"] {
-			t.Errorf("should depend on all doc tasks {1.1, 1.2, 3.1}, got %v", task.Dependencies)
-		}
-		if depSet["2.1"] {
-			t.Error("should NOT depend on non-doc task 2.1")
+			t.Errorf("should depend on {1.1, 1.2, 3.1}, got %v", result)
 		}
 	})
 
-	t.Run("excludes non-doc business tasks", func(t *testing.T) {
-		existing := map[string]Task{
-			"1-code": {ID: "1", Type: TypeCodingFeature},
-			"2-code": {ID: "2", Type: TypeCodingEnhancement},
-			"3-fix":  {ID: "3", Type: TypeCodingFix},
-		}
-		task := GetReviewDocTask()
-		ResolveReviewDocDep(&task, existing)
-
-		if len(task.Dependencies) != 0 {
-			t.Errorf("should have no deps when no doc tasks exist, got %v", task.Dependencies)
-		}
-	})
-
-	t.Run("empty tasks", func(t *testing.T) {
-		existing := map[string]Task{}
-		task := GetReviewDocTask()
-		ResolveReviewDocDep(&task, existing)
-
-		if len(task.Dependencies) != 0 {
-			t.Errorf("Dependencies = %v, want empty for no tasks", task.Dependencies)
-		}
-	})
-
-	t.Run("single doc task", func(t *testing.T) {
-		existing := map[string]Task{
-			"1-doc": {ID: "1.1", Type: TypeDoc},
-		}
-		task := GetReviewDocTask()
-		ResolveReviewDocDep(&task, existing)
-
-		if len(task.Dependencies) != 1 || task.Dependencies[0] != "1.1" {
-			t.Errorf("should depend on the single doc task, got %v", task.Dependencies)
+	t.Run("returns nil when no doc tasks", func(t *testing.T) {
+		biz := []Task{{ID: "1", Type: TypeCodingFeature}}
+		ctx := &GenContext{BusinessTasks: biz}
+		result := ResolveDocTasks(ctx)
+		if result != nil {
+			t.Errorf("should return nil, got %v", result)
 		}
 	})
 }
@@ -546,7 +560,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	}
 
 	// T-test-run depends on gen-journeys (direct, no gen-contracts/gen-scripts in Quick)
-	runIdx := findTaskIndexOrPanic(tasks, "T-test-run")
+	runIdx := findTaskIndex(tasks, "T-test-run")
 	if len(tasks[runIdx].Dependencies) != 1 || tasks[runIdx].Dependencies[0] != "T-test-gen-journeys" {
 		t.Errorf("T-test-run should depend on T-test-gen-journeys, got %v", tasks[runIdx].Dependencies)
 	}
@@ -561,7 +575,7 @@ func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	}
 
 	// T-test-run-api (first in chain) depends on gen-journeys (not gen-scripts)
-	runAPIIdx := findTaskIndexOrPanic(tasks, "T-test-run-api")
+	runAPIIdx := findTaskIndex(tasks, "T-test-run-api")
 	if len(tasks[runAPIIdx].Dependencies) != 1 {
 		t.Fatalf("T-test-run-api should depend on 1 gen-journeys, got %v", tasks[runAPIIdx].Dependencies)
 	}
@@ -570,11 +584,11 @@ func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
 	}
 
 	// Serial chain: api -> tui -> cli
-	runTUIIdx := findTaskIndexOrPanic(tasks, "T-test-run-tui")
+	runTUIIdx := findTaskIndex(tasks, "T-test-run-tui")
 	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-run-api" {
 		t.Errorf("T-test-run-tui should depend on T-test-run-api, got %v", tasks[runTUIIdx].Dependencies)
 	}
-	runCLIIdx := findTaskIndexOrPanic(tasks, "T-test-run-cli")
+	runCLIIdx := findTaskIndex(tasks, "T-test-run-cli")
 	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-run-tui" {
 		t.Errorf("T-test-run-cli should depend on T-test-run-tui, got %v", tasks[runCLIIdx].Dependencies)
 	}
@@ -1457,40 +1471,26 @@ func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
 	}
 }
 
-func TestFindTaskIndexOrPanic_PanicsOnMissing(t *testing.T) {
+func TestFindTaskIndex_ReturnsMinusOneOnMissing(t *testing.T) {
 	tasks := []AutoGenTaskDef{
 		{ID: "T-existing-1"},
 		{ID: "T-existing-2"},
 	}
 
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("expected panic when task not found, but did not panic")
-		}
-		msg := fmt.Sprintf("%v", r)
-		if !strings.Contains(msg, "T-missing") {
-			t.Errorf("panic message should contain missing task ID %q, got %q", "T-missing", msg)
-		}
-		if !strings.Contains(msg, "T-existing-1") {
-			t.Errorf("panic message should contain task ID T-existing-1, got %q", msg)
-		}
-		if !strings.Contains(msg, "T-existing-2") {
-			t.Errorf("panic message should contain task ID T-existing-2, got %q", msg)
-		}
-	}()
-
-	findTaskIndexOrPanic(tasks, "T-missing")
+	idx := findTaskIndex(tasks, "T-missing")
+	if idx != -1 {
+		t.Errorf("expected -1 for missing task, got %d", idx)
+	}
 }
 
-func TestFindTaskIndexOrPanic_ReturnsIndexWhenFound(t *testing.T) {
+func TestFindTaskIndex_ReturnsIndexWhenFound(t *testing.T) {
 	tasks := []AutoGenTaskDef{
 		{ID: "T-first"},
 		{ID: "T-second"},
 		{ID: "T-third"},
 	}
 
-	idx := findTaskIndexOrPanic(tasks, "T-second")
+	idx := findTaskIndex(tasks, "T-second")
 	if idx != 1 {
 		t.Errorf("expected index 1, got %d", idx)
 	}
@@ -1702,173 +1702,7 @@ func TestGetQuickTestTasks_DriftDependsOnLastRunTest(t *testing.T) {
 	t.Error("T-quick-doc-drift not found")
 }
 
-// --- Task 5: ResolveFirstTestDep panic and InferType ordering tests ---
-
-func TestResolveFirstTestDep_BreakdownGracefulOnMissingGenJourneys(_ *testing.T) {
-	// When gen-journeys tasks don't exist (no E2E tasks), ResolveFirstTestDep
-	// should return gracefully without panicking.
-	tasks := []AutoGenTaskDef{
-		{ID: "T-eval-journey"},
-		{ID: "T-test-gen-contracts"},
-		{ID: "T-test-gen-scripts-cli"},
-		{ID: "T-test-run"},
-	}
-	existing := map[string]Task{
-		"1-gate": {ID: "1.gate"},
-	}
-	// Should not panic
-	ResolveFirstTestDep(tasks, existing, "breakdown", "")
-}
-
-func TestResolveFirstTestDep_QuickGracefulOnMissingGenJourneys(_ *testing.T) {
-	// When gen-journeys tasks don't exist (no E2E tasks), ResolveFirstTestDep
-	// should return gracefully without panicking.
-	tasks := []AutoGenTaskDef{
-		{ID: "T-quick-doc-drift"},
-	}
-	existing := map[string]Task{
-		"1-foo": {ID: "1"},
-	}
-	// Should not panic
-	ResolveFirstTestDep(tasks, existing, "quick", "")
-}
-
-func TestResolveFirstTestDep_BreakdownWithCleanCode(t *testing.T) {
-	existing := map[string]Task{
-		"1-gate":  {ID: "1.gate"},
-		"1.1-foo": {ID: "1.1"},
-	}
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
-
-	// Add a clean-code task
-	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
-
-	ResolveFirstTestDep(tasks, existing, "breakdown", "")
-
-	cleanIdx := findTaskIndex(tasks, "T-clean-code")
-	if cleanIdx < 0 {
-		t.Fatal("T-clean-code not found")
-	}
-	if tasks[cleanIdx].Dependencies[0] != "1.gate" {
-		t.Errorf("clean-code should depend on highest gate, got %v", tasks[cleanIdx].Dependencies)
-	}
-
-	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
-	if firstTestIdx < 0 {
-		t.Fatal("gen-journeys not found")
-	}
-	if tasks[firstTestIdx].Dependencies[0] != "T-clean-code" {
-		t.Errorf("first test task should depend on clean-code, got %v", tasks[firstTestIdx].Dependencies)
-	}
-}
-
-func TestResolveFirstTestDep_QuickWithCleanCode(t *testing.T) {
-	existing := map[string]Task{
-		"1-foo": {ID: "1"},
-		"2-bar": {ID: "2"},
-	}
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
-
-	// Add a clean-code task
-	tasks = append([]AutoGenTaskDef{{ID: "T-clean-code"}}, tasks...)
-
-	ResolveFirstTestDep(tasks, existing, "quick", "")
-
-	cleanIdx := findTaskIndex(tasks, "T-clean-code")
-	if cleanIdx < 0 {
-		t.Fatal("T-clean-code not found")
-	}
-	if tasks[cleanIdx].Dependencies[0] != "2" {
-		t.Errorf("clean-code should depend on max business task, got %v", tasks[cleanIdx].Dependencies)
-	}
-
-	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
-	if firstTestIdx < 0 {
-		t.Fatal("gen-journeys not found")
-	}
-	if tasks[firstTestIdx].Dependencies[0] != "T-clean-code" {
-		t.Errorf("first test task should depend on clean-code, got %v", tasks[firstTestIdx].Dependencies)
-	}
-}
-
-func TestResolveFirstTestDep_EmptyTasks_NoPanic(_ *testing.T) {
-	// Empty tasks should return without panic
-	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "breakdown", "")
-	ResolveFirstTestDep(nil, map[string]Task{"1": {ID: "1"}}, "quick", "")
-}
-
-func TestResolveFirstTestDep_NoDeps_NoPanic(t *testing.T) {
-	// No existing business tasks → return without panic
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, defaultAuto, "")
-	ResolveFirstTestDep(tasks, map[string]Task{}, "breakdown", "")
-
-	// gen-journeys should have no deps set (no business tasks to depend on)
-	firstTestIdx := findTaskIndexByPrefix(tasks, "T-test-gen-journeys")
-	if firstTestIdx >= 0 && len(tasks[firstTestIdx].Dependencies) != 0 {
-		t.Errorf("gen-journeys should have no deps when no business tasks exist, got %v", tasks[firstTestIdx].Dependencies)
-	}
-}
-
-func TestResolveDriftFallbackDep(t *testing.T) {
-	t.Run("quick drift with no deps falls back to last business task", func(t *testing.T) {
-		index := NewTaskIndex("test-feature")
-		index.SetTasks(map[string]Task{
-			"1-foo": {ID: "1", Title: "Foo", Priority: "P1", Status: "pending", Dependencies: []string{}, Type: TypeCodingFeature},
-			"drift": {ID: "T-quick-doc-drift", Title: "Drift", Priority: "P2", Status: "pending", Dependencies: nil, Type: TypeDocDrift},
-		})
-
-		ResolveDriftFallbackDep(index)
-
-		driftTask, _ := index.ByID("T-quick-doc-drift")
-		if len(driftTask.Dependencies) != 1 || driftTask.Dependencies[0] != "1" {
-			t.Errorf("drift deps = %v, want [1]", driftTask.Dependencies)
-		}
-	})
-
-	t.Run("breakdown consolidate with no deps falls back to last business task", func(t *testing.T) {
-		index := NewTaskIndex("test-feature")
-		index.SetTasks(map[string]Task{
-			"2-bar":       {ID: "2", Title: "Bar", Priority: "P1", Status: "pending", Dependencies: []string{}, Type: TypeCodingFeature},
-			"consolidate": {ID: "T-specs-consolidate", Title: "Consolidate", Priority: "P2", Status: "pending", Dependencies: nil, Type: TypeDocConsolidate},
-		})
-
-		ResolveDriftFallbackDep(index)
-
-		ct, _ := index.ByID("T-specs-consolidate")
-		if len(ct.Dependencies) != 1 || ct.Dependencies[0] != "2" {
-			t.Errorf("consolidate deps = %v, want [2]", ct.Dependencies)
-		}
-	})
-
-	t.Run("no-op when drift already has deps", func(t *testing.T) {
-		index := NewTaskIndex("test-feature")
-		index.SetTasks(map[string]Task{
-			"1-foo": {ID: "1", Title: "Foo", Priority: "P1", Status: "pending", Dependencies: []string{}, Type: TypeCodingFeature},
-			"drift": {ID: "T-quick-doc-drift", Title: "Drift", Priority: "P2", Status: "pending", Dependencies: []string{"T-test-run"}, Type: TypeDocDrift},
-		})
-
-		ResolveDriftFallbackDep(index)
-
-		dt, _ := index.ByID("T-quick-doc-drift")
-		if len(dt.Dependencies) != 1 || dt.Dependencies[0] != "T-test-run" {
-			t.Errorf("existing deps should be preserved, got %v", dt.Dependencies)
-		}
-	})
-
-	t.Run("no-op when no business tasks", func(t *testing.T) {
-		index := NewTaskIndex("test-feature")
-		index.SetTasks(map[string]Task{
-			"drift": {ID: "T-quick-doc-drift", Title: "Drift", Priority: "P2", Status: "pending", Dependencies: nil, Type: TypeDocDrift},
-		})
-
-		ResolveDriftFallbackDep(index)
-
-		dt, _ := index.ByID("T-quick-doc-drift")
-		if len(dt.Dependencies) != 0 {
-			t.Errorf("drift should have no deps when no business tasks, got %v", dt.Dependencies)
-		}
-	})
-}
+// --- ResolveFirstTestDep tests replaced by registry-driven resolver tests above ---
 
 // --- {{DOC_TASK_AC}} rendering tests ---
 
@@ -2736,89 +2570,50 @@ func TestIntent_CleanupQuick_FullWiring(t *testing.T) {
 	}
 }
 
-// AC3: Zero business task protection -- ResolveFirstTestDep with refactor/cleanup and empty business tasks
+// AC3: Registry-driven resolver tests with refactor/cleanup (replaces deleted ResolveFirstTestDep tests)
 
-func TestResolveFirstTestDep_Refactor_NoBusinessTasks_NoPanic(_ *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
-	existing := map[string]Task{}
-
-	// Should not panic with empty business tasks
-	ResolveFirstTestDep(tasks, existing, "breakdown", "refactor")
+func TestGenerateTestTasks_Refactor_NoPanicWithEmptyBiz(_ *testing.T) {
+	// Registry-driven generation should handle empty business tasks without panic
+	GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor", nil, nil)
+	GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "cleanup", nil, nil)
 }
 
-func TestResolveFirstTestDep_Cleanup_NoBusinessTasks_NoPanic(_ *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "cleanup")
-	existing := map[string]Task{}
-
-	// Should not panic with empty business tasks
-	ResolveFirstTestDep(tasks, existing, "quick", "cleanup")
-}
-
-// ResolveFirstTestDep with refactor/cleanup wires validate-code/clean-code to last business task
-
-func TestResolveFirstTestDep_Refactor_WiresValidateCodeToLastBiz(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
-	existing := map[string]Task{
-		"1-foo": {ID: "1"},
-		"2-bar": {ID: "2"},
+func TestGenerateTestTasks_Refactor_WiresValidateCodeToLastBiz(t *testing.T) {
+	biz := []Task{{ID: "1"}, {ID: "2"}}
+	tasks := GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
 	}
 
-	ResolveFirstTestDep(tasks, existing, "breakdown", "refactor")
-
-	// For refactor breakdown: validate-code should depend on last business task
-	validateIdx := findTaskIndex(tasks, "T-validate-code")
-	if validateIdx < 0 {
-		t.Fatal("T-validate-code not found")
+	// For refactor breakdown: validate-code should depend on last business task (via ResolveLastRunTestOrBusiness)
+	validateTask, ok := byID["T-validate-code"]
+	if !ok {
+		t.Fatal("T-validate-code should exist for refactor")
 	}
-
-	if len(tasks[validateIdx].Dependencies) != 1 || tasks[validateIdx].Dependencies[0] != "2" {
-		t.Errorf("validate-code should depend on last business task '2', got %v", tasks[validateIdx].Dependencies)
-	}
-}
-
-// ResolveFirstTestDep for refactor/cleanup with business tasks wires the first validation/clean-code task
-
-func TestResolveFirstTestDep_Refactor_WiresValidateCode(t *testing.T) {
-	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
-	existing := map[string]Task{
-		"1-foo": {ID: "1"},
-		"2-bar": {ID: "2"},
-	}
-
-	ResolveFirstTestDep(tasks, existing, "breakdown", "refactor")
-
-	// For refactor breakdown: first downstream task (validate-code) should depend on last business task
-	validateIdx := findTaskIndex(tasks, "T-validate-code")
-	if validateIdx < 0 {
-		t.Fatal("T-validate-code not found")
-	}
-
-	if len(tasks[validateIdx].Dependencies) == 0 {
+	if len(validateTask.Dependencies) == 0 {
 		t.Error("validate-code should have dependencies for refactor with business tasks")
-	} else if tasks[validateIdx].Dependencies[0] != "2" {
-		t.Errorf("validate-code should depend on last business task '2', got %v", tasks[validateIdx].Dependencies)
+	} else if validateTask.Dependencies[0] != "2" {
+		t.Errorf("validate-code should depend on last business task '2', got %v", validateTask.Dependencies)
 	}
 }
 
-func TestResolveFirstTestDep_RefactorQuick_WiresCleanCode(t *testing.T) {
-	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, refactorAuto, "refactor")
-	existing := map[string]Task{
-		"1-foo": {ID: "1"},
-		"3-bar": {ID: "3"},
+func TestGenerateTestTasks_RefactorQuick_WiresCleanCode(t *testing.T) {
+	biz := []Task{{ID: "1"}, {ID: "3"}}
+	tasks := GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "refactor", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
 	}
 
-	ResolveFirstTestDep(tasks, existing, "quick", "refactor")
-
-	// For refactor quick: first downstream task (clean-code) should depend on last business task
-	cleanIdx := findTaskIndex(tasks, "T-clean-code")
-	if cleanIdx < 0 {
-		t.Fatal("T-clean-code not found")
+	cleanTask, ok := byID["T-clean-code"]
+	if !ok {
+		t.Fatal("T-clean-code should exist for refactor")
 	}
-
-	if len(tasks[cleanIdx].Dependencies) == 0 {
+	if len(cleanTask.Dependencies) == 0 {
 		t.Error("clean-code should have dependencies for refactor with business tasks")
-	} else if tasks[cleanIdx].Dependencies[0] != "3" {
-		t.Errorf("clean-code should depend on last business task '3', got %v", tasks[cleanIdx].Dependencies)
+	} else if cleanTask.Dependencies[0] != "3" {
+		t.Errorf("clean-code should depend on last business task '3', got %v", cleanTask.Dependencies)
 	}
 }
 
@@ -2850,7 +2645,7 @@ func TestGetBreakdownTestTasks_Refactor_MultiSurface_NoTestTasks(t *testing.T) {
 
 func TestGenerateTestTasks_PassesIntent_Breakdown(t *testing.T) {
 	// GenerateTestTasks with refactor should produce no test pipeline tasks
-	tasks := GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor")
+	tasks := GenerateTestTasks("breakdown", scalarSurface("cli"), nil, refactorAuto, "refactor", nil, nil)
 
 	for _, task := range tasks {
 		if strings.HasPrefix(task.ID, "T-test-") {
@@ -2861,7 +2656,7 @@ func TestGenerateTestTasks_PassesIntent_Breakdown(t *testing.T) {
 
 func TestGenerateTestTasks_PassesIntent_Quick(t *testing.T) {
 	// GenerateTestTasks with cleanup should produce no test pipeline tasks
-	tasks := GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "cleanup")
+	tasks := GenerateTestTasks("quick", scalarSurface("cli"), nil, refactorAuto, "cleanup", nil, nil)
 
 	for _, task := range tasks {
 		if strings.HasPrefix(task.ID, "T-test-") {

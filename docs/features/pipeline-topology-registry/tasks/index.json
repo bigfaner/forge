@@ -1,0 +1,132 @@
+{
+  "feature": "pipeline-topology-registry",
+  "proposal": "docs/proposals/pipeline-topology-registry/proposal.md",
+  "created": "2026-05-29",
+  "tasks": {
+    "1-define-pipeline-registry": {
+      "id": "1",
+      "title": "Define pipeline registry core types and declarations",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-define-pipeline-registry.md",
+      "record": "records/1-define-pipeline-registry.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "2-refactor-task-generation": {
+      "id": "2",
+      "title": "Refactor task generation to use registry-driven GenerateTestTasks",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-refactor-task-generation.md",
+      "record": "records/2-refactor-task-generation.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "3-refactor-infer-and-lookup": {
+      "id": "3",
+      "title": "Refactor InferType and lookup functions to derive from registry",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-refactor-infer-and-lookup.md",
+      "record": "records/3-refactor-infer-and-lookup.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "4-refactor-build-callers": {
+      "id": "4",
+      "title": "Refactor build.go callers and delete legacy functions",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-refactor-build-callers.md",
+      "record": "records/4-refactor-build-callers.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "5-add-two-phase-validation": {
+      "id": "5",
+      "title": "Add two-phase validation for pipeline registry",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-add-two-phase-validation.md",
+      "record": "records/5-add-two-phase-validation.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "6-update-and-add-tests": {
+      "id": "6",
+      "title": "Update existing tests and add registry-specific tests",
+      "priority": "P1",
+      "estimatedTime": "2.5h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-update-and-add-tests.md",
+      "record": "records/6-update-and-add-tests.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: pipeline.go deviates from proposal on 9 points",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1",
+      "type": "coding.fix"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
