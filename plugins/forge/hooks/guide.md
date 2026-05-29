@@ -32,16 +32,52 @@ docs/
 
 Run `forge -h` or `forge [command] -h` for full reference.
 
-**Query commands** — use these for ad-hoc lookups when a user mentions a slug:
+### Query commands
+
+Use these for ad-hoc lookups when a user mentions a slug:
 - `forge proposal <slug>` — proposal summary (slug, status, created, associated PRD/feature)
 - `forge feature status <slug>` — feature status (phase, task breakdown, artifact scores)
 
-**Task lifecycle** — error recovery:
+### Task Management
+
+- `forge task claim` — claim the next pending task (sets status to in_progress)
+- `forge task status <id>` — query current task status and record info
+- `forge task add --type <type> --title "..." [--source-task-id <id>] [--block-source] [--var KEY=VALUE] --description "..."` — create a new task (fix-tasks use `--source-task-id --block-source`)
 - `forge task transition <id> <status> --reason "..."` — manually transition (unblock, skip, reject)
 - `forge task reopen <id>` — re-activate a rejected/skipped task
+- `forge task submit <id> --data <record-path>` — submit task execution record
+
+### Feature Management
+
+- `forge feature set <slug>` — set the active feature context for the session
+- `forge feature complete --if-done` — mark feature completed if all tasks done (stop hook)
+
+### Configuration
+
+Forge uses `forge config get <key>` to read project-level automation settings. Common keys:
+
+| Key | Purpose | Used by |
+|-----|---------|---------|
+| `auto.runTasks` | Auto-run task dispatch after quick pipeline | `/quick` |
+| `auto.knowledgeSave` | Auto-save extracted knowledge after bug fix | `/fix-bug` |
+| `auto.eval.proposal` | Auto-evaluate proposals after brainstorm | `/brainstorm` |
+| `auto.eval.prd` | Auto-evaluate PRD after write-prd | `/write-prd` |
+| `auto.eval.techDesign` | Auto-evaluate tech design | `/tech-design` |
+| `auto.eval.uiDesign` | Auto-evaluate UI design | `/ui-design` |
+
+All keys return `true` or empty. Check with: `forge config get <key>`; if output contains `true`, the behavior is enabled.
+
+### Pipeline Utilities
+
+- `forge prompt get-by-task-id <id>` — retrieve task execution prompt (dispatcher/agent entry point)
+- `forge quality-gate` — run quality gate checks for the current feature
+- `forge surfaces detect` — auto-detect surface types for configured surface keys
+- `forge task index --feature <slug>` — regenerate task index from task files
+- `forge task validate-index <path>` — validate index.json structure
+- `forge cleanup` — clean stale artifacts
 
 ## Terminology
 
 - **Surface**: a testable system entry point managed by Forge (e.g. a web app, an API server, a CLI binary). Each Surface is identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`.
-- **Surface Type**: the kind of surface — one of `web`, `api`, `cli`, `tui`, `mobile`. Determines the orchestration strategy for build/dev/test (e.g. `web`/`api` require probe + teardown; `cli`/`tui` use build → dev → test). Auto-detected via `forge surfaces detect`.
-- **Test Type**: the test classification derived from Surface Type. Each surface maps to a specific test type (e.g. `cli` → CLI Functional Test, `api` → API Functional Test, `web` → Web E2E Test). "e2e" is used exclusively for Web/Mobile surfaces. See [test-type-model.md](../../docs/reference/test-type-model.md) for the full mapping and classification rules.
+- **Surface Type**: the kind of surface — one of `web`, `api`, `cli`, `tui`, `mobile`. Determines the orchestration strategy for build/dev/test. `web`/`api` require probe + teardown; `mobile` adds test-setup before the same lifecycle (test-setup → dev → probe → test → teardown); `cli`/`tui` use build → dev → test. Auto-detected via `forge surfaces detect`.
+- **Test Type**: the test classification derived from Surface Type. Each surface maps to a specific test type: `cli` → CLI Functional Test, `tui` → Terminal Functional Test, `api` → API Functional Test, `web` → Web E2E Test, `mobile` → Mobile E2E Test. "e2e" is used exclusively for Web/Mobile surfaces. See [test-type-model.md](../../docs/reference/test-type-model.md) for the full mapping and classification rules.

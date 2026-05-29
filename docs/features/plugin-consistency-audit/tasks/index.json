@@ -165,7 +165,7 @@
       "title": "Fix: guide.md surface coverage + CLI reference gaps",
       "priority": "P2",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "22-fix-guide-md-gaps.md",
       "record": "records/22-fix-guide-md-gaps.md",
       "type": "doc",
