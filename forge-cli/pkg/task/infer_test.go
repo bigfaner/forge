@@ -35,6 +35,10 @@ func TestInferType(t *testing.T) {
 		{"fix-2", nil, TypeCodingFix},
 		{"disc-1", nil, TypeCodingFix},
 
+		// Doc fix tasks (doc-fix- prefix must match before fix- prefix)
+		{"doc-fix-1", nil, TypeDocFix},
+		{"doc-fix-2", nil, TypeDocFix},
+
 		// Doc review task
 		{"T-review-doc", nil, TypeDocReview},
 

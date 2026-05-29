@@ -45,6 +45,7 @@ const (
 	TypeCodingCleanup     = "coding.cleanup"
 	TypeCodingRefactor    = "coding.refactor"
 	TypeCodingFix         = "coding.fix"
+	TypeDocFix            = "doc.fix"
 	TypeDoc               = "doc"
 	TypeDocReview         = "doc.review"
 	TypeDocSummary        = "doc.summary"
@@ -76,6 +77,7 @@ var TaskTypeRegistry = []TaskTypeInfo{
 	{Name: TypeCodingCleanup, Description: "remove dead code or fix technical debt"},
 	{Name: TypeCodingRefactor, Description: "restructure code without behavior change"},
 	{Name: TypeCodingFix, Description: "fix a bug or issue"},
+	{Name: TypeDocFix, Description: "fix documentation issues from review or eval"},
 	{Name: TypeDoc, Description: "write or update documentation"},
 	{Name: TypeDocReview, Description: "review documentation against acceptance criteria"},
 	{Name: TypeDocSummary, Description: "generate documentation summary"},
@@ -100,6 +102,7 @@ var ValidTypes = map[string]bool{
 	TypeCodingCleanup:     true,
 	TypeCodingRefactor:    true,
 	TypeCodingFix:         true,
+	TypeDocFix:            true,
 	TypeDoc:               true,
 	TypeDocReview:         true,
 	TypeDocSummary:        true,
@@ -156,6 +159,7 @@ var SystemTypes = map[string]bool{
 	TypeDocReview:        true,
 	TypeDocSummary:       true,
 	TypeCleanCode:        true,
+	TypeDocFix:           true,
 }
 
 // IsSystemType returns true if the given type is an auto-generated system type.

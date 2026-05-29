@@ -8,7 +8,7 @@
       "title": "Register doc.fix type in Go type system",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-register-doc-fix-type.md",
       "record": "records/1-register-doc-fix-type.md",
       "surface-key": ".",

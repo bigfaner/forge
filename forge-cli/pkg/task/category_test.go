@@ -24,6 +24,7 @@ func TestCategoryForType_AllTypes(t *testing.T) {
 		{"coding.fix", TypeCodingFix, CategoryCoding},
 		// Doc category (doc* prefix)
 		{"doc", TypeDoc, CategoryDoc},
+		{"doc.fix", TypeDocFix, CategoryDoc},
 		{"doc.review", TypeDocReview, CategoryDoc},
 		{"doc.summary", TypeDocSummary, CategoryDoc},
 		{"doc.consolidate", TypeDocConsolidate, CategoryDoc},

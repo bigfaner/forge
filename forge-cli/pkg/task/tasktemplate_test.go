@@ -95,11 +95,30 @@ func TestGetTaskTemplateDefaults_NotFound(t *testing.T) {
 	}
 }
 
+func TestGetTaskTemplateDefaults_DocFixTask(t *testing.T) {
+	defs, err := GetTaskTemplateDefaults("doc.fix")
+	if err != nil {
+		t.Fatalf("GetTaskTemplateDefaults(doc.fix) error: %v", err)
+	}
+	if defs.Priority != "P0" {
+		t.Errorf("Priority = %q, want P0", defs.Priority)
+	}
+	if defs.Breaking {
+		t.Error("Breaking = true, want false")
+	}
+	if defs.Type != "doc.fix" {
+		t.Errorf("Type = %q, want doc.fix", defs.Type)
+	}
+	if defs.IDPrefix != "doc-fix" {
+		t.Errorf("IDPrefix = %q, want doc-fix", defs.IDPrefix)
+	}
+}
+
 func TestGetTaskTemplateDefaults_IndependentOfGet(t *testing.T) {
 	// bug: GetDefaults was gated behind Get in add.go — when Get failed
 	// (e.g. embedded file missing), defaults like IDPrefix were silently skipped.
 	// This test documents that the two functions must be independent.
-	for _, name := range []string{"coding.fix", "coding.cleanup"} {
+	for _, name := range []string{"coding.fix", "coding.cleanup", "doc.fix"} {
 		defs, defsErr := GetTaskTemplateDefaults(name)
 		if defsErr != nil {
 			t.Fatalf("GetTaskTemplateDefaults(%q) failed: %v", name, defsErr)
@@ -157,6 +176,7 @@ func TestTaskTemplateType_ValidTypes(t *testing.T) {
 		"coding.fix":            true,
 		"coding.cleanup":        true,
 		"code-quality.simplify": true,
+		"doc.fix":               true,
 	}
 	for name, typ := range templateTypes {
 		if !validTypes[typ] {
