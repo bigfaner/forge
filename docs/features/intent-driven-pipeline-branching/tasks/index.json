@@ -1,0 +1,119 @@
+{
+  "feature": "intent-driven-pipeline-branching",
+  "proposal": "docs/proposals/intent-driven-pipeline-branching/proposal.md",
+  "created": "2026-05-29",
+  "tasks": {
+    "1-add-intent-to-proposal-template": {
+      "id": "1",
+      "title": "Add intent field to proposal template and brainstorm skill",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1-add-intent-to-proposal-template.md",
+      "record": "records/1-add-intent-to-proposal-template.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "2-update-write-prd-refactor": {
+      "id": "2",
+      "title": "Update write-prd SKILL.md for refactor intent branch",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-update-write-prd-refactor.md",
+      "record": "records/2-update-write-prd-refactor.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "3-update-tech-design-refactor": {
+      "id": "3",
+      "title": "Update tech-design SKILL.md for refactor intent branch",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-tech-design-refactor.md",
+      "record": "records/3-update-tech-design-refactor.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "4-build-go-intent-routing": {
+      "id": "4",
+      "title": "build.go — intent-driven pipeline routing",
+      "priority": "P0",
+      "estimatedTime": "2-3h",
+      "status": "pending",
+      "file": "4-build-go-intent-routing.md",
+      "record": "records/4-build-go-intent-routing.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "5-autogen-go-intent-generation": {
+      "id": "5",
+      "title": "autogen.go — intent-driven task generation and wiring",
+      "priority": "P0",
+      "estimatedTime": "3-4h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "5-autogen-go-intent-generation.md",
+      "record": "records/5-autogen-go-intent-generation.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
