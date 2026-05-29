@@ -248,7 +248,7 @@
       "title": "fix test: just test failure in quality gate",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "fix-2.md",
       "record": "records/fix-2.md",
       "breaking": true,
