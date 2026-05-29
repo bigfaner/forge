@@ -660,7 +660,6 @@ func TestTypeConstants(t *testing.T) {
 		{TypeCodingCleanup, "coding.cleanup"},
 		{TypeCodingRefactor, "coding.refactor"},
 		{TypeCodingFix, "coding.fix"},
-		{TypeDocFix, "doc.fix"},
 		{TypeDoc, "doc"},
 		{TypeDocReview, "doc.review"},
 		{TypeDocSummary, "doc.summary"},
@@ -683,9 +682,9 @@ func TestTypeConstants(t *testing.T) {
 }
 
 func TestSystemTypes(t *testing.T) {
-	t.Run("SystemTypes contains exactly 13 entries", func(t *testing.T) {
-		if len(SystemTypes) != 13 {
-			t.Errorf("SystemTypes has %d entries, want 13", len(SystemTypes))
+	t.Run("SystemTypes contains exactly 12 entries", func(t *testing.T) {
+		if len(SystemTypes) != 12 {
+			t.Errorf("SystemTypes has %d entries, want 12", len(SystemTypes))
 		}
 	})
 
@@ -698,10 +697,9 @@ func TestSystemTypes(t *testing.T) {
 			TypeDocReview, TypeDocSummary,
 			TypeCleanCode,
 			TypeEvalJourney, TypeEvalContract,
-			TypeDocFix,
 		}
-		if len(expected) != 13 {
-			t.Fatalf("test setup error: expected list has %d entries, want 13", len(expected))
+		if len(expected) != 12 {
+			t.Fatalf("test setup error: expected list has %d entries, want 12", len(expected))
 		}
 		for _, typ := range expected {
 			if !SystemTypes[typ] {
@@ -780,6 +778,7 @@ func TestValidTypes(t *testing.T) {
 			TypeDocSummary,
 			TypeDocConsolidate,
 			TypeDocDrift,
+			TypeDocFix,
 			TypeTestGenContracts,
 			TypeTestGenJourneys,
 			TypeTestGenScripts,
@@ -789,7 +788,6 @@ func TestValidTypes(t *testing.T) {
 			TypeValidationCode,
 			TypeValidationUx,
 			TypeCodingFix,
-			TypeDocFix,
 			TypeGate,
 			TypeCleanCode,
 		}

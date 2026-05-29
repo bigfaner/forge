@@ -102,12 +102,12 @@ var ValidTypes = map[string]bool{
 	TypeCodingCleanup:     true,
 	TypeCodingRefactor:    true,
 	TypeCodingFix:         true,
-	TypeDocFix:            true,
 	TypeDoc:               true,
 	TypeDocReview:         true,
 	TypeDocSummary:        true,
 	TypeDocConsolidate:    true,
 	TypeDocDrift:          true,
+	TypeDocFix:            true,
 	TypeTestGenContracts:  true,
 	TypeTestGenJourneys:   true,
 	TypeTestGenScripts:    true,
@@ -159,7 +159,6 @@ var SystemTypes = map[string]bool{
 	TypeDocReview:        true,
 	TypeDocSummary:       true,
 	TypeCleanCode:        true,
-	TypeDocFix:           true,
 }
 
 // IsSystemType returns true if the given type is an auto-generated system type.
