@@ -2775,3 +2775,410 @@ func TestAddSingleFixTask_DelegatesToCreateFixTask(t *testing.T) {
 		t.Error("task markdown should reference source files")
 	}
 }
+
+// --- addRegressionFixTasks tests ---
+
+// regressionOutput creates a realistic Go test regression output with the given
+// number of failing test files. Each file gets a --- FAIL: block and stack trace.
+func regressionOutput(fileNames []string) string {
+	var lines []string
+	for i, f := range fileNames {
+		lines = append(lines, fmt.Sprintf("--- FAIL: TestFunc%d (0.00s)", i+1))
+		lines = append(lines, fmt.Sprintf("    %s:%d: expected success, got failure", f, 10+i))
+		lines = append(lines, "")
+	}
+	return strings.Join(lines, "\n")
+}
+
+func TestAddRegressionFixTasks_SingleFile(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	output := regressionOutput([]string{"handler_test.go"})
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created exactly 1 fix task.
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	fixCount := 0
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(task.Title, "fix test:") {
+			fixCount++
+		}
+	}
+	if fixCount != 1 {
+		t.Errorf("expected 1 fix task, got %d", fixCount)
+	}
+
+	// Verify title format.
+	addedTask, exists := updatedIndex.ByID(taskID)
+	if !exists {
+		t.Fatalf("task %s not found", taskID)
+	}
+	wantTitle := "fix test: handler_test.go failure in quality gate"
+	if addedTask.Title != wantTitle {
+		t.Errorf("title = %q, want %q", addedTask.Title, wantTitle)
+	}
+}
+
+func TestAddRegressionFixTasks_MultipleFiles(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	output := regressionOutput([]string{"alpha_test.go", "beta_test.go", "gamma_test.go"})
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created exactly 3 fix tasks.
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	fixCount := 0
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(task.Title, "fix test:") {
+			fixCount++
+		}
+	}
+	if fixCount != 3 {
+		t.Errorf("expected 3 fix tasks, got %d", fixCount)
+	}
+}
+
+func TestAddRegressionFixTasks_OverflowCreatesMergedTask(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Create 13 test files -- 10 primary + 3 overflow.
+	files := make([]string, 13)
+	for i := range 13 {
+		files[i] = fmt.Sprintf("file%02d_test.go", i)
+	}
+	output := regressionOutput(files)
+
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	// Should have created exactly 11 tasks (10 primary + 1 overflow).
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	fixCount := 0
+	hasOverflow := false
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(task.Title, "fix test:") {
+			fixCount++
+			if strings.Contains(task.Title, "regression overflow") {
+				hasOverflow = true
+			}
+		}
+	}
+	if fixCount != 11 {
+		t.Errorf("expected 11 fix tasks (10 + 1 overflow), got %d", fixCount)
+	}
+	if !hasOverflow {
+		t.Error("expected overflow task with 'regression overflow' in title")
+	}
+}
+
+func TestAddRegressionFixTasks_OverflowTitleFormat(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Create 12 test files -- 10 primary + 2 overflow.
+	files := make([]string, 12)
+	for i := range 12 {
+		files[i] = fmt.Sprintf("file%02d_test.go", i)
+	}
+	output := regressionOutput(files)
+
+	_, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.Contains(task.Title, "regression overflow") {
+			want := "fix test: regression overflow (2 files)"
+			if task.Title != want {
+				t.Errorf("overflow title = %q, want %q", task.Title, want)
+			}
+			return
+		}
+	}
+	t.Error("overflow task not found")
+}
+
+func TestAddRegressionFixTasks_FallbackWhenNoTestFiles(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Output with no test files (no --- FAIL: blocks referencing *_test.go files).
+	output := "some random compile error\nhandler.go:10: undefined: foo"
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID from fallback")
+	}
+
+	// Should have created exactly 1 fix task (fallback).
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	fixCount := 0
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(task.Title, "fix test:") {
+			fixCount++
+		}
+	}
+	if fixCount != 1 {
+		t.Errorf("expected 1 fallback fix task, got %d", fixCount)
+	}
+}
+
+func TestAddRegressionFixTasks_EmptyOutput(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, "", "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID from fallback")
+	}
+
+	// Empty output -> extractFileLineMap returns empty -> fallback to addFixTask.
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	fixCount := 0
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(task.Title, "fix test:") {
+			fixCount++
+		}
+	}
+	if fixCount != 1 {
+		t.Errorf("expected 1 fallback fix task, got %d", fixCount)
+	}
+}
+
+func TestAddRegressionFixTasks_TaskDescriptionContainsOutput(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := regressionOutput([]string{"handler_test.go"})
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	data, readErr := os.ReadFile(mdPath)
+	if readErr != nil {
+		t.Fatalf("task markdown not found: %v", readErr)
+	}
+	content := string(data)
+	if !strings.Contains(content, "handler_test.go") {
+		t.Error("task description should reference test file handler_test.go")
+	}
+	if !strings.Contains(content, "tests/results/raw-output.txt") {
+		t.Error("task description should reference error doc path")
+	}
+}
+
+func TestAddRegressionFixTasks_CountFixTasksCompatibility(t *testing.T) {
+	// Verify that countFixTasks correctly counts tasks created by addRegressionFixTasks.
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	output := regressionOutput([]string{"alpha_test.go", "beta_test.go"})
+	_, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	// countFixTasks uses prefix "fix test:" -- our new titles start with "fix test:".
+	count := countFixTasks(updatedIndex, "test")
+	if count != 2 {
+		t.Errorf("countFixTasks should find 2 tasks with 'fix test:' prefix, got %d", count)
+	}
+}
+
+func TestAddRegressionFixTasks_NotSubjectToMaxFixTasksCap(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	// Pre-populate 3 active fix-tasks for "test" (at maxFixTasksPerStep cap).
+	index, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	index.SetTask("f1", task.Task{ID: "f1", SourceTaskID: "1.1", Title: "fix test: first", Status: "pending", File: "f1.md"})
+	index.SetTask("f2", task.Task{ID: "f2", SourceTaskID: "1.1", Title: "fix test: second", Status: "in_progress", File: "f2.md"})
+	index.SetTask("f3", task.Task{ID: "f3", SourceTaskID: "1.1", Title: "fix test: third", Status: "blocked", File: "f3.md"})
+	if saveErr := task.SaveIndex(indexPath, index); saveErr != nil {
+		t.Fatal(saveErr)
+	}
+
+	// addRegressionFixTasks should still create tasks (not subject to cap).
+	output := regressionOutput([]string{"new_test.go"})
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("expected no error (not subject to cap), got %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty task ID")
+	}
+}
+
+func TestAddRegressionFixTasks_OverflowDescriptionContainsAllFiles(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	files := make([]string, 11)
+	for i := range 11 {
+		files[i] = fmt.Sprintf("file%02d_test.go", i)
+	}
+	output := regressionOutput(files)
+
+	_, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
+	entries, readErr := os.ReadDir(tasksDir)
+	if readErr != nil {
+		t.Fatal(readErr)
+	}
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".md") {
+			continue
+		}
+		data, readErr := os.ReadFile(filepath.Join(tasksDir, entry.Name()))
+		if readErr != nil {
+			t.Fatal(readErr)
+		}
+		content := string(data)
+		if strings.Contains(content, "regression overflow") {
+			// Overflow task should reference file10_test.go (the 11th file).
+			if !strings.Contains(content, "file10_test.go") {
+				t.Error("overflow task description should reference file10_test.go")
+			}
+			return
+		}
+	}
+	t.Error("overflow task markdown not found")
+}
+
+func TestAddRegressionFixTasks_TaskProperties(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	output := regressionOutput([]string{"handler_test.go"})
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	addedTask, exists := updatedIndex.ByID(taskID)
+	if !exists {
+		t.Fatalf("task %s not found", taskID)
+	}
+
+	// Verify task properties.
+	if addedTask.Priority != "P0" {
+		t.Errorf("priority = %q, want P0", addedTask.Priority)
+	}
+	if !addedTask.Breaking {
+		t.Error("expected breaking=true for test regression fix")
+	}
+	if addedTask.Type != task.TypeCodingFix {
+		t.Errorf("type = %q, want %q", addedTask.Type, task.TypeCodingFix)
+	}
+	if addedTask.Status != "pending" {
+		t.Errorf("status = %q, want pending", addedTask.Status)
+	}
+}
+
+func TestAddRegressionFixTasks_ReturnsFirstTaskID(t *testing.T) {
+	projectRoot, featureSlug, _ := helperSetup(t)
+
+	output := regressionOutput([]string{"alpha_test.go", "beta_test.go"})
+	taskID, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if taskID == "" {
+		t.Fatal("expected non-empty first task ID")
+	}
+	// Task ID should exist in the index.
+	mdPath := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug), taskID+".md")
+	if _, statErr := os.Stat(mdPath); statErr != nil {
+		t.Errorf("first task markdown should exist: %v", statErr)
+	}
+}
+
+func TestAddRegressionFixTasks_ExactlyTenFilesNoOverflow(t *testing.T) {
+	projectRoot, featureSlug, indexPath := helperSetup(t)
+
+	files := make([]string, 10)
+	for i := range 10 {
+		files[i] = fmt.Sprintf("file%02d_test.go", i)
+	}
+	output := regressionOutput(files)
+
+	_, err := addRegressionFixTasks(projectRoot, featureSlug, output, "tests/results/raw-output.txt")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	updatedIndex, loadErr := task.LoadIndex(indexPath)
+	if loadErr != nil {
+		t.Fatal(loadErr)
+	}
+	fixCount := 0
+	hasOverflow := false
+	for _, task := range updatedIndex.TasksMap() {
+		if strings.HasPrefix(task.Title, "fix test:") {
+			fixCount++
+			if strings.Contains(task.Title, "regression overflow") {
+				hasOverflow = true
+			}
+		}
+	}
+	if fixCount != 10 {
+		t.Errorf("expected 10 fix tasks (no overflow), got %d", fixCount)
+	}
+	if hasOverflow {
+		t.Error("should not have overflow task with exactly 10 files")
+	}
+}

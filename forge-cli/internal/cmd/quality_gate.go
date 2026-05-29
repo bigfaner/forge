@@ -258,7 +258,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 			}
 		}
-		fixID, fixErr := addFixTask(projectRoot, featureSlug, "test", regressionOutput, errorDocPath)
+		fixID, fixErr := addRegressionFixTasks(projectRoot, featureSlug, regressionOutput, errorDocPath)
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
@@ -287,7 +287,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
 				}
 			}
-			fixID, fixErr := addFixTask(projectRoot, featureSlug, "test", result.output, errorDocPath)
+			fixID, fixErr := addRegressionFixTasks(projectRoot, featureSlug, result.output, errorDocPath)
 			if fixErr != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 			}
@@ -932,6 +932,115 @@ func createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDoc
 
 	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking=%v)\n", id, breaking)
 	return id, nil
+}
+
+// addRegressionFixTasks creates independent fix tasks for each failing test file
+// extracted from the regression output. It uses extractFileLineMap to identify primary
+// test files (those with direct --- FAIL: entries) and creates one task per file with
+// the relevant filtered output lines.
+//
+// Soft cap: up to 10 independent tasks + 1 overflow task (files 11-N merged).
+// Total tasks ≤ 11, NOT subject to maxFixTasksPerStep hard cap.
+//
+// Fallback: when extractFileLineMap returns an empty map (no test files identified),
+// falls back to the existing addFixTask behavior with a structured log warning.
+//
+// Returns the first task ID on success, or ("", error) on failure.
+//
+//nolint:unparam // errorDocPath is parameterized for API consistency with addFixTask and future callers.
+func addRegressionFixTasks(projectRoot, featureSlug, output, errorDocPath string) (string, error) {
+	fileLineMap := extractFileLineMap(output)
+
+	// Fallback: no test files identified — use directory-grouped fix task.
+	if len(fileLineMap) == 0 {
+		fmt.Fprintln(os.Stderr, "WARNING: isTestFile returned zero matches for output, falling back to directory-grouped fix task")
+		return addFixTask(projectRoot, featureSlug, "test", output, errorDocPath)
+	}
+
+	// Sort files for deterministic ordering.
+	files := make([]string, 0, len(fileLineMap))
+	for f := range fileLineMap {
+		files = append(files, f)
+	}
+	sort.Strings(files)
+
+	var firstID string
+
+	// Create tasks for first 10 files (or all if ≤ 10).
+	primaryCount := len(files)
+	if primaryCount > 10 {
+		primaryCount = 10
+	}
+
+	for i := 0; i < primaryCount; i++ {
+		file := files[i]
+		lines := fileLineMap[file]
+		title := fmt.Sprintf("fix test: %s failure in quality gate", file)
+		description := fmt.Sprintf(
+			"Quality gate test regression failed.\n\n"+
+				"Test file: `%s`\n\n"+
+				"Error output saved to: `%s`\n\n"+
+				"Relevant output lines:\n```\n%s\n```",
+			file, errorDocPath, strings.Join(lines, "\n"),
+		)
+
+		id, err := createFixTask(
+			projectRoot, featureSlug, "test", file, output, errorDocPath,
+			fixTaskOverride{
+				Title:       title,
+				Description: description,
+				ExtraVars: map[string]string{
+					"SOURCE_FILES": file,
+					"TEST_SCRIPT":  "just test",
+				},
+			},
+		)
+		if err != nil {
+			return firstID, err
+		}
+		if firstID == "" {
+			firstID = id
+		}
+	}
+
+	// Overflow: merge remaining files into one task.
+	if len(files) > 10 {
+		overflowFiles := files[10:]
+		var overflowLines []string
+		for _, f := range overflowFiles {
+			overflowLines = append(overflowLines, fileLineMap[f]...)
+		}
+		overflowCount := len(overflowFiles)
+		title := fmt.Sprintf("fix test: regression overflow (%d files)", overflowCount)
+		description := fmt.Sprintf(
+			"Quality gate test regression failed — overflow group.\n\n"+
+				"Files: %s\n\n"+
+				"Error output saved to: `%s`\n\n"+
+				"Relevant output lines:\n```\n%s\n```",
+			strings.Join(overflowFiles, ", "), errorDocPath, strings.Join(overflowLines, "\n"),
+		)
+
+		id, err := createFixTask(
+			projectRoot, featureSlug, "test",
+			strings.Join(overflowFiles, ", "), output, errorDocPath,
+			fixTaskOverride{
+				Title:       title,
+				Description: description,
+				ExtraVars: map[string]string{
+					"SOURCE_FILES": strings.Join(overflowFiles, ", "),
+					"TEST_SCRIPT":  "just test",
+				},
+			},
+		)
+		if err != nil {
+			return firstID, err
+		}
+		if firstID == "" {
+			firstID = id
+		}
+	}
+
+	return firstID, nil
 }
 
 // addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
