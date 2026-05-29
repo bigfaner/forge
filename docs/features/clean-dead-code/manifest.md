@@ -1,7 +1,7 @@
 ---
 feature: "clean-dead-code"
 created: "2026-05-29"
-status: tasks
+status: completed
 mode: quick
 ---
 
