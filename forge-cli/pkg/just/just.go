@@ -149,6 +149,19 @@ func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, ou
 	return true
 }
 
+// ExtractFailLines extracts all lines starting with "--- FAIL:" from output.
+// Returns the joined lines separated by newlines.
+// Returns empty string if no "--- FAIL:" lines are found.
+func ExtractFailLines(output string) string {
+	var failLines []string
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "--- FAIL:") {
+			failLines = append(failLines, line)
+		}
+	}
+	return strings.Join(failLines, "\n")
+}
+
 // ExtractConciseError returns the last N non-empty lines from output.
 func ExtractConciseError(output string, maxLines int) string {
 	lines := strings.Split(output, "\n")

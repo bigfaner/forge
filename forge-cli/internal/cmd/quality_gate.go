@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -607,6 +608,96 @@ func extractSourceFiles(output string) string {
 	return strings.Join(files, ", ")
 }
 
+// isTestFile checks if a filename matches Go test file naming convention (*_test.go).
+func isTestFile(filename string) bool {
+	return strings.HasSuffix(filename, "_test.go")
+}
+
+// extractFileLineMap extracts a mapping from test file paths to their related output lines.
+// Only files with direct --- FAIL: entries (primary files) get independent map entries.
+// Stack-trace-only references are excluded from independent entries but their lines
+// appear in the primary file's context via line matching.
+func extractFileLineMap(output string) map[string][]string {
+	result := make(map[string][]string)
+	if output == "" {
+		return result
+	}
+
+	allLines := strings.Split(output, "\n")
+
+	// Step 1: Collect primary files (first test file reference in each --- FAIL: block).
+	primaryFiles := make(map[string]bool)
+	inFailBlock := false
+	foundPrimary := false
+	for _, line := range allLines {
+		if strings.HasPrefix(line, "--- FAIL:") {
+			inFailBlock = true
+			foundPrimary = false
+			continue
+		}
+		if inFailBlock {
+			if strings.HasPrefix(line, "    ") || strings.HasPrefix(line, "\t") {
+				if !foundPrimary {
+					for _, match := range sourceFileRe.FindAllStringSubmatch(line, -1) {
+						path := strings.TrimPrefix(match[1], "./")
+						if isTestFile(path) {
+							primaryFiles[path] = true
+							foundPrimary = true
+							break
+						}
+					}
+				}
+			} else {
+				inFailBlock = false
+				foundPrimary = false
+			}
+		}
+	}
+
+	if len(primaryFiles) == 0 {
+		return result
+	}
+
+	// Step 2: For each line, check if it contains any primary file reference.
+	// Add context window (±2 lines) for matched lines.
+	lineSet := make(map[string]map[int]bool)
+	for file := range primaryFiles {
+		lineSet[file] = make(map[int]bool)
+	}
+
+	for i, line := range allLines {
+		for _, match := range sourceFileRe.FindAllStringSubmatch(line, -1) {
+			path := strings.TrimPrefix(match[1], "./")
+			if primaryFiles[path] {
+				for j := i - 2; j <= i+2; j++ {
+					if j >= 0 && j < len(allLines) {
+						lineSet[path][j] = true
+					}
+				}
+			}
+		}
+	}
+
+	// Step 3: Convert to sorted lines per file.
+	for file, indices := range lineSet {
+		if len(indices) == 0 {
+			continue
+		}
+		sorted := make([]int, 0, len(indices))
+		for idx := range indices {
+			sorted = append(sorted, idx)
+		}
+		sort.Ints(sorted)
+		lines := make([]string, 0, len(sorted))
+		for _, idx := range sorted {
+			lines = append(lines, allLines[idx])
+		}
+		result[file] = lines
+	}
+
+	return result
+}
+
 // countFixTasks counts active (non-terminal) fix-tasks for a step.
 // A fix-task is identified by having a title with the prefix "fix <step>:".
 // Terminal statuses (completed, rejected, skipped) are excluded from the count.
@@ -702,6 +793,16 @@ func groupFilesByDir(files string) []string {
 	return groups
 }
 
+// conciseError extracts all "--- FAIL:" lines from output for test failures.
+// Falls back to ExtractConciseError (tail 10 lines) when no "--- FAIL:" lines
+// exist (e.g. compile/fmt/lint steps), ensuring the description is never empty.
+func conciseError(output string) string {
+	if failLines := just.ExtractFailLines(output); failLines != "" {
+		return failLines
+	}
+	return just.ExtractConciseError(output, 10)
+}
+
 // addSingleFixTask creates a single fix task using the same internal API as `forge task add`.
 // Mirrors executeAdd() from add.go: template defaults -> AddTask -> CreateTaskMarkdown -> EnsureForgeState.
 // Returns (taskID, nil) on success.
@@ -737,7 +838,7 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 		"Quality gate step `%s` failed during quality-gate hook.\n\n"+
 			"Error output saved to: `%s`\n\n"+
 			"Concise error:\n```\n%s\n```",
-		testScript, errorDocPath, just.ExtractConciseError(output, 10),
+		testScript, errorDocPath, conciseError(output),
 	)
 
 	// Build opts — Priority/Breaking/EstimatedTime sourced from template defaults
