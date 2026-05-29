@@ -62,10 +62,9 @@ test journey='':
     # --- Run Tests ---
     # Dispatch by surface type — adjust the test command below to match your project.
     if [ "{{journey}}" != "" ]; then
-        cd tests && E2E_FEATURE=1 npx playwright test features/{{journey}}/
+        go test -v -run "{{journey}}" ./tests/...
     else
-        if [ ! -d tests/node_modules ]; then npm install --prefix tests; fi
-        cd tests && npx playwright test
+        go test -v ./tests/...
     fi
 
 lint:
@@ -89,14 +88,7 @@ ci: install compile build unit-test lint
 test-setup:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ ! -f tests/package.json ]; then
-        echo "Error: tests/package.json not found" >&2
-        exit 1
-    fi
-    if [ ! -d tests/node_modules ]; then
-        npm install --prefix tests
-    fi
-    npx --prefix tests playwright install chromium
+    go mod download
     echo "OK: test dependencies ready"
 
 # probe: check if configured services are healthy
