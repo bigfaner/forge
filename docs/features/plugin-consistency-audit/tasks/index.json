@@ -143,7 +143,7 @@
       "title": "Fix: align Convention loading in 4 SKILL.md files",
       "priority": "P2",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "20-fix-convention-loading-alignment.md",
       "record": "records/20-fix-convention-loading-alignment.md",
       "type": "doc",

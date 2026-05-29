@@ -75,12 +75,12 @@ head -20 docs/proposals/<slug>/proposal.md | grep "^intent:"
 
 ## Step 0: Detect Test Language
 
-1. Load Convention files from `docs/conventions/` by `domains` frontmatter (match `testing`, `go`, `typescript`, etc.). Extract language from `Framework` section.
+1. Read `docs/conventions/testing/index.md` to discover available Conventions. Based on the project's language/framework context, select the matching Convention and load it. Extract language from `Framework` section.
 2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
 3. On failure: ask user.
 
 <HARD-RULE>
-Do NOT silently default to any language.
+Do NOT silently default to any language. Do NOT use `domains` frontmatter filtering — use index.md-based discovery.
 </HARD-RULE>
 
 ## Step 1: Read Manifest → PRD
