@@ -6,6 +6,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"forge-cli/pkg/types"
 )
 
 //go:embed records/*.md
@@ -65,7 +67,7 @@ func NewRecordTemplateData(t *Task, rd *RecordData, startedTime string) *RecordT
 		started = time.Now().Format("2006-01-02 15:04")
 	}
 	completed := time.Now().Format("2006-01-02 15:04")
-	if status != "completed" {
+	if status != string(types.StatusCompleted) {
 		completed = "N/A"
 	}
 
@@ -328,7 +330,7 @@ func FillRecordTemplate(t *Task, rd *RecordData, startedTime string) string {
 		started = time.Now().Format("2006-01-02 15:04")
 	}
 	completed := time.Now().Format("2006-01-02 15:04")
-	if status != "completed" {
+	if status != string(types.StatusCompleted) {
 		completed = "N/A"
 	}
 

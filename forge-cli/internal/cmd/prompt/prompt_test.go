@@ -102,10 +102,10 @@ func buildTestTaskMD(t task.Task) string {
 	b.WriteString("id: " + `"` + t.ID + `"` + "\n")
 	b.WriteString("title: " + `"` + t.Title + `"` + "\n")
 	if t.Priority != "" {
-		b.WriteString("priority: " + `"` + t.Priority + `"` + "\n")
+		b.WriteString("priority: " + `"` + string(t.Priority) + `"` + "\n")
 	}
 	if t.Status != "" {
-		b.WriteString("status: " + `"` + t.Status + `"` + "\n")
+		b.WriteString("status: " + `"` + string(t.Status) + `"` + "\n")
 	}
 	if t.Type != "" {
 		b.WriteString("type: " + `"` + t.Type + `"` + "\n")

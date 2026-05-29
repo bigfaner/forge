@@ -9,6 +9,7 @@ import (
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -67,12 +68,12 @@ func doReopen(indexPath, taskIDArg string) error {
 	}
 
 	// Validate transition using state machine (RoleReopen, target always pending)
-	if transitionErr := task.ValidateTransition(t.Status, "pending", task.RoleReopen); transitionErr != nil {
+	if transitionErr := task.ValidateTransition(t.Status, types.StatusPending, task.RoleReopen); transitionErr != nil {
 		te := transitionErr.(*task.TransitionError)
-		return base.NewErrInvalidTransition(t.Status, "pending", te.Msg)
+		return base.NewErrInvalidTransition(string(t.Status), string(types.StatusPending), te.Msg)
 	}
 
-	t.Status = "pending"
+	t.Status = types.StatusPending
 	index.SetTask(key, *t)
 
 	if err := indexPkg.SaveIndexAtomic(indexPath, index); err != nil {
@@ -81,7 +82,7 @@ func doReopen(indexPath, taskIDArg string) error {
 
 	base.PrintBlockStart()
 	base.PrintField("TASK_ID", t.ID)
-	base.PrintField("STATUS", t.Status)
+	base.PrintField("STATUS", string(t.Status))
 	base.PrintBlockEnd()
 	return nil
 }

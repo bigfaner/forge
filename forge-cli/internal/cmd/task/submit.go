@@ -14,6 +14,7 @@ import (
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -115,7 +116,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	}
 
 	if rd.Status == "" {
-		rd.Status = "completed"
+		rd.Status = string(types.StatusCompleted)
 	}
 
 	// Validate taskId matches CLI arg if provided
@@ -143,26 +144,26 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	}
 
 	// State machine validation: check transition before proceeding
-	if targetStatus == "completed" {
-		if transitionErr := task.ValidateTransition(t.Status, "completed", task.RoleSubmit); transitionErr != nil {
+	if targetStatus == string(types.StatusCompleted) {
+		if transitionErr := task.ValidateTransition(t.Status, types.StatusCompleted, task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return base.NewErrInvalidTransition(t.Status, "completed", te.Msg)
+			return base.NewErrInvalidTransition(string(t.Status), string(types.StatusCompleted), te.Msg)
 		}
 	}
 
 	// Quality gate pre-check for completed tasks (non-testable types excluded)
 	// Tiered model: breaking tasks run full gate (compile+fmt+lint+test),
 	// non-breaking coding tasks run static gate (compile+fmt+lint).
-	if targetStatus == "completed" && task.IsTestableType(t.Type) {
+	if targetStatus == string(types.StatusCompleted) && task.IsTestableType(t.Type) {
 		validateQualityGate(projectRoot, t.SurfaceKey, t.Breaking)
 	}
 
 	// After validateRecordData, rd.Status may have been auto-downgraded (completed -> blocked)
-	if rd.Status != targetStatus && rd.Status == "blocked" {
+	if rd.Status != targetStatus && rd.Status == string(types.StatusBlocked) {
 		// Auto-downgrade: validate the blocked transition
-		if transitionErr := task.ValidateTransition(t.Status, "blocked", task.RoleSubmit); transitionErr != nil {
+		if transitionErr := task.ValidateTransition(t.Status, types.StatusBlocked, task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return base.NewErrInvalidTransition(t.Status, "blocked", te.Msg)
+			return base.NewErrInvalidTransition(string(t.Status), string(types.StatusBlocked), te.Msg)
 		}
 	}
 
@@ -199,17 +200,17 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	}
 
 	// Update task status in index
-	t.Status = rd.Status
+	t.Status = types.Status(rd.Status)
 
 	// Set BlockedReason on auto-downgrade
-	if rd.Status == "blocked" && targetStatus == "completed" {
+	if rd.Status == string(types.StatusBlocked) && targetStatus == string(types.StatusCompleted) {
 		t.BlockedReason = fmt.Sprintf("auto-downgrade: testsFailed=%d", rd.TestsFailed)
 	}
 
 	idx.SetTask(key, *t)
 
 	// Auto-restore: if this fix-task completed or skipped, check if source can be unblocked
-	if t.SourceTaskID != "" && (rd.Status == "completed" || rd.Status == "skipped") {
+	if t.SourceTaskID != "" && (rd.Status == string(types.StatusCompleted) || rd.Status == string(types.StatusSkipped)) {
 		autoRestoreSourceTask(idx, t.SourceTaskID)
 	}
 
@@ -243,7 +244,7 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, id
 
 	allDone := true
 	for _, t := range idx.TasksMap() {
-		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
+		if t.Status != types.StatusCompleted && t.Status != types.StatusSkipped {
 			allDone = false
 			break
 		}
@@ -261,7 +262,7 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, id
 // Root cause: must lookup by ID (iterate), not by direct map key, because map keys are slugs.
 func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	srcKey, srcTask, err := task.FindTask(index, sourceTaskID)
-	if err != nil || srcTask.Status != "blocked" {
+	if err != nil || srcTask.Status != types.StatusBlocked {
 		return
 	}
 
@@ -270,7 +271,7 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 		return
 	}
 
-	srcTask.Status = "pending"
+	srcTask.Status = types.StatusPending
 	index.SetTask(srcKey, *srcTask)
 	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
@@ -310,12 +311,12 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 	}
 
 	// Auto-downgrade (coding only): completed with test failures -> blocked
-	if isCoding && rd.Status == "completed" && rd.TestsFailed > 0 {
+	if isCoding && rd.Status == string(types.StatusCompleted) && rd.TestsFailed > 0 {
 		fmt.Fprintf(os.Stderr, "---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
-		rd.Status = "blocked"
+		rd.Status = string(types.StatusBlocked)
 	}
 
-	if rd.Status != "completed" {
+	if rd.Status != string(types.StatusCompleted) {
 		return nil
 	}
 

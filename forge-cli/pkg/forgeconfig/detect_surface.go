@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"forge-cli/pkg/types"
 )
 
 // DefaultDetectDepth is the default directory traversal depth for surface detection.
@@ -40,89 +42,89 @@ var excludedDirs = map[string]bool{
 
 // surfacePriority defines the conflict resolution priority order.
 // Lower number = higher priority.
-var surfacePriority = map[string]int{
-	"web":    1,
-	"mobile": 2,
-	"api":    3,
-	"tui":    4,
-	"cli":    5,
+var surfacePriority = map[types.SurfaceType]int{
+	types.SurfaceWeb:    1,
+	types.SurfaceMobile: 2,
+	types.SurfaceAPI:    3,
+	types.SurfaceTUI:    4,
+	types.SurfaceCLI:    5,
 }
 
 // packageJSONDeps maps dependency names to their detected surface types.
-var packageJSONSignals = map[string]string{
+var packageJSONSignals = map[string]types.SurfaceType{
 	// web signals
-	"react":     "web",
-	"react-dom": "web",
-	"vue":       "web",
-	"svelte":    "web",
-	"next":      "web",
-	"nuxt":      "web",
-	"angular":   "web",
+	"react":     types.SurfaceWeb,
+	"react-dom": types.SurfaceWeb,
+	"vue":       types.SurfaceWeb,
+	"svelte":    types.SurfaceWeb,
+	"next":      types.SurfaceWeb,
+	"nuxt":      types.SurfaceWeb,
+	"angular":   types.SurfaceWeb,
 	// mobile signals
-	"react-native": "mobile",
-	"expo":         "mobile",
+	"react-native": types.SurfaceMobile,
+	"expo":         types.SurfaceMobile,
 	// api signals
-	"express":      "api",
-	"fastify":      "api",
-	"koa":          "api",
-	"hapi":         "api",
-	"@hapi/hapi":   "api",
-	"nestjs":       "api",
-	"@nestjs/core": "api",
+	"express":      types.SurfaceAPI,
+	"fastify":      types.SurfaceAPI,
+	"koa":          types.SurfaceAPI,
+	"hapi":         types.SurfaceAPI,
+	"@hapi/hapi":   types.SurfaceAPI,
+	"nestjs":       types.SurfaceAPI,
+	"@nestjs/core": types.SurfaceAPI,
 	// cli signals
-	"commander": "cli",
-	"yargs":     "cli",
-	"oclif":     "cli",
-	"inquirer":  "cli",
+	"commander": types.SurfaceCLI,
+	"yargs":     types.SurfaceCLI,
+	"oclif":     types.SurfaceCLI,
+	"inquirer":  types.SurfaceCLI,
 	// tui signals
-	"blessed":     "tui",
-	"neo-blessed": "tui",
-	"ink":         "tui",
+	"blessed":     types.SurfaceTUI,
+	"neo-blessed": types.SurfaceTUI,
+	"ink":         types.SurfaceTUI,
 }
 
 // goModSignals maps go.mod require paths (prefix-matched) to surface types.
-var goModSignals = map[string]string{
+var goModSignals = map[string]types.SurfaceType{
 	// api signals
-	"github.com/gin-gonic/":     "api",
-	"github.com/labstack/echo/": "api",
-	"github.com/go-chi/":        "api",
-	"github.com/gorilla/":       "api", // mux, csrf, etc.
+	"github.com/gin-gonic/":     types.SurfaceAPI,
+	"github.com/labstack/echo/": types.SurfaceAPI,
+	"github.com/go-chi/":        types.SurfaceAPI,
+	"github.com/gorilla/":       types.SurfaceAPI, // mux, csrf, etc.
 	// cli signals
-	"github.com/spf13/cobra": "cli",
-	"github.com/urfave/":     "cli",
+	"github.com/spf13/cobra": types.SurfaceCLI,
+	"github.com/urfave/":     types.SurfaceCLI,
 	// tui signals
-	"github.com/charmbracelet/bubbletea": "tui",
-	"github.com/charmbracelet/lipgloss":  "tui",
-	"github.com/rivo/tview":              "tui",
-	"github.com/gdamore/tcell/":          "tui",
+	"github.com/charmbracelet/bubbletea": types.SurfaceTUI,
+	"github.com/charmbracelet/lipgloss":  types.SurfaceTUI,
+	"github.com/rivo/tview":              types.SurfaceTUI,
+	"github.com/gdamore/tcell/":          types.SurfaceTUI,
 }
 
 // cargoTomlSignals maps Cargo.toml dependency names (prefix-matched) to surface types.
-var cargoTomlSignals = map[string]string{
+var cargoTomlSignals = map[string]types.SurfaceType{
 	// api signals
-	"actix-web": "api",
-	"axum":      "api",
-	"rocket":    "api",
-	"warp":      "api",
+	"actix-web": types.SurfaceAPI,
+	"axum":      types.SurfaceAPI,
+	"rocket":    types.SurfaceAPI,
+	"warp":      types.SurfaceAPI,
 	// cli signals
-	"clap":      "cli",
-	"structopt": "cli",
+	"clap":      types.SurfaceCLI,
+	"structopt": types.SurfaceCLI,
 	// tui signals
-	"ratatui": "tui",
-	"cursive": "tui",
+	"ratatui": types.SurfaceTUI,
+	"cursive": types.SurfaceTUI,
 }
 
 // pyProjectSignals maps Python dependency names to surface types.
-var pyProjectSignals = map[string]string{
+var pyProjectSignals = map[string]types.SurfaceType{
 	// api signals
-	"flask":     "api",
-	"fastapi":   "api",
-	"django":    "api",
-	"starlette": "api",
+	"flask":     types.SurfaceAPI,
+	"fastapi":   types.SurfaceAPI,
+	"django":    types.SurfaceAPI,
+	"starlette": types.SurfaceAPI,
 	// cli signals
-	"click":    "cli",
-	"typer":    "cli",
-	"argparse": "cli",
+	"click":    types.SurfaceCLI,
+	"typer":    types.SurfaceCLI,
+	"argparse": types.SurfaceCLI,
 }
 
 // PathConflict records conflict metadata for a single detected path.
@@ -130,9 +132,9 @@ var pyProjectSignals = map[string]string{
 // the conflict is auto-resolved by priority but the conflicting signals
 // are preserved for TUI annotation.
 type PathConflict struct {
-	Path        string   // relative path (or "." for root)
-	Resolved    string   // the chosen surface type after priority resolution
-	Conflicting []string // all surface types that conflicted (2+ entries)
+	Path        string              // relative path (or "." for root)
+	Resolved    types.SurfaceType   // the chosen surface type after priority resolution
+	Conflicting []types.SurfaceType // all surface types that conflicted (2+ entries)
 }
 
 // DetectResult holds the output of surface detection, including conflict metadata.
@@ -185,7 +187,7 @@ func DetectSurfacesWithConflicts(projectRoot string) (*DetectResult, error) {
 	} else {
 		// Scan root for signals
 		if surface, source, conflict := detectSurfaceAtDirWithSources(projectRoot); surface != "" {
-			result["."] = surface
+			result["."] = string(surface)
 			sources["."] = source
 			if len(conflict) > 1 {
 				conflicts = append(conflicts, PathConflict{
@@ -222,11 +224,11 @@ func DetectSurfacesWithConflicts(projectRoot string) (*DetectResult, error) {
 	// If all paths have the same surface type and one of them is ".", collapse
 	// (This handles non-workspace projects that found signals in subdirs too)
 	if _, hasDot := result["."]; hasDot {
-		types := make(map[string]bool)
+		seen := make(map[string]bool)
 		for _, v := range result {
-			types[v] = true
+			seen[v] = true
 		}
-		if len(types) == 1 {
+		if len(seen) == 1 {
 			for _, v := range result {
 				dotSource := sources["."]
 				return &DetectResult{
@@ -322,7 +324,7 @@ func scanSubdirsWithSources(root, currentDir string, currentDepth, maxDepth int,
 				continue
 			}
 			rel = filepath.ToSlash(rel)
-			result[rel] = surface
+			result[rel] = string(surface)
 			if sources != nil {
 				sources[rel] = source
 			}
@@ -340,12 +342,12 @@ func scanSubdirsWithSources(root, currentDir string, currentDepth, maxDepth int,
 // detectSurfaceAtDirWithSources detects the surface type, source annotation, and conflict metadata.
 // Returns the resolved surface type, source annotation, and the list of all conflicting signal types.
 // Priority chain: dependency signals first; inference only when ALL dependency signals return empty.
-func detectSurfaceAtDirWithSources(dir string) (string, string, []string) {
+func detectSurfaceAtDirWithSources(dir string) (types.SurfaceType, string, []types.SurfaceType) {
 	// Collect all unique signal types across all manifest files
-	seen := make(map[string]bool)
-	var allSignals []string
+	seen := make(map[types.SurfaceType]bool)
+	var allSignals []types.SurfaceType
 
-	collect := func(signals []string) {
+	collect := func(signals []types.SurfaceType) {
 		for _, s := range signals {
 			if !seen[s] {
 				seen[s] = true
@@ -366,8 +368,8 @@ func detectSurfaceAtDirWithSources(dir string) (string, string, []string) {
 
 	// Check mobile signals
 	if detectMobile(dir) {
-		if !seen["mobile"] {
-			allSignals = append(allSignals, "mobile")
+		if !seen[types.SurfaceMobile] {
+			allSignals = append(allSignals, types.SurfaceMobile)
 		}
 	}
 
@@ -394,7 +396,7 @@ func detectSurfaceAtDirWithSources(dir string) (string, string, []string) {
 }
 
 // detectDependencySource identifies which dependency caused the resolved surface type.
-func detectDependencySource(dir string, resolved string, nodeSignals, goSignals, cargoSignals, pySignals []string) string {
+func detectDependencySource(dir string, resolved types.SurfaceType, nodeSignals, goSignals, cargoSignals, pySignals []types.SurfaceType) string {
 	// Check if the resolved type came from Node.js deps
 	for _, s := range nodeSignals {
 		if s == resolved {
@@ -428,14 +430,14 @@ func detectDependencySource(dir string, resolved string, nodeSignals, goSignals,
 		}
 	}
 	// Fallback for mobile
-	if resolved == "mobile" {
+	if resolved == types.SurfaceMobile {
 		return "dependency:mobile-manifest"
 	}
 	return "dependency:unknown"
 }
 
 // findDepForSignal finds the first dependency name that maps to the given surface type.
-func findDepForSignal(dir string, ecosystem string, targetSurface string) string {
+func findDepForSignal(dir string, ecosystem string, targetSurface types.SurfaceType) string {
 	switch ecosystem {
 	case "node":
 		pkgPath := filepath.Join(dir, "package.json")
@@ -513,7 +515,7 @@ func findDepForSignal(dir string, ecosystem string, targetSurface string) string
 
 // runInference determines which ecosystem's inference function to call based on
 // manifest file presence, then calls the matching function.
-func runInference(dir string) (string, string) {
+func runInference(dir string) (types.SurfaceType, string) {
 	// Ecosystem determined by manifest file presence; only one ecosystem's
 	// inference function is called. Priority: go.mod > package.json > pyproject.toml
 	// to match the order dependencies were checked.
@@ -530,7 +532,7 @@ func runInference(dir string) (string, string) {
 }
 
 // detectPackageJSONSignals reads a package.json and returns all detected surface signal types.
-func detectPackageJSONSignals(dir string) []string {
+func detectPackageJSONSignals(dir string) []types.SurfaceType {
 	pkgPath := filepath.Join(dir, "package.json")
 	data, err := os.ReadFile(pkgPath)
 	if err != nil {
@@ -554,7 +556,7 @@ func detectPackageJSONSignals(dir string) []string {
 		allDeps[k] = true
 	}
 
-	var signals []string
+	var signals []types.SurfaceType
 	for dep := range allDeps {
 		if surface, ok := packageJSONSignals[dep]; ok {
 			signals = append(signals, surface)
@@ -564,13 +566,13 @@ func detectPackageJSONSignals(dir string) []string {
 	// Special rule: react-native + react → mobile (react is a shared dependency of react-native,
 	// not an independent web signal). When react-native is present, suppress the web signal from react.
 	if allDeps["react-native"] {
-		filtered := make([]string, 0, len(signals))
+		filtered := make([]types.SurfaceType, 0, len(signals))
 		hasMobile := false
 		for _, s := range signals {
-			if s == "mobile" {
+			if s == types.SurfaceMobile {
 				hasMobile = true
 			}
-			if s != "web" {
+			if s != types.SurfaceWeb {
 				filtered = append(filtered, s)
 			}
 		}
@@ -585,15 +587,15 @@ func detectPackageJSONSignals(dir string) []string {
 }
 
 // detectGoModSignals reads a go.mod and returns all detected surface signal types.
-func detectGoModSignals(dir string) []string {
+func detectGoModSignals(dir string) []types.SurfaceType {
 	modPath := filepath.Join(dir, "go.mod")
 	data, err := os.ReadFile(modPath)
 	if err != nil {
 		return nil
 	}
 
-	seen := make(map[string]bool)
-	var signals []string
+	seen := make(map[types.SurfaceType]bool)
+	var signals []types.SurfaceType
 	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		// Skip comments and non-require lines
@@ -615,15 +617,15 @@ func detectGoModSignals(dir string) []string {
 }
 
 // detectCargoTomlSignals reads a Cargo.toml and returns all detected surface signal types.
-func detectCargoTomlSignals(dir string) []string {
+func detectCargoTomlSignals(dir string) []types.SurfaceType {
 	tomlPath := filepath.Join(dir, "Cargo.toml")
 	data, err := os.ReadFile(tomlPath)
 	if err != nil {
 		return nil
 	}
 
-	seen := make(map[string]bool)
-	var signals []string
+	seen := make(map[types.SurfaceType]bool)
+	var signals []types.SurfaceType
 	content := string(data)
 
 	for dep, surface := range cargoTomlSignals {
@@ -668,15 +670,15 @@ func detectMobile(dir string) bool {
 }
 
 // detectPyProjectSignals reads a pyproject.toml and returns all detected surface signal types.
-func detectPyProjectSignals(dir string) []string {
+func detectPyProjectSignals(dir string) []types.SurfaceType {
 	tomlPath := filepath.Join(dir, "pyproject.toml")
 	data, err := os.ReadFile(tomlPath)
 	if err != nil {
 		return nil
 	}
 
-	seen := make(map[string]bool)
-	var signals []string
+	seen := make(map[types.SurfaceType]bool)
+	var signals []types.SurfaceType
 	content := string(data)
 
 	for dep, surface := range pyProjectSignals {
@@ -692,9 +694,9 @@ func detectPyProjectSignals(dir string) []string {
 }
 
 // dedupSignals deduplicates a slice of signal types while preserving order.
-func dedupSignals(signals []string) []string {
-	seen := make(map[string]bool)
-	var result []string
+func dedupSignals(signals []types.SurfaceType) []types.SurfaceType {
+	seen := make(map[types.SurfaceType]bool)
+	var result []types.SurfaceType
 	for _, s := range signals {
 		if !seen[s] {
 			seen[s] = true
@@ -707,7 +709,7 @@ func dedupSignals(signals []string) []string {
 // resolveConflict takes a list of detected surface signals and returns the
 // highest priority one. Priority: web > mobile > api > cli > tui.
 // Returns "" if the list is empty.
-func resolveConflict(signals []string) string {
+func resolveConflict(signals []types.SurfaceType) types.SurfaceType {
 	if len(signals) == 0 {
 		return ""
 	}
@@ -796,7 +798,7 @@ func fileExists(path string) bool {
 //
 // Returns empty strings if no inference possible.
 // Only called when go.mod exists and all dependency signals are empty.
-func inferGoSurface(dir string) (string, string) {
+func inferGoSurface(dir string) (types.SurfaceType, string) {
 	// Verify go.mod exists (ecosystem gate)
 	if !fileExists(filepath.Join(dir, "go.mod")) {
 		return "", ""
@@ -820,13 +822,13 @@ func inferGoSurface(dir string) (string, string) {
 
 	// api/handler wins over cmd when both present
 	if hasAPI {
-		return "api", "inference:api-dir"
+		return types.SurfaceAPI, "inference:api-dir"
 	}
 	if hasHandler {
-		return "api", "inference:handler-dir"
+		return types.SurfaceAPI, "inference:handler-dir"
 	}
 	if hasCmdSubdirs {
-		return "cli", "inference:cmd-dir"
+		return types.SurfaceCLI, "inference:cmd-dir"
 	}
 
 	return "", ""
@@ -840,7 +842,7 @@ func inferGoSurface(dir string) (string, string) {
 //   - Both bin and index.html → web wins (higher priority)
 //
 // Returns empty strings if no inference possible.
-func inferNodeSurface(dir string) (string, string) {
+func inferNodeSurface(dir string) (types.SurfaceType, string) {
 	// Verify package.json exists (ecosystem gate)
 	pkgPath := filepath.Join(dir, "package.json")
 	if !fileExists(pkgPath) {
@@ -879,10 +881,10 @@ func inferNodeSurface(dir string) (string, string) {
 
 	// web (index.html) wins over cli (bin) by priority
 	if hasIndexHTML {
-		return "web", "inference:index-html"
+		return types.SurfaceWeb, "inference:index-html"
 	}
 	if hasBin {
-		return "cli", "inference:bin-field"
+		return types.SurfaceCLI, "inference:bin-field"
 	}
 
 	return "", ""
@@ -897,7 +899,7 @@ func inferNodeSurface(dir string) (string, string) {
 //     - no [project.packages] or [tool.setuptools.packages.find] in pyproject.toml
 //
 // Returns empty strings if no inference possible.
-func inferPythonSurface(dir string) (string, string) {
+func inferPythonSurface(dir string) (types.SurfaceType, string) {
 	hasPyProject := fileExists(filepath.Join(dir, "pyproject.toml"))
 	hasSetupPy := fileExists(filepath.Join(dir, "setup.py"))
 
@@ -907,7 +909,7 @@ func inferPythonSurface(dir string) (string, string) {
 		if err == nil {
 			content := string(data)
 			if strings.Contains(content, "[project.scripts]") {
-				return "cli", "inference:py-scripts"
+				return types.SurfaceCLI, "inference:py-scripts"
 			}
 		}
 	}
@@ -918,7 +920,7 @@ func inferPythonSurface(dir string) (string, string) {
 		if err == nil {
 			content := string(data)
 			if strings.Contains(content, "entry_points") {
-				return "cli", "inference:py-scripts"
+				return types.SurfaceCLI, "inference:py-scripts"
 			}
 		}
 	}
@@ -953,7 +955,7 @@ func inferPythonSurface(dir string) (string, string) {
 			}
 		}
 
-		return "cli", "inference:py-main"
+		return types.SurfaceCLI, "inference:py-main"
 	}
 
 	return "", ""

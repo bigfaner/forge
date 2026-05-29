@@ -10,6 +10,7 @@ import (
 
 	"forge-cli/pkg/forgeconfig"
 	indexPkg "forge-cli/pkg/index"
+	"forge-cli/pkg/types"
 )
 
 // BuildIndexOpts holds options for building the task index.
@@ -120,7 +121,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		newTask := Task{
 			ID:            fm.ID,
 			Title:         fm.Title,
-			Priority:      fm.Priority,
+			Priority:      types.Priority(fm.Priority),
 			EstimatedTime: fm.EstimatedTime,
 			Dependencies:  fm.Dependencies,
 			File:          entry.Name(),
@@ -140,7 +141,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			index.SetTask(key, newTask)
 			result.UpdatedCount++
 		} else {
-			newTask.Status = "pending"
+			newTask.Status = types.StatusPending
 			index.SetTask(key, newTask)
 			result.NewCount++
 		}
@@ -293,7 +294,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			newTask := Task{
 				ID:            fm.ID,
 				Title:         fm.Title,
-				Priority:      fm.Priority,
+				Priority:      types.Priority(fm.Priority),
 				EstimatedTime: fm.EstimatedTime,
 				Dependencies:  fm.Dependencies,
 				File:          entry.Name(),
@@ -312,7 +313,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 				index.SetTask(key, newTask)
 				result.UpdatedCount++
 			} else {
-				newTask.Status = "pending"
+				newTask.Status = types.StatusPending
 				index.SetTask(key, newTask)
 				result.NewCount++
 			}
@@ -644,7 +645,7 @@ func migrateFixTaskSources(index *TaskIndex, _ map[string]string, executionOrder
 	// Look for the old T-test-run entry by iterating all tasks
 	for key, t := range index.TasksMap() {
 		if t.ID == "T-test-run" {
-			state.Status = t.Status
+			state.Status = string(t.Status)
 			state.BlockedReason = t.BlockedReason
 			// Remove the old entry
 			delete(index.TasksMap(), key)
@@ -677,8 +678,8 @@ func applyMigratedRunTestState(index *TaskIndex, state *migratedRunTestState) {
 		if t.ID == state.FirstRunTestID {
 			// Apply saved state only when the new task is still in pending status
 			// (don't override if it already has a runtime state)
-			if t.Status == "pending" && state.Status != "" {
-				t.Status = state.Status
+			if t.Status == types.StatusPending && state.Status != "" {
+				t.Status = types.Status(state.Status)
 				t.BlockedReason = state.BlockedReason
 				index.SetTask(key, t)
 			}

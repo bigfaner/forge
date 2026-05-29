@@ -9,6 +9,7 @@ import (
 	"forge-cli/internal/cmd/base"
 
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -196,28 +197,36 @@ func sortChildrenRecursive(roots []*treeNode, sortByID bool) {
 
 // statusSymbol returns the symbol for a task status.
 func statusSymbol(status string) string {
-	switch status {
-	case "completed":
+	switch types.Status(status) {
+	case types.StatusCompleted:
 		return "✓"
-	case "in_progress":
+	case types.StatusInProgress:
 		return "~"
-	case "blocked", "failed", "rejected":
+	case types.StatusBlocked, types.StatusRejected:
 		return "✗"
-	default: // pending, skipped, suspended, unknown
+	default:
+		// Non-canonical error-like statuses (e.g. "failed") also get error symbol
+		if status == "failed" {
+			return "✗"
+		}
 		return "○"
 	}
 }
 
 // statusColor returns the lipgloss color name for a task status.
 func statusColor(status string) string {
-	switch status {
-	case "completed":
+	switch types.Status(status) {
+	case types.StatusCompleted:
 		return "green"
-	case "in_progress":
+	case types.StatusInProgress:
 		return "yellow"
-	case "blocked", "failed", "rejected":
+	case types.StatusBlocked, types.StatusRejected:
 		return "red"
-	default: // pending, skipped, suspended, unknown
+	default:
+		// Non-canonical error-like statuses (e.g. "failed") also get red
+		if status == "failed" {
+			return "red"
+		}
 		return "gray"
 	}
 }
@@ -259,7 +268,7 @@ func renderTreePlain(roots []*treeNode) string {
 	items := flattenTree(roots, true)
 	for _, item := range items {
 		indent := strings.Repeat("  ", item.Depth)
-		sym := statusSymbol(item.Node.Task.Status)
+		sym := statusSymbol(string(item.Node.Task.Status))
 		title := item.Node.Task.Title
 		id := item.Node.Task.ID
 		fmt.Fprintf(&sb, "%s%s %s: %s\n", indent, sym, id, title)
@@ -384,7 +393,7 @@ func (m treeModel) View() string {
 	for i := start; i < end; i++ {
 		item := m.items[i]
 		indent := strings.Repeat("  ", item.Depth)
-		sym := statusSymbol(item.Node.Task.Status)
+		sym := statusSymbol(string(item.Node.Task.Status))
 		id := item.Node.Task.ID
 		title := item.Node.Task.Title
 
@@ -407,7 +416,7 @@ func (m treeModel) View() string {
 		line := fmt.Sprintf("%s %s%s %s %s", cursor, indent, expandChar, sym, formatNodeLine(id, title))
 
 		if m.useColor {
-			color := statusColor(item.Node.Task.Status)
+			color := statusColor(string(item.Node.Task.Status))
 			styled := lipgloss.NewStyle().Foreground(lipgloss.Color(color)).Render(sym+" "+id) + ": " + title
 			line = fmt.Sprintf("%s %s%s %s", cursor, indent, expandChar, styled)
 		}
@@ -473,7 +482,7 @@ func renderTreeFallback(roots []*treeNode, featureSlug string) string {
 
 	for _, item := range items {
 		indent := strings.Repeat("  ", item.Depth)
-		sym := statusSymbol(item.Node.Task.Status)
+		sym := statusSymbol(string(item.Node.Task.Status))
 		id := item.Node.Task.ID
 		title := base.TruncateSlug(item.Node.Task.Title, 50)
 		status := item.Node.Task.Status

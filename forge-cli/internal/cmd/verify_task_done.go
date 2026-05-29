@@ -8,6 +8,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -79,7 +80,7 @@ func verifyTaskCompletion() error {
 		return fmt.Errorf("task %s not found in index.json", state.TaskID)
 	}
 
-	if foundTask.Status != "completed" {
+	if foundTask.Status != types.StatusCompleted {
 		return fmt.Errorf("task %s status is %q, not completed. Run 'forge task submit' before committing",
 			state.TaskID, foundTask.Status)
 	}

@@ -16,6 +16,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -293,7 +294,7 @@ func runFeatureStatus(_ *cobra.Command, args []string) error {
 		if err := json.Unmarshal(data, &idx); err == nil {
 			taskStats = make(map[string]int)
 			for _, t := range idx.TasksMap() {
-				taskStats[t.Status]++
+				taskStats[string(t.Status)]++
 				total++
 			}
 		}
@@ -312,8 +313,8 @@ func runFeatureStatus(_ *cobra.Command, args []string) error {
 
 	base.PrintSection("TASKS")
 	if taskStats != nil {
-		for _, status := range []string{"pending", "in_progress", "completed", "blocked", "skipped", "rejected"} {
-			if count, ok := taskStats[status]; ok {
+		for _, status := range []types.Status{types.StatusPending, types.StatusInProgress, types.StatusCompleted, types.StatusBlocked, types.StatusSkipped, types.StatusRejected} {
+			if count, ok := taskStats[string(status)]; ok {
 				base.PrintListItem(fmt.Sprintf("%s: %d", status, count))
 			}
 		}
@@ -410,7 +411,7 @@ func readTaskProgress(indexPath string) (completed, total int) {
 
 	for _, t := range idx.TasksMap() {
 		total++
-		if t.Status == "completed" {
+		if t.Status == types.StatusCompleted {
 			completed++
 		}
 	}

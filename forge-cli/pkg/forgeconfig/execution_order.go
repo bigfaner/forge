@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"forge-cli/pkg/types"
 )
 
 // surfaceKeyPattern defines the valid surface-key format after normalization.
@@ -121,7 +123,13 @@ func ValidateExecutionOrder(surfaces map[string]string, executionOrder []string)
 
 // defaultExecutionOrder defines the priority order for execution when no explicit
 // execution-order is configured. api > web > cli > tui > mobile.
-var defaultExecutionOrder = []string{"api", "web", "cli", "tui", "mobile"}
+var defaultExecutionOrder = []types.SurfaceType{
+	types.SurfaceAPI,
+	types.SurfaceWeb,
+	types.SurfaceCLI,
+	types.SurfaceTUI,
+	types.SurfaceMobile,
+}
 
 // ResolveExecutionOrder determines the execution order of surface keys.
 // If executionOrder is provided, it is used as-is (already validated).
@@ -144,7 +152,7 @@ func ResolveExecutionOrder(surfaces map[string]string, executionOrder []string) 
 	}
 
 	// Default ordering: sort by type priority, with YAML order as tiebreaker for same type
-	typePriority := make(map[string]int)
+	typePriority := make(map[types.SurfaceType]int)
 	for i, typ := range defaultExecutionOrder {
 		typePriority[typ] = i
 	}
@@ -155,8 +163,8 @@ func ResolveExecutionOrder(surfaces map[string]string, executionOrder []string) 
 	}
 
 	sort.SliceStable(keys, func(i, j int) bool {
-		typI := surfaces[keys[i]]
-		typJ := surfaces[keys[j]]
+		typI := types.SurfaceType(surfaces[keys[i]])
+		typJ := types.SurfaceType(surfaces[keys[j]])
 		priI, hasI := typePriority[typI]
 		priJ, hasJ := typePriority[typJ]
 

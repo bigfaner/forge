@@ -17,6 +17,7 @@ import (
 	"forge-cli/pkg/serverprobe"
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/testrunner"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -100,7 +101,7 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 
 	// All tasks must be completed or skipped (rejected does not count as done)
 	for _, t := range index.TasksMap() {
-		if t.Status != feature.StatusCompleted && t.Status != feature.StatusSkipped {
+		if t.Status != types.StatusCompleted && t.Status != types.StatusSkipped {
 			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
 			return nil, nil
 		}
@@ -303,8 +304,8 @@ type lifecycleResult struct {
 
 // needsFullLifecycle returns true for surface types that require dev→probe→test→teardown.
 // cli and tui surfaces use the simplified test→teardown sequence.
-func needsFullLifecycle(surfaceType string) bool {
-	return surfaceType == "web" || surfaceType == "api" || surfaceType == "mobile"
+func needsFullLifecycle(surfaceType types.SurfaceType) bool {
+	return surfaceType == types.SurfaceWeb || surfaceType == types.SurfaceAPI || surfaceType == types.SurfaceMobile
 }
 
 // resolveRecipe attempts to find a surface-specific recipe (e.g., "web-dev"),
@@ -327,7 +328,7 @@ func resolveRecipe(projectRoot, surfaceType, genericRecipe string) string {
 // For cli/tui: test → teardown
 // Teardown always executes (via defer-like pattern).
 func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
-	full := needsFullLifecycle(surfaceType)
+	full := needsFullLifecycle(types.SurfaceType(surfaceType))
 
 	// Phase 1: Dev (full lifecycle only)
 	if full {
@@ -354,7 +355,7 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 	}
 
 	// Phase 2b: Mobile test setup (mobile surfaces only)
-	if surfaceType == "mobile" {
+	if types.SurfaceType(surfaceType) == types.SurfaceMobile {
 		setupRecipe := resolveRecipe(projectRoot, surfaceType, "test-setup")
 		if setupRecipe != "" {
 			fmt.Fprintf(os.Stderr, "  Running mobile test setup (just %s)...\n", setupRecipe)
@@ -618,7 +619,7 @@ func countFixTasks(index *task.TaskIndex, step string) int {
 			continue
 		}
 		// Exclude terminal statuses
-		if t.Status == "completed" || t.Status == "rejected" || t.Status == "skipped" {
+		if t.Status == types.StatusCompleted || t.Status == types.StatusRejected || t.Status == types.StatusSkipped {
 			continue
 		}
 		count++
@@ -757,7 +758,7 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 
 	opts := task.AddTaskOpts{
 		Title:         title,
-		Priority:      "P0",
+		Priority:      string(types.PriorityP0),
 		EstimatedTime: estimatedTime,
 		Breaking:      breaking,
 		Description:   description,

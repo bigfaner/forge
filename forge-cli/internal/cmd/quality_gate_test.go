@@ -12,6 +12,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 )
 
 func TestCheckAllCompleted(t *testing.T) {
@@ -832,26 +833,28 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 func TestAddFixTask_EmptyOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	// Hard constraint: empty output -> no source files extracted -> surface inference fails
-	_, addErr := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
-	if addErr == nil {
-		t.Fatal("expected error when surface inference fails on empty output")
+	// Soft-failure policy: empty output -> no source files -> surface inference fails
+	// -> fix-task is still created with empty surface key/type.
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
+	if addErr != nil {
+		t.Fatalf("expected no error (soft-failure policy), got: %v", addErr)
 	}
-	if !strings.Contains(addErr.Error(), "surface inference failed") {
-		t.Errorf("error should mention 'surface inference failed', got: %v", addErr)
+	if taskID == "" {
+		t.Fatal("expected non-empty taskID")
 	}
 }
 
 func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	// Hard constraint: no source files in output -> surface inference fails
-	_, addErr := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
-	if addErr == nil {
-		t.Fatal("expected error when surface inference fails on output without file references")
+	// Soft-failure policy: no source files in output -> surface inference fails
+	// -> fix-task is still created with empty surface key/type.
+	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
+	if addErr != nil {
+		t.Fatalf("expected no error (soft-failure policy), got: %v", addErr)
 	}
-	if !strings.Contains(addErr.Error(), "surface inference failed") {
-		t.Errorf("error should mention 'surface inference failed', got: %v", addErr)
+	if taskID == "" {
+		t.Fatal("expected non-empty taskID")
 	}
 }
 
@@ -1971,7 +1974,7 @@ func TestAddFixTask_SurfaceInference(t *testing.T) {
 	}
 }
 
-func TestAddFixTask_SurfaceInferenceHardFailure(t *testing.T) {
+func TestAddFixTask_SurfaceInferenceSoftFailure(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	// Remove surfaces config to trigger inference failure
@@ -1980,19 +1983,14 @@ func TestAddFixTask_SurfaceInferenceHardFailure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Hard constraint: surface inference failure should return error
+	// Soft-failure policy: surface inference failure does NOT block fix-task creation.
+	// Task is created with empty surface key/type.
 	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "handler.go:10: error", "tests/results/out.txt")
-	if addErr == nil {
-		t.Fatalf("expected error when surface inference fails, got nil (taskID=%q)", taskID)
+	if addErr != nil {
+		t.Fatalf("expected no error (soft-failure policy), got: %v", addErr)
 	}
-	if taskID != "" {
-		t.Errorf("expected empty taskID on inference failure, got %q", taskID)
-	}
-	if !strings.Contains(addErr.Error(), "surface inference failed") {
-		t.Errorf("error should mention 'surface inference failed', got: %v", addErr)
-	}
-	if !strings.Contains(addErr.Error(), "forge surfaces detect") {
-		t.Errorf("error should mention 'forge surfaces detect', got: %v", addErr)
+	if taskID == "" {
+		t.Fatal("expected non-empty taskID even when surface inference fails")
 	}
 }
 
@@ -2041,7 +2039,7 @@ func TestNeedsFullLifecycle(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.surfaceType, func(t *testing.T) {
-			got := needsFullLifecycle(tc.surfaceType)
+			got := needsFullLifecycle(types.SurfaceType(tc.surfaceType))
 			if got != tc.want {
 				t.Errorf("needsFullLifecycle(%q) = %v, want %v", tc.surfaceType, got, tc.want)
 			}

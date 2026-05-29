@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sort"
 	"text/template"
+
+	"forge-cli/pkg/types"
 )
 
 // TemplateData holds the data for rendering task creation templates.
@@ -38,14 +40,14 @@ type Defaults struct {
 // Keys match the template filename (without .md extension), which is also the type value.
 var taskTemplateDefaults = map[string]Defaults{
 	"coding.fix": {
-		Priority:      "P0",
+		Priority:      string(types.PriorityP0),
 		Breaking:      true,
 		EstimatedTime: "30min",
 		Type:          "coding.fix",
 		IDPrefix:      "fix",
 	},
 	"coding.cleanup": {
-		Priority:      "P0",
+		Priority:      string(types.PriorityP0),
 		Breaking:      false,
 		EstimatedTime: "15min",
 		Type:          "coding.cleanup",

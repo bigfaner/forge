@@ -273,7 +273,7 @@ func TestStatusPriorityValuesMatch(t *testing.T) {
 	overview := readDoc(t, root, "OVERVIEW.md")
 
 	// Status values
-	expectedStatuses := []string{feature.StatusPending, feature.StatusInProgress, feature.StatusCompleted, feature.StatusBlocked, feature.StatusSkipped}
+	expectedStatuses := []feature.Status{feature.StatusPending, feature.StatusInProgress, feature.StatusCompleted, feature.StatusBlocked, feature.StatusSkipped}
 	statusLine := regexp.MustCompile(`\*\*Status values:\*\*.*`).FindString(overview)
 	if statusLine == "" {
 		t.Fatal("cannot find Status values line in OVERVIEW.md")
@@ -285,13 +285,13 @@ func TestStatusPriorityValuesMatch(t *testing.T) {
 	}
 
 	// Priority values
-	expectedPriorities := []string{feature.PriorityP0, feature.PriorityP1, feature.PriorityP2}
+	expectedPriorities := []feature.Priority{feature.PriorityP0, feature.PriorityP1, feature.PriorityP2}
 	prioLine := regexp.MustCompile(`\| Priority \|.*`).FindString(overview)
 	if prioLine == "" {
 		t.Fatal("cannot find Priority line in OVERVIEW.md")
 	}
 	for _, p := range expectedPriorities {
-		if !strings.Contains(prioLine, p) {
+		if !strings.Contains(prioLine, string(p)) {
 			t.Errorf("priority value %q missing from OVERVIEW.md", p)
 		}
 	}

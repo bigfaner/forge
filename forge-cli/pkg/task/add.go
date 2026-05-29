@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	indexPkg "forge-cli/pkg/index"
+	"forge-cli/pkg/types"
 )
 
 // AddTaskOpts holds options for adding a new task.
@@ -31,13 +32,6 @@ type AddTaskOpts struct {
 	SurfaceType   string            // Surface type inherited from source task
 }
 
-// terminalStatuses are task statuses that indicate the task is done.
-var terminalStatuses = map[string]bool{
-	"completed": true,
-	"skipped":   true,
-	"rejected":  true,
-}
-
 // ActiveFixExistsError is returned by AddTask when active fix tasks already exist
 // for the specified source task, making the new addition redundant.
 type ActiveFixExistsError struct {
@@ -53,7 +47,7 @@ func (e *ActiveFixExistsError) Error() string {
 func hasActiveFixTasks(index *TaskIndex, sourceTaskID string) []string {
 	var active []string
 	for _, t := range index.tasks {
-		if t.SourceTaskID == sourceTaskID && !terminalStatuses[t.Status] {
+		if t.SourceTaskID == sourceTaskID && !types.IsTerminalStatus(t.Status) {
 			active = append(active, t.ID)
 		}
 	}
@@ -103,10 +97,10 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 		// Defaults
 		if opts.Status == "" {
-			opts.Status = "pending"
+			opts.Status = string(types.StatusPending)
 		}
 		if opts.Priority == "" {
-			opts.Priority = "P1"
+			opts.Priority = string(types.PriorityP1)
 		}
 
 		// Auto-generate ID if empty
@@ -124,7 +118,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		}
 
 		// Validate priority
-		if !slices.Contains([]string{"P0", "P1", "P2"}, opts.Priority) {
+		if !slices.Contains([]string{string(types.PriorityP0), string(types.PriorityP1), string(types.PriorityP2)}, opts.Priority) {
 			return fmt.Errorf("invalid priority: %s (must be P0, P1, or P2)", opts.Priority)
 		}
 
@@ -179,12 +173,12 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 				// Block source before resolution (--block-source flag).
 				// Prevents auto-resolve from flattening to root, preserving the chain.
 				if opts.BlockSource {
-					t.Status = "blocked"
+					t.Status = types.StatusBlocked
 				}
 
 				// Source auto-resolution: when --source-task-id points to a COMPLETED/SKIPPED
 				// fix-task, trace the chain to find the root blocked task.
-				if t.Status == "completed" || t.Status == "skipped" {
+				if t.Status == types.StatusCompleted || t.Status == types.StatusSkipped {
 					resolved := ResolveSourceTask(index, opts.SourceTaskID)
 					if resolved != opts.SourceTaskID {
 						fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s -> %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
@@ -201,10 +195,10 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 		index.SetTask(opts.ID, Task{
 			ID:            opts.ID,
 			Title:         opts.Title,
-			Priority:      opts.Priority,
+			Priority:      types.Priority(opts.Priority),
 			EstimatedTime: opts.EstimatedTime,
 			Dependencies:  opts.Dependencies,
-			Status:        opts.Status,
+			Status:        types.Status(opts.Status),
 			File:          fileName,
 			Record:        recordPath,
 			Breaking:      opts.Breaking,

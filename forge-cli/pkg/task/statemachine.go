@@ -3,6 +3,8 @@ package task
 import (
 	"fmt"
 	"strings"
+
+	"forge-cli/pkg/types"
 )
 
 // TransitionRole represents the role performing a state transition.
@@ -23,8 +25,8 @@ const (
 
 // TransitionError is returned when a state transition is not allowed.
 type TransitionError struct {
-	From string
-	To   string
+	From types.Status
+	To   types.Status
 	Role TransitionRole
 	Msg  string
 }
@@ -37,8 +39,8 @@ func (e *TransitionError) Error() string {
 // TransitionRule defines a single entry in the transition rule table.
 // The table is the single authority for state validation.
 type TransitionRule struct {
-	From     string         // current status; "*" matches any
-	To       string         // target status; "*" matches any
+	From     types.Status   // current status; "*" matches any
+	To       types.Status   // target status; "*" matches any
 	Role     TransitionRole // required role; "" matches any
 	Allowed  bool           // whether the transition is permitted
 	GuardMsg string         // human-readable reason when blocked
@@ -48,57 +50,57 @@ type TransitionRule struct {
 // Rules are evaluated in order; first match wins.
 var transitionTable = []TransitionRule{
 	// Terminal state: completed is irreversible
-	{From: "completed", To: "*", Role: "", Allowed: false, GuardMsg: "task already completed, create a subtask if re-work needed"},
+	{From: types.StatusCompleted, To: types.Status("*"), Role: "", Allowed: false, GuardMsg: "task already completed, create a subtask if re-work needed"},
 
 	// Terminal state: rejected can only go to pending via reopen
-	{From: "rejected", To: "pending", Role: RoleReopen, Allowed: true, GuardMsg: ""},
-	{From: "rejected", To: "*", Role: "", Allowed: false, GuardMsg: "task rejected, use forge task reopen"},
+	{From: types.StatusRejected, To: types.StatusPending, Role: RoleReopen, Allowed: true, GuardMsg: ""},
+	{From: types.StatusRejected, To: types.Status("*"), Role: "", Allowed: false, GuardMsg: "task rejected, use forge task reopen"},
 
 	// Terminal state: skipped can only go to pending via reopen
-	{From: "skipped", To: "pending", Role: RoleReopen, Allowed: true, GuardMsg: ""},
-	{From: "skipped", To: "*", Role: "", Allowed: false, GuardMsg: "task skipped, use forge task reopen"},
+	{From: types.StatusSkipped, To: types.StatusPending, Role: RoleReopen, Allowed: true, GuardMsg: ""},
+	{From: types.StatusSkipped, To: types.Status("*"), Role: "", Allowed: false, GuardMsg: "task skipped, use forge task reopen"},
 
 	// Suspended cannot directly reach completed (must resume first).
 	// Placed before the general "submit -> completed" rule so it matches first.
-	{From: "suspended", To: "completed", Role: "", Allowed: false, GuardMsg: "use forge task transition to resume task first"},
+	{From: types.StatusSuspended, To: types.StatusCompleted, Role: "", Allowed: false, GuardMsg: "use forge task transition to resume task first"},
 
 	// Only submit can reach completed
-	{From: "*", To: "completed", Role: RoleSubmit, Allowed: true, GuardMsg: ""},
-	{From: "*", To: "completed", Role: "", Allowed: false, GuardMsg: "use forge task submit"},
+	{From: types.Status("*"), To: types.StatusCompleted, Role: RoleSubmit, Allowed: true, GuardMsg: ""},
+	{From: types.Status("*"), To: types.StatusCompleted, Role: "", Allowed: false, GuardMsg: "use forge task submit"},
 
 	// Submit can auto-downgrade in_progress to blocked
-	{From: "in_progress", To: "blocked", Role: RoleSubmit, Allowed: true, GuardMsg: ""},
+	{From: types.StatusInProgress, To: types.StatusBlocked, Role: RoleSubmit, Allowed: true, GuardMsg: ""},
 
 	// Manual override: operator can unblock or resolve any non-completed task
-	{From: "blocked", To: "pending", Role: RoleManual, Allowed: true, GuardMsg: ""},
-	{From: "blocked", To: "in_progress", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.StatusBlocked, To: types.StatusPending, Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.StatusBlocked, To: types.StatusInProgress, Role: RoleManual, Allowed: true, GuardMsg: ""},
 
 	// blocked -> pending/in_progress requires dependency check (phase 2)
-	{From: "blocked", To: "pending", Role: "", Allowed: false, GuardMsg: "dependencies must be checked first"},
-	{From: "blocked", To: "in_progress", Role: "", Allowed: false, GuardMsg: "dependencies must be checked first"},
+	{From: types.StatusBlocked, To: types.StatusPending, Role: "", Allowed: false, GuardMsg: "dependencies must be checked first"},
+	{From: types.StatusBlocked, To: types.StatusInProgress, Role: "", Allowed: false, GuardMsg: "dependencies must be checked first"},
 
 	// pending -> blocked is always allowed (block-source, dependency wait)
-	{From: "pending", To: "blocked", Role: "", Allowed: true, GuardMsg: ""},
+	{From: types.StatusPending, To: types.StatusBlocked, Role: "", Allowed: true, GuardMsg: ""},
 
 	// --- suspended: operator manual hold ---
 	// Only RoleManual can enter suspended (from any non-terminal state).
-	{From: "*", To: "suspended", Role: RoleManual, Allowed: true, GuardMsg: ""},
-	{From: "*", To: "suspended", Role: "", Allowed: false, GuardMsg: "use forge task transition to suspend tasks"},
+	{From: types.Status("*"), To: types.StatusSuspended, Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.Status("*"), To: types.StatusSuspended, Role: "", Allowed: false, GuardMsg: "use forge task transition to suspend tasks"},
 	// Manual resume from suspended.
-	{From: "suspended", To: "pending", Role: RoleManual, Allowed: true, GuardMsg: ""},
-	{From: "suspended", To: "in_progress", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.StatusSuspended, To: types.StatusPending, Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.StatusSuspended, To: types.StatusInProgress, Role: RoleManual, Allowed: true, GuardMsg: ""},
 	// Manual terminal decisions from suspended.
-	{From: "suspended", To: "skipped", Role: RoleManual, Allowed: true, GuardMsg: ""},
-	{From: "suspended", To: "rejected", Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.StatusSuspended, To: types.StatusSkipped, Role: RoleManual, Allowed: true, GuardMsg: ""},
+	{From: types.StatusSuspended, To: types.StatusRejected, Role: RoleManual, Allowed: true, GuardMsg: ""},
 	// Block system transitions from suspended to blocked (must resume first).
-	{From: "suspended", To: "blocked", Role: "", Allowed: false, GuardMsg: "use forge task transition to resume suspended task"},
+	{From: types.StatusSuspended, To: types.StatusBlocked, Role: "", Allowed: false, GuardMsg: "use forge task transition to resume suspended task"},
 
 	// RoleReopen is only valid for rejected/skipped -> pending (handled above).
 	// Using reopen on non-terminal states is invalid.
-	{From: "*", To: "*", Role: RoleReopen, Allowed: false, GuardMsg: "reopen is only for rejected or skipped tasks"},
+	{From: types.Status("*"), To: types.Status("*"), Role: RoleReopen, Allowed: false, GuardMsg: "reopen is only for rejected or skipped tasks"},
 
 	// Same-state transition: no-op, always allowed (except terminal states handled above)
-	{From: "*", To: "*", Role: "", Allowed: true, GuardMsg: ""},
+	{From: types.Status("*"), To: types.Status("*"), Role: "", Allowed: true, GuardMsg: ""},
 }
 
 // ValidateTransition validates a state transition (pure, no data lookup).
@@ -106,7 +108,7 @@ var transitionTable = []TransitionRule{
 // Returns nil if the transition is allowed, or a *TransitionError if not.
 // For blocked -> pending/in_progress transitions, returns an error indicating
 // that dependency checking (phase 2) is required.
-func ValidateTransition(current, target string, role TransitionRole) error {
+func ValidateTransition(current, target types.Status, role TransitionRole) error {
 	for _, rule := range transitionTable {
 		if matchRule(rule, current, target, role) {
 			if rule.Allowed {
@@ -125,7 +127,7 @@ func ValidateTransition(current, target string, role TransitionRole) error {
 }
 
 // matchRule checks if a transition rule matches the given parameters.
-func matchRule(rule TransitionRule, from, to string, role TransitionRole) bool {
+func matchRule(rule TransitionRule, from, to types.Status, role TransitionRole) bool {
 	if rule.From != "*" && rule.From != from {
 		return false
 	}
@@ -180,15 +182,10 @@ func isActiveFixTask(t Task) bool {
 	if !isFixType(t.Type) {
 		return false
 	}
-	return !isTerminalStatus(t.Status)
+	return !types.IsTerminalStatus(t.Status)
 }
 
 // isFixType checks if a task type indicates a fix task.
 func isFixType(typ string) bool {
 	return typ == TypeCodingFix || strings.HasPrefix(typ, "coding.fix")
-}
-
-// isTerminalStatus checks if a status is terminal (completed, rejected).
-func isTerminalStatus(status string) bool {
-	return status == "completed" || status == "rejected"
 }

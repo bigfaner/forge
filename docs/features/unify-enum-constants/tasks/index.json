@@ -1,0 +1,341 @@
+{
+  "feature": "unify-enum-constants",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "proposal": "docs/proposals/unify-enum-constants/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1.1-define-types": {
+      "id": "1.1",
+      "title": "Create pkg/types/ package with typed constants",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1.1-define-types.md",
+      "record": "records/1.1-define-types.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2.1-migrate-task-core": {
+      "id": "2.1",
+      "title": "Migrate pkg/task/ core types and statemachine",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.1"
+      ],
+      "status": "completed",
+      "file": "2.1-migrate-task-core.md",
+      "record": "records/2.1-migrate-task-core.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "blockedReason": "All code changes complete and verified locally (pkg/task tests pass, coverage 87.4%). Submit blocked by 3 pre-existing test failures in internal/cmd (TestAddFixTask_EmptyOutput, TestAddFixTask_NoSourceFilesInOutput, TestAddFixTask_SurfaceInferenceHardFailure) that are unrelated to the Status/Priority type migration.",
+      "complexity": "high"
+    },
+    "2.2-migrate-task-remaining": {
+      "id": "2.2",
+      "title": "Migrate pkg/task/ remaining files",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2.1"
+      ],
+      "status": "completed",
+      "file": "2.2-migrate-task-remaining.md",
+      "record": "records/2.2-migrate-task-remaining.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "2.gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2.summary"
+      ],
+      "status": "completed",
+      "file": "2.gate.md",
+      "record": "records/2.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "2.summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.1",
+        "2.2"
+      ],
+      "status": "completed",
+      "file": "2.summary.md",
+      "record": "records/2.summary.md",
+      "type": "doc.summary"
+    },
+    "3.1-migrate-forgeconfig": {
+      "id": "3.1",
+      "title": "Migrate pkg/forgeconfig/ SurfaceType constants",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.1-migrate-forgeconfig.md",
+      "record": "records/3.1-migrate-forgeconfig.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "4.1-migrate-cmd-task": {
+      "id": "4.1",
+      "title": "Migrate internal/cmd/task/ Status and Priority constants",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "4.1-migrate-cmd-task.md",
+      "record": "records/4.1-migrate-cmd-task.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "4.2-migrate-cmd-other": {
+      "id": "4.2",
+      "title": "Migrate internal/cmd/ other files (all enums)",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2.gate",
+        "3.1"
+      ],
+      "status": "completed",
+      "file": "4.2-migrate-cmd-other.md",
+      "record": "records/4.2-migrate-cmd-other.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "4.gate": {
+      "id": "4.gate",
+      "title": "Phase 4 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4.summary"
+      ],
+      "status": "completed",
+      "file": "4.gate.md",
+      "record": "records/4.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "4.summary": {
+      "id": "4.summary",
+      "title": "Phase 4 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4.1",
+        "4.2"
+      ],
+      "status": "completed",
+      "file": "4.summary.md",
+      "record": "records/4.summary.md",
+      "type": "doc.summary"
+    },
+    "5.1-reexport-feature": {
+      "id": "5.1",
+      "title": "Re-export typed constants from pkg/feature/",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "4.gate"
+      ],
+      "status": "completed",
+      "file": "5.1-reexport-feature.md",
+      "record": "records/5.1-reexport-feature.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "low"
+    },
+    "clean-code": {
+      "id": "T-clean-code",
+      "title": "Simplify and Clean Code",
+      "priority": "P2",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "5.1"
+      ],
+      "status": "completed",
+      "file": "clean-code.md",
+      "record": "records/clean-code.md",
+      "type": "code-quality.simplify",
+      "blockedReason": "Auto-generated quality gate; should run after all business tasks complete"
+    },
+    "consolidate-specs": {
+      "id": "T-specs-consolidate",
+      "title": "Consolidate Specs",
+      "priority": "P2",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "completed",
+      "file": "consolidate-specs.md",
+      "record": "records/consolidate-specs.md",
+      "type": "doc.consolidate"
+    },
+    "eval-contract": {
+      "id": "T-eval-contract",
+      "title": "Evaluate Contract Quality",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "T-test-gen-contracts"
+      ],
+      "status": "skipped",
+      "file": "eval-contract.md",
+      "record": "records/eval-contract.md",
+      "mainSession": true,
+      "type": "eval.contract"
+    },
+    "eval-journey": {
+      "id": "T-eval-journey",
+      "title": "Evaluate Journey Quality",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "T-test-gen-journeys"
+      ],
+      "status": "skipped",
+      "file": "eval-journey.md",
+      "record": "records/eval-journey.md",
+      "mainSession": true,
+      "type": "eval.journey",
+      "blockedReason": "Journey eval failed (585/1000, target 850). Paused for user decision: skip and proceed with test pipeline, or accept current journey quality."
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: 2.1 blocked by pre-existing test failures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "2.1",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "gen-contracts": {
+      "id": "T-test-gen-contracts",
+      "title": "Generate Test Contracts",
+      "priority": "P1",
+      "estimatedTime": "30-45min",
+      "dependencies": [
+        "T-eval-journey"
+      ],
+      "status": "skipped",
+      "file": "gen-contracts.md",
+      "record": "records/gen-contracts.md",
+      "type": "test.gen-contracts"
+    },
+    "gen-journeys": {
+      "id": "T-test-gen-journeys",
+      "title": "Generate Test Journeys",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "5.1"
+      ],
+      "status": "completed",
+      "file": "gen-journeys.md",
+      "record": "records/gen-journeys.md",
+      "type": "test.gen-journeys"
+    },
+    "gen-test-scripts-cli": {
+      "id": "T-test-gen-scripts-cli",
+      "title": "Generate CLI Functional Test Scripts",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-eval-contract"
+      ],
+      "status": "skipped",
+      "file": "gen-test-scripts-cli.md",
+      "record": "records/gen-test-scripts-cli.md",
+      "surface-type": "cli",
+      "type": "test.gen-scripts"
+    },
+    "run-test": {
+      "id": "T-test-run",
+      "title": "Run CLI Functional Tests",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-gen-scripts-cli"
+      ],
+      "status": "skipped",
+      "file": "run-test.md",
+      "record": "records/run-test.md",
+      "surface-type": "cli",
+      "type": "test.run"
+    },
+    "validate-code": {
+      "id": "T-validate-code",
+      "title": "Validate Code Quality",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "completed",
+      "file": "validate-code.md",
+      "record": "records/validate-code.md",
+      "type": "validation.code"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

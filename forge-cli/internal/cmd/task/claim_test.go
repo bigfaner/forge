@@ -101,8 +101,8 @@ func TestClaimNextTask_P0Priority(t *testing.T) {
 			if key != tt.wantKey {
 				t.Errorf("expected key %q, got key %q", tt.wantKey, key)
 			}
-			if gotTask.Priority != tt.wantPriority {
-				t.Errorf("expected priority %s, got %s", tt.wantPriority, gotTask.Priority)
+			if string(gotTask.Priority) != tt.wantPriority {
+				t.Errorf("expected priority %s, got %s", tt.wantPriority, string(gotTask.Priority))
 			}
 		})
 	}

@@ -13,6 +13,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -34,9 +35,25 @@ Validations:
 }
 
 var (
-	validStatus   = map[string]bool{"pending": true, "in_progress": true, "completed": true, "blocked": true, "suspended": true, "skipped": true, "rejected": true}
-	validPriority = map[string]bool{"P0": true, "P1": true, "P2": true}
+	validStatus   = buildValidStatusMap()
+	validPriority = buildValidPriorityMap()
 )
+
+func buildValidStatusMap() map[string]bool {
+	m := make(map[string]bool)
+	for _, s := range types.AllStatuses() {
+		m[string(s)] = true
+	}
+	return m
+}
+
+func buildValidPriorityMap() map[string]bool {
+	m := make(map[string]bool)
+	for _, p := range types.AllPriorities() {
+		m[string(p)] = true
+	}
+	return m
+}
 
 func runValidateIndex(_ *cobra.Command, args []string) error {
 	var filePath string
@@ -126,10 +143,10 @@ func (v *validator) validateTasks(tasks map[string]task.Task) {
 		if t.File == "" {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'file'", key))
 		}
-		if t.Status != "" && !validStatus[t.Status] {
+		if t.Status != "" && !validStatus[string(t.Status)] {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid status '%s'", key, t.Status))
 		}
-		if t.Priority != "" && !validPriority[t.Priority] {
+		if t.Priority != "" && !validPriority[string(t.Priority)] {
 			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid priority '%s'", key, t.Priority))
 		}
 		switch {
@@ -448,7 +465,7 @@ func (v *validator) printResults() bool {
 // validateLiveness checks for lifecycle anomalies in blocked tasks.
 func (v *validator) validateLiveness(index *task.TaskIndex) {
 	for key, t := range index.TasksMap() {
-		if t.Status != "blocked" {
+		if t.Status != types.StatusBlocked {
 			continue
 		}
 
@@ -468,9 +485,9 @@ func (v *validator) validateLiveness(index *task.TaskIndex) {
 						continue
 					}
 					other, _ := index.ByID(matchID)
-					if !task.IsDepSatisfied(other.Status) {
+					if !task.IsDepSatisfied(string(other.Status)) {
 						allDepsCompleted = false
-						if other.Status == "pending" || other.Status == "in_progress" {
+						if other.Status == types.StatusPending || other.Status == types.StatusInProgress {
 							hasActiveDep = true
 						}
 					}
@@ -484,11 +501,11 @@ func (v *validator) validateLiveness(index *task.TaskIndex) {
 				allDepsCompleted = false
 				continue
 			}
-			if task.IsDepSatisfied(depTask.Status) {
+			if task.IsDepSatisfied(string(depTask.Status)) {
 				continue
 			}
 			allDepsCompleted = false
-			if depTask.Status == "pending" || depTask.Status == "in_progress" {
+			if depTask.Status == types.StatusPending || depTask.Status == types.StatusInProgress {
 				hasActiveDep = true
 			}
 		}

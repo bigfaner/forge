@@ -7,6 +7,7 @@ import (
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -63,7 +64,7 @@ func cleanupCompletedTaskState() {
 	}
 
 	// Delete state file if task is completed, blocked, or rejected
-	if t.Status == "completed" || t.Status == "blocked" || t.Status == "suspended" || t.Status == "rejected" {
+	if t.Status == types.StatusCompleted || t.Status == types.StatusBlocked || t.Status == types.StatusSuspended || t.Status == types.StatusRejected {
 		_ = os.Remove(statePath)
 
 		// Also delete record.json if exists

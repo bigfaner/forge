@@ -9,6 +9,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/types"
 )
 
 // TestDetectSurfacesWithConflicts tests the enhanced detection that returns conflict metadata.
@@ -95,7 +96,7 @@ func TestFormatConflictAnnotation(t *testing.T) {
 	c := &forgeconfig.PathConflict{
 		Path:        ".",
 		Resolved:    "web",
-		Conflicting: []string{"web", "api"},
+		Conflicting: []types.SurfaceType{"web", "api"},
 	}
 	annotation := formatConflictAnnotation(c)
 	if !strings.Contains(annotation, "web + api") {
@@ -248,7 +249,7 @@ func TestBuildDisplayLines(t *testing.T) {
 			"frontend": {
 				Path:        "frontend",
 				Resolved:    "web",
-				Conflicting: []string{"web", "api"},
+				Conflicting: []types.SurfaceType{"web", "api"},
 			},
 		}
 		lines := buildDisplayLines(surfaces, conflicts, nil)

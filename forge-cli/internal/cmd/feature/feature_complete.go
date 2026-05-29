@@ -12,6 +12,7 @@ import (
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/testrunner"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -97,7 +98,7 @@ func checkFeatureCompletion() *completionResult {
 
 	// All tasks must be completed or skipped (rejected does not count as done).
 	for _, t := range index.TasksMap() {
-		if t.Status != featurepkg.StatusCompleted && t.Status != featurepkg.StatusSkipped {
+		if t.Status != types.StatusCompleted && t.Status != types.StatusSkipped {
 			return nil
 		}
 	}
@@ -130,7 +131,7 @@ func completeFeature(result *completionResult) error {
 	manifestPath := filepath.Join(featureDir, featurepkg.ManifestFileName)
 
 	// 1. Update manifest.md status to completed
-	if err := updateFileStatus(manifestPath, "completed"); err != nil {
+	if err := updateFileStatus(manifestPath, string(types.StatusCompleted)); err != nil {
 		return fmt.Errorf("update manifest: %w", err)
 	}
 

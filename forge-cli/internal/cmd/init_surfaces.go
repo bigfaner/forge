@@ -201,8 +201,13 @@ func buildDisplayLines(surfaces forgeconfig.SurfacesMap, conflictMap map[string]
 // formatConflictAnnotation produces the conflict annotation string.
 // Format: (冲突信号: web + api，已按优先级选择 web)
 func formatConflictAnnotation(c *forgeconfig.PathConflict) string {
+	// Convert []types.SurfaceType to []string for display
+	conflicting := make([]string, len(c.Conflicting))
+	for i, s := range c.Conflicting {
+		conflicting[i] = string(s)
+	}
 	return fmt.Sprintf("(冲突信号: %s，已按优先级选择 %s)",
-		strings.Join(c.Conflicting, " + "), c.Resolved)
+		strings.Join(conflicting, " + "), c.Resolved)
 }
 
 // formatSourceAnnotation converts a source annotation code into a human-readable string.

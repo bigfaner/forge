@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"forge-cli/pkg/types"
 )
 
 // --- AC1: Detects surface types from various manifest files ---
@@ -649,7 +651,7 @@ func TestInferGoSurface(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupDir   func(t *testing.T, dir string)
-		wantType   string
+		wantType   types.SurfaceType
 		wantSource string
 	}{
 		{
@@ -659,7 +661,7 @@ func TestInferGoSurface(t *testing.T) {
 				mkdirAll(t, filepath.Join(dir, "cmd", "myapp"))
 				writeGoMod(t, dir, nil)
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:cmd-dir",
 		},
 		{
@@ -669,7 +671,7 @@ func TestInferGoSurface(t *testing.T) {
 				mkdirAll(t, filepath.Join(dir, "api"))
 				writeGoMod(t, dir, nil)
 			},
-			wantType:   "api",
+			wantType:   types.SurfaceAPI,
 			wantSource: "inference:api-dir",
 		},
 		{
@@ -679,7 +681,7 @@ func TestInferGoSurface(t *testing.T) {
 				mkdirAll(t, filepath.Join(dir, "handler"))
 				writeGoMod(t, dir, nil)
 			},
-			wantType:   "api",
+			wantType:   types.SurfaceAPI,
 			wantSource: "inference:handler-dir",
 		},
 		{
@@ -690,7 +692,7 @@ func TestInferGoSurface(t *testing.T) {
 				mkdirAll(t, filepath.Join(dir, "api"))
 				writeGoMod(t, dir, nil)
 			},
-			wantType:   "api",
+			wantType:   types.SurfaceAPI,
 			wantSource: "inference:api-dir",
 		},
 		{
@@ -701,7 +703,7 @@ func TestInferGoSurface(t *testing.T) {
 				mkdirAll(t, filepath.Join(dir, "handler"))
 				writeGoMod(t, dir, nil)
 			},
-			wantType:   "api",
+			wantType:   types.SurfaceAPI,
 			wantSource: "inference:handler-dir",
 		},
 		{
@@ -755,7 +757,7 @@ func TestInferNodeSurface(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupDir   func(t *testing.T, dir string)
-		wantType   string
+		wantType   types.SurfaceType
 		wantSource string
 	}{
 		{
@@ -764,7 +766,7 @@ func TestInferNodeSurface(t *testing.T) {
 				t.Helper()
 				writePackageJSONWithBin(t, dir, `"./bin/cli.js"`)
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:bin-field",
 		},
 		{
@@ -773,7 +775,7 @@ func TestInferNodeSurface(t *testing.T) {
 				t.Helper()
 				writePackageJSONWithBin(t, dir, `{"myapp": "./bin/cli.js"}`)
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:bin-field",
 		},
 		{
@@ -783,7 +785,7 @@ func TestInferNodeSurface(t *testing.T) {
 				writeTestFile(t, dir, "package.json", `{}`)
 				writeTestFile(t, dir, "index.html", "<html></html>")
 			},
-			wantType:   "web",
+			wantType:   types.SurfaceWeb,
 			wantSource: "inference:index-html",
 		},
 		{
@@ -793,7 +795,7 @@ func TestInferNodeSurface(t *testing.T) {
 				writePackageJSONWithBin(t, dir, `"./bin/cli.js"`)
 				writeTestFile(t, dir, "index.html", "<html></html>")
 			},
-			wantType:   "web",
+			wantType:   types.SurfaceWeb,
 			wantSource: "inference:index-html",
 		},
 		{
@@ -856,7 +858,7 @@ func TestInferPythonSurface(t *testing.T) {
 	tests := []struct {
 		name       string
 		setupDir   func(t *testing.T, dir string)
-		wantType   string
+		wantType   types.SurfaceType
 		wantSource string
 	}{
 		{
@@ -865,7 +867,7 @@ func TestInferPythonSurface(t *testing.T) {
 				t.Helper()
 				writeTestFile(t, dir, "pyproject.toml", "[project]\nname = \"myapp\"\n\n[project.scripts]\nmyapp = \"myapp.cli:main\"\n")
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:py-scripts",
 		},
 		{
@@ -874,7 +876,7 @@ func TestInferPythonSurface(t *testing.T) {
 				t.Helper()
 				writeTestFile(t, dir, "setup.py", "from setuptools import setup\nsetup(\n    name='myapp',\n    entry_points={\n        'console_scripts': ['myapp=myapp.cli:main'],\n    },\n)\n")
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:py-scripts",
 		},
 		{
@@ -883,7 +885,7 @@ func TestInferPythonSurface(t *testing.T) {
 				t.Helper()
 				writeTestFile(t, dir, "app.py", "print('hello')")
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:py-main",
 		},
 		{
@@ -892,7 +894,7 @@ func TestInferPythonSurface(t *testing.T) {
 				t.Helper()
 				writeTestFile(t, dir, "main.py", "print('hello')")
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:py-main",
 		},
 		{
@@ -933,7 +935,7 @@ func TestInferPythonSurface(t *testing.T) {
 				writeTestFile(t, dir, "app.py", "print('hello')")
 				writeTestFile(t, dir, "setup.py", "from setuptools import setup\nsetup(name='different-name')\n")
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:py-main",
 		},
 		{
@@ -970,7 +972,7 @@ func TestInferPythonSurface(t *testing.T) {
 				writeTestFile(t, dir, "app.py", "print('hello')")
 				writeTestFile(t, dir, "pyproject.toml", "[project]\nname = \"myapp\"\n\n[project.scripts]\nmyapp = \"myapp.cli:main\"\n")
 			},
-			wantType:   "cli",
+			wantType:   types.SurfaceCLI,
 			wantSource: "inference:py-scripts",
 		},
 	}

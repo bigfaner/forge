@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"forge-cli/pkg/types"
 )
 
 // LoadIndex loads the task index from the given file path.
@@ -17,7 +19,7 @@ func LoadIndex(path string) (*TaskIndex, error) {
 	if err := json.Unmarshal(data, &index); err != nil {
 		return nil, fmt.Errorf("failed to parse index: %w", err)
 	}
-	index.ensureStatusEnumHas("suspended")
+	index.ensureStatusEnumHas(string(types.StatusSuspended))
 	return &index, nil
 }
 

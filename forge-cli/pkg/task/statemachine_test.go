@@ -3,6 +3,8 @@ package task
 import (
 	"errors"
 	"testing"
+
+	"forge-cli/pkg/types"
 )
 
 // --- TransitionRole constants ---
@@ -28,12 +30,12 @@ func TestTransitionRoleConstants(t *testing.T) {
 // --- ValidateTransition: terminal state protection ---
 
 func TestValidateTransition_CompletedIsTerminal(t *testing.T) {
-	states := []string{"pending", "in_progress", "completed", "blocked", "skipped", "rejected"}
+	states := []types.Status{types.StatusPending, types.StatusInProgress, types.StatusCompleted, types.StatusBlocked, types.StatusSkipped, types.StatusRejected}
 	roles := []TransitionRole{RoleSubmit, RoleClaim, RoleReopen, RoleAuto}
 
 	for _, target := range states {
 		for _, role := range roles {
-			err := ValidateTransition("completed", target, role)
+			err := ValidateTransition(types.StatusCompleted, target, role)
 			if err == nil {
 				t.Errorf("ValidateTransition(completed, %s, %s) = nil, want error (completed is terminal)", target, role)
 			}
@@ -42,7 +44,7 @@ func TestValidateTransition_CompletedIsTerminal(t *testing.T) {
 }
 
 func TestValidateTransition_CompletedErrorMessage(t *testing.T) {
-	err := ValidateTransition("completed", "pending", RoleSubmit)
+	err := ValidateTransition(types.StatusCompleted, types.StatusPending, RoleSubmit)
 	if err == nil {
 		t.Fatal("expected error for completed -> pending")
 	}
@@ -54,7 +56,7 @@ func TestValidateTransition_CompletedErrorMessage(t *testing.T) {
 // --- ValidateTransition: rejected state ---
 
 func TestValidateTransition_RejectedReopenToPending(t *testing.T) {
-	err := ValidateTransition("rejected", "pending", RoleReopen)
+	err := ValidateTransition(types.StatusRejected, types.StatusPending, RoleReopen)
 	if err != nil {
 		t.Errorf("ValidateTransition(rejected, pending, reopen) = %v, want nil", err)
 	}
@@ -62,11 +64,11 @@ func TestValidateTransition_RejectedReopenToPending(t *testing.T) {
 
 func TestValidateTransition_RejectedBlocksNonReopen(t *testing.T) {
 	roles := []TransitionRole{RoleSubmit, RoleClaim, RoleAuto}
-	targets := []string{"in_progress", "completed", "blocked", "skipped"}
+	targets := []types.Status{types.StatusInProgress, types.StatusCompleted, types.StatusBlocked, types.StatusSkipped}
 
 	for _, role := range roles {
 		for _, target := range targets {
-			err := ValidateTransition("rejected", target, role)
+			err := ValidateTransition(types.StatusRejected, target, role)
 			if err == nil {
 				t.Errorf("ValidateTransition(rejected, %s, %s) = nil, want error", target, role)
 			}
@@ -75,14 +77,14 @@ func TestValidateTransition_RejectedBlocksNonReopen(t *testing.T) {
 }
 
 func TestValidateTransition_RejectedNonPendingBlocked(t *testing.T) {
-	err := ValidateTransition("rejected", "in_progress", RoleReopen)
+	err := ValidateTransition(types.StatusRejected, types.StatusInProgress, RoleReopen)
 	if err == nil {
 		t.Error("ValidateTransition(rejected, in_progress, reopen) should fail, reopen only goes to pending")
 	}
 }
 
 func TestValidateTransition_RejectedErrorMessage(t *testing.T) {
-	err := ValidateTransition("rejected", "in_progress", RoleSubmit)
+	err := ValidateTransition(types.StatusRejected, types.StatusInProgress, RoleSubmit)
 	if err == nil {
 		t.Fatal("expected error for rejected -> in_progress")
 	}
@@ -94,7 +96,7 @@ func TestValidateTransition_RejectedErrorMessage(t *testing.T) {
 // --- ValidateTransition: skipped state ---
 
 func TestValidateTransition_SkippedReopenToPending(t *testing.T) {
-	err := ValidateTransition("skipped", "pending", RoleReopen)
+	err := ValidateTransition(types.StatusSkipped, types.StatusPending, RoleReopen)
 	if err != nil {
 		t.Errorf("ValidateTransition(skipped, pending, reopen) = %v, want nil", err)
 	}
@@ -102,11 +104,11 @@ func TestValidateTransition_SkippedReopenToPending(t *testing.T) {
 
 func TestValidateTransition_SkippedBlocksNonReopen(t *testing.T) {
 	roles := []TransitionRole{RoleSubmit, RoleClaim, RoleAuto}
-	targets := []string{"in_progress", "completed", "blocked", "rejected"}
+	targets := []types.Status{types.StatusInProgress, types.StatusCompleted, types.StatusBlocked, types.StatusRejected}
 
 	for _, role := range roles {
 		for _, target := range targets {
-			err := ValidateTransition("skipped", target, role)
+			err := ValidateTransition(types.StatusSkipped, target, role)
 			if err == nil {
 				t.Errorf("ValidateTransition(skipped, %s, %s) = nil, want error", target, role)
 			}
@@ -115,7 +117,7 @@ func TestValidateTransition_SkippedBlocksNonReopen(t *testing.T) {
 }
 
 func TestValidateTransition_SkippedNonPendingBlocked(t *testing.T) {
-	err := ValidateTransition("skipped", "in_progress", RoleReopen)
+	err := ValidateTransition(types.StatusSkipped, types.StatusInProgress, RoleReopen)
 	if err == nil {
 		t.Error("ValidateTransition(skipped, in_progress, reopen) should fail, reopen only goes to pending")
 	}
@@ -125,11 +127,11 @@ func TestValidateTransition_SkippedNonPendingBlocked(t *testing.T) {
 
 func TestValidateTransition_OnlySubmitCanReachCompleted(t *testing.T) {
 	roles := []TransitionRole{RoleClaim, RoleReopen, RoleAuto}
-	sources := []string{"pending", "in_progress", "blocked"}
+	sources := []types.Status{types.StatusPending, types.StatusInProgress, types.StatusBlocked}
 
 	for _, role := range roles {
 		for _, source := range sources {
-			err := ValidateTransition(source, "completed", role)
+			err := ValidateTransition(source, types.StatusCompleted, role)
 			if err == nil {
 				t.Errorf("ValidateTransition(%s, completed, %s) = nil, want error (only submit can reach completed)", source, role)
 			}
@@ -138,7 +140,7 @@ func TestValidateTransition_OnlySubmitCanReachCompleted(t *testing.T) {
 }
 
 func TestValidateTransition_SubmitCanReachCompleted(t *testing.T) {
-	err := ValidateTransition("in_progress", "completed", RoleSubmit)
+	err := ValidateTransition(types.StatusInProgress, types.StatusCompleted, RoleSubmit)
 	if err != nil {
 		t.Errorf("ValidateTransition(in_progress, completed, submit) = %v, want nil", err)
 	}
@@ -147,7 +149,7 @@ func TestValidateTransition_SubmitCanReachCompleted(t *testing.T) {
 // --- ValidateTransition: submit auto-downgrade ---
 
 func TestValidateTransition_SubmitCanDowngradeToBlocked(t *testing.T) {
-	err := ValidateTransition("in_progress", "blocked", RoleSubmit)
+	err := ValidateTransition(types.StatusInProgress, types.StatusBlocked, RoleSubmit)
 	if err != nil {
 		t.Errorf("ValidateTransition(in_progress, blocked, submit) = %v, want nil", err)
 	}
@@ -156,9 +158,9 @@ func TestValidateTransition_SubmitCanDowngradeToBlocked(t *testing.T) {
 // --- ValidateTransition: blocked requires dep check (phase 2) ---
 
 func TestValidateTransition_BlockedToPendingNeedsDeps(t *testing.T) {
-	// ValidateTransition is phase 1 (pure state check) — it defers blocked→pending to phase 2.
+	// ValidateTransition is phase 1 (pure state check) — it defers blocked->pending to phase 2.
 	// Phase 1 should return a special error indicating dependency check is needed.
-	err := ValidateTransition("blocked", "pending", RoleClaim)
+	err := ValidateTransition(types.StatusBlocked, types.StatusPending, RoleClaim)
 	if err == nil {
 		// This is also acceptable: phase 1 allows it, phase 2 checks deps.
 		// The design says "Dep check (phase 2)" for this transition.
@@ -171,7 +173,7 @@ func TestValidateTransition_BlockedToPendingNeedsDeps(t *testing.T) {
 }
 
 func TestValidateTransition_BlockedToInProgressNeedsDeps(t *testing.T) {
-	err := ValidateTransition("blocked", "in_progress", RoleClaim)
+	err := ValidateTransition(types.StatusBlocked, types.StatusInProgress, RoleClaim)
 	if err == nil {
 		return // acceptable: phase 2 checks deps
 	}
@@ -185,7 +187,7 @@ func TestValidateTransition_BlockedToInProgressNeedsDeps(t *testing.T) {
 func TestValidateTransition_PendingToBlocked(t *testing.T) {
 	roles := []TransitionRole{RoleSubmit, RoleClaim, RoleReopen, RoleAuto}
 	for _, role := range roles {
-		err := ValidateTransition("pending", "blocked", role)
+		err := ValidateTransition(types.StatusPending, types.StatusBlocked, role)
 		if err != nil {
 			t.Errorf("ValidateTransition(pending, blocked, %s) = %v, want nil", role, err)
 		}
@@ -195,7 +197,7 @@ func TestValidateTransition_PendingToBlocked(t *testing.T) {
 // --- ValidateTransition: same state is no-op (allowed) ---
 
 func TestValidateTransition_SameStateNoop(t *testing.T) {
-	states := []string{"pending", "in_progress", "blocked", "completed", "skipped", "rejected"}
+	states := []types.Status{types.StatusPending, types.StatusInProgress, types.StatusBlocked, types.StatusCompleted, types.StatusSkipped, types.StatusRejected}
 	roles := []TransitionRole{RoleSubmit, RoleClaim, RoleReopen, RoleAuto}
 
 	for _, state := range states {
@@ -203,11 +205,11 @@ func TestValidateTransition_SameStateNoop(t *testing.T) {
 			err := ValidateTransition(state, state, role)
 			if err != nil {
 				// completed same-state is terminal, so it should fail
-				if state == "completed" {
+				if state == types.StatusCompleted {
 					continue
 				}
 				// rejected/skipped same-state: all roles blocked (terminal states)
-				if state == "rejected" || state == "skipped" {
+				if state == types.StatusRejected || state == types.StatusSkipped {
 					continue
 				}
 				// reopen role is only for rejected/skipped, not for non-terminal noop
@@ -223,49 +225,49 @@ func TestValidateTransition_SameStateNoop(t *testing.T) {
 // --- ValidateTransition: general non-terminal transitions ---
 
 func TestValidateTransition_PendingToInProgress(t *testing.T) {
-	err := ValidateTransition("pending", "in_progress", RoleClaim)
+	err := ValidateTransition(types.StatusPending, types.StatusInProgress, RoleClaim)
 	if err != nil {
 		t.Errorf("ValidateTransition(pending, in_progress, claim) = %v, want nil", err)
 	}
 }
 
 func TestValidateTransition_InProgressToBlocked_AutoRole(t *testing.T) {
-	err := ValidateTransition("in_progress", "blocked", RoleAuto)
+	err := ValidateTransition(types.StatusInProgress, types.StatusBlocked, RoleAuto)
 	if err != nil {
 		t.Errorf("ValidateTransition(in_progress, blocked, auto) = %v, want nil", err)
 	}
 }
 
 func TestValidateTransition_InProgressToPending(t *testing.T) {
-	err := ValidateTransition("in_progress", "pending", RoleClaim)
+	err := ValidateTransition(types.StatusInProgress, types.StatusPending, RoleClaim)
 	if err != nil {
 		t.Errorf("ValidateTransition(in_progress, pending, claim) = %v, want nil", err)
 	}
 }
 
 func TestValidateTransition_BlockedToRejected(t *testing.T) {
-	err := ValidateTransition("blocked", "rejected", RoleSubmit)
+	err := ValidateTransition(types.StatusBlocked, types.StatusRejected, RoleSubmit)
 	if err != nil {
 		t.Errorf("ValidateTransition(blocked, rejected, submit) = %v, want nil", err)
 	}
 }
 
 func TestValidateTransition_BlockedToSkipped(t *testing.T) {
-	err := ValidateTransition("blocked", "skipped", RoleSubmit)
+	err := ValidateTransition(types.StatusBlocked, types.StatusSkipped, RoleSubmit)
 	if err != nil {
 		t.Errorf("ValidateTransition(blocked, skipped, submit) = %v, want nil", err)
 	}
 }
 
 func TestValidateTransition_PendingToRejected(t *testing.T) {
-	err := ValidateTransition("pending", "rejected", RoleSubmit)
+	err := ValidateTransition(types.StatusPending, types.StatusRejected, RoleSubmit)
 	if err != nil {
 		t.Errorf("ValidateTransition(pending, rejected, submit) = %v, want nil", err)
 	}
 }
 
 func TestValidateTransition_PendingToSkipped(t *testing.T) {
-	err := ValidateTransition("pending", "skipped", RoleSubmit)
+	err := ValidateTransition(types.StatusPending, types.StatusSkipped, RoleSubmit)
 	if err != nil {
 		t.Errorf("ValidateTransition(pending, skipped, submit) = %v, want nil", err)
 	}
@@ -275,19 +277,19 @@ func TestValidateTransition_PendingToSkipped(t *testing.T) {
 
 func TestValidateTransition_AutoRoleLikeSubmit(t *testing.T) {
 	// Auto can downgrade to blocked
-	err := ValidateTransition("in_progress", "blocked", RoleAuto)
+	err := ValidateTransition(types.StatusInProgress, types.StatusBlocked, RoleAuto)
 	if err != nil {
 		t.Errorf("ValidateTransition(in_progress, blocked, auto) = %v, want nil", err)
 	}
 
 	// Auto cannot reach completed (only submit can)
-	err = ValidateTransition("in_progress", "completed", RoleAuto)
+	err = ValidateTransition(types.StatusInProgress, types.StatusCompleted, RoleAuto)
 	if err == nil {
 		t.Error("ValidateTransition(in_progress, completed, auto) should fail")
 	}
 
 	// Auto cannot escape terminal states
-	err = ValidateTransition("completed", "pending", RoleAuto)
+	err = ValidateTransition(types.StatusCompleted, types.StatusPending, RoleAuto)
 	if err == nil {
 		t.Error("ValidateTransition(completed, pending, auto) should fail")
 	}
@@ -297,9 +299,9 @@ func TestValidateTransition_AutoRoleLikeSubmit(t *testing.T) {
 
 func TestCheckTransitionDeps_AllDepsMet(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1": {ID: "1.1", Status: "completed"},
-		"1.2": {ID: "1.2", Status: "completed"},
-		"2.1": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1", "1.2"}},
+		"1.1": {ID: "1.1", Status: types.StatusCompleted},
+		"1.2": {ID: "1.2", Status: types.StatusCompleted},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1", "1.2"}},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -313,9 +315,9 @@ func TestCheckTransitionDeps_AllDepsMet(t *testing.T) {
 
 func TestCheckTransitionDeps_SomeDepsUnmet(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1": {ID: "1.1", Status: "completed"},
-		"1.2": {ID: "1.2", Status: "pending"},
-		"2.1": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1", "1.2"}},
+		"1.1": {ID: "1.1", Status: types.StatusCompleted},
+		"1.2": {ID: "1.2", Status: types.StatusPending},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1", "1.2"}},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -329,8 +331,8 @@ func TestCheckTransitionDeps_SomeDepsUnmet(t *testing.T) {
 
 func TestCheckTransitionDeps_SkippedSatisfies(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1": {ID: "1.1", Status: "skipped"},
-		"2.1": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}},
+		"1.1": {ID: "1.1", Status: types.StatusSkipped},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -344,8 +346,8 @@ func TestCheckTransitionDeps_SkippedSatisfies(t *testing.T) {
 
 func TestCheckTransitionDeps_RejectedDoesNotSatisfy(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1": {ID: "1.1", Status: "rejected"},
-		"2.1": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}},
+		"1.1": {ID: "1.1", Status: types.StatusRejected},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -359,7 +361,7 @@ func TestCheckTransitionDeps_RejectedDoesNotSatisfy(t *testing.T) {
 
 func TestCheckTransitionDeps_NoDeps(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"2.1": {ID: "2.1", Status: "blocked"},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -382,8 +384,8 @@ func TestCheckTransitionDeps_TaskNotFound(t *testing.T) {
 
 func TestCheckTransitionDeps_BlockedDepDoesNotSatisfy(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1": {ID: "1.1", Status: "blocked"},
-		"2.1": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}},
+		"1.1": {ID: "1.1", Status: types.StatusBlocked},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -399,8 +401,8 @@ func TestCheckTransitionDeps_BlockedDepDoesNotSatisfy(t *testing.T) {
 
 func TestCanAutoUnblock_NoActiveFixTasks(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1": {ID: "1.1", Status: "completed"},
-		"2.1": {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
+		"1.1": {ID: "1.1", Status: types.StatusCompleted},
+		"2.1": {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -414,9 +416,9 @@ func TestCanAutoUnblock_NoActiveFixTasks(t *testing.T) {
 
 func TestCanAutoUnblock_ActiveFixTaskBlocksUnblock(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1":     {ID: "1.1", Status: "completed"},
-		"2.1":     {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
-		"T-fix-1": {ID: "T-fix-1", Status: "in_progress", SourceTaskID: "2.1", Type: TypeCodingFix},
+		"1.1":     {ID: "1.1", Status: types.StatusCompleted},
+		"2.1":     {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
+		"T-fix-1": {ID: "T-fix-1", Status: types.StatusInProgress, SourceTaskID: "2.1", Type: TypeCodingFix},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -431,9 +433,9 @@ func TestCanAutoUnblock_ActiveFixTaskBlocksUnblock(t *testing.T) {
 
 func TestCanAutoUnblock_CompletedFixTaskDoesNotBlock(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1":     {ID: "1.1", Status: "completed"},
-		"2.1":     {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
-		"T-fix-1": {ID: "T-fix-1", Status: "completed", SourceTaskID: "2.1", Type: TypeCodingFix},
+		"1.1":     {ID: "1.1", Status: types.StatusCompleted},
+		"2.1":     {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
+		"T-fix-1": {ID: "T-fix-1", Status: types.StatusCompleted, SourceTaskID: "2.1", Type: TypeCodingFix},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -447,9 +449,9 @@ func TestCanAutoUnblock_CompletedFixTaskDoesNotBlock(t *testing.T) {
 
 func TestCanAutoUnblock_RejectedFixTaskDoesNotBlock(t *testing.T) {
 	idx := NewTestIndex("test", map[string]Task{
-		"1.1":     {ID: "1.1", Status: "completed"},
-		"2.1":     {ID: "2.1", Status: "blocked", Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
-		"T-fix-1": {ID: "T-fix-1", Status: "rejected", SourceTaskID: "2.1", Type: TypeCodingFix},
+		"1.1":     {ID: "1.1", Status: types.StatusCompleted},
+		"2.1":     {ID: "2.1", Status: types.StatusBlocked, Dependencies: []string{"1.1"}, SourceTaskID: "1.1"},
+		"T-fix-1": {ID: "T-fix-1", Status: types.StatusRejected, SourceTaskID: "2.1", Type: TypeCodingFix},
 	})
 
 	unmet, err := CheckTransitionDeps(idx, "2.1")
@@ -464,9 +466,9 @@ func TestCanAutoUnblock_RejectedFixTaskDoesNotBlock(t *testing.T) {
 // --- Role isolation: RoleReopen only works on rejected/skipped ---
 
 func TestValidateTransition_ReopenOnNonTerminal(t *testing.T) {
-	states := []string{"pending", "in_progress", "blocked"}
+	states := []types.Status{types.StatusPending, types.StatusInProgress, types.StatusBlocked}
 	for _, state := range states {
-		err := ValidateTransition(state, "pending", RoleReopen)
+		err := ValidateTransition(state, types.StatusPending, RoleReopen)
 		if err == nil {
 			t.Errorf("ValidateTransition(%s, pending, reopen) should fail (reopen only for rejected/skipped)", state)
 		}
@@ -479,64 +481,64 @@ func TestValidateTransition_FullMatrix(t *testing.T) {
 	// Test a comprehensive matrix of transitions
 	// Format: {from, to, role, shouldPass}
 	cases := []struct {
-		from string
-		to   string
+		from types.Status
+		to   types.Status
 		role TransitionRole
 		pass bool
 	}{
 		// completed -> anything: always blocked
-		{"completed", "pending", RoleSubmit, false},
-		{"completed", "in_progress", RoleClaim, false},
-		{"completed", "blocked", RoleAuto, false},
-		{"completed", "completed", RoleSubmit, false},
+		{types.StatusCompleted, types.StatusPending, RoleSubmit, false},
+		{types.StatusCompleted, types.StatusInProgress, RoleClaim, false},
+		{types.StatusCompleted, types.StatusBlocked, RoleAuto, false},
+		{types.StatusCompleted, types.StatusCompleted, RoleSubmit, false},
 
 		// rejected -> pending via reopen only
-		{"rejected", "pending", RoleReopen, true},
-		{"rejected", "pending", RoleSubmit, false},
-		{"rejected", "in_progress", RoleReopen, false},
+		{types.StatusRejected, types.StatusPending, RoleReopen, true},
+		{types.StatusRejected, types.StatusPending, RoleSubmit, false},
+		{types.StatusRejected, types.StatusInProgress, RoleReopen, false},
 
 		// skipped -> pending via reopen only
-		{"skipped", "pending", RoleReopen, true},
-		{"skipped", "pending", RoleSubmit, false},
-		{"skipped", "in_progress", RoleReopen, false},
+		{types.StatusSkipped, types.StatusPending, RoleReopen, true},
+		{types.StatusSkipped, types.StatusPending, RoleSubmit, false},
+		{types.StatusSkipped, types.StatusInProgress, RoleReopen, false},
 
 		// -> completed only via submit
-		{"in_progress", "completed", RoleSubmit, true},
-		{"pending", "completed", RoleSubmit, true},
-		{"pending", "completed", RoleClaim, false},
-		{"in_progress", "completed", RoleAuto, false},
-		{"blocked", "completed", RoleSubmit, true},
+		{types.StatusInProgress, types.StatusCompleted, RoleSubmit, true},
+		{types.StatusPending, types.StatusCompleted, RoleSubmit, true},
+		{types.StatusPending, types.StatusCompleted, RoleClaim, false},
+		{types.StatusInProgress, types.StatusCompleted, RoleAuto, false},
+		{types.StatusBlocked, types.StatusCompleted, RoleSubmit, true},
 
 		// submit can downgrade in_progress -> blocked
-		{"in_progress", "blocked", RoleSubmit, true},
+		{types.StatusInProgress, types.StatusBlocked, RoleSubmit, true},
 
 		// pending -> blocked (any role)
-		{"pending", "blocked", RoleSubmit, true},
-		{"pending", "blocked", RoleClaim, true},
+		{types.StatusPending, types.StatusBlocked, RoleSubmit, true},
+		{types.StatusPending, types.StatusBlocked, RoleClaim, true},
 
 		// general non-terminal transitions
-		{"pending", "in_progress", RoleClaim, true},
-		{"pending", "rejected", RoleSubmit, true},
-		{"pending", "skipped", RoleSubmit, true},
-		{"in_progress", "pending", RoleClaim, true},
-		{"in_progress", "rejected", RoleSubmit, true},
-		{"blocked", "rejected", RoleSubmit, true},
-		{"blocked", "skipped", RoleSubmit, true},
+		{types.StatusPending, types.StatusInProgress, RoleClaim, true},
+		{types.StatusPending, types.StatusRejected, RoleSubmit, true},
+		{types.StatusPending, types.StatusSkipped, RoleSubmit, true},
+		{types.StatusInProgress, types.StatusPending, RoleClaim, true},
+		{types.StatusInProgress, types.StatusRejected, RoleSubmit, true},
+		{types.StatusBlocked, types.StatusRejected, RoleSubmit, true},
+		{types.StatusBlocked, types.StatusSkipped, RoleSubmit, true},
 
 		// manual (RoleManual) overrides
-		{"blocked", "pending", RoleManual, true},
-		{"blocked", "in_progress", RoleManual, true},
-		{"blocked", "skipped", RoleManual, true},
-		{"blocked", "rejected", RoleManual, true},
-		{"pending", "skipped", RoleManual, true},
-		{"pending", "rejected", RoleManual, true},
-		{"in_progress", "blocked", RoleManual, true},
-		{"in_progress", "skipped", RoleManual, true},
-		{"in_progress", "rejected", RoleManual, true},
-		{"completed", "pending", RoleManual, false},
-		{"rejected", "pending", RoleManual, false},
-		{"skipped", "pending", RoleManual, false},
-		{"pending", "completed", RoleManual, false},
+		{types.StatusBlocked, types.StatusPending, RoleManual, true},
+		{types.StatusBlocked, types.StatusInProgress, RoleManual, true},
+		{types.StatusBlocked, types.StatusSkipped, RoleManual, true},
+		{types.StatusBlocked, types.StatusRejected, RoleManual, true},
+		{types.StatusPending, types.StatusSkipped, RoleManual, true},
+		{types.StatusPending, types.StatusRejected, RoleManual, true},
+		{types.StatusInProgress, types.StatusBlocked, RoleManual, true},
+		{types.StatusInProgress, types.StatusSkipped, RoleManual, true},
+		{types.StatusInProgress, types.StatusRejected, RoleManual, true},
+		{types.StatusCompleted, types.StatusPending, RoleManual, false},
+		{types.StatusRejected, types.StatusPending, RoleManual, false},
+		{types.StatusSkipped, types.StatusPending, RoleManual, false},
+		{types.StatusPending, types.StatusCompleted, RoleManual, false},
 	}
 
 	for _, tc := range cases {
@@ -553,7 +555,7 @@ func TestValidateTransition_FullMatrix(t *testing.T) {
 // --- Error type check ---
 
 func TestValidateTransition_ErrorType(t *testing.T) {
-	err := ValidateTransition("completed", "pending", RoleSubmit)
+	err := ValidateTransition(types.StatusCompleted, types.StatusPending, RoleSubmit)
 	if err == nil {
 		t.Fatal("expected error")
 	}
@@ -563,11 +565,11 @@ func TestValidateTransition_ErrorType(t *testing.T) {
 	if !errors.As(err, &te) {
 		t.Errorf("error should be *TransitionError, got %T", err)
 	}
-	if te.From != "completed" {
-		t.Errorf("TransitionError.From = %q, want %q", te.From, "completed")
+	if te.From != types.StatusCompleted {
+		t.Errorf("TransitionError.From = %q, want %q", te.From, types.StatusCompleted)
 	}
-	if te.To != "pending" {
-		t.Errorf("TransitionError.To = %q, want %q", te.To, "pending")
+	if te.To != types.StatusPending {
+		t.Errorf("TransitionError.To = %q, want %q", te.To, types.StatusPending)
 	}
 	if te.Role != RoleSubmit {
 		t.Errorf("TransitionError.Role = %q, want %q", te.Role, RoleSubmit)
@@ -578,113 +580,113 @@ func TestValidateTransition_ErrorType(t *testing.T) {
 
 func TestNoForceParameter(_ *testing.T) {
 	// This is a compile-time check: ValidateTransition does not accept a force parameter.
-	// The function signature is ValidateTransition(current, target string, role TransitionRole) error
+	// The function signature is ValidateTransition(current, target types.Status, role TransitionRole) error
 	// No test needed, this is enforced by the API.
 }
 
 // --- RoleManual: manual override transitions ---
 
 func TestValidateTransition_ManualUnblock(t *testing.T) {
-	if err := ValidateTransition("blocked", "pending", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusBlocked, types.StatusPending, RoleManual); err != nil {
 		t.Errorf("blocked -> pending (manual) should be allowed, got: %v", err)
 	}
 }
 
 func TestValidateTransition_ManualUnblockToInProgress(t *testing.T) {
-	if err := ValidateTransition("blocked", "in_progress", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusBlocked, types.StatusInProgress, RoleManual); err != nil {
 		t.Errorf("blocked -> in_progress (manual) should be allowed, got: %v", err)
 	}
 }
 
 func TestValidateTransition_ManualCompletedBlocked(t *testing.T) {
-	if err := ValidateTransition("pending", "completed", RoleManual); err == nil {
-		t.Error("pending -> completed (manual) should be blocked — use submit")
+	if err := ValidateTransition(types.StatusPending, types.StatusCompleted, RoleManual); err == nil {
+		t.Error("pending -> completed (manual) should be blocked -- use submit")
 	}
 }
 
 func TestValidateTransition_ManualSkip(t *testing.T) {
-	if err := ValidateTransition("blocked", "skipped", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusBlocked, types.StatusSkipped, RoleManual); err != nil {
 		t.Errorf("blocked -> skipped (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("in_progress", "skipped", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusInProgress, types.StatusSkipped, RoleManual); err != nil {
 		t.Errorf("in_progress -> skipped (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("pending", "skipped", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusPending, types.StatusSkipped, RoleManual); err != nil {
 		t.Errorf("pending -> skipped (manual) should be allowed, got: %v", err)
 	}
 }
 
 func TestValidateTransition_ManualReject(t *testing.T) {
-	if err := ValidateTransition("blocked", "rejected", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusBlocked, types.StatusRejected, RoleManual); err != nil {
 		t.Errorf("blocked -> rejected (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("in_progress", "rejected", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusInProgress, types.StatusRejected, RoleManual); err != nil {
 		t.Errorf("in_progress -> rejected (manual) should be allowed, got: %v", err)
 	}
 }
 
 func TestValidateTransition_ManualCompletedTerminal(t *testing.T) {
-	if err := ValidateTransition("completed", "skipped", RoleManual); err == nil {
-		t.Error("completed -> skipped (manual) should be blocked — completed is terminal")
+	if err := ValidateTransition(types.StatusCompleted, types.StatusSkipped, RoleManual); err == nil {
+		t.Error("completed -> skipped (manual) should be blocked -- completed is terminal")
 	}
-	if err := ValidateTransition("completed", "pending", RoleManual); err == nil {
-		t.Error("completed -> pending (manual) should be blocked — completed is terminal")
+	if err := ValidateTransition(types.StatusCompleted, types.StatusPending, RoleManual); err == nil {
+		t.Error("completed -> pending (manual) should be blocked -- completed is terminal")
 	}
 }
 
 func TestValidateTransition_SuspendedEntry(t *testing.T) {
-	if err := ValidateTransition("pending", "suspended", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusPending, types.StatusSuspended, RoleManual); err != nil {
 		t.Errorf("pending -> suspended (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("in_progress", "suspended", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusInProgress, types.StatusSuspended, RoleManual); err != nil {
 		t.Errorf("in_progress -> suspended (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("pending", "suspended", RoleAuto); err == nil {
+	if err := ValidateTransition(types.StatusPending, types.StatusSuspended, RoleAuto); err == nil {
 		t.Error("pending -> suspended (auto) should be blocked")
 	}
-	if err := ValidateTransition("in_progress", "suspended", RoleSubmit); err == nil {
+	if err := ValidateTransition(types.StatusInProgress, types.StatusSuspended, RoleSubmit); err == nil {
 		t.Error("in_progress -> suspended (submit) should be blocked")
 	}
 }
 
 func TestValidateTransition_SuspendedResume(t *testing.T) {
-	if err := ValidateTransition("suspended", "pending", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusPending, RoleManual); err != nil {
 		t.Errorf("suspended -> pending (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("suspended", "in_progress", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusInProgress, RoleManual); err != nil {
 		t.Errorf("suspended -> in_progress (manual) should be allowed, got: %v", err)
 	}
 }
 
 func TestValidateTransition_SuspendedTerminal(t *testing.T) {
-	if err := ValidateTransition("suspended", "skipped", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusSkipped, RoleManual); err != nil {
 		t.Errorf("suspended -> skipped (manual) should be allowed, got: %v", err)
 	}
-	if err := ValidateTransition("suspended", "rejected", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusRejected, RoleManual); err != nil {
 		t.Errorf("suspended -> rejected (manual) should be allowed, got: %v", err)
 	}
 }
 
 func TestValidateTransition_SuspendedBlockedBySystem(t *testing.T) {
-	if err := ValidateTransition("suspended", "blocked", RoleAuto); err == nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusBlocked, RoleAuto); err == nil {
 		t.Error("suspended -> blocked (auto) should be blocked")
 	}
-	if err := ValidateTransition("suspended", "blocked", RoleSubmit); err == nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusBlocked, RoleSubmit); err == nil {
 		t.Error("suspended -> blocked (submit) should be blocked")
 	}
-	if err := ValidateTransition("suspended", "completed", RoleSubmit); err == nil {
-		t.Error("suspended -> completed (submit) should be blocked — must resume first")
+	if err := ValidateTransition(types.StatusSuspended, types.StatusCompleted, RoleSubmit); err == nil {
+		t.Error("suspended -> completed (submit) should be blocked -- must resume first")
 	}
 }
 
 func TestValidateTransition_SuspendedReopen(t *testing.T) {
-	if err := ValidateTransition("suspended", "pending", RoleReopen); err == nil {
-		t.Error("suspended -> pending (reopen) should be blocked — reopen only for rejected/skipped")
+	if err := ValidateTransition(types.StatusSuspended, types.StatusPending, RoleReopen); err == nil {
+		t.Error("suspended -> pending (reopen) should be blocked -- reopen only for rejected/skipped")
 	}
 }
 
 func TestValidateTransition_SuspendedSameState(t *testing.T) {
-	if err := ValidateTransition("suspended", "suspended", RoleManual); err != nil {
+	if err := ValidateTransition(types.StatusSuspended, types.StatusSuspended, RoleManual); err != nil {
 		t.Errorf("suspended -> suspended (same state noop) should be allowed, got: %v", err)
 	}
 }

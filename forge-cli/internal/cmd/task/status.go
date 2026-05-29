@@ -51,7 +51,7 @@ func runStatus(_ *cobra.Command, args []string) error {
 
 	base.PrintBlockStart()
 	base.PrintField("TASK_ID", t.ID)
-	base.PrintField("STATUS", t.Status)
+	base.PrintField("STATUS", string(t.Status))
 	base.PrintBlockEnd()
 	return nil
 }

@@ -178,15 +178,15 @@ func TestTC_001_QuickModeSingleProfileTaskCount(t *testing.T) {
 	idx := quickSlimReadIndex(t, dir, "test-qts-001")
 
 	// Count auto-generated pipeline tasks (T-test-* and T-quick-doc-drift)
-	// Quick staged topology: gen-journeys(1) + run-test-backend(1) + run-test-frontend(1) + verify-regression(1) = 4 test tasks
-	// Plus quick-drift-detection(1) = 5 total auto-gen tasks
+	// Quick staged topology: gen-journeys(1) + run-test-backend(1) + run-test-frontend(1) = 3 test tasks
+	// Plus quick-drift-detection(1) = 4 total auto-gen tasks
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-test-") || strings.HasPrefix(task.ID, "T-quick-") {
 			testTaskCount++
 		}
 	}
-	assert.Equal(t, 5, testTaskCount, "quick mode with go profile (2 surfaces) should generate exactly 5 pipeline tasks")
+	assert.Equal(t, 4, testTaskCount, "quick mode with go profile (2 surfaces) should generate exactly 4 pipeline tasks")
 }
 
 // =============================================================================
@@ -238,7 +238,7 @@ func TestTC_004_QuickModePerSurfaceRunTestTasks(t *testing.T) {
 // TC-005: Quick mode dependency chain is correct after merge
 // =============================================================================
 
-// Traceability: TC-005 -> Task 1 AC: dependency chain gen-journeys -> run-test(s) -> verify-regression -> drift
+// Traceability: TC-005 -> Task 1 AC: dependency chain gen-journeys -> run-test(s) -> drift
 func TestTC_005_QuickModeDependencyChainCorrect(t *testing.T) {
 	dir := quickSlimSetupProject(t, "test-qts-005", []string{"go"}, quickSlimNoTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-005")
@@ -267,18 +267,11 @@ func TestTC_005_QuickModeDependencyChainCorrect(t *testing.T) {
 			"T-test-run-frontend should depend on T-test-run-backend")
 	})
 
-	t.Run("T-test-verify-regression depends on last run-test", func(t *testing.T) {
-		task, ok := byID["T-test-verify-regression"]
-		require.True(t, ok, "T-test-verify-regression should exist")
-		assert.Contains(t, task.Dependencies, "T-test-run-frontend",
-			"T-test-verify-regression should depend on T-test-run-frontend")
-	})
-
-	t.Run("T-quick-doc-drift depends on T-test-verify-regression", func(t *testing.T) {
+	t.Run("T-quick-doc-drift depends on T-test-run-frontend", func(t *testing.T) {
 		task, ok := byID["T-quick-doc-drift"]
 		require.True(t, ok, "T-quick-doc-drift should exist")
-		assert.Contains(t, task.Dependencies, "T-test-verify-regression",
-			"T-quick-doc-drift should depend on T-test-verify-regression")
+		assert.Contains(t, task.Dependencies, "T-test-run-frontend",
+			"T-quick-doc-drift should depend on T-test-run-frontend")
 	})
 }
 
@@ -286,7 +279,7 @@ func TestTC_005_QuickModeDependencyChainCorrect(t *testing.T) {
 // TC-006: Quick mode per-type dependency chain fans in correctly
 // =============================================================================
 
-// Traceability: TC-006 -> Proposal Success Criteria: run-test serial chain fans into verify-regression
+// Traceability: TC-006 -> Proposal Success Criteria: run-test serial chain fans into drift
 func TestTC_006_QuickModeRunTestSerialChainFanIn(t *testing.T) {
 	dir := quickSlimSetupProject(t, "test-qts-006", []string{"go"}, quickSlimMultiTypeTestCases)
 	quickSlimAddBusinessTask(t, dir, "test-qts-006")
@@ -311,11 +304,11 @@ func TestTC_006_QuickModeRunTestSerialChainFanIn(t *testing.T) {
 	assert.Contains(t, task2.Dependencies, "T-test-run-backend",
 		"T-test-run-frontend should depend on T-test-run-backend")
 
-	// verify-regression depends on last run-test
-	verifyTask, ok := byID["T-test-verify-regression"]
-	require.True(t, ok, "T-test-verify-regression should exist")
-	assert.Contains(t, verifyTask.Dependencies, "T-test-run-frontend",
-		"T-test-verify-regression should depend on T-test-run-frontend")
+	// drift depends on last run-test
+	driftTask, ok := byID["T-quick-doc-drift"]
+	require.True(t, ok, "T-quick-doc-drift should exist")
+	assert.Contains(t, driftTask.Dependencies, "T-test-run-frontend",
+		"T-quick-doc-drift should depend on T-test-run-frontend")
 }
 
 // =============================================================================
@@ -370,16 +363,16 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 
 	// Total test pipeline tasks:
 	// gen-journeys(1) + eval-journey(1) + gen-contracts(1) + eval-contract(1) +
-	// 2 per-type gen-scripts + 2 per-surface-key run-test + verify-regression(1) = 10
-	// Plus consolidate-specs (T-specs-consolidate) = 11 total T-test-*/T-specs-*/T-eval-* tasks
+	// 2 per-type gen-scripts + 2 per-surface-key run-test = 9
+	// Plus consolidate-specs (T-specs-consolidate) = 10 total T-test-*/T-specs-*/T-eval-* tasks
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-test-") || strings.HasPrefix(task.ID, "T-specs-") || strings.HasPrefix(task.ID, "T-eval-") {
 			testTaskCount++
 		}
 	}
-	assert.Equal(t, 10, testTaskCount,
-		"breakdown mode with go (2 surfaces, 2 types) should have 10 pipeline tasks")
+	assert.Equal(t, 9, testTaskCount,
+		"breakdown mode with go (2 surfaces, 2 types) should have 9 pipeline tasks")
 }
 
 // =============================================================================
@@ -400,8 +393,8 @@ func TestTC_008_QuickModeMultiProfile(t *testing.T) {
 	}
 
 	// Quick staged topology with multi-profile: surfaces {backend: api, frontend: cli}
-	// gen-journeys -> run-test-backend -> run-test-frontend -> verify-regression -> drift
-	for _, id := range []string{"T-test-gen-journeys", "T-test-run-backend", "T-test-run-frontend", "T-test-verify-regression"} {
+	// gen-journeys -> run-test-backend -> run-test-frontend -> drift
+	for _, id := range []string{"T-test-gen-journeys", "T-test-run-backend", "T-test-run-frontend"} {
 		_, ok := byID[id]
 		assert.True(t, ok, "%s should exist", id)
 	}
@@ -425,7 +418,7 @@ func TestTC_011_InferTypeMapsStagedIDsCorrectly(t *testing.T) {
 
 	idx := quickSlimReadIndex(t, dir, "test-qts-011")
 
-	// Quick staged topology: gen-journeys, run-test-backend, run-test-frontend, verify-regression
+	// Quick staged topology: gen-journeys, run-test-backend, run-test-frontend
 	testCases := []struct {
 		key  string
 		id   string
@@ -434,7 +427,6 @@ func TestTC_011_InferTypeMapsStagedIDsCorrectly(t *testing.T) {
 		{"gen-journeys", "T-test-gen-journeys", "test.gen-journeys"},
 		{"run-test-backend", "T-test-run-backend", "test.run"},
 		{"run-test-frontend", "T-test-run-frontend", "test.run"},
-		{"verify-regression", "T-test-verify-regression", "test.verify-regression"},
 	}
 
 	for _, tc := range testCases {
@@ -471,15 +463,15 @@ func TestTC_012_QuickModeSingleProfileProducesCorrectTaskCount(t *testing.T) {
 	idx := quickSlimReadIndex(t, dir, "test-qts-012")
 
 	// Quick staged topology with surfaces {backend: api, frontend: cli}:
-	// gen-journeys(1) + run-test-backend(1) + run-test-frontend(1) + verify-regression(1) + drift(1) = 5
+	// gen-journeys(1) + run-test-backend(1) + run-test-frontend(1) + drift(1) = 4
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-test-") || strings.HasPrefix(task.ID, "T-quick-") {
 			testTaskCount++
 		}
 	}
-	assert.Equal(t, 5, testTaskCount,
-		"single profile quick mode with 2 surfaces should produce exactly 5 pipeline tasks")
+	assert.Equal(t, 4, testTaskCount,
+		"single profile quick mode with 2 surfaces should produce exactly 4 pipeline tasks")
 }
 
 

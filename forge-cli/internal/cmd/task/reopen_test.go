@@ -12,6 +12,7 @@ import (
 	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
 )
 
 // ---------------------------------------------------------------------------
@@ -120,7 +121,7 @@ func TestReopen_NonTerminalBlocked(t *testing.T) {
 			envKey := "TEST_REOPEN_NONTERM_" + strings.ToUpper(tt.name)
 			if os.Getenv(envKey) == "1" {
 				setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-					"t1": {ID: "1.1", Title: "Task", Status: tt.status, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+					"t1": {ID: "1.1", Title: "Task", Status: types.Status(tt.status), Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
 				}})
 				if err := runReopen(nil, []string{"1.1"}); err != nil {
 					base.Exit(err)
@@ -193,7 +194,7 @@ func TestReopen_ValidateTransition_UsesRoleReopen(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			dir := setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
-				"t1": {ID: "1.1", Title: "Task", Status: tt.status, Priority: "P0", File: "1.1.md"},
+				"t1": {ID: "1.1", Title: "Task", Status: types.Status(tt.status), Priority: "P0", File: "1.1.md"},
 			}})
 
 			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
