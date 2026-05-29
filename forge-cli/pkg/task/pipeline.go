@@ -1,8 +1,6 @@
 package task
 
 import (
-	"fmt"
-	"sort"
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
@@ -13,179 +11,157 @@ import (
 // Core types
 // ---------------------------------------------------------------------------
 
-// ConfigGateFunc determines whether a PipelineNode should be included based on
-// the auto-configuration for the current mode (quick vs full).
-// Returns true when the corresponding category is enabled for the given mode.
-type ConfigGateFunc func(auto forgeconfig.AutoConfig, mode string) bool
+// ConfigGateFunc returns true when the auto config enables this node for the given mode.
+// mode is "quick" or "breakdown".
+type ConfigGateFunc func(mode string, auto forgeconfig.AutoConfig) bool
 
-// IntentGateFunc determines whether a PipelineNode is allowed for the given
-// pipeline intent (e.g. "feature", "refactor", "cleanup").
+// IntentGateFunc returns true when the intent permits this node to generate.
+// intent is "new-feature", "refactor", or "cleanup".
 type IntentGateFunc func(intent string) bool
 
-// GenerateCondFunc determines whether a node should be generated based on the
-// generation context (surfaces, types, etc.).
-type GenerateCondFunc func(ctx GenContext) bool
+// GenerateCondFunc returns true when the business task composition permits this node.
+type GenerateCondFunc func(tasks []Task) bool
 
-// DepResolveFunc resolves a dependency reference into a concrete task ID using
-// the full task index. Returns empty string when the dependency target is not
-// found (meaning this dependency link is skipped).
-type DepResolveFunc func(ref DepRef, ctx GenContext) string
+// DepResolveFunc dynamically resolves dependency IDs at generation time.
+// Returns nil when the reference cannot be resolved (e.g., no run-test tasks generated,
+// no business tasks present). When nil is returned, GenerateTestTasks skips that
+// dependency entry — the node is still generated but with one fewer DependsOn entry.
+// If ALL dependencies of a node resolve to nil, the node generates with empty
+// DependsOn, becoming a pipeline root (no upstream constraint).
+type DepResolveFunc func(ctx *GenContext) []string
 
-// DepRef represents a single dependency reference within a PipelineNode.
-// Resolver is the strategy for turning this reference into a concrete task ID.
-type DepRef struct {
-	// TaskTemplate is the ID pattern of the dependency (e.g. "T-review-doc").
-	// For per-surface-key tasks, use the base prefix (e.g. "T-test-run").
-	TaskTemplate string
-	// Resolver resolves this dependency reference to a concrete task ID.
-	Resolver DepResolveFunc
-}
-
-// GenContext carries the runtime context needed for dependency resolution and
-// generation-condition evaluation.
+// GenContext carries state accumulated during pipeline generation.
+// Populated progressively as nodes are processed in declaration order.
 type GenContext struct {
-	// ExistingTasks is the full task index (including gates/summaries/auto-gen).
-	// Populated by the caller before any resolution.
-	ExistingTasks map[string]Task
-	// Auto is the auto-configuration from .forge/config.yaml.
-	Auto forgeconfig.AutoConfig
-	// Mode is the pipeline mode: "quick" or "breakdown".
-	Mode string
-	// Intent is the pipeline intent: "feature", "refactor", "cleanup", etc.
-	Intent string
-	// SurfaceTypes is the deduplicated list of surface types in the project.
-	SurfaceTypes []string
-	// Surfaces is the surface-key-to-type map from config.
-	Surfaces map[string]string
-	// ExecutionOrder is the resolved execution order of surface keys.
+	Mode           string
+	Intent         string
+	Surfaces       map[string]string
 	ExecutionOrder []string
-	// GeneratedTasks is the list of tasks generated so far in the current run.
-	// Used by ResolveIfGenerated to check whether a dependency target was generated.
-	GeneratedTasks []AutoGenTaskDef
+	Auto           forgeconfig.AutoConfig
+	BusinessTasks  []Task
+	ExistingTasks  map[string]Task // full index including gates/summaries (populated by caller)
+	// Filled during generation as nodes are expanded:
+	UpstreamIDs  []string // IDs of the immediately preceding generated node(s)
+	RunTestChain []string // IDs of expanded run-test tasks in serial order
+	AllGenerated []string // IDs of all nodes generated so far (in order)
 }
 
-// PipelineNode describes a single auto-generated task in the pipeline topology.
-// The PipelineRegistry is the single source of truth for all auto-generated task
-// definitions; BuildIndex consumes it to produce the final task set.
+// PipelineNode defines a single node in the auto-generated task pipeline.
 type PipelineNode struct {
-	// ID is the task identifier (e.g. "T-review-doc").
-	// For per-surface-key nodes, this is the base ID (e.g. "T-test-run").
-	ID string
-	// Key is the index map key for single-instance tasks (e.g. "review-doc").
-	// Empty for per-surface-key nodes (key is derived from surface key).
-	Key string
-	// Title is the task title. May contain format verbs for per-surface-key tasks.
-	Title string
-	// Type is the task type constant (e.g. TypeDocReview).
+	// Type is the task type constant (e.g., TypeTestGenJourneys).
 	Type string
-	// Priority is the task priority (P0/P1/P2).
+	// Key is the map key used in index.json for this task. For expanded nodes,
+	// Key is a template with the same placeholders as ID (e.g., "test-run-{surface-key}").
+	// When Key is empty, it is derived from ID by stripping the "T-" prefix and
+	// lowercasing. This matches the current AutoGenTaskDef.Key convention.
+	Key string
+	// ID is the task ID or ID template. Placeholders: {surface-key}, {surface-type}.
+	ID string
+	// Title is the task title or title template.
+	Title string
+	// Priority is the task priority (P0, P1, P2).
 	Priority string
-	// EstimatedTime is the estimated task duration.
+	// EstimatedTime is the task duration estimate.
 	EstimatedTime string
-	// MainSession controls whether the task runs in the main session.
-	MainSession bool
-	// ConfigGate controls whether this node is included based on auto config.
+	// ConfigGate returns true when the config enables this node. nil = no config gate.
 	ConfigGate ConfigGateFunc
-	// IntentGate controls whether this node is blocked by the pipeline intent.
+	// IntentGate returns true when the intent permits this node. nil = GateBlockSkipTest (default).
+	// Use GateAllowAll for nodes that should generate regardless of intent (e.g., T-review-doc).
 	IntentGate IntentGateFunc
-	// GenerateCond controls whether this node is generated based on context.
-	// When nil, the node is always generated (if ConfigGate and IntentGate pass).
-	GenerateCond GenerateCondFunc
-	// DependsOn lists the dependency references for this node.
-	// Resolvers are called in order; each produces one concrete dependency ID.
+	// Mode restricts this node to a specific mode. Empty means both modes.
+	// "quick" = quick mode only, "breakdown" = breakdown mode only.
+	Mode string
+	// GenerateCondition returns true when the business task composition permits this node.
+	// MUST be explicitly set for every node. No implicit default.
+	GenerateCondition GenerateCondFunc
+	// DependsOn defines dependency references.
 	DependsOn []DepRef
-	// PerSurfaceKey indicates whether this node is expanded per surface key.
-	// When true, one task instance is created per surface key in execution order.
-	// The first instance uses DependsOn resolvers; subsequent instances depend on
-	// the previous expanded task (serial chain).
-	PerSurfaceKey bool
-	// StrategyKind is the strategy kind for auto-gen task definitions
-	// ("generate", "run", "interface", or "" for generic).
+	// Expansion controls how this node expands into multiple tasks.
+	// "" (empty) - single task
+	// "per-surface-key" - one task per surface key
+	// "per-surface-type" - one task per surface type
+	Expansion string
+	// MainSession indicates this task runs in the main session.
+	MainSession bool
+	// StrategyKind for task definition ("generate", "run", "interface", "").
 	StrategyKind string
+	// UISurfaceOnly indicates this node is only generated when at least one surface has a visual UI.
+	UISurfaceOnly bool
+}
+
+// DepRef represents a dependency reference.
+// Use Ref for static IDs, Resolve for dynamic references.
+// If Resolve is non-nil, Ref is ignored.
+type DepRef struct {
+	Ref     string         // concrete task ID (e.g., "T-test-gen-journeys")
+	Resolve DepResolveFunc // dynamic resolver; nil = use Ref as-is
 }
 
 // ---------------------------------------------------------------------------
-// ConfigGate functions
+// Config Gate functions
 // ---------------------------------------------------------------------------
 
 // GateTest returns true when the Test category is enabled for the given mode.
-func GateTest(auto forgeconfig.AutoConfig, mode string) bool {
-	switch mode {
-	case "quick":
+func GateTest(mode string, auto forgeconfig.AutoConfig) bool {
+	if mode == "quick" {
 		return auto.Test.Quick
-	case "breakdown":
-		return auto.Test.Full
-	default:
-		return false
 	}
+	return auto.Test.Full
 }
 
 // GateValidation returns true when the Validation category is enabled for the given mode.
-func GateValidation(auto forgeconfig.AutoConfig, mode string) bool {
-	switch mode {
-	case "quick":
+func GateValidation(mode string, auto forgeconfig.AutoConfig) bool {
+	if mode == "quick" {
 		return auto.Validation.Quick
-	case "breakdown":
-		return auto.Validation.Full
-	default:
-		return false
 	}
+	return auto.Validation.Full
 }
 
 // GateConsolidateSpecs returns true when ConsolidateSpecs is enabled for the given mode.
-func GateConsolidateSpecs(auto forgeconfig.AutoConfig, mode string) bool {
-	switch mode {
-	case "quick":
+func GateConsolidateSpecs(mode string, auto forgeconfig.AutoConfig) bool {
+	if mode == "quick" {
 		return auto.ConsolidateSpecs.Quick
-	case "breakdown":
-		return auto.ConsolidateSpecs.Full
-	default:
-		return false
 	}
+	return auto.ConsolidateSpecs.Full
 }
 
 // GateCleanCode returns true when CleanCode is enabled for the given mode.
-func GateCleanCode(auto forgeconfig.AutoConfig, mode string) bool {
-	switch mode {
-	case "quick":
+func GateCleanCode(mode string, auto forgeconfig.AutoConfig) bool {
+	if mode == "quick" {
 		return auto.CleanCode.Quick
-	case "breakdown":
-		return auto.CleanCode.Full
-	default:
-		return false
 	}
+	return auto.CleanCode.Full
 }
 
 // ---------------------------------------------------------------------------
-// IntentGate functions
+// Intent Gate functions
 // ---------------------------------------------------------------------------
 
-// GateAllowAll allows all intents — the node is never blocked by intent.
-func GateAllowAll(string) bool { return true }
+// GateAllowAll permits all intents. Used by T-review-doc.
+func GateAllowAll(_ string) bool { return true }
 
-// GateBlockSkipTest blocks the node when the intent is "refactor" or "cleanup"
-// (intents that skip the test pipeline).
+// GateBlockSkipTest blocks refactor/cleanup intents. Used by all config-gated nodes.
 func GateBlockSkipTest(intent string) bool {
 	return !isSkipTestIntent(intent)
 }
 
 // ---------------------------------------------------------------------------
-// GenerateCondition functions
+// Generate Condition functions
 // ---------------------------------------------------------------------------
 
-// CondHasTestableTasks returns true when there are test pipeline tasks to generate.
-// This is true when the test config gate is enabled and the intent does not skip tests.
-func CondHasTestableTasks(ctx GenContext) bool {
-	return GateTest(ctx.Auto, ctx.Mode) && !isSkipTestIntent(ctx.Intent)
+// CondHasTestableTasks returns true when any business task has a testable type.
+func CondHasTestableTasks(tasks []Task) bool {
+	for _, t := range tasks {
+		if IsTestableType(t.Type) {
+			return true
+		}
+	}
+	return false
 }
 
-// CondHasDocTasks returns true when there are doc-category business tasks
-// in the existing task index.
-func CondHasDocTasks(ctx GenContext) bool {
-	for _, t := range ctx.ExistingTasks {
-		if isAutoGenForDep(t.ID) {
-			continue
-		}
+// CondHasDocTasks returns true when any business task has a doc-category type.
+func CondHasDocTasks(tasks []Task) bool {
+	for _, t := range tasks {
 		if CategoryForType(t.Type) == CategoryDoc {
 			return true
 		}
@@ -193,136 +169,138 @@ func CondHasDocTasks(ctx GenContext) bool {
 	return false
 }
 
-// CondAlways always returns true — the node is always generated (subject to
-// ConfigGate and IntentGate).
-func CondAlways(GenContext) bool { return true }
+// CondAlways returns true unconditionally.
+func CondAlways(_ []Task) bool { return true }
 
 // ---------------------------------------------------------------------------
-// Dependency resolver functions
+// Dependency Resolver functions
 // ---------------------------------------------------------------------------
 
-// ResolveIfGenerated resolves to the task ID only if a task with that ID
-// (or matching the template for per-surface-key nodes) exists in the
-// generated tasks list. Returns empty string otherwise.
-func ResolveIfGenerated(ref DepRef, ctx GenContext) string {
-	for _, t := range ctx.GeneratedTasks {
-		if t.ID == ref.TaskTemplate || strings.HasPrefix(t.ID, ref.TaskTemplate+"-") {
-			return t.ID
-		}
+// ResolveLastRunTest returns the ID of the last task in the run-test expansion chain.
+// Returns nil when no run-test tasks have been generated.
+var ResolveLastRunTest DepResolveFunc = func(ctx *GenContext) []string {
+	if len(ctx.RunTestChain) == 0 {
+		return nil
 	}
-	// Also check existing tasks (for tasks from prior runs or external generation)
-	for id := range ctx.ExistingTasks {
-		if id == ref.TaskTemplate || strings.HasPrefix(id, ref.TaskTemplate+"-") {
-			return id
-		}
-	}
-	return ""
+	return []string{ctx.RunTestChain[len(ctx.RunTestChain)-1]}
 }
 
-// ResolveHighestGateOrLastBiz implements two-pass gate-priority resolution:
-//   - Pass 1: find the highest-phase gate task in the index
-//   - Pass 2 (fallback): find the highest-phase summary task
-//   - Finally: compare the result against the last business task; prefer whichever
-//     is in the higher phase (handles final-phase single-task case with no gate)
-//
-// This matches the current findHighestGateOrSummary + ResolveFirstTestDep logic.
-func ResolveHighestGateOrLastBiz(_ DepRef, ctx GenContext) string {
-	// Pass 1: find highest-phase gate
-	bestID := ""
-	bestPhase := 0
+// ResolveUpstream returns the IDs of the immediately preceding generated node(s).
+// For single nodes: one ID. For expanded nodes: all expanded IDs of the previous node.
+var ResolveUpstream DepResolveFunc = func(ctx *GenContext) []string {
+	if len(ctx.UpstreamIDs) == 0 {
+		return nil
+	}
+	return ctx.UpstreamIDs
+}
+
+// ResolveDocTasks returns the IDs of all doc-category business tasks.
+var ResolveDocTasks DepResolveFunc = func(ctx *GenContext) []string {
+	var ids []string
+	for _, t := range ctx.BusinessTasks {
+		if CategoryForType(t.Type) == CategoryDoc {
+			ids = append(ids, t.ID)
+		}
+	}
+	return ids
+}
+
+// ResolveLastBusinessTask returns the ID of the highest-numbered business task.
+// Used by T-clean-code which must run after all business tasks complete.
+// Note: uses numericID for sorting (extracts leading number from task ID), matching
+// current findMaxBusinessTaskID behavior.
+var ResolveLastBusinessTask DepResolveFunc = func(ctx *GenContext) []string {
+	if len(ctx.BusinessTasks) == 0 {
+		return nil
+	}
+	var maxID string
+	var maxNum int
+	for _, t := range ctx.BusinessTasks {
+		num := numericID(t.ID)
+		if num > maxNum {
+			maxNum = num
+			maxID = t.ID
+		}
+	}
+	if maxID == "" {
+		return nil
+	}
+	return []string{maxID}
+}
+
+// ResolveHighestGateOrLastBiz returns the ID of the highest-phase gate/summary,
+// or the last business task if its phase is higher. Used by T-clean-code in breakdown
+// mode to ensure stage-gates gate the test pipeline. Matches current ResolveFirstTestDep behavior.
+// Two-pass logic matches current findHighestGateOrSummary: gate priority over summary.
+var ResolveHighestGateOrLastBiz DepResolveFunc = func(ctx *GenContext) []string {
+	// Pass 1: find highest-phase gate (gate priority)
+	var dep string
+	var depPhase int
 	for _, t := range ctx.ExistingTasks {
 		if strings.HasSuffix(t.ID, IDSuffixGate) {
-			phase := phaseFromID(t.ID)
-			if phase > bestPhase {
-				bestPhase = phase
-				bestID = t.ID
+			p := phaseFromID(t.ID)
+			if p > depPhase {
+				depPhase = p
+				dep = t.ID
 			}
 		}
 	}
-	if bestID != "" {
-		// Check if last business task is in a higher phase
-		lastBiz := findMaxBusinessTaskID(ctx.ExistingTasks)
-		if lastBiz != "" && phaseFromID(lastBiz) > phaseFromID(bestID) {
-			return lastBiz
-		}
-		return bestID
-	}
-
-	// Pass 2: fallback to highest-phase summary
-	bestPhase = 0
-	for _, t := range ctx.ExistingTasks {
-		if strings.HasSuffix(t.ID, IDSuffixSummary) {
-			phase := phaseFromID(t.ID)
-			if phase > bestPhase {
-				bestPhase = phase
-				bestID = t.ID
+	// Pass 2: if no gate found, fall back to highest-phase summary
+	if dep == "" {
+		for _, t := range ctx.ExistingTasks {
+			if strings.HasSuffix(t.ID, IDSuffixSummary) {
+				p := phaseFromID(t.ID)
+				if p > depPhase {
+					depPhase = p
+					dep = t.ID
+				}
 			}
 		}
 	}
-
-	// Compare with last business task
-	lastBiz := findMaxBusinessTaskID(ctx.ExistingTasks)
-	if lastBiz != "" && (bestID == "" || phaseFromID(lastBiz) > phaseFromID(bestID)) {
-		return lastBiz
-	}
-	return bestID
-}
-
-// ResolveLastBusinessTask resolves to the business task with the highest numeric ID.
-// Uses numericID for sorting (not slice order), matching findMaxBusinessTaskID.
-func ResolveLastBusinessTask(_ DepRef, ctx GenContext) string {
-	return findMaxBusinessTaskID(ctx.ExistingTasks)
-}
-
-// ResolveLastRunTestOrBusiness resolves to the last run-test task in the
-// generated list; if no run-test exists (e.g. refactor/cleanup intent),
-// falls back to the last business task.
-func ResolveLastRunTestOrBusiness(_ DepRef, ctx GenContext) string {
-	// Find the last run-test task from generated tasks
-	var lastRunTest string
-	for _, t := range ctx.GeneratedTasks {
-		if strings.HasPrefix(t.ID, "T-test-run") {
-			lastRunTest = t.ID
+	// Compare with last business task phase
+	var maxBizID string
+	var maxBizPhase int
+	for _, t := range ctx.BusinessTasks {
+		p := phaseFromID(t.ID)
+		if p > maxBizPhase {
+			maxBizPhase = p
+			maxBizID = t.ID
 		}
 	}
-	if lastRunTest != "" {
-		return lastRunTest
+	if maxBizID != "" && maxBizPhase > depPhase {
+		dep = maxBizID
 	}
-
-	// Fallback to last business task
-	return findMaxBusinessTaskID(ctx.ExistingTasks)
+	if dep == "" {
+		return nil
+	}
+	return []string{dep}
 }
 
-// ResolveUpstream resolves to the previous task in a per-surface-key serial chain.
-// If idx is 0, it returns the resolved dependency from DependsOn.
-// If idx > 0, it returns the ID of the previous surface-key task in the chain.
-//
-// Note: This resolver is used for per-surface-key chain wiring and requires
-// the caller to pass context about the current expansion index. It resolves
-// to the TaskTemplate as-is, which the expansion loop overrides for non-first
-// instances.
-func ResolveUpstream(ref DepRef, _ GenContext) string {
-	return ref.TaskTemplate
+// ResolveLastRunTestOrBusiness returns the last run-test task ID when test pipeline
+// is active, otherwise falls back to the last business task ID.
+// Used by drift/consolidate/validation nodes that currently depend on ResolveDriftFallbackDep.
+var ResolveLastRunTestOrBusiness DepResolveFunc = func(ctx *GenContext) []string {
+	if len(ctx.RunTestChain) > 0 {
+		return []string{ctx.RunTestChain[len(ctx.RunTestChain)-1]}
+	}
+	if len(ctx.BusinessTasks) > 0 {
+		return []string{ctx.BusinessTasks[len(ctx.BusinessTasks)-1].ID}
+	}
+	return nil
 }
 
-// ResolveDocTasks resolves to all doc-category business task IDs, sorted
-// deterministically. Returns empty string (signaling no dependency) when
-// there are no doc tasks.
-func ResolveDocTasks(_ DepRef, ctx GenContext) string {
-	var deps []string
-	for _, t := range ctx.ExistingTasks {
-		if isAutoGenForDep(t.ID) {
-			continue
+// ResolveIfGenerated returns the task ID if it was already generated, nil otherwise.
+// Used for cross-stage dependencies where the target node appears earlier in declaration order.
+// Init-time validation ensures the referenced ID belongs to a node declared before the caller.
+func ResolveIfGenerated(id string) DepResolveFunc {
+	return func(ctx *GenContext) []string {
+		for _, generated := range ctx.AllGenerated {
+			if generated == id {
+				return []string{id}
+			}
 		}
-		if CategoryForType(t.Type) == CategoryDoc {
-			deps = append(deps, t.ID)
-		}
+		return nil
 	}
-	sort.Strings(deps)
-	if len(deps) == 0 {
-		return ""
-	}
-	return strings.Join(deps, ",")
 }
 
 // ---------------------------------------------------------------------------
@@ -330,201 +308,94 @@ func ResolveDocTasks(_ DepRef, ctx GenContext) string {
 // ---------------------------------------------------------------------------
 
 // PipelineRegistry defines all auto-generated task nodes in declaration order.
-// The order determines generation sequence: tasks are emitted in this order,
-// with per-surface-key tasks expanded inline.
-//
-// Declaration order (12 base nodes):
-//
-//  1. T-review-doc          — doc review (gated by intent: allow-all, gated by doc tasks)
-//  2. T-clean-code          — code cleanup (gated by clean-code config)
-//  3. T-test-gen-journeys   — generate test journeys (gated by test config + intent)
-//  4. T-eval-journey        — evaluate journey quality (breakdown only)
-//  5. T-test-gen-contracts  — generate test contracts (breakdown only)
-//  6. T-eval-contract       — evaluate contract quality (breakdown only)
-//  7. T-test-gen-scripts    — generate test scripts (breakdown only, per-type)
-//  8. T-test-run            — run tests (per-surface-key)
-//  9. T-validate-code       — validate code quality (gated by validation config)
-//  10. T-validate-ux         — validate UX (gated by validation config + UI surface)
-//  11. T-specs-consolidate   — consolidate specs (breakdown) / T-quick-doc-drift (quick)
-//  12. (node 11 is mode-dependent; quick uses drift, breakdown uses consolidate)
+// The order determines generation sequence; execution order is determined by DependsOn.
 var PipelineRegistry = []PipelineNode{
-	// 1. Review documentation quality
+	// --- Doc Review (generated whenever business tasks include doc-category types) ---
 	{
-		ID:            "T-review-doc",
-		Key:           "review-doc",
-		Title:         "Review Documentation Quality",
-		Type:          TypeDocReview,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "30min",
-		IntentGate:    GateAllowAll,
-		GenerateCond:  CondHasDocTasks,
+		Type: TypeDocReview, ID: "T-review-doc",
+		Title: "Review Documentation Quality", Priority: string(types.PriorityP1), EstimatedTime: "30min",
+		ConfigGate: nil, IntentGate: GateAllowAll,
+		GenerateCondition: CondHasDocTasks,
+		DependsOn:         []DepRef{{Resolve: ResolveDocTasks}},
+	},
+	// --- Clean Code (declared early for cross-stage dependency resolution;
+	//     execution still occurs after all business tasks via ResolveLastBusinessTask) ---
+	{
+		Type: TypeCleanCode, ID: "T-clean-code",
+		Title: "Simplify and Clean Code", Priority: string(types.PriorityP2), EstimatedTime: "20min",
+		ConfigGate: GateCleanCode, GenerateCondition: CondAlways,
+		DependsOn: []DepRef{{Resolve: ResolveHighestGateOrLastBiz}},
+	},
+	// --- Test Generation (first test task depends on T-review-doc and T-clean-code) ---
+	{
+		Type: TypeTestGenJourneys, ID: "T-test-gen-journeys",
+		Title: "Generate Test Journeys", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, StrategyKind: "interface",
 		DependsOn: []DepRef{
-			{TaskTemplate: "", Resolver: ResolveDocTasks},
+			{Resolve: ResolveIfGenerated("T-review-doc")},
+			{Resolve: ResolveIfGenerated("T-clean-code")},
 		},
 	},
-	// 2. Clean code
+	// --- Eval (breakdown only) ---
 	{
-		ID:            "T-clean-code",
-		Key:           "clean-code",
-		Title:         "Simplify and Clean Code",
-		Type:          TypeCleanCode,
-		Priority:      string(types.PriorityP2),
-		EstimatedTime: "20min",
-		ConfigGate:    GateCleanCode,
-		IntentGate:    GateAllowAll,
-		DependsOn: []DepRef{
-			{TaskTemplate: "", Resolver: ResolveHighestGateOrLastBiz},
-		},
+		Type: TypeEvalJourney, ID: "T-eval-journey",
+		Title: "Evaluate Journey Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", MainSession: true,
+		DependsOn: []DepRef{{Ref: "T-test-gen-journeys"}},
 	},
-	// 3. Generate test journeys
 	{
-		ID:            "T-test-gen-journeys",
-		Key:           "gen-journeys",
-		Title:         "Generate Test Journeys",
-		Type:          TypeTestGenJourneys,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "20-30min",
-		ConfigGate:    GateTest,
-		IntentGate:    GateBlockSkipTest,
-		StrategyKind:  "interface",
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-review-doc", Resolver: ResolveIfGenerated},
-			{TaskTemplate: "T-clean-code", Resolver: ResolveIfGenerated},
-		},
+		Type: TypeTestGenContracts, ID: "T-test-gen-contracts",
+		Title: "Generate Test Contracts", Priority: string(types.PriorityP1), EstimatedTime: "30-45min",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown",
+		DependsOn: []DepRef{{Ref: "T-eval-journey"}},
 	},
-	// 4. Evaluate journey quality (breakdown only)
 	{
-		ID:            "T-eval-journey",
-		Key:           "eval-journey",
-		Title:         "Evaluate Journey Quality",
-		Type:          TypeEvalJourney,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "20-30min",
-		MainSession:   true,
-		ConfigGate:    GateTest,
-		IntentGate:    GateBlockSkipTest,
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-gen-journeys", Resolver: ResolveIfGenerated},
-		},
+		Type: TypeEvalContract, ID: "T-eval-contract",
+		Title: "Evaluate Contract Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", MainSession: true,
+		DependsOn: []DepRef{{Ref: "T-test-gen-contracts"}},
 	},
-	// 5. Generate test contracts (breakdown only)
+	// --- Gen Scripts (per surface type) ---
 	{
-		ID:            "T-test-gen-contracts",
-		Key:           "gen-contracts",
-		Title:         "Generate Test Contracts",
-		Type:          TypeTestGenContracts,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "30-45min",
-		ConfigGate:    GateTest,
-		IntentGate:    GateBlockSkipTest,
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-eval-journey", Resolver: ResolveIfGenerated},
-		},
+		Type: TypeTestGenScripts, ID: "T-test-gen-scripts-{surface-type}",
+		Title: "Generate {test-type-title} Scripts", Priority: string(types.PriorityP1), EstimatedTime: "1-2h",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", Expansion: "per-surface-type",
+		DependsOn:    []DepRef{{Ref: "T-eval-contract"}},
+		StrategyKind: "generate",
 	},
-	// 6. Evaluate contract quality (breakdown only)
+	// --- Run Tests (per surface key) ---
 	{
-		ID:            "T-eval-contract",
-		Key:           "eval-contract",
-		Title:         "Evaluate Contract Quality",
-		Type:          TypeEvalContract,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "20-30min",
-		MainSession:   true,
-		ConfigGate:    GateTest,
-		IntentGate:    GateBlockSkipTest,
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-gen-contracts", Resolver: ResolveIfGenerated},
-		},
+		Type: TypeTestRun, ID: "T-test-run-{surface-key}",
+		Title: "Run {test-type-title}", Priority: string(types.PriorityP1), EstimatedTime: "30min-1h",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks,
+		DependsOn: []DepRef{{Resolve: ResolveUpstream}},
+		Expansion: "per-surface-key", StrategyKind: "run",
 	},
-	// 7. Generate test scripts (per surface type, breakdown only)
+	// --- Validation ---
 	{
-		ID:            "T-test-gen-scripts",
-		Key:           "gen-test-scripts",
-		Title:         fmt.Sprintf("Generate %%s Scripts"),
-		Type:          TypeTestGenScripts,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "1-2h",
-		ConfigGate:    GateTest,
-		IntentGate:    GateBlockSkipTest,
-		StrategyKind:  "generate",
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-eval-contract", Resolver: ResolveIfGenerated},
-		},
+		Type: TypeValidationCode, ID: "T-validate-code",
+		Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: "15min",
+		ConfigGate: GateValidation, GenerateCondition: CondAlways,
+		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
-	// 8. Run tests (per surface key)
 	{
-		ID:            "T-test-run",
-		Key:           "run-test",
-		Title:         "Run %ss",
-		Type:          TypeTestRun,
-		Priority:      string(types.PriorityP1),
-		EstimatedTime: "30min-1h",
-		PerSurfaceKey: true,
-		ConfigGate:    GateTest,
-		IntentGate:    GateBlockSkipTest,
-		StrategyKind:  "run",
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-gen-scripts", Resolver: ResolveIfGenerated},
-		},
+		Type: TypeValidationUx, ID: "T-validate-ux",
+		Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: "15min",
+		ConfigGate: GateValidation, GenerateCondition: CondAlways,
+		DependsOn:     []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
+		UISurfaceOnly: true, MainSession: true,
 	},
-	// 9. Validate code quality
+	// --- Spec Consolidation/Drift ---
 	{
-		ID:            "T-validate-code",
-		Key:           "validate-code",
-		Title:         "Validate Code Quality",
-		Type:          TypeValidationCode,
-		Priority:      string(types.PriorityP2),
-		EstimatedTime: "15min",
-		ConfigGate:    GateValidation,
-		IntentGate:    GateAllowAll,
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-run", Resolver: ResolveLastRunTestOrBusiness},
-		},
+		Type: TypeDocConsolidate, ID: "T-specs-consolidate",
+		Title: "Consolidate Specs", Priority: string(types.PriorityP2), EstimatedTime: "20min",
+		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "breakdown",
+		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
-	// 10. Validate user experience (only when UI surfaces exist)
 	{
-		ID:            "T-validate-ux",
-		Key:           "validate-ux",
-		Title:         "Validate User Experience",
-		Type:          TypeValidationUx,
-		Priority:      string(types.PriorityP2),
-		EstimatedTime: "15min",
-		MainSession:   true,
-		ConfigGate:    GateValidation,
-		IntentGate:    GateAllowAll,
-		GenerateCond: func(ctx GenContext) bool {
-			return hasUISurface(ctx.SurfaceTypes)
-		},
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-run", Resolver: ResolveLastRunTestOrBusiness},
-		},
-	},
-	// 11. Consolidate specs (breakdown mode)
-	{
-		ID:            "T-specs-consolidate",
-		Key:           "consolidate-specs",
-		Title:         "Consolidate Specs",
-		Type:          TypeDocConsolidate,
-		Priority:      string(types.PriorityP2),
-		EstimatedTime: "20min",
-		ConfigGate:    GateConsolidateSpecs,
-		IntentGate:    GateAllowAll,
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-run", Resolver: ResolveLastRunTestOrBusiness},
-		},
-	},
-	// 12. Detect spec drift (quick mode)
-	{
-		ID:            "T-quick-doc-drift",
-		Key:           "quick-drift-detection",
-		Title:         "Detect Spec Drift",
-		Type:          TypeDocDrift,
-		Priority:      string(types.PriorityP2),
-		EstimatedTime: "15min",
-		ConfigGate:    GateConsolidateSpecs,
-		IntentGate:    GateAllowAll,
-		DependsOn: []DepRef{
-			{TaskTemplate: "T-test-run", Resolver: ResolveLastRunTestOrBusiness},
-		},
+		Type: TypeDocDrift, ID: "T-quick-doc-drift",
+		Title: "Detect Spec Drift", Priority: string(types.PriorityP2), EstimatedTime: "15min",
+		ConfigGate: GateConsolidateSpecs, GenerateCondition: CondAlways, Mode: "quick",
+		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 }
