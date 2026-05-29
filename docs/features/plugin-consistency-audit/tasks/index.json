@@ -154,7 +154,7 @@
       "title": "Fix: add intent-aware checks to write-prd + tech-design rule files",
       "priority": "P2",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "21-fix-intent-aware-rules.md",
       "record": "records/21-fix-intent-aware-rules.md",
       "type": "doc",
