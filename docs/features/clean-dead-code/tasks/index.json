@@ -21,7 +21,7 @@
       "title": "清理 verify-regression 残留推断规则和陈旧测试引用",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-clean-verify-regression-residual.md",
       "record": "records/2-clean-verify-regression-residual.md",
       "surface-key": ".",

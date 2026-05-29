@@ -1327,7 +1327,7 @@ func TestIsDocsOnly(t *testing.T) {
 			name: "mixed documentation and test-pipeline",
 			tasks: map[string]task.Task{
 				"t1": {ID: "1", Type: task.TypeDoc},
-				"t2": {ID: "T-quick-verify-regression", Type: task.TypeTestRun},
+				"t2": {ID: "T-test-run", Type: task.TypeTestRun},
 			},
 			want: true,
 		},

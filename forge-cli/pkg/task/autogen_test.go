@@ -2190,7 +2190,7 @@ func dependsTransitively(tasks []AutoGenTaskDef, task AutoGenTaskDef, targetID s
 	return dfs(task.ID)
 }
 
-// Consolidate-specs depends on last run-test in execution order (was verify-regression, now removed)
+// Consolidate-specs depends on last run-test in execution order
 func TestGetBreakdownTestTasks_ConsolidateDependsOnChainTail(t *testing.T) {
 	surfaces := multiSurface("backend", "api", "frontend", "web", "mobile-app", "tui")
 	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)

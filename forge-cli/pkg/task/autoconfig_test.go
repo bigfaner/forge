@@ -261,7 +261,7 @@ func TestGetBreakdownTestTasks_SpecsDependsOnLastRunTest(t *testing.T) {
 	for _, task := range tasks {
 		if task.ID == "T-specs-consolidate" {
 			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
-				t.Errorf("T-specs-consolidate deps = %v, want [T-test-verify-regression]", task.Dependencies)
+				t.Errorf("T-specs-consolidate deps = %v, want [T-test-run]", task.Dependencies)
 			}
 			return
 		}
@@ -277,7 +277,7 @@ func TestGetQuickTestTasks_DriftDependsOnLastRunTestInAutoConfig(t *testing.T) {
 	for _, task := range tasks {
 		if task.ID == "T-quick-doc-drift" {
 			if len(task.Dependencies) != 1 || task.Dependencies[0] != "T-test-run" {
-				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-verify-regression]", task.Dependencies)
+				t.Errorf("T-quick-doc-drift deps = %v, want [T-test-run]", task.Dependencies)
 			}
 			return
 		}
