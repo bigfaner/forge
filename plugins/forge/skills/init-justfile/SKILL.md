@@ -56,13 +56,14 @@ If version < 1.50.0: `cargo install just`
 
 | Target                | Required | Purpose                                                              |
 | --------------------- | -------- | -------------------------------------------------------------------- |
+| `<key>-test-setup`    | No*      | Mobile only: prepare emulator and test environment                   |
 | `<key>-dev`           | No*      | Start dev server for surface (web/api/mobile only)                   |
 | `<key>-probe`         | No*      | Health check for surface (web/api/mobile only)                       |
 | `<key>-test`          | Yes      | Surface-level tests (functional for cli/tui/api, e2e for web/mobile) |
 | `<key>-teardown`      | Yes      | Stop services and cleanup                                            |
-| `<key>`               | No*      | Aggregate: dev->probe->test->teardown (web/api/mobile only)          |
+| `<key>`               | No*      | Aggregate: test-setup->dev->probe->test->teardown (mobile) / dev->probe->test->teardown (web/api) |
 
-*CLI/TUI surfaces do NOT generate dev, probe, or aggregate recipes.
+*CLI/TUI surfaces do NOT generate dev, probe, or aggregate recipes. Mobile also generates test-setup.
 
 Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variants.
 
@@ -333,6 +334,7 @@ fmt:
 check:
 
 [group: <surface-key>]
+<key>-test-setup:   (mobile only)
 <key>-dev:          (if applicable)
 <key>-probe:        (if applicable)
 <key>-test:
@@ -366,6 +368,7 @@ just --dry-run install
 For surface recipes, verify each generated recipe:
 
 ```bash
+just --dry-run <key>-test-setup # (mobile only)
 just --dry-run <key>-dev       # (if applicable)
 just --dry-run <key>-probe     # (if applicable)
 just --dry-run <key>-test
@@ -424,6 +427,7 @@ Created justfile with surface-aware forge targets (Go project)
 Surfaces:
   admin-panel (web): web-dev, web-probe, web-test, web-teardown, web
   payment-api (api): api-dev, api-probe, api-test, api-teardown, api
+  mobile-app (mobile): mobile-test-setup, mobile-dev, mobile-probe, mobile-test, mobile-teardown, mobile
 
 Language targets:
   just compile        -> go vet ./...

@@ -52,7 +52,7 @@
       "title": "Fix: add init-justfile mobile test-setup target",
       "priority": "P1",
       "estimatedTime": "15min",
-      "status": "pending",
+      "status": "completed",
       "file": "13-fix-init-justfile-mobile-target.md",
       "record": "records/13-fix-init-justfile-mobile-target.md",
       "type": "doc",
