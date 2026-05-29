@@ -11,13 +11,15 @@ eval 管道的 Reviser subagent 在处理 9 个 attack points 时运行接近 2 
 
 ## Root Cause
 
-**Level 1 — Edit 工具的 old_string 匹配开销**：Reviser 对 150 行文档执行 9 次 Edit 调用，每次需要找到唯一的 old_string。在多次 edit 后文档内容已变，old_string 可能不再匹配或不再唯一，导致 agent 反复尝试不同的匹配串。
+**Level 1 — Edit 工具的 old_string 匹配开销**：Reviser 对文档执行多次 Edit 调用，每次需要找到唯一的 old_string。在多次 edit 后文档内容已变，old_string 可能不再匹配或不再唯一，导致 agent 反复尝试不同的匹配串。
 
-**Level 2 — Quality check 导致过度 re-read**：Reviser protocol 要求 "Every attack point from the scorer has been addressed"，agent 在每次 edit 后可能 re-read 文件验证结果。9 个 attack points = 至少 9 次 edit + 9 次 re-read = 18 次 tool call，加上失败重试可能达到 30+ 次。
+**Level 2 — 多轮 eval 迭代导致文档膨胀**：每轮 Reviser 修订增加 ~30-40% 字数。经过 2 轮后，pipeline-topology-registry proposal 从 ~2500 词膨胀到 ~3700 词（515 行），iteration-2 eval 报告本身 4575 词。Reviser 需同时读两份大文件 + 执行 10 次 Edit，上下文窗口压力巨大。
 
-**Level 3 — 无 max-duration 约束**：Reviser protocol 只有 "Maximum 3 rounds of self-review" 的软约束，但没有 wall-clock 时间上限。Agent 在遇到 edit 困难时不会主动放弃或简化策略，而是持续尝试直到所有 attack points 都被处理。
+**Level 3 — Quality check 导致过度 re-read**：Reviser protocol 要求 "Every attack point from the scorer has been addressed"，agent 在每次 edit 后可能 re-read 文件验证结果。10 个 attack points = 至少 10 次 edit + 10 次 re-read = 20+ 次 tool call，加上失败重试可能达到 30+ 次。
 
-**Level 4（根源）— 单 agent 处理所有 attack points 的架构瓶颈**：Reviser 设计为串行处理所有 attack points。当 attack points 数量多（>5）或文档长（>100 行）时，单个 agent 的上下文窗口压力增大，后期 edit 的效率指数级下降。
+**Level 4 — 无 max-duration 约束**：Reviser protocol 只有 "Maximum 3 rounds of self-review" 的软约束，但没有 wall-clock 时间上限。Agent 在遇到 edit 困难时不会主动放弃或简化策略，而是持续尝试直到所有 attack points 都被处理。
+
+**Level 5（根源）— 单 agent 处理所有 attack points 的架构瓶颈**：Reviser 设计为串行处理所有 attack points。当 attack points 数量多（>5）或文档长（>100 行）时，单个 agent 的上下文窗口压力增大，后期 edit 的效率指数级下降。多轮 eval 迭代放大了这个问题。
 
 ## Solution
 
@@ -36,12 +38,19 @@ eval 管道的 Reviser subagent 在处理 9 个 attack points 时运行接近 2 
 ## Example
 
 ```
+# Case 1: intent-driven-pipeline-branching
 # 症状：Reviser 运行 2 小时未完成
-# 原因：9 个 attack points × Edit 匹配困难 × 无超时保护
-# 处理：手动中断，proposal.md 已包含大部分修改，手动验证后继续
+# 原因：9 个 attack points × Edit 匹配困难 × 无超时保护（文档 150 行）
+
+# Case 2: pipeline-topology-registry (2026-05-29)
+# 症状：Reviser iteration 3 被用户中断
+# 原因：2 轮修订后文档膨胀至 515 行 + 10 个 attack points + eval 报告 4575 词
+# 分数：iteration 1=599, iteration 2=794, target=900
+# 处理：用户手动中断，iteration 2 的 794 分已是可接受结果
 ```
 
 ## Related Files
 
 - `plugins/forge/skills/eval/experts/protocol/reviser-protocol.md`
 - `docs/proposals/intent-driven-pipeline-branching/proposal.md`
+- `docs/proposals/pipeline-topology-registry/proposal.md`
