@@ -37,7 +37,7 @@ cmd/ → internal/ → pkg/
 | `internal/cmd/<command-group>/` | 复杂命令的子包（多文件拆分） | `task/`, `worktree/`, `feature/`, `fact/`, `prompt/`, `forensic/` |
 | `internal/cmd/base/` | 命令共享的基础设施 | `output.go`, `errors.go`, `claude.go` |
 
-当前状态：15 个顶层命令文件 + 7 个子包（`base`, `docs`, `fact`, `feature`, `forensic`, `prompt`, `task`, `worktree`）。
+当前状态：15 个顶层命令文件 + 8 个子包（`base`, `docs`, `fact`, `feature`, `forensic`, `prompt`, `task`, `worktree`）。
 
 ### 2.2 何时创建子包
 

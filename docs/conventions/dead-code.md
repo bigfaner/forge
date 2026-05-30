@@ -70,11 +70,11 @@ domains: [dead-code, deprecation, cleanup, maintenance]
 
 | 编号 | 偏差项 | 类别 | 当前状态 | 目标状态 | 风险等级 |
 |:----:|--------|------|----------|----------|:--------:|
-| DC-1 | `cmd.Debugf` 重复定义 | A（纯粹死代码/重复） | `internal/cmd/output.go` 与 `internal/cmd/base/output.go` 均定义了签名相同的 `Debugf`；`cmd/` 顶层使用本地版本，`base/` 版本无消费者 | 仅保留 `base.Debugf`，所有调用方统一导入 `base` | 低 |
+| ~~DC-1~~ | `cmd.Debugf` 重复定义 | A（纯粹死代码/重复） | **已修复** — `internal/cmd/output.go` 中的重复定义已删除，仅保留 `base.Debugf` | N/A | N/A |
 | DC-2 | `getTaskPhase` test-bridge 别名 | B（Test-Bridge） | `internal/cmd/task/claim.go:241` 定义 `var getTaskPhase = task.GetTaskPhase`；**有 5 处生产调用**（`validate_index.go` 第 299/333/369/381/410 行） | 删除别名，5 处调用迁移为 `task.GetTaskPhase` | **高** |
 | DC-3 | `checkExistingTaskState` test-bridge 别名 | B（Test-Bridge） | `internal/cmd/task/claim.go:169` 定义；有 1 处生产调用（`claim.go:83`） | 删除别名，调用迁移为 `task.CheckExistingTaskState` | 中 |
 | DC-4 | `compareVersionIDs` test-bridge 别名 | B（Test-Bridge） | `internal/cmd/task/claim.go:283` 定义；有 1 处生产调用（`claim.go:229`） | 删除别名，调用迁移为 `task.CompareVersionIDs` | 中 |
-| DC-5 | `FrontmatterData.Scope` deprecated 字段 | C（Deprecated） | `pkg/task/frontmatter.go:30` 标记 `Deprecated`，保留用于 `CheckLegacyScope` 迁移检测 | 迁移完成后移除字段和 `CheckLegacyScope` 相关代码 | 中 |
+| ~~DC-5~~ | `FrontmatterData.Scope` deprecated 字段 | C（Deprecated） | **已修复** — `FrontmatterData.Scope` 已从 `frontmatter.go` 移除，`CheckLegacyScope` 保留用于迁移检测 | N/A | N/A |
 
 ### 偏差详细说明
 
