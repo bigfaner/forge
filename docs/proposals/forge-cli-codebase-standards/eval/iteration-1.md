@@ -1,180 +1,107 @@
 ---
 iteration: 1
-title: "CTO Adversarial Scoring (Post Pre-Revision)"
+title: "CTO Adversarial Scoring — Independent Fresh Evaluation"
 date: "2026-05-30"
 scorer: "adversarial-cto"
 rubric: "proposal.md (1000 pts)"
 target: 900
 document: "proposal.md"
-baseline_score: 647
-pre_revision_report: "iteration-0-report.md"
 ---
 
-# Iteration 1 Eval Report: Forge CLI 代码库重组与规范建立
+# Eval Report — Iteration 1 (Fresh Independent Evaluation)
 
-## Phase 1 — Reasoning Audit
+## Score
+SCORE: 690/1000
 
-**Argument Chain Trace**:
+## Dimension Breakdown
+| Dimension | Score | Max | Notes |
+|-----------|-------|-----|-------|
+| Problem Definition | 90 | 110 | Evidence strong but some claims imprecise; urgency well-argued |
+| Solution Clarity | 95 | 120 | Approach concrete but user-facing behavior underdescribed |
+| Industry Benchmarking | 70 | 120 | Weak industry references; selected approach justification thin |
+| Requirements Completeness | 85 | 110 | Good scenario coverage; NFRs present but some gaps |
+| Solution Creativity | 40 | 100 | Self-described as "standard practice"; minimal innovation |
+| Feasibility | 85 | 100 | Technically sound; timeline reasonable but optimistic |
+| Scope Definition | 65 | 80 | In-scope items concrete but some vague; out-of-scope good |
+| Risk Assessment | 75 | 90 | Risks identified; mitigations mostly actionable but incomplete |
+| Success Criteria | 65 | 80 | SC testable but coverage gaps and internal inconsistencies |
+| Logical Consistency | 70 | 90 | Multiple cross-section contradictions found |
 
-Problem (conventions gap + tech debt) → Solution (4-phase: conventions → dead code → magic values → package restructuring) → Evidence (code citations) → Success Criteria (grep checks + counts)
+## Attack Points
 
-The argument chain is largely sound. The pre-revision successfully addressed the major structural flaw (monolithic Phase 2 split into 2a/2b/2c by blast radius). However, several reasoning gaps persist:
+1. **[Logical Consistency]** Cost estimates contradict across sections. Urgency section states "错过后成本上升 9-17 天" while the Do Nothing comparison table verdict says "成本上升约 10-19 天兼容层维护". These are different ranges (9-17 vs 10-19) for the same metric with no explanation. Must reconcile to a single justified range.
 
-1. The urgency argument ("指数增长") remains unquantified — this is a carryover weakness.
-2. The "Assumptions Challenged" section is unchanged and still uses mechanical labels ("XY Problem Detection", "5 Whys") without showing the actual reasoning chain. These are conclusion stickers, not reasoning demonstrations.
-3. The Phase 1 prescription ("产出必须包含每个领域的目标态定义（规范性，而非描述性）以及当前代码与目标态的偏差分析表") is a significant improvement but creates an implicit scope expansion — writing deviation analysis for every convention area is substantial work not reflected in the "1-2 days" timeline.
+2. **[Logical Consistency]** Package count contradicts. Evidence section states "pkg/ 有 17 个包" but Assumptions Challenged table says "pkg/ 19 个包的粒度总体合理". The actual count verified is 17. The assumption flip entry references a phantom number (19) that does not exist, undermining the credibility of the assumptions analysis.
 
-**Self-contradictions detected**:
-- The Dependency Readiness section now requires a cross-module audit before Phase 2a, but the timeline ("Phase 2a 约 0.5-1 天") does not account for the time this audit itself requires, nor for the possibility that the audit reveals blocking dependencies.
-- SC-10 introduces a 500-line file limit, but the Scope item for `pkg/` restructuring (item 8) only mentions "领域合并" and the mapping table does not address file splitting — so SC-10 is an orphan success criterion with no corresponding scope deliverable for HOW large files get split.
+3. **[Logical Consistency]** Comparison table Do Nothing verdict contains duplicated text: "且用户明确要求实际清理（约 10-19 天额外开销），且用户明确要求实际清理而非仅文档输出" — the clause "且用户明确要求实际清理" is repeated verbatim in the same cell. This is a proofreading error in a proposal asking for 6-10 days of execution time.
 
----
+4. **[Problem Definition — Evidence]** The evidence claims `"tests/results/raw-output.txt"` appears 2 times in `quality_gate.go` production code, but verification shows 6 occurrences of `tests/results/` paths in that file (including variants like `tests/results/unit-raw-output.txt`). The claim undercounts by using exact-string matching while the actual scope is broader. The SCs (SC-1) correctly use a broader grep pattern `tests/results/`, revealing the evidence section is narrower than the actual work scope.
 
-## Phase 2 — Rubric Scoring with Verification Stance
+5. **[Problem Definition — Evidence]** The evidence classifies `getTaskPhase` as a "test-bridge 别名函数" and notes "其中 getTaskPhase 在 validate_index.go 生产代码中亦有 5 处调用，非纯粹死代码". Verification confirms 5 production calls in `validate_index.go` via the `var getTaskPhase = task.GetTaskPhase` indirection. However, the proposal later (scope item 11) lumps this into "test-bridge 别名函数" cleanup alongside purely dead aliases. Deleting this indirection variable requires replacing 5 production call sites — this is not "test-bridge cleanup" but a production refactor disguised as housekeeping. The proposal underplays the blast radius.
 
-### 1. Problem Definition: 82/110
+6. **[Success Criteria — Coverage]** SC-5 exempts `root.go`, `output.go`, and `surfaces.go` from "zero top-level command files" but `surfaces_detect.go` (182 lines of surface detection logic) is not exempted. Since `surfaces_detect.go` is a companion to `surfaces.go` (shared surface detection, not a command implementation), it should be either exempted or explicitly addressed. SC-5 is ambiguous about its classification.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Problem stated clearly | 32/40 | Core problem is identifiable. The pre-revision fixed the evidence error (7 → 2 production occurrences, test files counted separately). However, the problem still conflates two distinct concerns: "missing conventions" (a documentation deficit) and "accumulated tech debt" (a code quality deficit). The title "代码库重组与规范建立" bundles both, but the causal link — "conventions gap CAUSES dead code and magic values" — is asserted rather than demonstrated. Dead code and magic values exist even in projects WITH conventions; they are maintenance failures, not convention failures. Two readers could reasonably disagree on whether this is a conventions problem or a maintenance discipline problem. |
-| Evidence provided | 34/40 | Evidence is specific and largely accurate after the pre-revision correction (区分生产代码和测试文件). The magic value, dead code, and package organization evidence is concrete and verifiable. Deduction: the `"3 次"` and `"5*time.Second"` retry parameters cited as magic values are legitimate concerns but the proposal does not verify how many call sites use these same values — are they actually duplicated, or is each occurrence a different retry with different semantics? Grouping them as "magic values" without duplication analysis inflates the perceived scope. |
-| Urgency justified | 16/30 | Unchanged from baseline. Quote: `v3.0.0 是唯一的大版本重构窗口。发布后 API 和包结构将趋于稳定，技术债修复成本指数增长。` "指数增长" is vague language without quantification (-20 pts per rubric deduction rule). "当前分支已重命名完成（task → forge），是建立规范的最后时机" — this is stated as fact. Why is it the last opportunity? Could conventions be established incrementally post-release? The urgency is reasonable but overstated with unverified superlatives. |
+7. **[Success Criteria — Coverage]** No SC covers the "PR review checklist" deliverable (scope item 14). The proposal commits to "在 docs/conventions/package-organization.md 中附加 PR review checklist 条目" but there is no testable criterion confirming its existence, content quality, or adoption.
 
-### 2. Solution Clarity: 84/120
+8. **[Success Criteria — Coverage]** Scope item 10a promises file splitting for `internal/cmd/` files over 500 lines during Phase 2c, and SC-10 covers this. But the same item mentions `pkg/` layer large files (5 files: `forgeconfig/config.go` 1272 lines, `task/pipeline.go` 1097 lines, `forgeconfig/detect_surface.go` 962 lines, `task/build.go` 638 lines, `task/autogen.go` 518 lines) as "后续迭代目标" without any SC tracking this deferral. There is no success criterion confirming the decision to defer was intentional and documented, leaving it as an untracked commitment.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Approach is concrete | 32/40 | The 4-phase structure (1 → 2a → 2b → 2c) is a major improvement over the original 2-phase. Each phase has a clear scope boundary. However, Phase 2c ("包结构重组") remains the most consequential phase and still lacks a complete target-state specification. The mapping table added in Scope item 8 lists 4 merge candidates but says "其余 16 个包 | 保留或微调 | Phase 1 偏差分析后确定最终归属" — which defers the architectural decision to Phase 1 output. A reader can explain the process but not the outcome. |
-| User-facing behavior described | 38/45 | Developer-facing scenarios are adequate (4 key scenarios). The pre-revision improved the test-bridge handling story by distinguishing pure reexports from internal exports. However, the developer experience DURING the transition is still missing — what happens to in-flight PRs when packages move? How does a developer update their branch after a package restructuring merge? |
-| Technical direction clear | 14/35 | The pre-revision fixed the `gorename` error (replaced with `gopls`). However, the technical direction for Phase 2c is still vague. Quote: `Go 的包重组主要是文件移动和 import 路径更新，工具链（gopls 内置重构、IDE refactor）支持良好。` This describes the MECHANICS but not the STRATEGY. Which dependency direction rules govern the restructuring? The proposal mentions `cmd -> internal -> pkg` as an existing constraint but does not specify whether the target state enforces this more strictly or adds new rules. |
+9. **[Success Criteria — Consistency]** SC-12f is a fallback condition that modifies SC-5 and SC-9 with the phrase "按实际可达目标调整" without specifying concrete fallback values. If cross-module dependencies exist, what does SC-5 become? "No more than N top-level files"? The fallback leaves SC-5 undefined in the failure path, making the SC set partially unsatisfiable-by-design.
 
-### 3. Industry Benchmarking: 55/120
+10. **[Solution Clarity — User-facing behavior]** The proposal does not describe the developer experience after reorganization. When a developer wants to add a new CLI command post-Phase-2c, what is the step-by-step workflow? Which directory? How do they register the command? The package organization rules are described abstractly ("cmd -> internal -> pkg" dependency direction, three-layer model) but the concrete developer workflow is missing — a gap for a proposal whose primary output is conventions.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Industry solutions referenced | 20/40 | Three references: `golang-standards/project-layout`, Go standard library domain-merge strategy, `goconst` linter. These are unchanged from baseline. The engagement remains shallow — `golang-standards/project-layout` is a community resource (not a standard; the repo README explicitly says so) and is cited without acknowledging this caveat. No reference to how mature Go projects (`golangci-lint`, `helm`, `terraform`) organize their `pkg/` layers, which would be directly relevant. |
-| At least 3 meaningful alternatives | 15/30 | Three alternatives listed. The "do nothing" alternative remains a textbook straw man — rejected with a single phrase: `Rejected: v3.0.0 是最后窗口`. The second alternative "仅输出规范文档" is rejected with `Rejected: 用户要求实际清理`. Neither rejection engages with the alternative's merits. A genuinely different alternative would be "incremental refactoring guided by linters without upfront conventions" — the proposal never considers this industry-standard approach. |
-| Honest trade-off comparison | 10/25 | Unchanged. The selected approach's con: `工作量较大` — vague without quantification. The "do nothing" pros: `零工作量` — trivializes the alternative. A more honest pro would be "zero regression risk." |
-| Chosen approach justified against benchmarks | 10/25 | Unchanged. The justification remains circular — the approach was chosen because it is the proposal. No argument for why "conventions-first" sequencing is superior to "lint-driven incremental refactoring" (the industry default for Go projects). |
+11. **[Industry Benchmarking]** The selected approach cites `golangci-lint` and `helm` as references but both are explicitly disclaimed: "此为作者对公开仓库结构的解读，非官方声明". This means the industry benchmarking section has zero verified industry references. Even `golang-standards/project-layout` is noted as "NOT an official Go standard". The entire benchmarking rests on the author's interpretation without verifiable external validation.
 
-### 4. Requirements Completeness: 70/110
+12. **[Industry Benchmarking]** Only 3 alternatives are listed (Do Nothing, Docs Only, Lint-driven), plus the selected approach. The rubric requires "at least 3 meaningful alternatives". "Do Nothing" and "Docs Only" are minimal-effort baselines. The third (Lint-driven) is the only genuinely different approach. Missing: (a) automated refactoring via `gopls` workspace actions as primary driver, (b) adopting an existing Go project layout template wholesale, (c) incremental per-package migration with feature flags, (d) Big Bang rewrite of targeted packages.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Scenario coverage | 28/40 | Four happy-path scenarios. The pre-revision improved the test-bridge edge case by distinguishing two categories. However, missing scenarios persist: (1) What happens when a convention document conflicts with existing code that cannot be changed without breaking tests? (2) How are in-flight PRs handled during restructuring? (3) What if a package merge creates circular dependencies? Error scenarios remain absent. |
-| Non-functional requirements | 25/40 | Three NFRs listed. The pre-revision added the cross-module dependency audit as a prerequisite (under Dependencies, not NFRs). However, the "向后兼容" claim is still not verified. Missing NFRs: rollback plan (what if Phase 2c introduces runtime regressions?), compile-time impact (does restructuring affect build times?), convention enforcement mechanism (how to prevent regression to pre-convention state?). |
-| Constraints & dependencies | 17/30 | Five constraints listed (Go 1.25, Cobra, dependency direction, pkg/types leaf, cross-module audit). The pre-revision added the cross-module dependency audit — good. However, the quality_gate.go file size constraint (1067 lines) is now partially acknowledged in SC-10 but not listed as a constraint here. The CI/CD pipeline dependency (do build scripts reference specific package paths?) remains unaddressed. |
+13. **[Requirements Completeness — Constraints]** The proposal claims Go 1.25 as a constraint for `0o644` octal literals but does not verify whether all CI environments, developer tooling, and IDE integrations support Go 1.25 syntax. The go.mod confirms `go 1.25`, but the constraint section does not address toolchain readiness beyond the module declaration.
 
-### 5. Solution Creativity: 32/100
+14. **[Risk Assessment]** No risk covers the scenario where Phase 1's dependency graph analysis (`go list -json ./pkg/...`) reveals unexpected cross-domain dependencies that invalidate the proposed three-layer model (types/infrastructure/domain). The proposal assumes the layer model can be retrofitted, but if `pkg/infocmd` (currently imported by 4 domain packages: `research`, `proposal`, `task`, `lesson`) itself depends on another domain package, the proposed merge to `pkg/util/` may create circular dependencies.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Novelty over industry baseline | 12/40 | The proposal explicitly disclaims novelty: `此方案并非创新，而是工程实践的标准操作——在重构窗口期建立规范并按 blast radius 递增顺序执行清理。` The blast-radius-ordered phasing is a modest improvement over the baseline's "do everything at once" but is itself standard release-train practice. No differentiation from standard Go community approaches. |
-| Cross-domain inspiration | 10/35 | Two sources: Go standard library and `goconst`. Both same-domain. No cross-domain borrowing — e.g., how JavaScript projects use `eslint --fix` for automated convention enforcement, or how Rust's `cargo clippy` pedantic mode manages strictness levels. |
-| Simplicity of insight | 10/25 | "Write conventions, then clean up by increasing blast radius" is simple but not insightful — it's standard engineering practice. The proposal still lacks any automation or tooling integration for enforcement. |
+15. **[Scope Definition — In-scope vagueness]** Scope item 8 contains a catch-all: "待 Phase 1 偏差分析裁决（~2 个）" without naming which 2 packages. The reader cannot determine the full scope of work without first completing Phase 1. This is scope-as-a-function-of-future-discovery — acceptable for exploration but problematic for effort estimation. The 6-10 day timeline cannot be validated if 2 unknown packages may or may not require reorganization.
 
-### 6. Feasibility: 64/100
+16. **[Solution Creativity]** The proposal explicitly states "此方案并非创新，而是工程实践的标准操作". The three-layer model is standard DDD layering. The blast-radius ordering is standard risk management. There is no cross-domain inspiration (no borrowing from JS/Rust/Java ecosystems), no novel tooling integration, no creative insight. The honesty is commendable but the creativity score reflects the self-assessment.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Technical feasibility | 24/40 | The pre-revision fixed the `gorename` error (replaced with `gopls`). The test-bridge concern is partially addressed by distinguishing two categories. However, the cross-module dependency audit is now listed as a prerequisite but its outcome is unknown — if the audit reveals that other Go modules DO import `forge-cli/internal/`, the "不保留兼容层" strategy becomes infeasible. This is an unacknowledged showstopper risk masquerading as a solved problem. |
-| Resource & timeline feasibility | 20/30 | Timeline updated to: Phase 1 (1-2d), Phase 2a (0.5-1d), Phase 2b (1-2d), Phase 2c (2-3d) = 4.5-8 days total. The Phase 1 timeline does not account for the new requirement to produce "目标态定义和偏差分析表" for every convention area — this is substantial analytical work that could double the Phase 1 estimate. Phase 2c (2-3 days for restructuring 19 packages) remains optimistic. |
-| Dependency readiness | 20/30 | The pre-revision added the cross-module audit requirement. However, the audit is described as a Phase 2a prerequisite, meaning it could block the entire execution pipeline. The proposal does not estimate how long the audit takes or what happens if it reveals blocking dependencies. Quote: `审计方法：grep -rn 'forge-cli/internal\|forge-cli/pkg' --include='*.go' 搜索 monorepo 根目录` — this is a reasonable audit method but the proposal treats it as a checkbox rather than a potential project-altering discovery. |
+17. **[Problem Definition — Urgency]** The urgency argument states "v3.0.0 是成本最低的重构窗口（非唯一，但错过后成本上升 9-17 天）". The parenthetical "非唯一" contradicts the urgency framing — if it is not the only window, the urgency is reduced. The cost estimate of 9-17 days (or 10-19 days depending on section) assumes all 17 packages would need simultaneous post-release moves, which is a worst-case assumption not supported by evidence.
 
-### 7. Scope Definition: 62/80
+18. **[Feasibility — Timeline]** Phase 2c at "2-3 days" covers reorganizing `internal/cmd/` (15 top-level files into sub-packages) AND the `pkg/` layer (up to 6 package merges). For `pkg/infocmd` alone (imported by 4 packages: `research`, `proposal`, `task`, `lesson`), import path changes cascade through all dependents. The total scope — 15 cmd file moves + 6 pkg merges with cascading import updates + test updates + compilation verification — in 2-3 days is optimistic.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| In-scope items are concrete | 26/30 | 12 items listed, most concrete. The pre-revision improved item 8 with a mapping table (current → target packages) and item 11 with test-bridge categorization. However, item 8 still has a catch-all row: `其余 16 个包 | 保留或微调 | Phase 1 偏差分析后确定最终归属` — this is an area, not a deliverable. The new item (file size limit via SC-10) adds an implicit scope item (split large files) that is not explicitly listed as a deliverable. |
-| Out-of-scope explicitly listed | 20/25 | Seven out-of-scope items. The pre-revision did not change this section. Still missing: `go.mod`/`go.sum` changes as explicit scope/no-scope item, file-level refactoring of large files (now implied by SC-10 but not stated in scope or out-of-scope). |
-| Scope is bounded | 16/25 | Bounded by "v3.0.0 pre-release." The 4-phase structure improves boundness. However, Phase 1's new requirement to produce "目标态定义" means the scope of Phase 2c is effectively open — it depends on what Phase 1 defines as the target state. If Phase 1 identifies 25 deviations, does Phase 2c fix all 25? No explicit scope ceiling. |
+19. **[Requirements Completeness — Error scenarios]** No error scenario covers `goconst` violations in test files. The proposal evidence shows 17 test-file occurrences of magic paths. SC-1 only greps `forge-cli/internal/` and `forge-cli/pkg/`, excluding `forge-cli/tests/` and `*_test.go` files. Test-file magic values may or may not be in scope — the proposal is silent, and SC-1 as written would pass even if test files still contain hardcoded paths.
 
-### 8. Risk Assessment: 58/90
+20. **[Scope Definition]** Scope item 15 (`make check-cross-module-deps`) is scoped as Phase 2a but exists to "为 Phase 2c 的'不保留兼容层'决策提供持续保护". If Phase 2c is descoped per SC-12f fallback, this CI check becomes orphaned infrastructure. The proposal does not address whether it should be removed or retained in the fallback scenario.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Risks identified | 20/30 | Four risks listed. The pre-revision improved Risk 1's mitigation to account for phased execution. Missing risks persist: (1) convention docs becoming stale (no enforcement mechanism); (2) Phase 1 target-state definition being wrong, causing Phase 2c to restructure against incorrect guidance; (3) cross-module dependency audit revealing blocking imports — this is now acknowledged as a prerequisite but not listed as a risk. |
-| Likelihood + impact rated | 20/30 | Ratings are honest. Risk 2 ("规范过于理想化") has M likelihood and L impact — this seems understated. If conventions are wrong, Phase 2c executes against wrong guidance, which should be HIGH impact since it affects the entire restructuring. |
-| Mitigations are actionable | 18/30 | Risk 1 mitigation is actionable (per-step build+test verification). Risk 2 mitigation — `规范基于现有代码模式提炼，而非凭空设计` — is a design choice, not a mitigation. A real mitigation would be "Phase 1 output reviewed by [role] before Phase 2 begins." Risk 3 mitigation — `每个包内通过文件名和注释区分子职责` — is a design guideline, not actionable against the risk of merged packages becoming incoherent. Risk 4 mitigation is actionable (run `make lint`). |
+## Reasoning Audit
 
-### 9. Success Criteria: 60/80
+### Problem -> Solution Chain
+The argument: "codebase lacks coding standards" -> "establish standards + reorganize code in 4 phases". The link is sound — standards without cleanup is explicitly rejected as an alternative. However, the proposal conflates two distinct problems: (1) missing documented standards and (2) existing code quality issues (magic values, dead code, package disorganization). Dead code and magic values exist even in projects WITH conventions; they are maintenance failures, not convention failures. The solution addresses both simultaneously, which is appropriate for the v3.0.0 window but conflates causation.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Criteria are measurable and testable | 24/30 | SC-1 through SC-4 are excellent (concrete grep commands). SC-5 improved with explicit exemptions (root.go, output.go, surfaces.go). SC-10 (500-line limit) is measurable. Deductions: SC-7 says "test-bridge 纯重导出别名已删除、内部导出别名已迁移" — "已迁移" is testable in principle but the migration target is unspecified (migrated to where? `pkg/task/`? A new `internal/testbridge/`?). SC-8 says "每个包含目标态定义和偏差分析" — "目标态定义" is subjective. What qualifies as a valid target-state definition? Could two reviewers disagree? |
-| Coverage is complete | 16/25 | Improved by SC-10 (file size). Gaps: (1) No SC for golangci-lint passing (mentioned in risks but not as a success gate). (2) No SC for convention document quality beyond "6 files exist." (3) No SC verifying the cross-module dependency audit was completed. (4) No SC for test-bridge internal-export migration completion — SC-7 says "已迁移" but does not specify what "completed migration" looks like. |
-| SC internal consistency | 20/25 | Improved over baseline. The test-bridge contradiction is resolved by distinguishing two categories. SC-5 exemptions are now explicit. However: SC-10 (500-line limit) conflicts with Scope item 8 which only addresses package merging, not file splitting — there is no scope deliverable for HOW large files get split, making SC-10 potentially unsatisfiable within the defined scope. SC-9 (pkg <= 12) and the mapping table item 8 show 4 explicit merges (19 → ~15), with "其余 16 个包保留或微调" — reaching <= 12 requires merging at least 7 more packages beyond the 4 listed, but these additional merges are unspecified. |
+### Solution -> Evidence Chain
+Evidence is well-grounded in verifiable codebase facts. I verified most claims against the actual code and found them substantially accurate, with exceptions noted in attacks #4 and #5. The evidence section is one of the strongest parts of this proposal.
 
-### 10. Logical Consistency: 74/90
+### Evidence -> Success Criteria Chain
+Most SCs trace directly to evidence items (SC-1 through SC-4 -> magic value examples, SC-6 -> Debugf, SC-7 -> dead code). However, SC-5 (command subpackaging) and SC-9 (package count) have no direct evidence antecedents — they are solution-driven rather than evidence-driven.
 
-| Criterion | Score | Justification |
-|-----------|-------|---------------|
-| Solution addresses the stated problem | 30/35 | The 4-phase solution addresses the stated problems well. Conventions (Phase 1) → dead code (Phase 2a) → magic values (Phase 2b) → package restructuring (Phase 2c) is a logical sequence. Gap: the problem says "无法指导新代码的编写" but the solution focuses on cleaning existing code with less emphasis on FUTURE enforcement. |
-| Scope ↔ Solution ↔ Success Criteria aligned | 24/30 | Improved alignment. In-Scope items 1-6 → SC-8. Items 7-8 → SC-5, SC-9. Items 9-12 → SC-1 through SC-4, SC-6, SC-7. Misalignment: SC-10 (500-line limit) has no corresponding scope item for file splitting. SC-9 (pkg <= 12) requires more merges than the mapping table specifies. |
-| Requirements ↔ Solution coherent | 20/25 | Key scenarios map to convention docs and restructuring. The constraint `pkg/types/ 作为 leaf package` is respected. The cross-module dependency prerequisite is coherent. Gap: the NFR "向后兼容" claims no external impact, but deleting exported test-bridge symbols (Scope item 11) changes the public API surface of `internal/cmd/task/`, which could affect any code that imports it — even within the monorepo. |
+### Self-Contradiction Check
+Found 3 distinct contradictions (attacks #1, #2, #3). The `consistency_check_result` at the bottom of the proposal acknowledges "2 conflicts_found" but this underestimates the actual count. The automated checker missed the cost-estimate discrepancy and the package-count discrepancy.
 
----
+### SC Consistency Deep-Dive
+Clustered by affected area:
 
-## Phase 3 — Blindspot Hunt
+- **Package structure group**: SC-5, SC-9, SC-12f — SC-5 and SC-9 have fallback modifications via SC-12f but fallback values are undefined for SC-5.
+- **Magic values group**: SC-1 through SC-4, SC-8 (goconst) — Satisfiable as a set, but SC-1 scope excludes test files creating a coverage gap.
+- **Dead code group**: SC-6, SC-7 — Satisfiable in isolation. However, the `Scope` field deletion claim in SC-7 is problematic: `Scope` is actively used by `CheckLegacyScope` in `query.go`, `list.go`, `add.go`, and `build.go` for legacy task migration detection. Deleting `Scope` without replacing the migration check would break those codepaths. The proposal does not address this dependency.
+- **Documentation group**: SC-8 — "6 个与 forge-cli 相关的规范文件" (扩展 2 + 新增 4) — countable and satisfiable.
+- **Build stability group**: SC-11 — Standard and testable.
 
-### [blindspot-1] SC-10 is an orphan success criterion with no execution plan
-Quote: `SC-10: 无超过 500 行的单个 .go 文件（当前 quality_gate.go 1067 行等巨型文件需按职责拆分）`
-SC-10 requires splitting large files but no scope item describes HOW these files get split. The scope lists "重组 internal/cmd/ 包结构" (item 7) and "重组 pkg/ 层" (item 8) but neither mentions file splitting. "重组" means restructuring packages, not splitting files. SC-10 creates a deliverable that has no execution path in the defined scope. Either add a scope item for file splitting, or remove SC-10.
+## Blindspots
 
-### [blindspot-2] Phase 1 scope creep from "目标态定义 + 偏差分析" requirement
-Quote: `产出必须包含每个领域的目标态定义（规范性，而非描述性）以及当前代码与目标态的偏差分析表。`
-This is a new requirement added in the pre-revision. It substantially increases Phase 1's scope beyond "write convention documents" to include "define target states for every domain AND produce deviation analysis tables." For 4 new convention files + 2 extensions, this could require analyzing every file in `forge-cli/` against each convention — a significant effort. The "1-2 days" Phase 1 estimate does not reflect this expanded scope.
+1. **Scope field deletion creates migration regression**: The proposal marks `Scope` as dead code for deletion (SC-7, scope item 10). But `CheckLegacyScope` in `pkg/task/migrate.go` and 4 production call sites in `query.go`, `list.go`, `add.go`, `build.go` actively read `Scope` to detect and block legacy tasks. Deleting `Scope` from `FrontmatterData` would silently break legacy migration detection. The proposal must either: (a) keep `Scope` until all legacy tasks are migrated and remove `CheckLegacyScope` first, or (b) design an alternative detection mechanism.
 
-### [blindspot-3] No rollback plan
-The pre-revision did not address this. Quote: `不保留兼容层`. If Phase 2c introduces subtle runtime bugs (not just compilation errors), there is no rollback strategy. The mitigations ("每步重组后立即 go build + go test") are prevention, not rollback. For a proposal touching 19 packages, the absence of a rollback plan remains a significant blindspot. A concrete rollback mechanism would be: "Each phase is a single revertible commit; git revert restores the previous state."
+2. **pkg/util/ as a dumping ground**: The proposal creates `pkg/util/` and proposes merging ~3 small packages into it. The Go community (including standard library philosophy and `golang-standards/project-layout`) strongly discourages `util` packages — packages should be named by what they provide. The Phase 1 dependency graph might reveal these packages have distinct responsibilities better preserved under more specific names.
 
-### [blindspot-4] No convention enforcement mechanism
-The proposal writes convention documents but includes no mechanism to prevent future violations. The proposal's own evidence shows the codebase already has conventions that are violated (e.g., existing `docs/conventions/` docs). Without CI integration (`goconst` as a lint gate, custom `golangci-lint` rules, pre-commit hooks), writing more conventions will repeat the same pattern. This is a blindspot because the problem statement says "无法指导新代码的编写" but the solution only addresses existing code, not the ongoing enforcement gap.
+3. **No rollback plan for Phase 1 review gate**: The proposal says "Phase 1 产出须由项目维护者 review 后方可进入 Phase 2" but does not define review criteria, reviewer identity, SLA, or what happens if review takes 2 weeks. The Phase 2-4 timeline assumes immediate Phase 1 approval.
 
-### [blindspot-5] "consistency_check_result: pass" is not credible
-The document includes `consistency_check_result: status: pass, pairs_checked: 45, conflicts_found: 0` at the end. This is an automated consistency check result. However, the evaluation found multiple consistency issues: SC-10 vs. no file-splitting scope item, SC-9 target (<=12) vs. only 4 explicit merges in the mapping table, and the Phase 1 timeline vs. expanded scope. Either the consistency checker's algorithm is incomplete, or the check was run before the pre-revision changes. Including a "pass" result that a human auditor can falsify undermines credibility.
+4. **Missing definition of "command implementation file"**: SC-5 says "internal/cmd/ 下零个顶层命令实现文件" with 3 exemptions. But the classification criteria are unstated. Is `verify_task_done.go` a command implementation or shared validation? Is `cleanup.go` a command or lifecycle utility? Without explicit criteria, SC-5 is subjective.
 
-### [blindspot-6] Alternatives table "Source" column for the selected approach says "本方案"
-Quote: `规范先行 + 代码重组 | 本方案 | ... | **Selected: 四阶段确保方向正确、风险可控**`
-The "Source" column for the selected approach is "本方案" (this proposal). This means the proposal is benchmarking itself against itself. A legitimate industry benchmarking would cite an existing project or published pattern that uses the conventions-first-then-restructure approach. Without an external reference, the "justification against benchmarks" is circular.
+5. **Scope item numbering error**: The proposal has two items numbered "10" (scope items 10 and 10a). While 10a is a sub-item, the numbering is inconsistent with other hierarchical structures (Phase 2a/2b/2c).
 
----
-
-## Bias Detection Report
-
-Paragraph counting: The proposal has approximately 38 paragraphs total (including table rows as discrete content units).
-
-- Annotated regions: 4 attack points / 8 annotated paragraphs = density 0.50
-- Unannotated regions: 14 attack points / 30 unannotated paragraphs = density 0.47
-- Ratio (annotated/unannotated): 1.07
-
-The ratio is close to 1.0, indicating no significant scoring bias toward or against pre-revised regions. Annotated regions received proportional scrutiny.
-
----
-
-## Summary
-
-| Dimension | Score | Max |
-|-----------|-------|-----|
-| Problem Definition | 82 | 110 |
-| Solution Clarity | 84 | 120 |
-| Industry Benchmarking | 55 | 120 |
-| Requirements Completeness | 70 | 110 |
-| Solution Creativity | 32 | 100 |
-| Feasibility | 64 | 100 |
-| Scope Definition | 62 | 80 |
-| Risk Assessment | 58 | 90 |
-| Success Criteria | 60 | 80 |
-| Logical Consistency | 74 | 90 |
-| **Total** | **641** | **1000** |
-
-**Score change from baseline: 641 vs 647 (-6)**
-
-The pre-revision addressed several high-severity findings (Phase 2 split into 2a/2b/2c, test-bridge categorization, target-state definition requirement, gorename fix, evidence correction). However, the score decreased slightly because:
-
-1. The new "目标态定义 + 偏差分析" requirement for Phase 1 expanded scope without adjusting the timeline, creating a new feasibility concern.
-2. The new SC-10 (500-line limit) introduced a scope-solution misalignment — a success criterion with no corresponding execution plan.
-3. The cross-module dependency audit, while properly added as a prerequisite, creates an unacknowledged blocking risk that could invalidate the entire execution plan.
-4. The Industry Benchmarking section was not improved at all, remaining the weakest dimension.
-
-The primary path to 900: (1) Add concrete industry references with genuine engagement (not just name-dropping). (2) Add a rollback plan. (3) Either add file-splitting to scope or remove SC-10. (4) Adjust Phase 1 timeline to account for target-state + deviation analysis work. (5) Add a convention enforcement mechanism to prevent future regression.
+6. **No compile-time impact NFR**: Package reorganization affects Go parallel compilation. Merging packages reduces granularity and may increase build times. For a proposal touching 17 packages, the absence of any build-time impact assessment is a minor gap.
