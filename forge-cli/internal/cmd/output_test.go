@@ -91,13 +91,13 @@ func TestPrintWarning(t *testing.T) {
 
 func TestDebugf(t *testing.T) {
 	t.Run("verbose true", func(t *testing.T) {
-		out := captureStderr2(func() { Debugf(true, "val=%d", 42) })
+		out := captureStderr2(func() { base.Debugf(true, "val=%d", 42) })
 		if !strings.Contains(out, "[debug] val=42") {
 			t.Errorf("expected debug output, got: %s", out)
 		}
 	})
 	t.Run("verbose false", func(t *testing.T) {
-		out := captureStderr2(func() { Debugf(false, "val=%d", 42) })
+		out := captureStderr2(func() { base.Debugf(false, "val=%d", 42) })
 		if out != "" {
 			t.Errorf("expected no output, got: %s", out)
 		}

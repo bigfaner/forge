@@ -68,9 +68,6 @@ Body`
 		if err != nil {
 			t.Fatalf("should not error on legacy scope field: %v", err)
 		}
-		if fm.Scope != "all" {
-			t.Errorf("Scope = %q, want %q", fm.Scope, "all")
-		}
 		if fm.SurfaceKey != "" {
 			t.Errorf("SurfaceKey should be empty, got %q", fm.SurfaceKey)
 		}

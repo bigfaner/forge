@@ -132,7 +132,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-delete-dead-code.md",
       "record": "records/6-delete-dead-code.md",
       "surface-key": ".",

@@ -69,25 +69,25 @@ type AllCompletedResult struct {
 func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
-		Debugf(verbose, "project root not found: %v", err)
+		base.Debugf(verbose, "project root not found: %v", err)
 		return nil, base.ErrProjectNotFound()
 	}
-	Debugf(verbose, "project root: %s", projectRoot)
+	base.Debugf(verbose, "project root: %s", projectRoot)
 
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
-		Debugf(verbose, "feature not found: %v", err)
+		base.Debugf(verbose, "feature not found: %v", err)
 		return nil, base.ErrFeatureNotSet()
 	}
-	Debugf(verbose, "feature: %s", featureSlug)
+	base.Debugf(verbose, "feature: %s", featureSlug)
 
 	// Guard: only proceed if .forge/state.json signals allCompleted.
 	forgeState := feature.ReadForgeState(projectRoot)
 	if forgeState == nil || !forgeState.AllCompleted {
-		Debugf(verbose, "no forge state with allCompleted — skipping")
+		base.Debugf(verbose, "no forge state with allCompleted — skipping")
 		return nil, nil
 	}
-	Debugf(verbose, "forge state: feature=%s allCompleted=true", forgeState.Feature)
+	base.Debugf(verbose, "forge state: feature=%s allCompleted=true", forgeState.Feature)
 
 	// Consume the state — clear it before proceeding
 	_ = feature.ClearForgeState(projectRoot)
@@ -95,15 +95,15 @@ func checkAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		Debugf(verbose, "index.json not found: %s (%v)", indexPath, err)
+		base.Debugf(verbose, "index.json not found: %s (%v)", indexPath, err)
 		return nil, nil
 	}
-	Debugf(verbose, "loaded index: %d tasks", index.TaskCount())
+	base.Debugf(verbose, "loaded index: %d tasks", index.TaskCount())
 
 	// All tasks must be completed or skipped (rejected does not count as done)
 	for _, t := range index.TasksMap() {
 		if t.Status != types.StatusCompleted && t.Status != types.StatusSkipped {
-			Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
+			base.Debugf(verbose, "task %s is %s — not all done", t.ID, t.Status)
 			return nil, nil
 		}
 	}
