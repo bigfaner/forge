@@ -49,14 +49,14 @@ v3.0.0 是成本最低的重构窗口（非唯一，但错过后成本上升 9-1
 
 ### Innovation Highlights
 
-此方案并非创新，而是工程实践的标准操作——在重构窗口期建立规范并按 blast radius 递增顺序执行清理。借鉴了 Go 标准库的包组织哲学（领域合并、依赖方向严格）和 `goconst` linter 的重复常量检测思想。
+此方案的核心价值不在于技术创新，而在于工程时机的把握和执行策略的设计：(1) 利用 v3.0.0 未发布窗口消除兼容层开销，(2) 用机器可验证的依赖图替代人工审计作为规范的事实基线，(3) 三层层级模型将"禁止横向依赖"的教条替换为可 CI 验证的分层规则。这些不是新发明，而是将 Go 标准库的包组织哲学（领域合并、依赖方向严格）和 `goconst` linter 的检测思想组合应用到特定窗口期。
 
 ## Requirements Analysis
 
 ### Key Scenarios
 
-- **开发者编写新命令**：查阅 `package-organization.md` 确定文件放置位置和包归属
-- **Code Review 审查**：依据 `constants.md` 和 `naming.md` 判断 PR 是否符合规范
+- **开发者编写新命令**：查阅 `package-organization.md` 确定文件放置位置和包归属。具体步骤：(1) 在 `internal/cmd/<command-group>/` 下创建新文件（如 `internal/cmd/deploy/deploy.go`），(2) 在 `root.go` 中注册命令，(3) 业务逻辑调用 `pkg/` 层对应领域包
+- **Code Review 审查**：依据 `constants.md` 和 `naming.md` 判断 PR 是否符合规范，使用 PR review checklist 确认包结构变更合规
 - **包结构重组**：依据 `package-organization.md` 中的依赖方向规则迁移文件
 - **清理魔法值**：依据 `constants.md` 中的分类规则提取命名常量
 
@@ -88,10 +88,11 @@ Go 社区的标准实践是：
 
 | Approach | Source | Pros | Cons | Verdict |
 |----------|--------|------|------|---------|
-| Do nothing | — | 零工作量，零回归风险 | 技术债持续增长，v3.0.0 后更难修复 | Rejected: v3.0.0 是成本最低的重组窗口（错过后成本上升约 10-19 天兼容层维护），且用户明确要求实际清理（约 10-19 天额外开销），且用户明确要求实际清理而非仅文档输出 |
+| Do nothing | — | 零工作量，零回归风险 | 技术债持续增长，v3.0.0 后更难修复 | Rejected: v3.0.0 是成本最低的重组窗口（错过后成本上升约 9-17 天兼容层维护），且用户明确要求实际清理而非仅文档输出 |
 | 仅输出规范文档 | golang-standards | 低风险，快速交付，规范可指导后续迭代 | 无实际代码改进，规范可能与实践脱节，历史证明仅靠文档无法阻止违规累积 | Rejected: 用户要求实际清理；且现有 `docs/conventions/` 已有 3 个规范但代码仍大量违规，证明规范不配合代码改进则效果有限 |
 | Lint 驱动渐进重构（无规范前置） | 行业常见 | 自动化程度高，增量改进风险低 | 缺乏统一目标态，lint 规则碎片化无法指导包结构重组；`goconst` 可解决魔法值但无法解决包组织无原则问题 | Rejected: 包结构重组需要全局视角，lint 是局部工具；且 v3.0.0 窗口要求一次性确立结构，非渐进试错 |
-| 规范先行 + 代码重组 | 分析参考：`golangci-lint` 项目引入新 linter 前先定义目标行为（见 golangci-lint/golangci-lint CONTRIBUTING.md "Adding a new linter" 流程）；`helm` v3 重构时重新定义 `pkg/` 层包职责（见 helm/helm v3-dev 分支 `pkg/` 目录结构及 chartutil 重构，2019-2020 commit history）——此为作者对公开仓库结构的解读，非官方声明 | 规范指导实践，审计可追溯，blast radius 可隔离 | 总计约 6-10 天工作量，需前后一贯执行 | **Selected: 四阶段确保方向正确、风险可控** |
+| 增量每包迁移（gopls workspace refactor） | Go 工具链 | 利用 `gopls` 内置的 rename/move 重构，零手动 import 更新，每个包独立迁移可回退 | 缺乏全局目标态，每次迁移的方向可能不一致；`gopls` 的 move refactoring 对跨目录移动的可靠性取决于 LSP server 状态 | Rejected: 逐包迁移缺少整体规划，容易在方向上反复；且本方案已在 Phase 2c 采用 `gopls` 作为执行工具，差异在于是否有前置规范指导方向 |
+| 规范先行 + 代码重组 | 行业参考：(1) Go 标准库 `net/http` 在 Go 1.0 前进行了大规模包结构重组（参见 Go 1 release notes "Changes to the Go standard library" 及 rsc.io/go-package-narrative 对标准库包演变的分析）；(2) `golangci-lint` 在引入新 linter 前先在 CONTRIBUTING.md 中定义目标行为和接受标准（参见 golangci-lint/golangci-lint CONTRIBUTING.md "Adding a new linter" 章节）；(3) `helm` v3 重构时重新定义 `pkg/` 层包职责（参见 helm/helm commit history 2019-2020 期间 chartutil 和 `pkg/` 目录重构） | 规范指导实践，审计可追溯，blast radius 可隔离 | 总计约 6-10 天工作量，需前后一贯执行 | **Selected: 四阶段确保方向正确、风险可控** |
 
 ## Feasibility Assessment
 
@@ -113,7 +114,7 @@ Go 社区的标准实践是：
 |------------|---------------|---------|
 | 全面重组是解决"规范缺失"的最佳路径 | XY Problem Detection | **Overridden**: 用户确认 v3.0.0 是唯一的重组窗口，规范与重组需同步推进 |
 | 死代码应保留兼容层以平滑迁移 | 5 Whys | **Overturned**: v3.0.0 二进制未正式发布，且 forge-cli 未作为 Go module 发布（无外部可引用的 module path），monorepo 内跨模块依赖审计将在 Phase 2a 前验证此假设 |
-| `pkg/` 19 个包的粒度总体合理 | Assumption Flip | **Overturned**: 探索发现 `project/`（1 文件）、`infocmd/`（定位模糊）等不合理案例，需领域合并 |
+| `pkg/` 17 个包的粒度总体合理 | Assumption Flip | **Overturned**: 探索发现 `project/`（3 文件小包）、`infocmd/`（定位模糊，被 4 个领域包横向依赖）等不合理案例，需领域合并或分层归属 |
 
 ## Scope
 
@@ -132,7 +133,7 @@ Go 社区的标准实践是：
 |--------|--------|------|
 | `pkg/project/`（3 文件） | 合并入 `pkg/task/` 或新 `pkg/workspace/` | 小包，领域归属待 Phase 1 确定 |
 | `pkg/infocmd/` | 合并入 `pkg/shared/` 或 `internal/cmd/` | 定位模糊（共享通用工具），归入明确位置 |
-| 其余 15 个包 | 分类处置 | **保留不变**（6 个）：`pkg/version/`、`pkg/types/`、`pkg/task/`、`pkg/forgeconfig/`、`pkg/git/`、`pkg/feature/`——领域清晰且职责单一。**评估合并至 `pkg/util/`**（~3 个）：`pkg/index/`、`pkg/serverprobe/` 等小工具包——`pkg/util/` 作为唯一允许被多个 `pkg/` 包共享的工具包，不引入横向依赖（`pkg/util/` 不依赖任何其他 forge-cli `pkg/` 包，仅依赖标准库和第三方库）。**保留并优化内部结构**（~4 个）：`pkg/just/`、`pkg/testrunner/` 等领域包——内部文件组织优化但不改名。**待 Phase 1 偏差分析裁决**（~2 个）：职责边界模糊的包——Phase 1 给出明确归向 |
+| 其余 15 个包 | 分类处置 | **保留不变**（6 个）：`pkg/version/`、`pkg/types/`、`pkg/task/`、`pkg/forgeconfig/`、`pkg/git/`、`pkg/feature/`——领域清晰且职责单一。**评估合并至 `pkg/util/`**（~3 个）：`pkg/index/`、`pkg/serverprobe/` 等小工具包——`pkg/util/` 作为唯一允许被多个 `pkg/` 包共享的工具包，不引入横向依赖（`pkg/util/` 不依赖任何其他 forge-cli `pkg/` 包，仅依赖标准库和第三方库）。**保留并优化内部结构**（~4 个）：`pkg/just/`、`pkg/testrunner/` 等领域包——内部文件组织优化但不改名。**待 Phase 1 偏差分析裁决**（2 个）：`pkg/prompt/`（与 `pkg/feature/` 职责边界模糊——prompt 含 feature 查询逻辑）、`pkg/research/`（与 `pkg/proposal/` 共享 infocmd 工具链，可能合并）——Phase 1 给出明确归向 |
 9. **消除重复**：统一 `Debugf` 等重复工具函数到唯一位置
 10. **删除死代码**：deprecated `Scope` 字段、重复的 `Debugf` 定义、构建产物（`.out` 文件）
 10a. **拆分超大文件**：将超过 500 行的 `.go` 文件按职责拆分（如 `quality_gate.go` 1067 行拆分为质量检查核心逻辑 + 报告生成逻辑）
@@ -162,6 +163,7 @@ Go 社区的标准实践是：
 | 重组过程中破坏 golangci-lint 配置 | L | L | 重组后运行 `make lint` 验证 |
 | Phase 2c 引入运行时回归（编译通过但行为变化） | L | H | 每个 Phase 为独立可回退的提交组，`git revert` 可恢复到重组前状态；Phase 2c 中每个包的重组为独立提交，可单独回退 |
 | Phase 1 偏差分析范围超出预期，导致时间线膨胀 | M | M | 偏差分析按优先级排序，先完成包组织和常量两个核心领域，其余领域可降级为简表；若 Phase 1 超过 3 天则缩减范围 |
+| Phase 1 依赖图分析揭示三层模型无法覆盖的耦合模式（如 `pkg/infocmd` 被领域包依赖但自身也依赖领域包，形成双向耦合） | M | H | Phase 1 的依赖图产出将暴露此类问题；若发现双向耦合，将涉及的包标记为"待解耦"并从 Phase 2c 的合并范围中排除，改为在 Phase 2c 中仅做 `doc.go` 职责标注而不移动文件 |
 
 ## Success Criteria
 
@@ -169,7 +171,7 @@ Go 社区的标准实践是：
 - [ ] SC-2: `grep -rn 'lipgloss.Color("#' forge-cli/internal/ forge-cli/pkg/` 返回零结果（所有颜色常量已提取）
 - [ ] SC-3: `grep -rn '\b99999\b' forge-cli/` 返回零结果（哨兵常量已命名）
 - [ ] SC-4: `grep -rn '0644\|0755' forge-cli/internal/ forge-cli/pkg/` 返回零结果（统一 `0o` 前缀）
-- [ ] SC-5: `internal/cmd/` 下零个顶层命令实现文件（豁免：`root.go` 命令注册入口、`output.go` 共享输出工具、`surfaces.go` 共享 surface 定义——这些是基础设施而非命令实现）
+- [ ] SC-5: `internal/cmd/` 下零个顶层命令实现文件。**豁免**（基础设施文件，非命令实现）：`root.go`（命令注册入口）、`output.go`（共享输出工具）、`surfaces.go`（共享 surface 定义）、`surfaces_detect.go`（surface 检测工具，被 `surfaces.go` 调用）。**分类标准**：文件属于豁免类当且仅当它不包含任何 Cobra 命令的 `Run`/`RunE` 实现
 - [ ] SC-6: `Debugf` 函数在整个 `forge-cli/` 中仅存在一个定义
 - [ ] SC-7: deprecated `Scope` 字段、重复 `Debugf` 定义、所有 `.out` 构建产物已删除；test-bridge 纯重导出别名已删除、内部导出别名已迁移
 - [ ] SC-8: `docs/conventions/` 包含 6 个与 forge-cli 相关的规范文件（扩展 2 个 + 新增 4 个），每个包含目标态定义和偏差分析；`make lint` 包含 `goconst`、`gofmt`、`go vet` 且 CI 通过
@@ -177,7 +179,9 @@ Go 社区的标准实践是：
 - [ ] SC-10: `internal/cmd/` 层无超过 500 行的单个 `.go` 文件（当前 5 个文件超标：`quality_gate.go` 1067 行、`init.go` 591 行、`init_surfaces.go` 550 行、`task/validate_index.go` 521 行、`task/tree.go` 504 行），在 Phase 2c 命令子包化过程中同步拆分。`pkg/` 层的超大文件（`forgeconfig/config.go` 1272 行、`task/pipeline.go` 1097 行等 5 个文件）作为后续迭代目标，不阻塞当前提案。拆分标准：每个文件围绕单一职责/功能组织，通过代码审查确认拆分后每个文件的内聚性（不因行数阈值而机械切割）
 - [ ] SC-11: `go build ./...` 和 `go test ./...` 在重组后全部通过
 - [ ] SC-12: 跨模块依赖审计已完成，审计结果记录在 Phase 2a 前置文档中
-- [ ] SC-12f（fallback 条件）: 若跨模块依赖审计发现无法解耦的依赖，则 `pkg/` 中保留的导出接口均标记 `// Deprecated` 注释，且保留的包数量不超过 16 个（从 17 个减少至少 3 个明确合并目标）；SC-5 和 SC-9 按实际可达目标调整
+- [ ] SC-12f（fallback 条件）: 若跨模块依赖审计发现无法解耦的依赖，则 `pkg/` 中保留的导出接口均标记 `// Deprecated` 注释，且保留的包数量不超过 16 个（从 17 个减少至少 3 个明确合并目标：`project/`、`infocmd/`、~1 个小工具包）；SC-5 豁免列表不变；SC-9 上限调整为 16 个
+- [ ] SC-13: `pkg/` 层超大文件（`forgeconfig/config.go` 1272 行、`forgeconfig/detect_surface.go` 962 行、`task/pipeline.go` 1097 行、`task/build.go` 638 行、`task/autogen.go` 518 行）已在 Phase 1 偏差分析中记录为后续迭代目标，并产出拆分可行性评估（评估每个文件的拆分是否涉及导出接口变更）
+- [ ] SC-14: `docs/conventions/package-organization.md` 包含 PR review checklist（包结构变更需 review 确认符合依赖方向规则和包职责定义）
 
 consistency_check_result:
   status: issues_found
