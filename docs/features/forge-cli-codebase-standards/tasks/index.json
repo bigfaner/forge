@@ -93,7 +93,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-write-naming.md",
       "record": "records/3-write-naming.md",
       "type": "doc"
