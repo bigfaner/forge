@@ -17,7 +17,6 @@
 ```
 
 Type-specific additions:
-- `harness`: priority improvement table (P0/P1/P2)
 - `consistency`: "Files Modified" and "Residual Issues"
 - `design`: Breakdown-Readiness gate status
 - `journey`: Per-dimension threshold pass/fail table; eval-skipped flag if parse failure after retry

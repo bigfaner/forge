@@ -9,7 +9,7 @@ Determine the project's interface surface type to drive per-surface generation s
 
 ## 0.5.1 Read Surface Configuration
 
-Read `.forge/config.yaml` from the project root and extract the `surface` field.
+Read `.forge/config.yaml` from the project root and extract the `surfaces` field.
 
 ```bash
 forge surfaces
@@ -22,7 +22,7 @@ forge surfaces
 
 ## 0.5.2 Auto-Detection Fallback
 
-If `.forge/config.yaml` does not contain a `surface` field, infer the surface type from code reconnaissance signals in Step 1. Use the Verification Method defined in each type file (`types/cli.md`, `types/api.md`, etc.) to probe for interface indicators.
+If `.forge/config.yaml` does not contain a `surfaces` field, infer the surface type from code reconnaissance signals in Step 1. Use the Verification Method defined in each type file (`types/cli.md`, `types/api.md`, etc.) to probe for interface indicators.
 
 Priority: config value > auto-detection. If auto-detection is ambiguous (multiple types detected), ask the user which surface type to prioritize.
 

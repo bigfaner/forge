@@ -86,7 +86,7 @@ Evaluates whether claims in the Journey are grounded in verifiable facts or clea
 
 Evaluates whether the Journey follows the surface type's `required_outcomes` rules and testing strategy proportions.
 
-**Dynamic adaptation**: This dimension's evaluation is parameterized by the detected surface type. Check against the corresponding surface rule file in `skills/gen-journeys/rules/surface-<type>.md`.
+**Dynamic adaptation**: This dimension's evaluation is parameterized by the detected surface type. Check against the corresponding surface rule file in gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory).
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
