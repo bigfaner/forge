@@ -92,29 +92,39 @@ Set the `complexity` field in task frontmatter accordingly.
 
 If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
 
-**Reference Files Generation**: For each derived task, generate inline precise Reference Files instead of proposal section pointers.
+**Reference Files Generation**:
 
-1. **Inline format**: Each Reference File entry specifies a concrete file path and the specific change or requirement relevant to this task:
+<HARD-RULE>
+1. BEFORE writing Reference Files, Grep `^#{1,4} ` on `docs/proposals/<slug>/proposal.md` to extract all headers. Only use headers that actually exist. If no match found, omit `(ref: ...)` — never fabricate headers.
+2. First entry MUST be the full proposal path. Do NOT replace or remove it:
+   ```
+   - `docs/proposals/<slug>/proposal.md` — <relevant sections>
+   ```
+</HARD-RULE>
+
+1. **Inline format**: Each additional entry specifies a concrete file path and the specific change or requirement:
    ```
    - <file-path>: <specific change description or requirement excerpt>
    ```
    Example: `- quality_gate.go: tests/e2e/results/raw-output.txt 路径需替换为 GetTestResultsDir()`
-2. **Source traceability**: Each inline entry should include a source trace in parentheses indicating where in the proposal this requirement originates:
+2. **Source traceability**: Each entry may include a verified source reference:
    ```
-   - <file-path>: <specific change description> (source: proposal.md#Section-Title)
+   - <file-path>: <specific change description> (ref: <actual-proposal-header>)
    ```
-3. **Maximum 5 entries per task**: Keep Reference Files concise. Each entry should be 1-2 lines.
-4. **Coverage**: Every coding task must have ≥1 inline reference. Doc tasks follow the same standard.
-5. **External documents**: If the task requires reading existing design documents (e.g., files under `docs/lessons/`, `docs/conventions/`, `docs/reference/`), include them as additional inline entries with the specific section or requirement needed.
+   Header in `(ref: ...)` MUST match an extracted header.
+3. **Maximum 5 entries** (excluding the mandatory proposal first entry). Each entry 1-2 lines.
+4. **Coverage**: Every coding task must have ≥1 inline reference (excluding the proposal entry). Doc tasks follow the same standard.
+5. **External documents**: Include files under `docs/lessons/`, `docs/conventions/`, `docs/reference/` as additional inline entries when relevant.
 
 **Example** — given a task "Add complexity field to prompt.go renderTemplate":
 ```markdown
 ## Reference Files
-- forge-cli/pkg/prompt/prompt.go: renderTemplate() 需新增 {{COMPLEXITY}} 占位符替换 (source: proposal.md#Constraints-&-Dependencies)
-- forge-cli/pkg/prompt/data/coding-enhancement.md: Step 1.5 段落用 <!-- IF NOT_LOW --> 标记包裹 (source: proposal.md#Proposed-Solution)
+- `docs/proposals/<slug>/proposal.md` — Constraints & Dependencies, Proposed Solution
+- forge-cli/pkg/prompt/prompt.go: renderTemplate() 需新增 {{COMPLEXITY}} 占位符替换 (ref: Constraints & Dependencies)
+- forge-cli/pkg/prompt/data/coding-enhancement.md: Step 1.5 段落用 <!-- IF NOT_LOW --> 标记包裹 (ref: Proposed Solution)
 ```
 
-Replace the default Reference Files section content (`- \`docs/proposals/<slug>/proposal.md\` — Source proposal`) with the generated inline references. This is a content replacement instruction — there is no `{{REFERENCE_FILES}}` token in the template; the agent edits the `## Reference Files` section directly.
+Replace the template's default `## Reference Files` content. No `{{REFERENCE_FILES}}` token exists; edit the section directly.
 
 **Priority**: P0 | P1 | P2. Classified by structural role in the proposal:
 - P0: implements the core mechanism (feature won't work without it) OR blocks other tasks in the dependency graph

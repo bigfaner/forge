@@ -24,6 +24,7 @@ Tag priority hierarchy: `<EXTREMELY-IMPORTANT>` (agent-level, non-negotiable) > 
    - These directives override agent judgment, ## Implementation Notes, and strategy defaults
    - Never substitute, modify, or skip a Hard Rules directive
 8. SPEC AUTHORITY FALLBACK — if the synthesized strategy does not include a Reference Files declaration, you MUST still read the task file's `## Reference Files` section and apply the same authority rules (priority: `## Hard Rules` > `## Reference Files` > existing code). Output: "Fallback: Loaded Reference Files from task file: [list]"
+9. REFERENCE FILES PARSING — in `## Reference Files`: backtick-quoted paths → read directly; inline entries → the part before the first `:` is the file path; `(ref: ...)` / `(source: ...)` are traceability notes, NOT file paths — do NOT open them. Skip non-existent paths.
 </EXTREMELY-IMPORTANT>
 
 ## Execution Protocol

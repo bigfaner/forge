@@ -133,9 +133,15 @@ Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user
 
 #### Reference Files Generation (Non-UI Tasks)
 
-For each non-UI business task, populate `## Reference Files` with inline precise references instead of tech-design.md section pointers.
+<HARD-RULE>
+1. BEFORE writing Reference Files, Grep `^#{1,4} ` on `docs/features/<slug>/design/tech-design.md` to extract all headers. Only use headers that actually exist. If no match found, omit `(ref: ...)` — never fabricate headers.
+2. First entry MUST be the full tech-design path:
+   ```
+   - `docs/features/<slug>/design/tech-design.md` — <relevant sections>
+   ```
+</HARD-RULE>
 
-**Inline format**: Each Reference File entry specifies a concrete file path and the specific change or requirement relevant to this task:
+**Inline format**: Each additional entry specifies a concrete file path and the specific change or requirement:
 ```
 - <file-path>: <specific change description or requirement excerpt>
 ```
@@ -146,21 +152,21 @@ For each non-UI business task, populate `## Reference Files` with inline precise
 3. For each relevant section, extract the specific requirement or change description, not just the section title
 4. Merge, deduplicate, keep the 2-5 most relevant entries
 
-**Source traceability**: Each inline entry should include a source trace in parentheses indicating where in the tech design this requirement originates:
+**Source traceability**: Each entry may include a verified source reference:
 ```
-- <file-path>: <specific change description> (source: design/tech-design.md#Section-Title)
+- <file-path>: <specific change description> (ref: <actual-design-header>)
 ```
+Header in `(ref: ...)` MUST match an extracted header.
 
-**Maximum 5 entries per task**: Keep Reference Files concise. Each entry should be 1-2 lines.
+**Maximum 5 entries** (excluding the mandatory design-first entry). Each entry 1-2 lines.
 
-**Fallback**: for tasks without clear tech-design.md matches, include the most relevant architecture overview section with a description of what it defines.
+**Fallback**: for tasks without clear tech-design.md matches, include the most relevant architecture overview section.
 
 **Checklist** (verify before finalizing each task):
-- Every generated business task has >=1 inline Reference File entry
-- Each entry uses inline format with source traceability
+- First Reference File entry is the full tech-design path
+- >=1 inline Reference File entry per task
+- Each entry uses inline format with verified `(ref: ...)`
 - UI tasks use `rules/ui-placement.md` requirements instead — no overlap
-
-**Note**: breakdown-tasks reads from tech-design (not proposal), so Reference Files inline content will differ from quick-tasks in practice, but the generation rule format is identical.
 
 ### Surface-Key/Type Inference
 Surface-key/type resolution uses a two-layer strategy:
