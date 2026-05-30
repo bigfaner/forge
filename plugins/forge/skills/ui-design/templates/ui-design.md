@@ -56,10 +56,11 @@ status: Draft
 - **Position**: {{position — e.g., "Center, main area"}}
 - **Size Hint**: {{size — e.g., "Fills remaining space"}}
 
-### ASCII Layout Mockup
+### Panel Design (per `rules/tui-panel-requirements.md`)
 
-<!-- Use box-drawing characters (Modern Dark theme) or ASCII characters (Minimal ASCII theme).
-     Show the exact visual structure of this panel with sample data. -->
+<!-- Fill in each mandatory structural requirement below. Refer to rules/tui-panel-requirements.md for authoritative definitions and enforcement rules. -->
+
+#### ASCII Layout Mockup
 
 ```
 ┌─ {{Panel Title}} ────────────────────────────┐
@@ -69,9 +70,7 @@ status: Draft
 └────────────────────────────────────────────────┘
 ```
 
-### Dimensions
-
-<!-- Concrete numeric values. No "approximately" or "appropriate". -->
+#### Dimensions
 
 | Element | Value | Formula / Notes |
 |---------|-------|-----------------|
@@ -81,25 +80,19 @@ status: Draft
 | Bar/chart max width | {{N}} chars | explicit character count |
 | String truncation maxLen | {{N}} chars | formula for path/text truncation |
 
-### Character Palette
-
-<!-- Every visual element MUST specify its Unicode character with code point. No "TBD". -->
+#### Character Palette
 
 | Element | Character | Unicode | Reason |
 |---------|-----------|---------|--------|
 | {{element}} | {{char}} | {{U+XXXX}} | {{why this character was chosen}} |
 
-### Color Mapping
-
-<!-- Foreground/background from the selected TUI theme palette. -->
+#### Color Mapping
 
 | Element | Character | Foreground | Background |
 |---------|-----------|------------|------------|
 | {{element}} | {{char}} | {{color #}} | {{color # or "-"}} |
 
-### Edge Cases
-
-<!-- 5 mandatory scenarios. Feature with CJK text adds scenario 6. -->
+#### Edge Cases
 
 | # | Scenario | Expected |
 |---|----------|----------|

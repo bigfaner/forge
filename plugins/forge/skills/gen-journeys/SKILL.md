@@ -76,13 +76,13 @@ When generating Journeys, apply the following per-surface guidance:
 #### API Surface
 
 - Mandatory error outcomes: HTTP status code boundaries (4xx client errors, 5xx server errors)
-- Test level emphasis: integration-heavy ratio (test strategy guidance from `rules/surface-api.md`)
+- Test level emphasis: Balanced 50/50 (Contract 50% / Journey smoke 50%, from `rules/surface-api.md`)
 - Edge case focus: authentication failures, rate limiting, payload validation
 
 #### Web Surface
 
 - Mandatory outcomes: page load states, navigation transitions, form validation feedback
-- Test level emphasis: e2e-heavy ratio (test strategy guidance from `rules/surface-web.md`)
+- Test level emphasis: Balanced 50/50 (Contract 50% / Journey smoke 50%, from `rules/surface-web.md`)
 - Edge case focus: browser compatibility, responsive layout breaks, client-side validation
 
 #### CLI Surface
@@ -94,7 +94,7 @@ When generating Journeys, apply the following per-surface guidance:
 #### TUI Surface
 
 - Mandatory outcomes: rendering states, keyboard navigation, screen transitions
-- Test level emphasis: integration-heavy ratio (test strategy guidance from `rules/surface-tui.md`)
+- Test level emphasis: Contract 80% / Journey smoke 20% (from `rules/surface-tui.md`)
 - Edge case focus: terminal resize, key binding conflicts, rendering artifacts
 
 #### Mobile Surface

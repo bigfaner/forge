@@ -179,12 +179,23 @@ Combine router registry with link-crawling for complete coverage:
 
 ### Step 4: Explore Pages
 
-For each route, explore with agent-browser one by one:
+#### Handling Pages Already Explored in Step 2b
+
+Step 2b visits 3-5 wrapped routes for layout identification. To avoid redundant exploration:
+
+1. **Reuse Step 2b snapshots**: For routes already visited in Step 2b, reuse the snapshot data collected during that step. Do not re-open these pages with agent-browser.
+2. **Extract page-specific elements only**: Apply Layout Element Filtering (below) to the reused snapshots to isolate page-specific content. Step 2b already computed the shared-element intersection — skip that computation and directly filter against the known `layout.elements`.
+3. **Explore remaining routes**: For all routes NOT visited in Step 2b, proceed with the full exploration workflow below.
 
 ```
-ab('open <baseUrl><route>')
-ab('wait --load networkidle')
-snapshot = abJson('snapshot -i')
+// For routes visited in Step 2b — reuse existing snapshot
+if route in step_2b_visited_routes:
+  snapshot = step_2b_snapshots[route]
+  // Skip layout comparison, filter against known layout.elements
+else:
+  ab('open <baseUrl><route>')
+  ab('wait --load networkidle')
+  snapshot = abJson('snapshot -i')
 ```
 
 #### Layout Element Filtering

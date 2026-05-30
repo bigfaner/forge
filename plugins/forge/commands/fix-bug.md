@@ -1,7 +1,7 @@
 ---
 name: fix-bug
 description: Systematically fix a bug using TDD workflow — reproduce, write failing tests, fix, verify. Ensures the bug is captured by tests before any code changes.
-allowed-tools: Bash Read Write Edit Grep Glob Agent LSP
+allowed-tools: Bash Read Write Edit Grep Glob Agent LSP AskUserQuestion
 argument-hint: "[error-msg] [scope]"
 ---
 
@@ -140,9 +140,11 @@ Add an e2e test only when the bug is observable at the API, CLI, or UI surface.
 
 | Bug surface | Test location | Runner |
 |-------------|--------------|--------|
-| UI behavior | `tests/<journey>/ui.spec.ts` | Playwright |
-| API endpoint | `tests/<journey>/api.spec.ts` | fetch |
-| CLI command | `tests/<journey>/cli.spec.ts` | child_process |
+| UI behavior | `tests/<journey>/ui.spec.ts` | 浏览器自动化 (test profile) |
+| API endpoint | `tests/<journey>/api.spec.ts` | HTTP 客户端 |
+| CLI command | `tests/<journey>/cli.spec.ts` | 子进程执行 |
+| Mobile | `tests/<journey>/mobile.yaml` | Maestro YAML |
+| TUI | `tests/<journey>/tui.spec.ts` | 子进程 + stdin pipe |
 
 Bug fix tests go to the journey directory corresponding to the affected surface.
 
@@ -255,7 +257,7 @@ Apply the "notable knowledge" heuristics below to determine if any notable knowl
 
 If `/consolidate-specs` has previously generated vocabulary (from drift-detection runs), use the domain keywords from existing `docs/conventions/` and `docs/business-rules/` files to suggest which target file each extracted item belongs to. This is a suggestion — the agent makes the final classification decision based on content.
 
-If no vocabulary exists (no prior `/consolidate-specs` run), classify unassisted using the domain-to-file mapping from `/consolidate-specs` skill Step 5.
+If no vocabulary exists (no prior `/consolidate-specs` run), classify unassisted using the domain-to-decision-file mapping from `/consolidate-specs` rules/overlap-detection.md.
 
 #### Step 4: Silent exit if no notable knowledge
 

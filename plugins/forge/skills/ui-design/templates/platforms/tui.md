@@ -60,48 +60,6 @@ TUI navigation is keyboard-driven. All interactions are expressed through keymap
 
 ## Structural Requirements
 
-Every TUI panel design must include these 5 mandatory sections. Missing any section is a spec defect.
+Every TUI panel design must include all mandatory structural requirements defined in `rules/tui-panel-requirements.md`. This includes the 5 mandatory items (ASCII Layout Mockup, Dimensions, Character Palette, Color Mapping, Edge Cases) plus additional per-panel specs (States, Key Bindings, Data Binding).
 
-### 1. ASCII Layout Mockup
-
-Box-drawing characters showing the precise visual structure of each panel. Use the theme's character set for all visual elements.
-
-### 2. Dimensions
-
-Concrete numeric values for every size. No "appropriate" or "approximately".
-
-```
-Panel width: viewport - 2 (borders)
-Content area: panel width - 4 (border + padding)
-Column widths: explicit character counts
-Bar chart max: explicit character count
-Path truncation: explicit maxLen formula
-```
-
-### 3. Character Palette
-
-Every visual element must specify its Unicode character and selection rationale.
-
-| Element | Character | Unicode | Reason |
-|---------|-----------|---------|--------|
-
-### 4. Color Mapping
-
-Foreground and background colors from the theme palette for every visual element.
-
-| Element | Character | Foreground | Background |
-|---------|-----------|------------|------------|
-
-### 5. Edge Cases
-
-Must cover these 5 mandatory scenarios:
-
-| # | Scenario | Expected |
-|---|----------|----------|
-| 1 | Narrow terminal (80x24) | Layout does not overflow |
-| 2 | Wide terminal (140+ col) | Layout does not distort |
-| 3 | Mixed numeric widths (1 vs 100) | Right-pad to widest value, column-aligned |
-| 4 | Long paths/strings (>50 chars) | Truncate with ".../" preserving trailing segment |
-| 5 | No data | Centered "No data" placeholder |
-
-For features involving CJK text, add scenario 6: CJK character width calculated correctly (2 columns per CJK character).
+Missing any mandatory section is a spec defect. Refer to `rules/tui-panel-requirements.md` for the authoritative definitions, edge case scenarios, and enforcement rules.

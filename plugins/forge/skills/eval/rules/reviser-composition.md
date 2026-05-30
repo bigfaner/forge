@@ -25,8 +25,6 @@ The reviser receives **only** the protocol + merged attacks + optional context. 
 
 # Reviser Type-Specific Constraints
 
-- `consistency`: Do NOT modify `prd/`. Classify attack points by fix target before invoking.
-- `journey`: Revise Journey document based on failed dimensions and attack points. Preserve surface-specific `required_outcomes` structure. After reviser completes:
-- `contract`: Revise Contract documents based on failed dimensions and attack points. Preserve six-dimension structure and Preconditions mutual exclusivity. After reviser completes:
-- `consistency`: re-assemble document bundle
-- Increment iteration counter, return to Step 2
+- `journey`: Revise Journey document based on failed dimensions and attack points. Preserve surface-specific `required_outcomes` structure. After reviser completes: verify the revised Journey file still satisfies all required sections from the original workflow; increment iteration counter, return to Step 2.
+- `contract`: Revise Contract documents based on failed dimensions and attack points. Preserve six-dimension structure and Preconditions mutual exclusivity. After reviser completes: verify each revised Contract file retains valid six-dimension structure and no Preconditions overlap; increment iteration counter, return to Step 2.
+- `consistency`: Do NOT modify `prd/`. Classify attack points by fix target before invoking. After reviser completes: re-assemble the document bundle from individually revised files, then increment iteration counter and return to Step 2.

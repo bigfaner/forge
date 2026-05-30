@@ -13,7 +13,6 @@ Expert files are located at `experts/scorer/`.
 | `contract` | `[qa]` |
 | `validate-code` | `[code-reviewer]` |
 | `validate-ux` | `[ux-auditor]` |
-| `harness` | _(uses generic inline fallback)_ |
 
 Fallback for unmapped types: use the generic inline prompt below (no expert file loaded).
 
@@ -100,8 +99,8 @@ Type-specific inputs:
 - `ui-*`: add `PRD_PATH` = `docs/features/<slug>/prd/prd-ui-functions.md` (if exists)
 - `consistency`: add `SCOPE` = value from `--scope`
 - `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
-- `journey`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
-- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surface` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
+- `journey`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surfaces` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
+- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surfaces` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
 
 Do NOT pass reviser change summaries to the scorer.
 

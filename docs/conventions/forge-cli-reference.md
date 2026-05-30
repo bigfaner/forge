@@ -15,7 +15,7 @@ domains: [cli, commands, reference, skills, task-list]
 |------|------|--------|
 | `forge init` | 初始化 forge 项目环境 | `init.go` |
 | `forge config` | 管理 forge 配置 | `config.go` |
-| `forge feature [slug]` | 设置或显示当前 feature | `feature.go` |
+| `forge feature [slug]` | 设置或显示当前 feature | `feature/feature.go` |
 | `forge proposal [slug]` | 列出或查看 proposal 详情 | `proposal.go` |
 | `forge lesson [name]` | 列出或查看 lesson 详情 | `lesson.go` |
 | `forge cleanup` | 清理已完成的任务状态 | `cleanup.go` |
@@ -30,7 +30,7 @@ domains: [cli, commands, reference, skills, task-list]
 
 ### forge task — 任务生命周期管理
 
-源文件：`task_parent.go`
+源文件：`task/` 目录（`task/register.go`, `task/task_parent.go` 等）
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
@@ -58,16 +58,16 @@ domains: [cli, commands, reference, skills, task-list]
 
 ### forge worktree — Git Worktree 管理
 
-源文件：`worktree.go`
+源文件：`worktree/` 目录（`worktree/register.go`, `worktree/cmd_start.go` 等）
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge worktree start [slug]` | 创建 worktree 并在其中启动 Claude（slug 可选，支持 `-i` 交互选择） | `worktree.go` |
-| `forge worktree list` | 列出所有 git worktree | `worktree.go` |
-| `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree.go` |
-| `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree.go` |
-| `forge worktree push` | 推送当前 worktree 分支到远程并设置 upstream 跟踪 | `worktree.go` |
-| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表）；无参数时显示所有 worktree | `worktree.go` |
+| `forge worktree start [slug]` | 创建 worktree 并在其中启动 Claude（slug 可选，支持 `-i` 交互选择） | `worktree/cmd_start.go` |
+| `forge worktree list` | 列出所有 git worktree | `worktree/cmd_list.go` |
+| `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree/cmd_remove.go` |
+| `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree/cmd_resume.go` |
+| `forge worktree push` | 推送当前 worktree 分支到远程并设置 upstream 跟踪 | `worktree/cmd_push.go` |
+| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表）；无参数时显示所有 worktree | `worktree/cmd_status.go` |
 
 ### forge config — 配置管理
 
@@ -81,7 +81,7 @@ domains: [cli, commands, reference, skills, task-list]
 
 ### forge feature — Feature 管理
 
-源文件：`feature.go`
+源文件：`feature/` 目录（`feature/feature.go`, `feature/feature_complete.go`）
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
@@ -92,13 +92,13 @@ domains: [cli, commands, reference, skills, task-list]
 
 ### forge forensic — 会话取证分析
 
-源文件：`forensic/register.go`, `forensic/forensic.go`
+源文件：`forensic/` 目录（`forensic/register.go`, `forensic/commands.go`, `forensic/search.go`, `forensic/extract.go`, `forensic/subagents.go`）
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic/forensic.go` |
-| `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic/forensic.go` |
-| `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic/forensic.go` |
+| `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic/search.go` |
+| `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic/extract.go` |
+| `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic/subagents.go` |
 
 ### forge fact — 项目事实管理
 

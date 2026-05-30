@@ -15,7 +15,8 @@ flowchart TD
     S0["0. Set Active Feature"] --> A["1. Claim Task"]
     A --> B{"MAIN_SESSION?"}
     B -->|"yes"| C["1.5 Follow Task Instructions"]
-    C --> LOOP(["Step 3: Continue Loop"])
+    C --> SUB["1.5.5 Submit + Commit"]
+    SUB --> LOOP(["Step 3: Continue Loop"])
     B -->|"no"| D["2. Dispatch + Verify"]
     D --> LOOP
     LOOP --> A
@@ -74,7 +75,9 @@ If `MAIN_SESSION == "true"`:
      --var TEST_RESULTS="<test-output>" \
      --description "Main session task <TASK_ID> failed — verify output and fix issues"
    ```
-5. Skip to Step 3.
+5. **Submit record** — If task instructions did not already invoke submit-task, run `Skill(skill="forge:submit-task")`. Skip this step if the task explicitly handled its own submission.
+6. **Commit changes** — If task instructions did not already commit and there are uncommitted changes, invoke `Skill(skill="forge:git-commit")`. Skip this step if the task explicitly handled its own commit or if STATUS is "blocked".
+7. Skip to Step 3.
 
 Else: proceed to Step 2.
 

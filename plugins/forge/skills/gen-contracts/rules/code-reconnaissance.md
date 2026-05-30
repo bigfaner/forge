@@ -24,15 +24,35 @@ Read source code to extract ground-truth values for enriching Contracts with rea
 | Timeout configurations | Any timeout constants, default wait durations |
 | Model transitions | Init -> Idle -> Processing -> Result states |
 
-Build Fact Table with source citations:
+Build Fact Table with source citations. Each fact entry follows the canonical JSON schema (defined in `forge-cli/pkg/facttable/facttable.go`):
 
-```markdown
-## Fact Table
-| Key | Value | Source |
-|-----|-------|--------|
-| CLI_COMMAND_FEATURE | forge feature | cmd/feature.go:15 |
-| TUI_AWAIT_TIMEOUT | 3000ms | internal/tui/config.go:8 |
+```json
+{
+  "fact_id": "CLI_COMMAND_FEATURE",
+  "source": "static",
+  "subject": "CLI command for creating features",
+  "kind": "signature",
+  "value": "forge feature",
+  "confidence": "inferred",
+  "updated_at": "<ISO8601 timestamp>"
+}
 ```
+
+```json
+{
+  "fact_id": "TUI_AWAIT_TIMEOUT",
+  "source": "static",
+  "subject": "TUI async await timeout duration",
+  "kind": "output_format",
+  "value": "3000ms",
+  "confidence": "inferred",
+  "updated_at": "<ISO8601 timestamp>"
+}
+```
+
+All entries use `"source": "static"` to distinguish from runtime facts (added by Run-to-Learn with `"source": "runtime"`). Static entries default to `"confidence": "inferred"` (confirmed at runtime by R2L). The `kind` field must be one of: `signature`, `output_format`, `error_code`, `side_effect`, `precondition`.
+
+During reconnaissance, a Markdown summary table may be used as an intermediate scratchpad for AI reasoning, but the final output written to `.forge/fact-table.json` MUST use this JSON format.
 
 <HARD-RULE>
 - Every Fact Table value must cite source file and line number. Unknown sources -> `UNKNOWN`. Do not fabricate.
