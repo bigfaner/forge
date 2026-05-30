@@ -119,7 +119,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-write-deadcode-conventions.md",
       "record": "records/5-write-deadcode-conventions.md",
       "type": "doc"
