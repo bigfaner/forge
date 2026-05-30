@@ -145,7 +145,7 @@
       "title": "Cross-module dependency audit and CI check",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "7-cross-module-audit.md",
       "record": "records/7-cross-module-audit.md",
       "surface-key": ".",

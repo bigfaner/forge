@@ -1,4 +1,4 @@
-.PHONY: all build install test lint clean-coverage coverage check-docs
+.PHONY: all build install test lint clean-coverage coverage check-docs check-cross-module-deps
 
 GO := go
 BINARY_NAME := forge
@@ -35,3 +35,13 @@ clean-coverage:
 
 check-docs:
 	$(GO) test -v ./internal/docsync/
+
+check-cross-module-deps:
+	@echo "Checking for cross-module imports of forge-cli/internal..."
+	@matches=$$(grep -rn '"forge-cli/internal' --include='*.go' .. 2>/dev/null | grep -v '^../forge-cli/' || true); \
+	if [ -n "$$matches" ]; then \
+		echo "Error: cross-module imports of forge-cli/internal detected:" >&2; \
+		echo "$$matches" >&2; \
+		exit 1; \
+	fi; \
+	echo "OK: no cross-module imports of forge-cli/internal"
