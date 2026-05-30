@@ -38,7 +38,7 @@
       "title": "编写使用指南 usage-guide.md",
       "priority": "P1",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-usage-guide.md",
       "record": "records/4-usage-guide.md",
       "type": "doc"
