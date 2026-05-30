@@ -21,7 +21,7 @@
       "title": "Audit .gitignore template entries completeness",
       "priority": "P2",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "2-audit-gitignore-entries.md",
       "record": "records/2-audit-gitignore-entries.md",
       "type": "doc"
