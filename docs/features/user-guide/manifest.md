@@ -1,7 +1,7 @@
 ---
 feature: "user-guide"
 created: "2026-05-30"
-status: tasks
+status: completed
 mode: quick
 ---
 
