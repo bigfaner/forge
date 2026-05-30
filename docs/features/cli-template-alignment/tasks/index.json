@@ -8,7 +8,7 @@
       "title": "Remove CLAUDE.md generation from forge init",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-remove-claudemd-gen.md",
       "record": "records/1-remove-claudemd-gen.md",
       "surface-key": ".",
