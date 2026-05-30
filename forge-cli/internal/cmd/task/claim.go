@@ -84,7 +84,7 @@ func executeClaim() (*ClaimResult, error) {
 	}
 
 	// Check for existing task state
-	continueTask, hasIssues, issues := checkExistingTaskState(projectRoot, index, statePath)
+	continueTask, hasIssues, issues := task.CheckExistingTaskState(projectRoot, index, statePath)
 
 	if hasIssues {
 		return nil, base.ErrDataIntegrity(issues)
@@ -167,11 +167,6 @@ func executeClaim() (*ClaimResult, error) {
 	}, nil
 }
 
-// checkExistingTaskState delegates to pkg/task.CheckExistingTaskState.
-// Kept as alias for internal callers and tests.
-// Note: first parameter (projectRoot) is unused but preserved for API compatibility.
-var checkExistingTaskState = task.CheckExistingTaskState
-
 func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	type taskWithKey struct {
 		key string
@@ -230,7 +225,7 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 		if pi != pj {
 			return pi < pj
 		}
-		return compareVersionIDs(eligibleTasks[i].t.ID, eligibleTasks[j].t.ID)
+		return task.CompareVersionIDs(eligibleTasks[i].t.ID, eligibleTasks[j].t.ID)
 	})
 
 	twk := eligibleTasks[0]
@@ -239,10 +234,6 @@ func claimNextTask(index *task.TaskIndex) (string, *task.Task, error) {
 	index.SetTask(twk.key, t)
 	return twk.key, &t, nil
 }
-
-// getTaskPhase delegates to pkg/task.GetTaskPhase.
-// Kept as alias for internal callers and tests.
-var getTaskPhase = task.GetTaskPhase
 
 func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bool, []string) {
 	rawUnmet := task.GetUnmetDeps(index, selfID, t.Dependencies)
@@ -281,10 +272,6 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 
 	return len(unmet) == 0, unmet
 }
-
-// compareVersionIDs delegates to pkg/task.CompareVersionIDs.
-// Kept as alias for internal callers and tests.
-var compareVersionIDs = task.CompareVersionIDs
 
 func printTaskDetails(key string, t *task.Task, projectRoot, featureSlug string) {
 	_ = key // key is still used internally for routing, but no longer emitted

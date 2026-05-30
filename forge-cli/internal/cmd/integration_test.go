@@ -1160,7 +1160,7 @@ func TestCheckExistingTaskState_LoadFail(t *testing.T) {
 	_ = os.MkdirAll(filepath.Dir(statePath), 0755)
 	_ = os.WriteFile(statePath, []byte("invalid json"), 0644)
 
-	continueTask, hasIssues, issues := taskpkg.ExportCheckExistingTaskState(dir, index, statePath)
+	continueTask, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 	if continueTask {
 		t.Error("should not continue with invalid state")
 	}

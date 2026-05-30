@@ -31,9 +31,6 @@ var (
 
 	// ExportReadSubmitData delegates to pkg/task.ReadSubmitData for file/stdin IO.
 	ExportReadSubmitData = task.ReadSubmitData
-
-	// ExportCheckExistingTaskState delegates to pkg/task.CheckExistingTaskState for claim continuation checks.
-	ExportCheckExistingTaskState = task.CheckExistingTaskState
 )
 
 // --- Internal-only functions (cannot migrate due to cmd-layer dependencies) ---
