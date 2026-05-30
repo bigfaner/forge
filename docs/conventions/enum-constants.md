@@ -1,6 +1,6 @@
 ---
 title: "Enum & Constant Organization"
-domains: [constants, enums, types, status, surface-type, priority, magic-values]
+domains: [constants, enums, types, status, surface-type, priority, magic-values, paths, timeouts, colors, sentinel-values, permissions]
 ---
 
 # Enum & Constant Organization
@@ -116,5 +116,122 @@ var (
 - **Task Type** constants (`TypeCodingFeature`, etc.) — remain in `pkg/task/types.go` due to deep coupling with task logic
 - **Config dotpath** keys (`"eval.proposal"`, etc.) — not enum values, but nested config paths
 - **Path** constants (`"prd"`, `"design"`, etc.) — not enums, belong to their own domain
+
+**Scope**: [CROSS]
+
+---
+
+## Non-Enum Constant Management
+
+The following rules govern constants that are **not enum-like** (do not form a closed set of mutually exclusive options) but still require centralized management. Full classification rules, extraction criteria, and deviation analysis are in [constants.md](constants.md).
+
+### TECH-const-001: Path Constants Must Be Named
+
+**Requirement**: Any filesystem path string that appears more than once in production code, or that represents a project-internal convention, must be defined as a named `const` in the appropriate `constants.go` file.
+
+**Shared paths** (referenced by multiple packages) go in `pkg/feature/constants.go`:
+```go
+// pkg/feature/constants.go
+const (
+    TestOutputFileName       = "raw-output.txt"
+    UnitTestOutputFileName   = "unit-raw-output.txt"
+)
+```
+
+**Package-local paths** (used within one package) go in `<package>/constants.go`:
+```go
+// pkg/serverprobe/constants.go
+const defaultHealthPath = "/health"
+```
+
+**Deviation** (from Evidence -- `quality_gate.go`):
+- `"tests/results/raw-output.txt"` appears as inline literal at lines 255 and 284
+- `"tests/results/unit-raw-output.txt"` appears as inline literal at lines 159, 186, and 507
+- Both should reference constants from `pkg/feature/constants.go` (or `pkg/testrunner/constants.go`)
+
+**Scope**: [CROSS]
+
+### TECH-const-002: Timeout and Duration Values Must Be Named
+
+**Requirement**: Every `time.Duration` expression in production code must be a named `const` with a descriptive name reflecting its semantic purpose (e.g., `probeRetryInterval`, not `timeout5s`). When the same numeric duration serves different purposes, each must have its own constant.
+
+**Pattern**:
+```go
+// pkg/serverprobe/constants.go
+const defaultProbeTimeout = 5 * time.Second
+
+// internal/cmd/constants.go
+const probeRetryInterval = 5 * time.Second
+const maxProbeRetries    = 3
+```
+
+**Anti-pattern** -- do NOT share a constant between unrelated concerns:
+```go
+// BAD: lock timeout and probe timeout share a constant because both are 5s
+const fiveSeconds = 5 * time.Second  // semantically distinct!
+```
+
+**Deviation** (from Evidence -- `quality_gate.go`):
+- `5 * time.Second` passed inline to `probeWithRetry()` at line 351 -- should be `const probeRetryInterval`
+- Retry count `3` passed inline to `probeWithRetry()` at line 351 -- should be `const maxProbeRetries`
+- `5 * time.Second` hardcoded in `serverprobe.go:61` -- should be `const defaultProbeTimeout`
+- `50 * time.Millisecond` hardcoded in `lock.go:55` -- should be `const lockRetryBackoff`
+
+**Note**: `defaultLockTimeout` in `lock.go:16` already follows this convention -- no deviation.
+
+**Scope**: [CROSS]
+
+### TECH-const-003: Color Values Must Be Centralized
+
+**Requirement**: All hex color codes (`#RRGGBB`), ANSI escape sequences, and lipgloss color names used for terminal display must be centralized in a single file within `internal/cmd/`. This ensures the design language can be updated in one place.
+
+**Pattern**:
+```go
+// internal/cmd/styles.go
+const (
+    colorModeHighlight = "#7DCFFF"
+    colorConflict      = "#FF8700"
+    colorSource        = "#9ECE6A"
+    colorCycleMarker   = "\033[33m"
+    colorReset         = "\033[0m"
+)
+```
+
+**Exception**: Named color strings inside a single mapping function (e.g., `statusColor()` returning `"green"`, `"red"`, `"yellow"`, `"gray"`) are acceptable without extraction. The function itself is the centralization point.
+
+**Deviation** (from Evidence -- `init.go`, `init_surfaces.go`, `list.go`):
+- `"#7DCFFF"` duplicated across `init.go:217` and `init_surfaces.go:20`
+- `"#FF8700"` hardcoded in `init_surfaces.go:17`
+- `"#9ECE6A"` hardcoded in `init_surfaces.go:23`
+- Raw ANSI codes `"\033[33m"` and `"\033[0m"` in `list.go:181`
+
+**Scope**: [CROSS]
+
+### TECH-const-004: Sentinel Values Must Be Named and Documented
+
+**Requirement**: Any numeric literal used as a sentinel value (representing "unreachable", "maximum", "no result", etc.) must be extracted to a named `const` with a doc comment explaining its semantics.
+
+**Pattern**:
+```go
+// fallbackSortPriority is assigned to task IDs that cannot be parsed,
+// ensuring they sort after all valid business IDs.
+const fallbackSortPriority = 99999
+
+// unreachableDepth is assigned to tasks in dependency cycles,
+// indicating they are not reachable from any root in BFS traversal.
+const unreachableDepth = 99999
+```
+
+**Deviation** (from Evidence -- `list.go`, `claim.go`):
+- `99999` hardcoded in `list.go:442` as fallback sort priority
+- `99999` hardcoded in `claim.go:376` as cycle task depth
+
+**Scope**: [CROSS]
+
+### TECH-const-005: Permission Values Stay Inline
+
+**Requirement**: Octal permission values (`0o755`, `0o644`) are NOT extracted to named constants. Inline octal literals are idiomatic Go and universally understood. Standardize on the `0o` prefix format (Go 1.13+) for consistency, but do not wrap in named constants.
+
+**No deviation** -- current usage follows this rule. Mixed `0o755` / `0755` formatting is a style concern, not a constant management concern.
 
 **Scope**: [CROSS]
