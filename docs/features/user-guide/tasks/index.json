@@ -8,7 +8,7 @@
       "title": "编写环境配置文档 environment-setup.md",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-environment-setup.md",
       "record": "records/1-environment-setup.md",
       "type": "doc"
