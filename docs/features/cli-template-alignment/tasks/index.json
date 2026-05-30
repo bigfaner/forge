@@ -1,0 +1,72 @@
+{
+  "feature": "cli-template-alignment",
+  "proposal": "docs/proposals/cli-template-alignment/proposal.md",
+  "created": "2026-05-30",
+  "tasks": {
+    "1-remove-claudemd-gen": {
+      "id": "1",
+      "title": "Remove CLAUDE.md generation from forge init",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-remove-claudemd-gen.md",
+      "record": "records/1-remove-claudemd-gen.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "2-audit-gitignore-entries": {
+      "id": "2",
+      "title": "Audit .gitignore template entries completeness",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-audit-gitignore-entries.md",
+      "record": "records/2-audit-gitignore-entries.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

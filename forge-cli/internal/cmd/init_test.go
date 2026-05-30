@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
@@ -124,48 +123,6 @@ func TestInitCommand(t *testing.T) {
 
 		if !strings.Contains(env.stdout.String(), "SKIPPED") || !strings.Contains(env.stdout.String(), ".forge") {
 			t.Errorf("expected SKIPPED for .forge in output, got %q", env.stdout.String())
-		}
-	})
-
-	t.Run("creates CLAUDE.md from template", func(t *testing.T) {
-		env := newInitTestEnv(t)
-
-		err := env.run()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		claudeFile := env.path("CLAUDE.md")
-		data, err := os.ReadFile(claudeFile)
-		if err != nil {
-			t.Fatalf("CLAUDE.md not created: %v", err)
-		}
-
-		if string(data) != embedded.CLAUDEmdTemplate {
-			t.Errorf("CLAUDE.md content doesn't match template")
-		}
-	})
-
-	t.Run("skips CLAUDE.md when already exists", func(t *testing.T) {
-		env := newInitTestEnv(t)
-		existing := "existing content"
-		if err := os.WriteFile(env.path("CLAUDE.md"), []byte(existing), 0o644); err != nil {
-			t.Fatal(err)
-		}
-
-		err := env.run()
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		data, _ := os.ReadFile(env.path("CLAUDE.md"))
-		if string(data) != existing {
-			t.Error("CLAUDE.md should not be overwritten")
-		}
-
-		output := env.stdout.String()
-		if !strings.Contains(output, "SKIPPED") {
-			t.Errorf("expected SKIPPED status for CLAUDE.md, got %q", output)
 		}
 	})
 
@@ -315,7 +272,6 @@ func TestInitCommand(t *testing.T) {
 			path string
 		}{
 			{".forge directory", feature.ForgeDir},
-			{"CLAUDE.md", "CLAUDE.md"},
 			{".gitignore", ".gitignore"},
 			{"config.yaml", filepath.Join(feature.ForgeDir, feature.ForgeConfigFileName)},
 		}
@@ -399,7 +355,6 @@ func TestInitSkipJustFlag(t *testing.T) {
 			path string
 		}{
 			{".forge directory", feature.ForgeDir},
-			{"CLAUDE.md", "CLAUDE.md"},
 			{".gitignore", ".gitignore"},
 			{"config.yaml", filepath.Join(feature.ForgeDir, feature.ForgeConfigFileName)},
 		}

@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"forge-cli/internal/embedded"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
 	"forge-cli/pkg/just"
@@ -23,9 +22,9 @@ var initCmd = &cobra.Command{
 	Short: "Initialize forge project environment",
 	Long: `One-stop initialization for forge project.
 
-Creates .forge/ directory, generates CLAUDE.md from embedded template,
-appends runtime entries to .gitignore, ensures just is installed, and
-runs interactive config if .forge/config.yaml doesn't exist.`,
+Creates .forge/ directory, appends runtime entries to .gitignore,
+ensures just is installed, and runs interactive config if
+.forge/config.yaml doesn't exist.`,
 	Args: cobra.NoArgs,
 	RunE: runInit,
 }
@@ -69,11 +68,7 @@ func runInit(cmd *cobra.Command, _ []string) error {
 	action := createForgeDir(projectRoot)
 	actions = append(actions, action)
 
-	// Step 2: Generate CLAUDE.md
-	action = createCLAUDEmd(projectRoot)
-	actions = append(actions, action)
-
-	// Step 3: Update .gitignore
+	// Step 2: Update .gitignore
 	action = updateGitignore(projectRoot)
 	actions = append(actions, action)
 
@@ -105,18 +100,6 @@ func createForgeDir(projectRoot string) initAction {
 		return initAction{status: "FAILED", target: feature.ForgeDir, detail: err.Error()}
 	}
 	return initAction{status: "CREATED", target: feature.ForgeDir}
-}
-
-func createCLAUDEmd(projectRoot string) initAction {
-	claudePath := filepath.Join(projectRoot, "CLAUDE.md")
-	if _, err := os.Stat(claudePath); err == nil {
-		return initAction{status: "SKIPPED", target: "CLAUDE.md", detail: "already exists"}
-	}
-	if err := os.WriteFile(claudePath, []byte(embedded.CLAUDEmdTemplate), 0o644); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to create CLAUDE.md: %v\n", err)
-		return initAction{status: "FAILED", target: "CLAUDE.md", detail: err.Error()}
-	}
-	return initAction{status: "CREATED", target: "CLAUDE.md", detail: "from template"}
 }
 
 func updateGitignore(projectRoot string) initAction {
