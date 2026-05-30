@@ -28,7 +28,7 @@
       "title": "编写架构概览文档 architecture-overview.md",
       "priority": "P1",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-architecture-overview.md",
       "record": "records/3-architecture-overview.md",
       "type": "doc"
