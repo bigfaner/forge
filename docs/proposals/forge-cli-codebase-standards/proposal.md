@@ -9,31 +9,31 @@ intent: "refactor"
 
 ## Problem
 
-Forge CLI 代码库（`forge-cli/`）缺少全面的编码规范，导致代码风格不一致、魔法值散布、死代码残留、包结构无明确组织原则。当前 `docs/conventions/` 下的规范仅覆盖枚举常量、扁平控制流和错误输出格式三个局部领域，无法指导新代码的编写和现有代码的演进。
+Forge CLI 代码库（`forge-cli/`）缺少全面的编码规范，导致代码风格不一致、魔法值散布、死代码残留、包结构无明确组织原则。当前 `docs/conventions/` 下虽有 11 个规范文件，但覆盖面偏向 Forge plugin 生态（skill 结构、分发模型、dispatcher 质量等），对 forge-cli 自身的包组织、命名、常量管理等编码标准覆盖不足，无法指导新代码的编写和现有代码的演进。
 
 ### Evidence
 
 **魔法值散布**：
-- `"tests/results/raw-output.txt"` 在生产代码中出现 2 次（`quality_gate.go`），测试文件中出现 5 次
+- `"tests/results/raw-output.txt"` 在生产代码中出现 2 次（`quality_gate.go`），测试文件中出现 17 次
 - 颜色值 `#7DCFFF`、`#FF8700`、`#9ECE6A` 硬编码在 `init.go` 和 `init_surfaces.go`
 - 哨兵数 `99999` 用于依赖环检测，无命名常量
-- 八进制权限混用 `0644`（旧式）和 `0o644`（Go 1.25 式）
+- 八进制权限统一使用旧式 `0644`，应迁移为 Go 1.25 式 `0o644`
 - 重试参数（`3` 次、`5*time.Second`）内联在函数调用中，经审计确认存在语义相同的重复调用点（同模块内多处以相同重试策略调用外部服务）
 
 **死代码残留**：
-- deprecated `Scope` 字段保留在 `FrontmatterData` 和 `Task` 类型中
+- deprecated `Scope` 字段保留在 `FrontmatterData` 类型中（`pkg/task/frontmatter.go`）
 - `Debugf` 函数在 `internal/cmd/output.go` 和 `internal/cmd/base/output.go` 各有一份
 - `checkExistingTaskState`、`getTaskPhase`、`compareVersionIDs` 等仅为 API 兼容保留的别名函数
-- `.out` 构建产物（`cmd.out`、`cout.out`、`coverage.out`、`just.out`）提交在仓库中
+- `.out` 构建产物（`cmd.out`、`cout.out`、`just.out`）提交在仓库中
 
 **包组织无原则**：
-- `internal/cmd/` 下 10+ 顶层命令文件散落在根目录，与已子包化的 6 个组不一致
-- `pkg/` 有 19 个包，粒度不均（`project/` 仅 1 个文件，`task/` 有 33+ 个文件）
+- `internal/cmd/` 下 15 个顶层命令文件散落在根目录，与已子包化的 7 个组不一致
+- `pkg/` 有 17 个包，粒度不均（`project/` 仅 3 个文件，`task/` 有 22+ 个非测试文件）
 - `infocmd/` 定位模糊（shared utilities 还是特定领域）
 
 ### Urgency
 
-v3.0.0 是成本最低的重构窗口（非唯一，但错过后成本上升 10-19 天）。发布后 API 和包结构将趋于稳定，后续任何包移动都需同时维护兼容层（估计每个包移动增加 0.5-1 天兼容层维护工作，19 个包即 10-19 天额外开销）。当前分支已重命名完成（`task` → `forge`），代码库尚未被外部消费者依赖，是建立规范的成本最优时机。
+v3.0.0 是成本最低的重构窗口（非唯一，但错过后成本上升 9-17 天）。发布后 API 和包结构将趋于稳定，后续任何包移动都需同时维护兼容层（估计每个包移动增加 0.5-1 天兼容层维护工作，17 个包即 9-17 天额外开销）。当前分支已重命名完成（`task` → `forge`），代码库尚未被外部消费者依赖，是建立规范的成本最优时机。
 
 ## Proposed Solution
 
@@ -130,10 +130,9 @@ Go 社区的标准实践是：
 
 | 当前包 | 目标包 | 说明 |
 |--------|--------|------|
-| `pkg/project/`（1 文件） | 合并入 `pkg/task/` 或新 `pkg/workspace/` | 单文件包，领域归属待 Phase 1 确定 |
-| `pkg/infocmd/` | 合并入 `pkg/shared/` 或 `internal/cmd/` | 定位模糊，共享工具归入明确位置 |
-| `pkg/color/` + `pkg/style/` | 合并为 `pkg/tuistyle/` | 领域重叠，统一 TUI 样式管理 |
-| 其余 16 个包 | 分类处置 | **保留不变**（6 个）：`pkg/version/`、`pkg/types/`、`pkg/task/`、`pkg/quality/`、`pkg/forge/`、`pkg/output/`——领域清晰且职责单一。**评估合并至 `pkg/util/`**（~3 个）：`pkg/filepathx/` 等小工具包——`pkg/util/` 作为唯一允许被多个 `pkg/` 包共享的工具包，不引入横向依赖（`pkg/util/` 不依赖任何其他 forge-cli `pkg/` 包，仅依赖标准库和第三方库）。**保留并优化内部结构**（~5 个）：`pkg/config/`、`pkg/gitx/` 等领域包——内部文件组织优化但不改名。**待 Phase 1 偏差分析裁决**（~2 个）：职责边界模糊的包——Phase 1 给出明确归向 |
+| `pkg/project/`（3 文件） | 合并入 `pkg/task/` 或新 `pkg/workspace/` | 小包，领域归属待 Phase 1 确定 |
+| `pkg/infocmd/` | 合并入 `pkg/shared/` 或 `internal/cmd/` | 定位模糊（共享通用工具），归入明确位置 |
+| 其余 15 个包 | 分类处置 | **保留不变**（6 个）：`pkg/version/`、`pkg/types/`、`pkg/task/`、`pkg/forgeconfig/`、`pkg/git/`、`pkg/feature/`——领域清晰且职责单一。**评估合并至 `pkg/util/`**（~3 个）：`pkg/index/`、`pkg/serverprobe/` 等小工具包——`pkg/util/` 作为唯一允许被多个 `pkg/` 包共享的工具包，不引入横向依赖（`pkg/util/` 不依赖任何其他 forge-cli `pkg/` 包，仅依赖标准库和第三方库）。**保留并优化内部结构**（~4 个）：`pkg/just/`、`pkg/testrunner/` 等领域包——内部文件组织优化但不改名。**待 Phase 1 偏差分析裁决**（~2 个）：职责边界模糊的包——Phase 1 给出明确归向 |
 9. **消除重复**：统一 `Debugf` 等重复工具函数到唯一位置
 10. **删除死代码**：deprecated `Scope` 字段、重复的 `Debugf` 定义、构建产物（`.out` 文件）
 10a. **拆分超大文件**：将超过 500 行的 `.go` 文件按职责拆分（如 `quality_gate.go` 1067 行拆分为质量检查核心逻辑 + 报告生成逻辑）
@@ -173,11 +172,11 @@ Go 社区的标准实践是：
 - [ ] SC-6: `Debugf` 函数在整个 `forge-cli/` 中仅存在一个定义
 - [ ] SC-7: deprecated `Scope` 字段、重复 `Debugf` 定义、所有 `.out` 构建产物已删除；test-bridge 纯重导出别名已删除、内部导出别名已迁移
 - [ ] SC-8: `docs/conventions/` 包含 6 个与 forge-cli 相关的规范文件（扩展 2 个 + 新增 4 个），每个包含目标态定义和偏差分析；`make lint` 包含 `goconst`、`gofmt`、`go vet` 且 CI 通过
-- [ ] SC-9: `pkg/` 层包数量不超过 14 个（当前 19 个，3 个明确合并目标 + ~3 个小工具包合并至 `pkg/util/` 可减少至 ~13 个；待裁决 2 个包的最终归向由 Phase 1 确定，上限 14 个留有缓冲）
+- [ ] SC-9: `pkg/` 层包数量不超过 14 个（当前 17 个，3 个明确合并目标 + ~3 个小工具包合并至 `pkg/util/` 可减少至 ~13 个；待裁决 2 个包的最终归向由 Phase 1 确定，上限 14 个留有缓冲）
 - [ ] SC-10: 无超过 500 行的单个 `.go` 文件（当前 `quality_gate.go` 1067 行等巨型文件需按职责拆分）。拆分标准：每个文件围绕单一职责/功能组织，通过代码审查确认拆分后每个文件的内聚性（不因行数阈值而机械切割）
 - [ ] SC-11: `go build ./...` 和 `go test ./...` 在重组后全部通过
 - [ ] SC-12: 跨模块依赖审计已完成，审计结果记录在 Phase 2a 前置文档中
-- [ ] SC-12f（fallback 条件）: 若跨模块依赖审计发现无法解耦的依赖，则 `pkg/` 中保留的导出接口均标记 `// Deprecated` 注释，且保留的包数量不超过 16 个（从 19 个减少至少 3 个明确合并目标）；SC-5 和 SC-9 按实际可达目标调整
+- [ ] SC-12f（fallback 条件）: 若跨模块依赖审计发现无法解耦的依赖，则 `pkg/` 中保留的导出接口均标记 `// Deprecated` 注释，且保留的包数量不超过 16 个（从 17 个减少至少 3 个明确合并目标）；SC-5 和 SC-9 按实际可达目标调整
 
 consistency_check_result:
   status: issues_found
