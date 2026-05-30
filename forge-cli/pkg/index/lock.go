@@ -15,6 +15,9 @@ var ErrLockConflict = errors.New("concurrent write conflict, retry")
 // defaultLockTimeout is the maximum time to wait for lock acquisition.
 const defaultLockTimeout = 5 * time.Second
 
+// lockRetryBackoff is the delay between lock acquisition retries.
+const lockRetryBackoff = 50 * time.Millisecond
+
 // LockFile acquires an exclusive advisory lock on <feature-dir>/tasks/index.json.lock.
 // Creates the lock file if it does not exist. The lock file persists for reuse.
 // Blocks for up to 5 seconds waiting for the lock; returns ErrLockConflict on timeout.
@@ -24,12 +27,12 @@ func LockFile(indexPath string) (*os.File, error) {
 
 	// Ensure parent directory exists
 	dir := filepath.Dir(lockPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return nil, fmt.Errorf("failed to create lock directory: %w", err)
 	}
 
 	// Open or create the lock file
-	f, err := os.OpenFile(lockPath, os.O_RDWR|os.O_CREATE, 0644)
+	f, err := os.OpenFile(lockPath, os.O_RDWR|os.O_CREATE, 0o644)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create lock file: %w", err)
 	}
@@ -52,7 +55,7 @@ func LockFile(indexPath string) (*os.File, error) {
 		}
 
 		// Brief backoff before retry
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(lockRetryBackoff)
 	}
 }
 

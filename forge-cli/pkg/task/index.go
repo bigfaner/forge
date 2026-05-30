@@ -40,7 +40,7 @@ func SaveIndex(path string, index *TaskIndex) error {
 		return fmt.Errorf("failed to marshal index: %w", err)
 	}
 	data = append(data, '\n')
-	if err := os.WriteFile(path, data, 0644); err != nil {
+	if err := os.WriteFile(path, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write index: %w", err)
 	}
 	return nil
@@ -126,5 +126,5 @@ func IsValidStatus(index *TaskIndex, status string) bool {
 // EnsureIndexDir ensures the directory for the index file exists.
 func EnsureIndexDir(path string) error {
 	dir := filepath.Dir(path)
-	return os.MkdirAll(dir, 0755)
+	return os.MkdirAll(dir, 0o755)
 }

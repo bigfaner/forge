@@ -227,7 +227,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 
 // CreateTaskMarkdown writes a task markdown file with YAML frontmatter.
 func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) error {
-	if err := os.MkdirAll(tasksDir, 0755); err != nil {
+	if err := os.MkdirAll(tasksDir, 0o755); err != nil {
 		return fmt.Errorf("create tasks dir: %w", err)
 	}
 
@@ -269,7 +269,7 @@ func CreateTaskMarkdown(tasksDir string, filename string, opts AddTaskOpts) erro
 		content = buildTaskMarkdown(opts)
 	}
 
-	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(content), 0644)
+	return os.WriteFile(filepath.Join(tasksDir, filename), []byte(content), 0o644)
 }
 
 // buildTaskMarkdown generates task markdown from scratch (non-template mode).

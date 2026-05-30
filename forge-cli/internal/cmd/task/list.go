@@ -19,6 +19,16 @@ import (
 
 var listLocal bool
 
+// fallbackSortPriority is assigned to task IDs that cannot be parsed,
+// ensuring they sort after all valid business IDs.
+const fallbackSortPriority = 99999
+
+// ANSI escape sequences for cycle marker display.
+const (
+	colorCycleMarker = "\033[33m"
+	colorReset       = "\033[0m"
+)
+
 // listIsTerminalFunc detects whether stdout is a terminal (TTY).
 // Overridable for testing.
 var listIsTerminalFunc = defaultListIsTerminal
@@ -178,7 +188,7 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 		markerText := " [" + strings.Join(markers, ", ") + "]"
 		if useColor {
-			return id + "\033[33m" + markerText + "\033[0m"
+			return id + colorCycleMarker + markerText + colorReset
 		}
 		return id + markerText
 	}
@@ -439,5 +449,5 @@ func sortKey(id string) idSortKey {
 	}
 
 	// Fallback: high numPrefix to sort last among business IDs
-	return idSortKey{numPrefix: 99999}
+	return idSortKey{numPrefix: fallbackSortPriority}
 }

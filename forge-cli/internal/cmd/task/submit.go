@@ -191,11 +191,11 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 
 	// Write record file
 	recordPath := filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record))
-	if err := os.MkdirAll(filepath.Dir(recordPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(recordPath), 0o755); err != nil {
 		return base.NewAIError(base.ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath))
 	}
 
-	if err := os.WriteFile(recordPath, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(recordPath, []byte(content), 0o644); err != nil {
 		return base.NewAIError(base.ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath)
 	}
 

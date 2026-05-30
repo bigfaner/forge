@@ -8,19 +8,19 @@ import (
 // WriteUnitTestRawOutput saves project-wide unit test output to tests/results/unit-raw-output.txt.
 func WriteUnitTestRawOutput(projectRoot, output string) error {
 	resultsDir := filepath.Join(projectRoot, "tests", "results")
-	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+	if err := os.MkdirAll(resultsDir, 0o755); err != nil {
 		return err
 	}
 	rawPath := filepath.Join(resultsDir, "unit-raw-output.txt")
-	return os.WriteFile(rawPath, []byte(output), 0644)
+	return os.WriteFile(rawPath, []byte(output), 0o644)
 }
 
 // WriteRegressionRawOutput saves project-wide regression output to tests/results/raw-output.txt.
 func WriteRegressionRawOutput(projectRoot, output string) error {
 	resultsDir := filepath.Join(projectRoot, "tests", "results")
-	if err := os.MkdirAll(resultsDir, 0755); err != nil {
+	if err := os.MkdirAll(resultsDir, 0o755); err != nil {
 		return err
 	}
 	rawPath := filepath.Join(resultsDir, "raw-output.txt")
-	return os.WriteFile(rawPath, []byte(output), 0644)
+	return os.WriteFile(rawPath, []byte(output), 0o644)
 }

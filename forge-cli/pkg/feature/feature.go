@@ -140,7 +140,7 @@ func EnsureFeatureDir(projectRoot, featureSlug string) error {
 	}
 	for _, dir := range dirs {
 		fullPath := filepath.Join(projectRoot, dir)
-		if err := os.MkdirAll(fullPath, 0755); err != nil {
+		if err := os.MkdirAll(fullPath, 0o755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", dir, err)
 		}
 	}

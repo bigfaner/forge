@@ -88,7 +88,7 @@ func GenerateStageGates(taskIDs []string, tasksDir string, featureSlug string) (
 			if err != nil {
 				return generated, fmt.Errorf("generate %s: %w", summaryKey, err)
 			}
-			if err := os.WriteFile(summaryPath, content, 0644); err != nil {
+			if err := os.WriteFile(summaryPath, content, 0o644); err != nil {
 				return generated, fmt.Errorf("write %s: %w", summaryKey, err)
 			}
 			generated++
@@ -102,7 +102,7 @@ func GenerateStageGates(taskIDs []string, tasksDir string, featureSlug string) (
 			if err != nil {
 				return generated, fmt.Errorf("generate %s: %w", gateKey, err)
 			}
-			if err := os.WriteFile(gatePath, content, 0644); err != nil {
+			if err := os.WriteFile(gatePath, content, 0o644); err != nil {
 				return generated, fmt.Errorf("write %s: %w", gateKey, err)
 			}
 			generated++

@@ -306,9 +306,9 @@ func runExtract(_ *cobra.Command, args []string) error {
 	out, _ := json.MarshalIndent(result, "", "  ")
 
 	if outDir != "" {
-		_ = os.MkdirAll(outDir, 0755)
+		_ = os.MkdirAll(outDir, 0o755)
 		outPath := filepath.Join(outDir, "evidence.json")
-		if err := os.WriteFile(outPath, out, 0644); err != nil {
+		if err := os.WriteFile(outPath, out, 0o644); err != nil {
 			return base.NewAIError(base.ErrNotFound, "Cannot write evidence file", err.Error(), "", "")
 		}
 		copyFile(jsonlPath, filepath.Join(outDir, filepath.Base(jsonlPath)))

@@ -358,7 +358,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", ttKey, genErr))
 					continue
 				}
-				if writeErr := os.WriteFile(mdPath, content, 0644); writeErr != nil {
+				if writeErr := os.WriteFile(mdPath, content, 0o644); writeErr != nil {
 					result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", ttKey, writeErr))
 					continue
 				}
@@ -396,7 +396,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 		normalized := NormalizeTaskMD(content)
 		if !bytes.Equal(normalized, content) {
-			_ = os.WriteFile(filePath, normalized, 0644)
+			_ = os.WriteFile(filePath, normalized, 0o644)
 		}
 	}
 

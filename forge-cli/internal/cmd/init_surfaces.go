@@ -14,13 +14,13 @@ import (
 )
 
 // conflictStyle highlights conflict annotation text.
-var conflictStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF8700")).Bold(true)
+var conflictStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(colorConflict)).Bold(true)
 
 // surfaceStyle highlights surface type values.
-var surfaceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#7DCFFF")).Bold(true)
+var surfaceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(colorModeHighlight)).Bold(true)
 
 // sourceStyle styles source annotation text.
-var sourceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#9ECE6A")).Italic(true)
+var sourceStyle = lipgloss.NewStyle().Foreground(lipgloss.Color(colorSource)).Italic(true)
 
 // askSurfaceConfirmation is the function variable for TUI surface confirmation.
 // Variable for testability — huh requires a real TTY, so tests override this.

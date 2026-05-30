@@ -156,7 +156,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	var gateBlockErr error
 	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
 		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
-		errorDocPath := "tests/results/unit-raw-output.txt"
+		errorDocPath := feature.TestResultsDir + "/" + feature.UnitTestOutputFileName
 		if output != "" {
 			if err := testrunner.WriteUnitTestRawOutput(result.ProjectRoot, "=== "+step+" failure ===\n"+output); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
@@ -166,7 +166,7 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, 5), fixTypeFromStep(step) == task.TypeCodingFix)
+		gateBlockErr = handleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, conciseErrorMaxLines), fixTypeFromStep(step) == task.TypeCodingFix)
 	})
 	if gateBlockErr != nil {
 		os.Exit(0)
@@ -183,8 +183,8 @@ func runQualityGate(_ *cobra.Command, _ []string) error {
 	}
 	if !unitPassed {
 		unitOutput := "" // output already written by runUnitTestStep
-		errorDocPath := "tests/results/unit-raw-output.txt"
-		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, 5), true); err != nil {
+		errorDocPath := feature.TestResultsDir + "/" + feature.UnitTestOutputFileName
+		if err := handleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, conciseErrorMaxLines), true); err != nil {
 			os.Exit(0)
 		}
 	}
@@ -233,7 +233,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, "=== test-setup failure ===\n"+setupOutput); err != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
 				} else {
-					fmt.Fprintln(os.Stderr, "  Setup output saved to tests/results/raw-output.txt")
+					fmt.Fprintln(os.Stderr, "  Setup output saved to "+feature.TestResultsDir+"/"+feature.TestOutputFileName)
 				}
 			}
 			return nil
@@ -252,7 +252,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	regressionOutput, regSuccess := just.RunCapture(projectRoot, "just", "test")
 	if !regSuccess {
 		fmt.Fprintln(os.Stderr, "ERROR: test regression failed")
-		errorDocPath := "tests/results/raw-output.txt"
+		errorDocPath := feature.TestResultsDir + "/" + feature.TestOutputFileName
 		if regressionOutput != "" {
 			if err := testrunner.WriteRegressionRawOutput(projectRoot, regressionOutput); err != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
@@ -262,7 +262,7 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 		if fixErr != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 		}
-		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, 5), true)
+		return handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, conciseErrorMaxLines), true)
 	}
 	return nil
 }
@@ -281,7 +281,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 		fmt.Fprintf(os.Stderr, "--- Running surface orchestration for %s ---\n", surfaceType)
 		result := runSurfaceLifecycle(projectRoot, surfaceType)
 		if !result.success {
-			errorDocPath := "tests/results/raw-output.txt"
+			errorDocPath := feature.TestResultsDir + "/" + feature.TestOutputFileName
 			if result.output != "" {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, result.output); err != nil {
 					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
@@ -291,7 +291,7 @@ func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []st
 			if fixErr != nil {
 				fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
 			}
-			lastErr = handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(result.output, 5), true)
+			lastErr = handleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(result.output, conciseErrorMaxLines), true)
 		}
 	}
 	return lastErr
@@ -348,7 +348,7 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 	// Phase 2: Probe (full lifecycle only)
 	if full {
 		probeRecipe := resolveRecipe(projectRoot, surfaceType, "probe")
-		if !probeWithRetry(projectRoot, probeRecipe, 3, 5*time.Second) {
+		if !probeWithRetry(projectRoot, probeRecipe, maxProbeRetries, probeRetryInterval) {
 			fmt.Fprintln(os.Stderr, "  ERROR: probe failed after retries")
 			runTeardown(projectRoot, surfaceType)
 			return lifecycleResult{success: false, output: "probe failed: server not responding after 3 retries"}
@@ -504,7 +504,7 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 
 	// Both attempts failed — write combined output and create fix task.
 	fmt.Fprintln(os.Stderr, "ERROR: unit tests failed (retried once, both attempts failed)")
-	errorDocPath := "tests/results/unit-raw-output.txt"
+	errorDocPath := feature.TestResultsDir + "/" + feature.UnitTestOutputFileName
 	combinedOutput := fmt.Sprintf(
 		"retried once, both attempts failed\n\n=== First attempt ===\n%s\n\n=== Retry attempt ===\n%s",
 		unitOutput, retryOutput,
@@ -599,8 +599,8 @@ func extractSourceFiles(output string) string {
 		files = append(files, path)
 	}
 
-	if len(files) > 10 {
-		files = files[:10]
+	if len(files) > maxSourceFiles {
+		files = files[:maxSourceFiles]
 	}
 	if len(files) == 0 {
 		return "See error output for affected files"

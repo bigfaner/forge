@@ -29,7 +29,7 @@ func LoadState(path string) (*TaskState, error) {
 
 // SaveState saves the task state to the given file path using atomic write (temp+rename).
 func SaveState(path string, state *TaskState) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("failed to create state directory: %w", err)
 	}
 	data, err := json.MarshalIndent(state, "", "  ")
@@ -37,7 +37,7 @@ func SaveState(path string, state *TaskState) error {
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 	data = append(data, '\n')
-	return index.AtomicWrite(path, data, 0644)
+	return index.AtomicWrite(path, data, 0o644)
 }
 
 // DeleteState removes the state file.

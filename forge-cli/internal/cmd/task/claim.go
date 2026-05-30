@@ -18,6 +18,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// unreachableDepth is assigned to tasks in dependency cycles,
+// indicating they are not reachable from any root in BFS traversal.
+const unreachableDepth = 99999
+
 var claimCmd = &cobra.Command{
 	Use:   "claim",
 	Short: "Claim the next available task",
@@ -373,7 +377,7 @@ func computeTopoDepths(index *task.TaskIndex) map[string]int {
 	// Tasks in cycles get a large depth (unreachable from BFS).
 	for _, t := range tasks {
 		if _, ok := depths[t.ID]; !ok {
-			depths[t.ID] = 99999
+			depths[t.ID] = unreachableDepth
 		}
 	}
 

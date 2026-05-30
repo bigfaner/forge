@@ -43,7 +43,7 @@ var gitignoreEntries = []string{
 	"docs/features/*/tasks/process/",
 	"docs/features/*/tasks/index.json.lock",
 	"docs/features/*/testing/results/",
-	"tests/results/",
+	feature.TestResultsDir + "/",
 }
 
 // initAction records a single action taken during init.
@@ -214,7 +214,7 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 }
 
 // modeHighlight styles mode keywords for terminal display.
-var modeHighlight = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("#7DCFFF"))
+var modeHighlight = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(colorModeHighlight))
 
 // hl returns a highlighted version of text using modeHighlight.
 func hl(text string) string {

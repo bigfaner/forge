@@ -62,5 +62,5 @@ func WriteFrontmatter(path string, fm FrontmatterData, body []byte) error {
 	yamlBuf = append(yamlBuf, "---\n"...)
 	yamlBuf = append(yamlBuf, body...)
 
-	return os.WriteFile(path, yamlBuf, 0644)
+	return os.WriteFile(path, yamlBuf, 0o644)
 }

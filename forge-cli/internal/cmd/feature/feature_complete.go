@@ -242,7 +242,7 @@ func updateFileStatus(filePath, value string) error {
 	}
 
 	newContent := "---\n" + strings.Join(lines, "\n") + "\n---" + body
-	return os.WriteFile(filePath, []byte(newContent), 0644)
+	return os.WriteFile(filePath, []byte(newContent), 0o644)
 }
 
 // gitCommitFiles stages only the specified files and commits them.
