@@ -1,0 +1,109 @@
+{
+  "feature": "user-guide",
+  "proposal": "docs/proposals/user-guide/proposal.md",
+  "created": "2026-05-30",
+  "tasks": {
+    "1-environment-setup": {
+      "id": "1",
+      "title": "编写环境配置文档 environment-setup.md",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-environment-setup.md",
+      "record": "records/1-environment-setup.md",
+      "type": "doc"
+    },
+    "2-initialization": {
+      "id": "2",
+      "title": "编写初始化文档 initialization.md",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "2-initialization.md",
+      "record": "records/2-initialization.md",
+      "type": "doc"
+    },
+    "3-architecture-overview": {
+      "id": "3",
+      "title": "编写架构概览文档 architecture-overview.md",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "3-architecture-overview.md",
+      "record": "records/3-architecture-overview.md",
+      "type": "doc"
+    },
+    "4-usage-guide": {
+      "id": "4",
+      "title": "编写使用指南 usage-guide.md",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "4-usage-guide.md",
+      "record": "records/4-usage-guide.md",
+      "type": "doc"
+    },
+    "5-readme-index-update": {
+      "id": "5",
+      "title": "更新 README.md 文档索引表",
+      "priority": "P2",
+      "estimatedTime": "0.5h",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-readme-index-update.md",
+      "record": "records/5-readme-index-update.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4",
+        "5",
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

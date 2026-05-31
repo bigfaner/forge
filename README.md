@@ -443,6 +443,10 @@ go test -race -cover ./...
 | [docs/official-references/plugin.md](docs/official-references/plugin.md) | 插件系统技术参考 |
 | [docs/official-references/plugin-marketplace.md](docs/official-references/plugin-marketplace.md) | Marketplace 分发指南 |
 | [docs/official-references/hooks.md](docs/official-references/hooks.md) | Hooks 技术参考 |
+| [docs/user-guide/environment-setup.md](docs/user-guide/environment-setup.md) | 环境配置指南 |
+| [docs/user-guide/initialization.md](docs/user-guide/initialization.md) | 项目初始化指南 |
+| [docs/user-guide/architecture-overview.md](docs/user-guide/architecture-overview.md) | 架构概览 |
+| [docs/user-guide/usage-guide.md](docs/user-guide/usage-guide.md) | 使用指南 |
 
 ---
 
