@@ -58,7 +58,7 @@ func ProbeServers(projectRoot, path string) bool {
 		return true
 	}
 
-	probeTimeout := 5 * time.Second
+	probeTimeout := defaultProbeTimeout
 	for _, ep := range endpoints {
 		probeURL := strings.TrimRight(ep, "/") + path
 		if !ProbeEndpoint(probeURL, probeTimeout) {

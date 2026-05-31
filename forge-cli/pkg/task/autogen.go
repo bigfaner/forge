@@ -14,6 +14,8 @@ import (
 	"forge-cli/pkg/types"
 )
 
+const defaultAcceptanceCriteria = "- [ ] All acceptance criteria met"
+
 //go:embed templates/*.md
 var autogenTemplateFS embed.FS
 
@@ -122,7 +124,7 @@ type autogenTemplateData struct {
 	SurfaceKey         string // surface key for inline replacement and conditional sections
 	SurfaceType        string // surface type; empty string omits TestType line
 	SurfaceTypes       string // pre-formatted multi-surface type string (newline-separated "- type" items); empty defaults to "See .forge/config.yaml"
-	AcceptanceCriteria string // pre-formatted acceptance criteria text; empty defaults to "- [ ] All acceptance criteria met"
+	AcceptanceCriteria string // pre-formatted acceptance criteria text; empty defaults to defaultAcceptanceCriteria
 	DocTaskCriteria    string // pre-formatted doc task criteria text; empty omits the section
 }
 
@@ -221,7 +223,7 @@ func buildAutogenTemplateData(def AutoGenTaskDef, ctx BodyContext) autogenTempla
 
 	acStr := formatAcceptanceCriteria(ctx.AcceptanceCriteria)
 	if acStr == "" {
-		acStr = "- [ ] All acceptance criteria met"
+		acStr = defaultAcceptanceCriteria
 	}
 
 	docTaskACStr := ""

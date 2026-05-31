@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"forge-cli/internal/cmd/base"
+	"forge-cli/pkg/infocmd"
 	"forge-cli/pkg/project"
-	"forge-cli/pkg/research"
 
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,7 @@ func runResearch(_ *cobra.Command, args []string) error {
 }
 
 func runResearchList(projectRoot string) error {
-	reports, err := research.Discover(projectRoot)
+	reports, err := infocmd.DiscoverReports(projectRoot)
 	if err != nil {
 		return newErrResearchDiscovery(err)
 	}
@@ -82,7 +82,7 @@ func runResearchList(projectRoot string) error {
 }
 
 func runResearchDetail(projectRoot, slug string) error {
-	r, err := research.FindBySlug(projectRoot, slug)
+	r, err := infocmd.FindReportBySlug(projectRoot, slug)
 	if err != nil {
 		return newErrResearchNotFound(slug)
 	}
@@ -101,7 +101,7 @@ func runResearchDetail(projectRoot, slug string) error {
 }
 
 // mapReportsToSlugLens extracts slug lengths from report list.
-func mapReportsToSlugLens(reports []research.Report) []int {
+func mapReportsToSlugLens(reports []infocmd.Report) []int {
 	lens := make([]int, len(reports))
 	for i, r := range reports {
 		lens[i] = len(r.Slug)

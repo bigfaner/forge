@@ -343,8 +343,16 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 			}
 		}
 
-		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(surfaces, executionOrder)
-		testTasks := GenerateTestTasks(mode, surfaces, resolvedExecOrder, opts.AutoConfig, intent, businessTasks, index.TasksMap())
+		// Docs-only features (needsEval && !needsTest) should get T-review-doc
+		// but NOT surface-dependent test pipeline tasks. Suppress surfaces to
+		// ensure GenerateTestTasks only produces non-surface nodes.
+		effectiveSurfaces := surfaces
+		if !needsTest {
+			effectiveSurfaces = nil
+		}
+
+		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(effectiveSurfaces, executionOrder)
+		testTasks := GenerateTestTasks(mode, effectiveSurfaces, resolvedExecOrder, opts.AutoConfig, intent, businessTasks, index.TasksMap())
 
 		for _, td := range testTasks {
 			ttKey := td.Key
@@ -358,7 +366,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", ttKey, genErr))
 					continue
 				}
-				if writeErr := os.WriteFile(mdPath, content, 0644); writeErr != nil {
+				if writeErr := os.WriteFile(mdPath, content, 0o644); writeErr != nil {
 					result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", ttKey, writeErr))
 					continue
 				}
@@ -396,7 +404,7 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		}
 		normalized := NormalizeTaskMD(content)
 		if !bytes.Equal(normalized, content) {
-			_ = os.WriteFile(filePath, normalized, 0644)
+			_ = os.WriteFile(filePath, normalized, 0o644)
 		}
 	}
 
@@ -536,11 +544,46 @@ func IsAutoGenTaskID(id string) bool {
 	if isTestTaskID(id) {
 		return true
 	}
+	// Check per-surface-key prefix match without requiring surfaces map.
+	// Handles IDs like "T-test-run-backend" where the suffix is a surface key
+	// unknown at validation time. The prefix match is sufficient for ID classification.
+	if isAutoGenRegistryPrefix(id) {
+		return true
+	}
 	if id == "T-review-doc" {
 		return true
 	}
 	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
 		return true
+	}
+	return false
+}
+
+// isAutoGenRegistryPrefix checks if an ID starts with a per-surface-key registry
+// node's ID prefix (with "-{surface-key}" stripped). Used by IsAutoGenTaskID to
+// recognize auto-gen IDs without needing the surfaces map.
+func isAutoGenRegistryPrefix(id string) bool {
+	if !strings.HasPrefix(id, "T-") {
+		return false
+	}
+	for _, node := range PipelineRegistry {
+		if node.Expansion != "per-surface-key" {
+			continue
+		}
+		placeholder := "{surface-key}"
+		idx := strings.Index(node.ID, placeholder)
+		if idx < 0 {
+			continue
+		}
+		prefix := node.ID[:idx]
+		if strings.HasPrefix(id, prefix) && len(id) > len(prefix) {
+			return true
+		}
+		// Degenerate form: ID equals the template without placeholder suffix
+		stripTemplate := strings.ReplaceAll(node.ID, "-"+placeholder, "")
+		if id == stripTemplate {
+			return true
+		}
 	}
 	return false
 }

@@ -1,8 +1,7 @@
-// Package version provides version information for the CLI.
-package version
+package types
 
 // Version is the CLI version, injected at build time via ldflags.
-// Example: go build -ldflags "-X forge-cli/pkg/version.Version=v1.0.0"
+// Example: go build -ldflags "-X forge-cli/pkg/types.Version=v1.0.0"
 var Version = "dev"
 
 // Name is the CLI name.

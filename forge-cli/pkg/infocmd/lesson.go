@@ -1,19 +1,16 @@
-// Package lesson provides discovery and parsing for project lessons.
-package lesson
+package infocmd
 
 import (
 	"fmt"
 	"strings"
 	"time"
-
-	"forge-cli/pkg/infocmd"
 )
 
 // lessonsDir is the base directory for lessons.
 const lessonsDir = "docs/lessons"
 
-// metadata holds the parsed frontmatter fields from a lesson .md file.
-type metadata struct {
+// lessonMeta holds the parsed frontmatter fields from a lesson .md file.
+type lessonMeta struct {
 	Created  string   `yaml:"created"`
 	Date     string   `yaml:"date"`
 	Tags     []string `yaml:"tags"`
@@ -41,8 +38,8 @@ var categoryPrefixes = map[string]string{
 	"hook-":    "hook",
 }
 
-// scanConfig is the infocmd.ScanConfig for lesson discovery.
-var scanConfig = infocmd.ScanConfig[Lesson]{
+// lessonScanConfig is the ScanConfig for lesson discovery.
+var lessonScanConfig = ScanConfig[Lesson]{
 	BaseDir:  lessonsDir,
 	IsSubdir: false,
 	IDKey:    func(l Lesson) string { return l.Name },
@@ -50,8 +47,8 @@ var scanConfig = infocmd.ScanConfig[Lesson]{
 		return l.Created
 	},
 	ParseEntry: func(name, path string, content []byte, _ time.Time) (Lesson, error) {
-		var meta metadata
-		if err := infocmd.ParseFrontmatter(content, &meta); err != nil {
+		var meta lessonMeta
+		if err := ParseFrontmatter(content, &meta); err != nil {
 			return Lesson{}, err
 		}
 
@@ -71,16 +68,16 @@ var scanConfig = infocmd.ScanConfig[Lesson]{
 	},
 }
 
-// Discover walks docs/lessons/*.md and returns all lessons sorted by
+// DiscoverLessons walks docs/lessons/*.md and returns all lessons sorted by
 // frontmatter created field descending (newest first), with mtime as fallback.
 // Lessons without a created field fall back to file modification time.
-func Discover(projectRoot string) ([]Lesson, error) {
-	return infocmd.Discover(projectRoot, scanConfig)
+func DiscoverLessons(projectRoot string) ([]Lesson, error) {
+	return Discover(projectRoot, lessonScanConfig)
 }
 
-// FindByName returns a single lesson by name (without .md extension), or an error if not found.
-func FindByName(projectRoot, name string) (*Lesson, error) {
-	result, err := infocmd.FindByID(projectRoot, name, scanConfig)
+// FindLessonByName returns a single lesson by name (without .md extension), or an error if not found.
+func FindLessonByName(projectRoot, name string) (*Lesson, error) {
+	result, err := FindByID(projectRoot, name, lessonScanConfig)
 	if err != nil {
 		return nil, fmt.Errorf("lesson not found: %s", name)
 	}

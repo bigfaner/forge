@@ -48,7 +48,7 @@ func runIndex(_ *cobra.Command, _ []string) error {
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(indexFeatureSlug))
 
 	// Ensure tasks dir exists
-	if err := os.MkdirAll(tasksDir, 0755); err != nil {
+	if err := os.MkdirAll(tasksDir, 0o755); err != nil {
 		return fmt.Errorf("create tasks dir: %w", err)
 	}
 

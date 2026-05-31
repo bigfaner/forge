@@ -20,7 +20,7 @@ type ForgeState struct {
 // WriteForgeState writes .forge/state.json with allCompleted=true.
 func WriteForgeState(projectRoot, featureSlug string) error {
 	statePath := GetForgeStatePath(projectRoot)
-	if err := os.MkdirAll(filepath.Dir(statePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(statePath), 0o755); err != nil {
 		return err
 	}
 
@@ -33,7 +33,7 @@ func WriteForgeState(projectRoot, featureSlug string) error {
 	if err != nil {
 		return err
 	}
-	return index.AtomicWrite(statePath, data, 0644)
+	return index.AtomicWrite(statePath, data, 0o644)
 }
 
 // MarkFeatureCompleted sets completedAt on the existing state.json.
@@ -57,7 +57,7 @@ func MarkFeatureCompleted(projectRoot string) error {
 	if err != nil {
 		return err
 	}
-	return index.AtomicWrite(statePath, updated, 0644)
+	return index.AtomicWrite(statePath, updated, 0o644)
 }
 
 // EnsureForgeDir creates the .forge/ directory at project root if it doesn't exist.
@@ -65,7 +65,7 @@ func MarkFeatureCompleted(projectRoot string) error {
 // subdirectories can find the project root via FindProjectRoot().
 func EnsureForgeDir(projectRoot string) error {
 	forgeDir := filepath.Join(projectRoot, ForgeDir)
-	return os.MkdirAll(forgeDir, 0755)
+	return os.MkdirAll(forgeDir, 0o755)
 }
 
 // EnsureForgeState writes .forge/state.json with allCompleted=false.
@@ -73,7 +73,7 @@ func EnsureForgeDir(projectRoot string) error {
 // Overwrites any existing file (e.g., after fix-e2e tasks reset completion).
 func EnsureForgeState(projectRoot, featureSlug string) error {
 	statePath := GetForgeStatePath(projectRoot)
-	if err := os.MkdirAll(filepath.Dir(statePath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(statePath), 0o755); err != nil {
 		return err
 	}
 	state := ForgeState{
@@ -85,7 +85,7 @@ func EnsureForgeState(projectRoot, featureSlug string) error {
 	if err != nil {
 		return err
 	}
-	return index.AtomicWrite(statePath, data, 0644)
+	return index.AtomicWrite(statePath, data, 0o644)
 }
 
 // ReadForgeState reads .forge/state.json. Returns nil if the file doesn't exist.
@@ -116,5 +116,5 @@ func ClearForgeState(projectRoot string) error {
 	if err != nil {
 		return err
 	}
-	return index.AtomicWrite(statePath, data, 0644)
+	return index.AtomicWrite(statePath, data, 0o644)
 }

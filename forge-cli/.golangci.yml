@@ -17,6 +17,49 @@ linters:
     - unconvert
     - unparam
     - whitespace
+    - goconst
+
+  settings:
+    goconst:
+      min-occurrences: 3
+      ignore-tests: true
+
+  exclusions:
+    rules:
+      # Domain identifier strings — not magic values
+      - path: pkg/just/
+        linters:
+          - goconst
+      - path: pkg/infocmd/
+        linters:
+          - goconst
+      - path: pkg/project/
+        linters:
+          - goconst
+      - path: internal/cmd/forensic/
+        linters:
+          - goconst
+      - path: pkg/forgeconfig/
+        linters:
+          - goconst
+      - path: internal/cmd/feature/
+        linters:
+          - goconst
+      - path: internal/cmd/worktree/
+        linters:
+          - goconst
+      - path: pkg/task/
+        linters:
+          - goconst
+      - path: internal/cmd/
+        linters:
+          - goconst
+      - path: pkg/git/
+        linters:
+          - goconst
+      - path: pkg/prompt/
+        linters:
+          - goconst
 
 linters-settings:
   govet:

@@ -143,7 +143,6 @@ func updateFrontmatterSurface(mdPath string, surfaceKey, surfaceType string) err
 
 	fm.SurfaceKey = surfaceKey
 	fm.SurfaceType = surfaceType
-	fm.Scope = ""
 
 	return task.WriteFrontmatter(mdPath, fm, body)
 }

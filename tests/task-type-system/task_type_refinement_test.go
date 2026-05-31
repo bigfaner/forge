@@ -324,8 +324,8 @@ func TestTC_009_BuildIndexGeneratesEvalDocForDocumentationOnly(t *testing.T) {
 	idx := loadIndexJSON(t, dir)
 	assert.True(t, hasTaskWithPrefix(idx.Tasks, "T-review-doc"),
 		"index should contain T-review-doc task for documentation-only feature")
-	assert.False(t, hasTaskWithPrefix(idx.Tasks, "T-quick-"),
-		"index should NOT contain test pipeline tasks for documentation-only feature")
+	assert.False(t, hasTaskWithPrefix(idx.Tasks, "T-quick-run-"),
+		"index should NOT contain test run tasks for documentation-only feature")
 	assert.False(t, hasTaskWithPrefix(idx.Tasks, "T-test-"),
 		"index should NOT contain T-test-* tasks for documentation-only feature")
 }

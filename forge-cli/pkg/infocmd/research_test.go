@@ -1,4 +1,4 @@
-package research
+package infocmd
 
 import (
 	"fmt"
@@ -19,25 +19,25 @@ func writeReport(t *testing.T, dir, filename, content string) {
 	require.NoError(t, os.WriteFile(filepath.Join(reportsDir, filename), []byte(content), 0644))
 }
 
-func TestDiscover_EmptyDir(t *testing.T) {
+func TestDiscoverReports_EmptyDir(t *testing.T) {
 	dir := t.TempDir()
 	reportsDir := filepath.Join(dir, "docs", "research")
 	require.NoError(t, os.MkdirAll(reportsDir, 0755))
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports)
 }
 
-func TestDiscover_NoDir(t *testing.T) {
+func TestDiscoverReports_NoDir(t *testing.T) {
 	dir := t.TempDir()
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports)
 }
 
-func TestDiscover_SingleReport(t *testing.T) {
+func TestDiscoverReports_SingleReport(t *testing.T) {
 	dir := t.TempDir()
 
 	content := `---
@@ -57,7 +57,7 @@ Some content here.
 `
 	writeReport(t, dir, "claude-plugins.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	require.Len(t, reports, 1)
 
@@ -71,7 +71,7 @@ Some content here.
 	assert.Contains(t, r.FilePath, filepath.Join("docs", "research", "claude-plugins.md"))
 }
 
-func TestDiscover_ComparisonReport(t *testing.T) {
+func TestDiscoverReports_ComparisonReport(t *testing.T) {
 	dir := t.TempDir()
 
 	content := `---
@@ -91,7 +91,7 @@ candidates:
 `
 	writeReport(t, dir, "build-tools.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	require.Len(t, reports, 1)
 
@@ -101,7 +101,7 @@ candidates:
 	assert.Equal(t, []string{"speed", "ecosystem"}, r.Dimensions)
 }
 
-func TestDiscover_MultipleReports(t *testing.T) {
+func TestDiscoverReports_MultipleReports(t *testing.T) {
 	dir := t.TempDir()
 
 	for _, name := range []string{"alpha.md", "beta.md", "gamma.md"} {
@@ -109,56 +109,56 @@ func TestDiscover_MultipleReports(t *testing.T) {
 		writeReport(t, dir, name, content)
 	}
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Len(t, reports, 3)
 }
 
-func TestDiscover_SkipsDirectories(t *testing.T) {
+func TestDiscoverReports_SkipsDirectories(t *testing.T) {
 	dir := t.TempDir()
 	reportsDir := filepath.Join(dir, "docs", "research")
 	require.NoError(t, os.MkdirAll(filepath.Join(reportsDir, "subdir"), 0755))
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports)
 }
 
-func TestDiscover_SkipsNonMdFiles(t *testing.T) {
+func TestDiscoverReports_SkipsNonMdFiles(t *testing.T) {
 	dir := t.TempDir()
 	reportsDir := filepath.Join(dir, "docs", "research")
 	require.NoError(t, os.MkdirAll(reportsDir, 0755))
 	require.NoError(t, os.WriteFile(filepath.Join(reportsDir, "notes.txt"), []byte("text"), 0644))
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports)
 }
 
-func TestDiscover_SkipsNoFrontmatter(t *testing.T) {
+func TestDiscoverReports_SkipsNoFrontmatter(t *testing.T) {
 	dir := t.TempDir()
 
 	content := "# No Frontmatter\n\nJust content."
 	writeReport(t, dir, "no-frontmatter.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports, "files without frontmatter should be skipped")
 }
 
-func TestDiscover_SkipsMalformedFrontmatter(t *testing.T) {
+func TestDiscoverReports_SkipsMalformedFrontmatter(t *testing.T) {
 	dir := t.TempDir()
 
 	// Only opening ---, no closing ---
 	content := "---\ncreated: 2026-01-01\ntopic: broken\n"
 	writeReport(t, dir, "malformed.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports, "malformed frontmatter should be skipped")
 }
 
-func TestDiscover_OptionalDimensionsAndCandidates(t *testing.T) {
+func TestDiscoverReports_OptionalDimensionsAndCandidates(t *testing.T) {
 	dir := t.TempDir()
 
 	content := `---
@@ -171,7 +171,7 @@ mode: "deep-dive"
 `
 	writeReport(t, dir, "minimal.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	require.Len(t, reports, 1)
 
@@ -180,7 +180,7 @@ mode: "deep-dive"
 	assert.Nil(t, r.Candidates, "missing candidates should be nil")
 }
 
-func TestDiscover_CreatedFallsBackToMtime(t *testing.T) {
+func TestDiscoverReports_CreatedFallsBackToMtime(t *testing.T) {
 	dir := t.TempDir()
 
 	content := `---
@@ -197,7 +197,7 @@ mode: "deep-dive"
 	fixedTime := time.Date(2026, 5, 1, 12, 0, 0, 0, time.UTC)
 	require.NoError(t, os.Chtimes(filePath, time.Time{}, fixedTime))
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	require.Len(t, reports, 1)
 
@@ -205,7 +205,7 @@ mode: "deep-dive"
 	assert.Equal(t, "", reports[0].Created, "created should be empty when not in frontmatter")
 }
 
-func TestDiscover_SortedByCreatedDescending(t *testing.T) {
+func TestDiscoverReports_SortedByCreatedDescending(t *testing.T) {
 	dir := t.TempDir()
 
 	reports := []struct {
@@ -222,7 +222,7 @@ func TestDiscover_SortedByCreatedDescending(t *testing.T) {
 		writeReport(t, dir, r.filename, content)
 	}
 
-	result, err := Discover(dir)
+	result, err := DiscoverReports(dir)
 	require.NoError(t, err)
 	require.Len(t, result, 3)
 
@@ -232,7 +232,7 @@ func TestDiscover_SortedByCreatedDescending(t *testing.T) {
 	assert.Equal(t, "alpha.md", result[2].Topic, "third report should be oldest by created")
 }
 
-func TestDiscover_CreatedTakesPriorityOverMtime(t *testing.T) {
+func TestDiscoverReports_CreatedTakesPriorityOverMtime(t *testing.T) {
 	dir := t.TempDir()
 
 	// Report with older mtime but newer created date
@@ -251,7 +251,7 @@ func TestDiscover_CreatedTakesPriorityOverMtime(t *testing.T) {
 		time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC),
 	))
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	require.NoError(t, err)
 	require.Len(t, reports, 2)
 
@@ -259,10 +259,10 @@ func TestDiscover_CreatedTakesPriorityOverMtime(t *testing.T) {
 	assert.Equal(t, "old-created", reports[1].Slug, "report with older created date should sort after")
 }
 
-func TestDiscover_MtimeFallbackSorting(t *testing.T) {
+func TestDiscoverReports_MtimeFallbackSorting(t *testing.T) {
 	dir := t.TempDir()
 
-	// Two reports without created date — sorting falls back to mtime
+	// Two reports without created date -- sorting falls back to mtime
 	content := "---\ntopic: \"no-date-a\"\nmode: \"deep-dive\"\n---\n"
 	writeReport(t, dir, "old-fallback.md", content)
 	require.NoError(t, os.Chtimes(
@@ -276,7 +276,7 @@ func TestDiscover_MtimeFallbackSorting(t *testing.T) {
 		time.Time{}, time.Date(2026, 5, 19, 0, 0, 0, 0, time.UTC),
 	))
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	require.NoError(t, err)
 	require.Len(t, reports, 2)
 
@@ -284,61 +284,61 @@ func TestDiscover_MtimeFallbackSorting(t *testing.T) {
 	assert.Equal(t, "old-fallback", reports[1].Slug, "report with older mtime should come last (fallback)")
 }
 
-func TestFindBySlug_Found(t *testing.T) {
+func TestFindReportBySlug_Found(t *testing.T) {
 	dir := t.TempDir()
 
 	content := "---\ncreated: \"2026-05-01\"\ntopic: \"Find Me\"\nmode: \"deep-dive\"\n---\n"
 	writeReport(t, dir, "find-me.md", content)
 
-	r, err := FindBySlug(dir, "find-me")
+	r, err := FindReportBySlug(dir, "find-me")
 	assert.NoError(t, err)
 	require.NotNil(t, r)
 	assert.Equal(t, "find-me", r.Slug)
 	assert.Equal(t, "Find Me", r.Topic)
 }
 
-func TestFindBySlug_NotFound(t *testing.T) {
+func TestFindReportBySlug_NotFound(t *testing.T) {
 	dir := t.TempDir()
 
-	_, err := FindBySlug(dir, "nonexistent")
+	_, err := FindReportBySlug(dir, "nonexistent")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "research report not found")
 }
 
-func TestDiscover_InvalidYamlInFrontmatter(t *testing.T) {
+func TestDiscoverReports_InvalidYamlInFrontmatter(t *testing.T) {
 	dir := t.TempDir()
 
 	// Valid frontmatter delimiters but invalid YAML content
 	content := "---\ncreated: [invalid: yaml\n---\n"
 	writeReport(t, dir, "bad-yaml.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	assert.Empty(t, reports, "invalid YAML within frontmatter should be skipped")
 }
 
-func TestDiscover_ReportWithOnlyMode(t *testing.T) {
+func TestDiscoverReports_ReportWithOnlyMode(t *testing.T) {
 	dir := t.TempDir()
 
-	// Has mode but no topic — should still be included since mode is set
+	// Has mode but no topic -- should still be included since mode is set
 	content := "---\nmode: \"deep-dive\"\n---\n"
 	writeReport(t, dir, "mode-only.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	require.Len(t, reports, 1)
 	assert.Equal(t, "deep-dive", reports[0].Mode)
 	assert.Equal(t, "", reports[0].Topic)
 }
 
-func TestDiscover_ReportWithOnlyTopic(t *testing.T) {
+func TestDiscoverReports_ReportWithOnlyTopic(t *testing.T) {
 	dir := t.TempDir()
 
-	// Has topic but no mode — should still be included since topic is set
+	// Has topic but no mode -- should still be included since topic is set
 	content := "---\ntopic: \"Just Topic\"\n---\n"
 	writeReport(t, dir, "topic-only.md", content)
 
-	reports, err := Discover(dir)
+	reports, err := DiscoverReports(dir)
 	assert.NoError(t, err)
 	require.Len(t, reports, 1)
 	assert.Equal(t, "Just Topic", reports[0].Topic)

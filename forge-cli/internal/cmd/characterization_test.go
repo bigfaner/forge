@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"encoding/json"
+	qualitygatepkg "forge-cli/internal/cmd/qualitygate"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -256,17 +257,17 @@ func TestQualityGate_SourceTaskID_IsEmpty(t *testing.T) {
 		})
 
 		// countFixTasks matches by title prefix, not SourceTaskID
-		compileCount := countFixTasks(index, "compile")
+		compileCount := qualitygatepkg.CountFixTasks(index, "compile")
 		if compileCount != 2 {
 			t.Errorf("expected 2 compile fix-tasks, got %d", compileCount)
 		}
 
-		lintCount := countFixTasks(index, "lint")
+		lintCount := qualitygatepkg.CountFixTasks(index, "lint")
 		if lintCount != 1 {
 			t.Errorf("expected 1 lint fix-task, got %d", lintCount)
 		}
 
-		testCount := countFixTasks(index, "unit-test")
+		testCount := qualitygatepkg.CountFixTasks(index, "unit-test")
 		if testCount != 0 {
 			t.Errorf("expected 0 unit-test fix-tasks, got %d", testCount)
 		}
@@ -291,7 +292,7 @@ func TestQualityGate_SourceTaskID_IsEmpty(t *testing.T) {
 			},
 		})
 
-		count := countFixTasks(index, "compile")
+		count := qualitygatepkg.CountFixTasks(index, "compile")
 		// Active-only: only pending/in_progress/blocked count
 		if count != 1 {
 			t.Errorf("countFixTasks should count only active fix-tasks (not completed). Got %d", count)
@@ -385,9 +386,9 @@ func TestQualityGate_CountFixTasks_CountsActiveOnly(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			index := &task.TaskIndex{Feature: "test"}
 			index.SetTasks(tt.tasks)
-			got := countFixTasks(index, tt.step)
+			got := qualitygatepkg.CountFixTasks(index, tt.step)
 			if got != tt.want {
-				t.Errorf("countFixTasks(%q) = %d, want %d", tt.step, got, tt.want)
+				t.Errorf("qualitygatepkg.CountFixTasks(%q) = %d, want %d", tt.step, got, tt.want)
 			}
 		})
 	}

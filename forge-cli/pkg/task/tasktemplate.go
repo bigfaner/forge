@@ -49,7 +49,7 @@ var taskTemplateDefaults = map[string]Defaults{
 	"coding.cleanup": {
 		Priority:      string(types.PriorityP0),
 		Breaking:      false,
-		EstimatedTime: "15min",
+		EstimatedTime: estTimeQuickTask,
 		Type:          "coding.cleanup",
 		IDPrefix:      "fix",
 	},

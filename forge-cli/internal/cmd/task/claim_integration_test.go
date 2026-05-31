@@ -21,7 +21,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
 			t.Errorf("expected (false, false, nil), got (%v, %v, %v)", cont, hasIssues, issues)
 		}
@@ -40,7 +40,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 		// Create corrupted state file (invalid JSON)
 		_ = os.WriteFile(statePath, []byte("not valid json {{{"), 0644)
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
 			t.Errorf("expected (false, false, nil) for corrupted file, got (%v, %v, %v)", cont, hasIssues, issues)
 		}
@@ -64,7 +64,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if !cont || hasIssues || len(issues) != 0 {
 			t.Errorf("expected (true, false, nil), got (%v, %v, %v)", cont, hasIssues, issues)
 		}
@@ -88,7 +88,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
 			t.Errorf("expected (false, false, nil), got (%v, %v, %v)", cont, hasIssues, issues)
 		}
@@ -114,7 +114,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if cont || !hasIssues || len(issues) != 1 {
 			t.Errorf("expected (false, true, 1 issue), got (%v, %v, %v)", cont, hasIssues, issues)
 		}
@@ -138,7 +138,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if cont || hasIssues || len(issues) != 0 {
 			t.Errorf("expected (false, false, nil) for blocked, got (%v, %v, %v)", cont, hasIssues, issues)
 		}
@@ -167,7 +167,7 @@ func TestCheckExistingTaskState(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, issues := checkExistingTaskState(dir, index, statePath)
+		cont, hasIssues, issues := task.CheckExistingTaskState(dir, index, statePath)
 		if cont || !hasIssues || len(issues) != 1 {
 			t.Errorf("expected (false, true, 1 issue) for truly unexpected status, got (%v, %v, %v)", cont, hasIssues, issues)
 		}

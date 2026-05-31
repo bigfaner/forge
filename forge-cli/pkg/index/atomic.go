@@ -12,7 +12,7 @@ import (
 // The perm value is applied to the final file via the temp file's mode.
 func AtomicWrite(path string, data []byte, perm os.FileMode) (retErr error) {
 	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -54,5 +54,5 @@ func SaveIndexAtomic(path string, data any) error {
 	}
 	content = append(content, '\n')
 
-	return AtomicWrite(path, content, 0644)
+	return AtomicWrite(path, content, 0o644)
 }

@@ -1,6 +1,0 @@
-mode: set
-task-cli/cmd/task/main.go:3.13,5.2 1 0
-task-cli/cmd/task/run.go:11.12,13.2 1 1
-task-cli/cmd/task/run.go:16.26,18.2 1 1
-task-cli/cmd/task/run.go:21.23,23.2 1 1
-task-cli/cmd/task/run.go:26.24,28.2 1 1

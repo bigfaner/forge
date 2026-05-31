@@ -296,7 +296,7 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 	}
 
 	for _, g := range gates {
-		phase := getTaskPhase(g.id)
+		phase := task.GetTaskPhase(g.id)
 		if phase <= 0 {
 			continue
 		}
@@ -330,7 +330,7 @@ func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
 			if !task.IsBusinessTask(t.ID) {
 				continue
 			}
-			if getTaskPhase(t.ID) != nextPhase {
+			if task.GetTaskPhase(t.ID) != nextPhase {
 				continue
 			}
 			// Check if this business task depends on the gate
@@ -366,7 +366,7 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 		if !task.IsBusinessTask(t.ID) {
 			continue
 		}
-		phase := getTaskPhase(t.ID)
+		phase := task.GetTaskPhase(t.ID)
 		if phase <= 1 {
 			continue // Phase 1 has no previous phase
 		}
@@ -378,7 +378,7 @@ func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
 				hasCrossPhaseDep = true
 				break
 			}
-			depPhase := getTaskPhase(dep)
+			depPhase := task.GetTaskPhase(dep)
 			if depPhase > 0 && depPhase < phase {
 				hasCrossPhaseDep = true
 				break
@@ -407,7 +407,7 @@ func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
 	phasesWithBusiness := make(map[int]bool)
 	for _, t := range tasks {
 		if task.IsBusinessTask(t.ID) {
-			if p := getTaskPhase(t.ID); p > 0 {
+			if p := task.GetTaskPhase(t.ID); p > 0 {
 				phasesWithBusiness[p] = true
 			}
 		}

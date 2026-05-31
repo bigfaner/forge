@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"forge-cli/internal/cmd/base"
-	"forge-cli/pkg/version"
+	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
 )
@@ -16,6 +16,6 @@ var versionCmd = &cobra.Command{
 }
 
 func runVersion(_ *cobra.Command, _ []string) error {
-	base.PrintBlock("VERSION", version.GetVersion())
+	base.PrintBlock("VERSION", types.GetVersion())
 	return nil
 }

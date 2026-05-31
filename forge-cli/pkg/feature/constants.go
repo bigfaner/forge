@@ -57,6 +57,10 @@ const (
 	TestResultsDir = "tests/results"
 	TestConfigFile = "tests/config.yaml"
 
+	// Test output file names (relative to TestResultsDir)
+	TestOutputFileName     = "raw-output.txt"
+	UnitTestOutputFileName = "unit-raw-output.txt"
+
 	// Forge runtime directory (project-level)
 	ForgeDir            = ".forge"
 	ForgeStateFileName  = "state.json"

@@ -266,7 +266,7 @@ func TestCheckDependenciesMet(t *testing.T) {
 }
 
 func TestGetTaskPhase(t *testing.T) {
-	// Note: getTaskPhase returns the first number in the ID (e.g., "1.2.1" -> 1)
+	// Note: task.GetTaskPhase returns the first number in the ID (e.g., "1.2.1" -> 1)
 	tests := []struct {
 		id        string
 		wantPhase int
@@ -282,15 +282,15 @@ func TestGetTaskPhase(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			got := getTaskPhase(tt.id)
+			got := task.GetTaskPhase(tt.id)
 			if got != tt.wantPhase {
-				t.Errorf("getTaskPhase(%q) = %d, want %d", tt.id, got, tt.wantPhase)
+				t.Errorf("task.GetTaskPhase(%q) = %d, want %d", tt.id, got, tt.wantPhase)
 			}
 		})
 	}
 }
 func TestCompareVersionIDs(t *testing.T) {
-	// compareVersionIDs returns true if a < b (a comes before b)
+	// task.CompareVersionIDs returns true if a < b (a comes before b)
 	tests := []struct {
 		a, b string
 		want bool
@@ -324,9 +324,9 @@ func TestCompareVersionIDs(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.a+"_"+tt.b, func(t *testing.T) {
-			got := compareVersionIDs(tt.a, tt.b)
+			got := task.CompareVersionIDs(tt.a, tt.b)
 			if got != tt.want {
-				t.Errorf("compareVersionIDs(%q, %q) = %v, want %v", tt.a, tt.b, got, tt.want)
+				t.Errorf("task.CompareVersionIDs(%q, %q) = %v, want %v", tt.a, tt.b, got, tt.want)
 			}
 		})
 	}
@@ -407,7 +407,7 @@ func TestClaimNextTask_MultiplePhases(t *testing.T) {
 		t.Fatalf("claimNextTask() error = %v", err)
 	}
 	// Actually looking at the code, eligibleTasks just filters by status and dependencies
-	// It doesn't filter by phase. Phase ordering is handled by compareVersionIDs
+	// It doesn't filter by phase. Phase ordering is handled by task.CompareVersionIDs
 	// So it will pick based on priority
 	if key != "task1" { // P0 wins over P2
 		t.Errorf("expected key 'task1', got key %q", key)
@@ -1040,7 +1040,7 @@ func TestCheckExistingTaskState_Rejected(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cont, hasIssues, _ := checkExistingTaskState("", index, statePath)
+		cont, hasIssues, _ := task.CheckExistingTaskState("", index, statePath)
 		if cont {
 			t.Error("should not continue rejected task")
 		}
