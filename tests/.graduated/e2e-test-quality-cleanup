@@ -1,9 +1,0 @@
-schema_version: 1
-status: completed
-timestamp: 2026-05-16T18:50:00Z
-source: tests/e2e/features/e2e-test-quality-cleanup/
-targets:
-  - tests/e2e/e2e_test_quality_cleanup_cli_test.go
-modules:
-  - e2e-test-quality-cleanup
-testCount: 7

@@ -1,9 +1,0 @@
-schema_version: 1
-status: completed
-timestamp: 2026-05-17T02:10:00Z
-source: tests/e2e/features/task-record-immutability/
-targets:
-  - tests/e2e/task_record_immutability_cli_test.go
-modules:
-  - task-record-immutability
-testCount: 12

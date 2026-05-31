@@ -1,9 +1,0 @@
-schema_version: 1
-status: completed
-timestamp: 2026-05-16T20:45:00Z
-source: tests/e2e/features/task-lifecycle-hardening/
-targets:
-  - tests/e2e/task_lifecycle_hardening_cli_test.go
-modules:
-  - task-lifecycle-hardening
-testCount: 14
