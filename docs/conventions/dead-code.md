@@ -71,24 +71,16 @@ domains: [dead-code, deprecation, cleanup, maintenance]
 | 编号 | 偏差项 | 类别 | 当前状态 | 目标状态 | 风险等级 |
 |:----:|--------|------|----------|----------|:--------:|
 | ~~DC-1~~ | `cmd.Debugf` 重复定义 | A（纯粹死代码/重复） | **已修复** — `internal/cmd/output.go` 中的重复定义已删除，仅保留 `base.Debugf` | N/A | N/A |
-| DC-2 | `getTaskPhase` test-bridge 别名 | B（Test-Bridge） | `internal/cmd/task/claim.go:241` 定义 `var getTaskPhase = task.GetTaskPhase`；**有 5 处生产调用**（`validate_index.go` 第 299/333/369/381/410 行） | 删除别名，5 处调用迁移为 `task.GetTaskPhase` | **高** |
-| DC-3 | `checkExistingTaskState` test-bridge 别名 | B（Test-Bridge） | `internal/cmd/task/claim.go:169` 定义；有 1 处生产调用（`claim.go:83`） | 删除别名，调用迁移为 `task.CheckExistingTaskState` | 中 |
-| DC-4 | `compareVersionIDs` test-bridge 别名 | B（Test-Bridge） | `internal/cmd/task/claim.go:283` 定义；有 1 处生产调用（`claim.go:229`） | 删除别名，调用迁移为 `task.CompareVersionIDs` | 中 |
+| ~~DC-2~~ | `getTaskPhase` test-bridge 别名 | B（Test-Bridge） | **已修复** — 别名已删除，5 处调用迁移为 `task.GetTaskPhase()` 直接调用，文件已更名为 `validate.go` | N/A | N/A |
+| ~~DC-3~~ | `checkExistingTaskState` test-bridge 别名 | B（Test-Bridge） | **已修复** — 别名已删除，调用迁移为 `task.CheckExistingTaskState()` 直接调用 | N/A | N/A |
+| ~~DC-4~~ | `compareVersionIDs` test-bridge 别名 | B（Test-Bridge） | **已修复** — 别名已删除，调用迁移为 `task.CompareVersionIDs()` 直接调用 | N/A | N/A |
 | ~~DC-5~~ | `FrontmatterData.Scope` deprecated 字段 | C（Deprecated） | **已修复** — `FrontmatterData.Scope` 已从 `frontmatter.go` 移除，`CheckLegacyScope` 保留用于迁移检测 | N/A | N/A |
 
 ### 偏差详细说明
 
-#### DC-2 特别标注：`getTaskPhase` 非纯粹死代码
+#### ~~DC-2~~ 已修复：`getTaskPhase` test-bridge 别名
 
-`getTaskPhase` 是 `pkg/task.GetTaskPhase` 的包级变量别名。虽然其形式类似于 test-bridge 模式，但该别名在 `internal/cmd/task/validate_index.go` 中有 **5 处生产代码调用**：
-
-1. 第 299 行：`phase := getTaskPhase(g.id)` -- 分组阶段验证
-2. 第 333 行：`if getTaskPhase(t.ID) != nextPhase` -- 跨阶段连续性检查
-3. 第 369 行：`phase := getTaskPhase(t.ID)` -- 依赖阶段获取
-4. 第 381 行：`depPhase := getTaskPhase(dep)` -- 依赖阶段比较
-5. 第 410 行：`if p := getTaskPhase(t.ID); p > 0` -- 跨阶段任务检测
-
-**不可将其误判为纯粹死代码直接删除**。正确处理路径是：先将 5 处调用迁移为 `task.GetTaskPhase`，再删除别名声明。
+`getTaskPhase` 别名已删除。5 处生产调用已全部迁移为 `task.GetTaskPhase()` 直接调用（位于 `internal/cmd/task/validate.go`）。文件已从 `validate_index.go` 更名为 `validate.go`。
 
 #### DC-5 迁移路径
 
