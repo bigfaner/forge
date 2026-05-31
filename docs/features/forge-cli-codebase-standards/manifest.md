@@ -1,7 +1,7 @@
 ---
 feature: "forge-cli-codebase-standards"
 created: "2026-05-30"
-status: tasks
+status: completed
 mode: quick
 ---
 
