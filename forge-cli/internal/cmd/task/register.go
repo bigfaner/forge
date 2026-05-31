@@ -12,7 +12,7 @@ func Register() {
 		statusCmd,
 		queryCmd,
 		checkDepsCmd,
-		validateIndexCmd,
+		validateCmd,
 		addCmd,
 		indexCmd,
 		migrateCmd,

@@ -74,7 +74,7 @@ func TestRootCmd_TaskGroupHasSubcommands(t *testing.T) {
 		taskSubNames[cmd.Name()] = true
 	}
 
-	expectedTaskSubs := []string{"claim", "submit", "status", "query", "check-deps", "validate-index", "add", "index", "migrate"}
+	expectedTaskSubs := []string{"claim", "submit", "status", "query", "check-deps", "validate", "add", "index", "migrate"}
 	for _, expected := range expectedTaskSubs {
 		if !taskSubNames[expected] {
 			t.Errorf("missing task subcommand: %s (have: %v)", expected, taskSubNames)

@@ -104,7 +104,7 @@ func TestRunValidate(t *testing.T) {
 	tasksDir := filepath.Join(dir, "docs", "features", "test-feature", "tasks")
 	for i := 2; i <= 3; i++ {
 		taskFile := filepath.Join(tasksDir, fmt.Sprintf("1.%d.md", i))
-		if err := os.WriteFile(taskFile, []byte("task content"), 0644); err != nil {
+		if err := os.WriteFile(taskFile, []byte(fmt.Sprintf("# Task %d\n\n## Acceptance Criteria\n- [ ] Done\n", i)), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -116,7 +116,7 @@ func TestRunValidate(t *testing.T) {
 	defer func() { _ = os.Chdir(origWd) }()
 
 	output, err := captureOutput(func() error {
-		rootCmd.SetArgs([]string{"task", "validate-index", indexPath})
+		rootCmd.SetArgs([]string{"task", "validate", indexPath})
 		return rootCmd.Execute()
 	})
 	if err != nil {
@@ -340,7 +340,7 @@ func setupClaimTestProject(t *testing.T) string {
 
 	// Create task file
 	taskFile := filepath.Join(dir, "docs", "features", "test-feature", "tasks", "1.1.md")
-	if err := os.WriteFile(taskFile, []byte("task content"), 0644); err != nil {
+	if err := os.WriteFile(taskFile, []byte("# Task 1\n\n## Acceptance Criteria\n- [ ] Done\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 

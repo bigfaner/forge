@@ -43,7 +43,7 @@ var (
 	ExportExecuteClaim     = executeClaim
 	ExportClaimNextTask    = claimNextTask
 	ExportRunCheckDeps     = runCheckDeps
-	ExportRunValidateIndex = runValidateIndex
+	ExportRunValidateIndex = runValidate
 	ExportRunClaim         = runClaim
 	ExportRunAdd           = runAdd
 	ExportDoReopen         = doReopen

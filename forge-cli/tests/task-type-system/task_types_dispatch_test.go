@@ -225,7 +225,7 @@ func TestTC_006_MissingTypeCausesNonZeroExitWithError(t *testing.T) {
 	require.NoError(t, os.WriteFile(p, data, 0644))
 
 	// Validate the index — missing type should be detected
-	exitCode, out := testkit.RunCLIExitCode("task", "validate-index", p)
+	exitCode, out := testkit.RunCLIExitCode("task", "validate", p)
 	assert.NotEqual(t, 0, exitCode, "missing type index should fail validation")
 	lower := strings.ToLower(out)
 	assert.True(t,

@@ -18,9 +18,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var validateIndexCmd = &cobra.Command{
-	Use:   "validate-index [file]",
-	Short: "Validate index.json file",
+var validateCmd = &cobra.Command{
+	Use:   "validate [file]",
+	Short: "Validate index.json and task sizing",
 	Long: `Validate an index.json file for structural and semantic correctness.
 
 If no file is specified, validates the current feature's index.json.
@@ -29,9 +29,10 @@ Validations:
   - JSON syntax
   - Required fields present
   - Dependency references exist
-  - No circular dependencies`,
+  - No circular dependencies
+  - AC count per task (must be >= 1 and <= 6)`,
 	Args: cobra.MaximumNArgs(1),
-	RunE: runValidateIndex,
+	RunE: runValidate,
 }
 
 var (
@@ -55,7 +56,7 @@ func buildValidPriorityMap() map[string]bool {
 	return m
 }
 
-func runValidateIndex(_ *cobra.Command, args []string) error {
+func runValidate(_ *cobra.Command, args []string) error {
 	var filePath string
 	if len(args) > 0 {
 		filePath = args[0]
@@ -126,6 +127,7 @@ func (v *validator) run() error {
 	v.validatePhaseOrder(idx.TasksMap())
 	v.validatePhaseSummaries(idx.TasksMap())
 	v.validateLiveness(&idx)
+	v.validateACCount(idx.Feature, idx.TasksMap())
 	if !v.printResults() {
 		return base.NewAIError(base.ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
 	}
@@ -518,4 +520,53 @@ func (v *validator) validateLiveness(index *task.TaskIndex) {
 				fmt.Sprintf("Task '%s' (%s): blocked with no path to resolution (all deps blocked or missing)", key, t.ID))
 		}
 	}
+}
+
+// validateACCount checks that each task .md file has between 1 and 6 acceptance criteria.
+func (v *validator) validateACCount(featureSlug string, tasks map[string]task.Task) {
+	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(v.filePath)))))
+	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
+
+	for _, t := range tasks {
+		if t.File == "" {
+			continue
+		}
+		taskFile := filepath.Join(tasksDir, t.File)
+		data, err := os.ReadFile(taskFile)
+		if err != nil {
+			continue // File existence already checked in validateFilesExist
+		}
+
+		acCount := countACItems(string(data))
+		if acCount == 0 {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): has 0 acceptance criteria (must have 1-6)", t.File, t.ID))
+		} else if acCount > 6 {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): has %d acceptance criteria (max 6)", t.File, t.ID, acCount))
+		}
+	}
+}
+
+// countACItems parses a task .md file content and counts `- [ ]` lines
+// under the `## Acceptance Criteria` section.
+func countACItems(content string) int {
+	lines := strings.Split(content, "\n")
+	inACSection := false
+	count := 0
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		// Detect section headers
+		if strings.HasPrefix(trimmed, "## ") {
+			if trimmed == "## Acceptance Criteria" {
+				inACSection = true
+			} else {
+				inACSection = false
+			}
+			continue
+		}
+		if inACSection && strings.HasPrefix(trimmed, "- [ ]") {
+			count++
+		}
+	}
+	return count
 }

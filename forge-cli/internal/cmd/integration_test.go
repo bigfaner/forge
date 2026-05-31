@@ -148,6 +148,9 @@ func buildTestTaskMD(t task.Task) string {
 	}
 	b.WriteString("---\n\n")
 	fmt.Fprintf(&b, "# %s\n", t.Title)
+	// Add a minimal AC section so validateACCount passes
+	b.WriteString("\n## Acceptance Criteria\n")
+	fmt.Fprintf(&b, "- [ ] %s is done\n", t.Title)
 	return b.String()
 }
 
@@ -613,7 +616,7 @@ func TestClaimNextTask_SuspendedTask_NotAutoUnblocked(t *testing.T) {
 	})
 }
 
-// ---------- runValidateIndex direct validator ----------
+// ---------- runValidate direct validator ----------
 
 func TestValidatorRun_WithFileArg(t *testing.T) {
 	dir := t.TempDir()
@@ -751,7 +754,7 @@ func TestValidateRecordData_NonTestableTask(t *testing.T) {
 	}
 }
 
-// ---------- runValidateIndex no file arg, feature-based ----------
+// ---------- runValidate no file arg, feature-based ----------
 
 func TestValidatorRun_FeatureBased(t *testing.T) {
 	dir := t.TempDir()
@@ -1027,7 +1030,7 @@ func TestRunCheck_AllValid(t *testing.T) {
 	}
 }
 
-// ---------- runValidateIndex with explicit file arg ----------
+// ---------- runValidate with explicit file arg ----------
 
 func TestRunValidate_Integration(t *testing.T) {
 	dir := t.TempDir()
@@ -1094,7 +1097,7 @@ func TestSaveIndexAndSignalCompletion_AllDone(t *testing.T) {
 	_ = out
 }
 
-// ---------- runValidateIndex no-args (feature-based path) ----------
+// ---------- runValidate no-args (feature-based path) ----------
 
 func TestRunValidate_NoArgs(t *testing.T) {
 	setupFullProject(t, SetupOpts{Tasks: map[string]task.Task{
@@ -1313,7 +1316,7 @@ func TestRunFeature_None(t *testing.T) {
 	}
 }
 
-// ---------- runValidateIndex with invalid file ----------
+// ---------- runValidate with invalid file ----------
 
 func TestRunValidate_InvalidFile(t *testing.T) {
 	v := taskpkg.NewExportValidator("/nonexistent/path/index.json")
@@ -1566,7 +1569,7 @@ func TestWriteRegressionRawOutput_MkdirAllError(t *testing.T) {
 	}
 }
 
-// ---------- runValidateIndex error paths ----------
+// ---------- runValidate error paths ----------
 
 func TestRunValidate_NoProjectRoot(t *testing.T) {
 	if os.Getenv("TEST_RUN_VALIDATE_NO_PROJECT") == "1" {
