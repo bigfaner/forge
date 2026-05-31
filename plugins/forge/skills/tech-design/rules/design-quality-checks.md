@@ -11,12 +11,22 @@ After drafting each section, verify every PRD acceptance criterion is addressed.
 2. If an AC has no corresponding design element, add one
 3. Document the mapping in the "PRD Coverage Map" section of the template
 
-**`refactor` / `cleanup` intent**:
+**`enhancement` intent**:
+1. Extract improvement goals from the PRD spec's Goals section — these serve as the AC checklist
+2. For each improvement goal, identify which component, module, or code change addresses it
+3. Document the mapping in the "PRD Coverage Map" section of the template
+
+**`refactor` / `cleanup` / `fix` intent**:
 1. Extract acceptance criteria from the PRD spec's "Verification Criteria" (验证标准) section — these regression criteria serve as the AC checklist
 2. For each verification criterion, identify which component, module, or code change addresses it
 3. Document the mapping in the "PRD Coverage Map" section of the template
 
-> **Note**: `prd-user-stories.md` is not generated for refactor/cleanup intent. Do NOT attempt to read it.
+**`doc` intent**:
+1. Extract documentation goals from the PRD spec's Goals section — these serve as the AC checklist
+2. For each documentation goal, identify which file update addresses it
+3. Document the mapping in the "PRD Coverage Map" section of the template
+
+> **Note**: `prd-user-stories.md` is not generated for `enhancement`, `refactor`, `cleanup`, `fix`, or `doc` intent. Do NOT attempt to read it.
 
 ## 5.2 Breakdown-Readiness Check
 
@@ -56,7 +66,7 @@ If no UI Function has `placement: existing-page`, write "No existing-page integr
 
 ## 5.5 DB Schema Branch (conditional)
 
-**Intent gate**: If `intent` is `refactor` or `cleanup`, **skip this entire check** — ER Diagram and Schema are not generated for refactoring/cleanup (per SKILL.md Step 6.1 intent gate).
+**Intent gate**: If `intent` is `enhancement` (unless override signal triggers), `refactor`, `cleanup`, `fix`, or `doc`, **skip this entire check** — ER Diagram and Schema are not generated for these intents (per SKILL.md Step 6.1 intent gate).
 
 **When `db-schema: "yes"` and `intent: new-feature`**:
 1. Generate `design/er-diagram.md` using `templates/er-diagram.md` — Mermaid erDiagram + entity detail tables + index design + relationship descriptions
