@@ -24,7 +24,7 @@
       "dependencies": [
         "8"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "10-ci-gate-integration.md",
       "record": "records/10-ci-gate-integration.md",
       "surface-key": ".",
@@ -41,7 +41,7 @@
         "2",
         "6"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "11-reorganize-internal-cmd.md",
       "record": "records/11-reorganize-internal-cmd.md",
       "breaking": true,
@@ -63,7 +63,7 @@
         "9",
         "11"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "12-reorganize-pkg-layer.md",
       "record": "records/12-reorganize-pkg-layer.md",
       "breaking": true,

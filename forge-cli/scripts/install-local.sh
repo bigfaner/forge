@@ -78,7 +78,7 @@ build() {
         OUTPUT="${OUTPUT}.exe"
     fi
 
-    LDFLAGS="-s -w -X forge-cli/pkg/version.Version=${VERSION}"
+    LDFLAGS="-s -w -X forge-cli/pkg/types.Version=${VERSION}"
     CGO_ENABLED=0 GOOS="$OS" GOARCH="$ARCH" go build -ldflags="$LDFLAGS" -o "$OUTPUT" ./cmd/forge
 
     log_info "Build complete: ${OUTPUT}"

@@ -3,7 +3,7 @@
 GO := go
 BINARY_NAME := forge
 MAIN_PATH := ./cmd/forge
-VERSION_PKG := forge-cli/pkg/version
+VERSION_PKG := forge-cli/pkg/types
 VERSION_FILE := scripts/version.txt
 
 # Version is read from version.txt, injected via ldflags

@@ -1,19 +1,16 @@
-// Package research provides discovery and parsing for research reports.
-package research
+package infocmd
 
 import (
 	"fmt"
 	"path/filepath"
 	"time"
-
-	"forge-cli/pkg/infocmd"
 )
 
 // researchDir is the base directory for research reports.
 const researchDir = "docs/research"
 
-// metadata holds the parsed frontmatter fields from a research report .md file.
-type metadata struct {
+// researchMeta holds the parsed frontmatter fields from a research report .md file.
+type researchMeta struct {
 	Created    string   `yaml:"created"`
 	Topic      string   `yaml:"topic"`
 	Mode       string   `yaml:"mode"`
@@ -32,8 +29,8 @@ type Report struct {
 	FilePath   string
 }
 
-// scanConfig defines how research reports are discovered using the infocmd framework.
-var scanConfig = infocmd.ScanConfig[Report]{
+// researchScanConfig defines how research reports are discovered.
+var researchScanConfig = ScanConfig[Report]{
 	BaseDir:  researchDir,
 	IsSubdir: false,
 	IDKey:    func(r Report) string { return r.Slug },
@@ -41,8 +38,8 @@ var scanConfig = infocmd.ScanConfig[Report]{
 		return r.Created
 	},
 	ParseEntry: func(name, _ string, content []byte, _ time.Time) (Report, error) {
-		var meta metadata
-		if err := infocmd.ParseFrontmatter(content, &meta); err != nil {
+		var meta researchMeta
+		if err := ParseFrontmatter(content, &meta); err != nil {
 			return Report{}, err
 		}
 
@@ -63,17 +60,17 @@ var scanConfig = infocmd.ScanConfig[Report]{
 	},
 }
 
-// Discover walks docs/research/*.md and returns all reports sorted by
+// DiscoverReports walks docs/research/*.md and returns all reports sorted by
 // frontmatter created field descending (newest first), with mtime as fallback.
 // Files without valid frontmatter are skipped.
 // A missing docs/research/ directory returns an empty slice with no error.
-func Discover(projectRoot string) ([]Report, error) {
-	return infocmd.Discover(projectRoot, scanConfig)
+func DiscoverReports(projectRoot string) ([]Report, error) {
+	return Discover(projectRoot, researchScanConfig)
 }
 
-// FindBySlug returns a single report by slug (filename without .md), or an error if not found.
-func FindBySlug(projectRoot, slug string) (*Report, error) {
-	r, err := infocmd.FindByID(projectRoot, slug, scanConfig)
+// FindReportBySlug returns a single report by slug (filename without .md), or an error if not found.
+func FindReportBySlug(projectRoot, slug string) (*Report, error) {
+	r, err := FindByID(projectRoot, slug, researchScanConfig)
 	if err != nil {
 		return nil, fmt.Errorf("research report not found: %s", slug)
 	}

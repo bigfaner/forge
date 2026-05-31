@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"forge-cli/internal/cmd/base"
-	"forge-cli/pkg/lesson"
+	"forge-cli/pkg/infocmd"
 	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
@@ -36,7 +36,7 @@ func runLesson(_ *cobra.Command, args []string) error {
 }
 
 func runLessonList(projectRoot string) error {
-	lessons, err := lesson.Discover(projectRoot)
+	lessons, err := infocmd.DiscoverLessons(projectRoot)
 	if err != nil {
 		return newErrLessonDiscovery(err)
 	}
@@ -79,7 +79,7 @@ func runLessonList(projectRoot string) error {
 }
 
 func runLessonDetail(projectRoot, name string) error {
-	l, err := lesson.FindByName(projectRoot, name)
+	l, err := infocmd.FindLessonByName(projectRoot, name)
 	if err != nil {
 		return newErrLessonNotFound(name)
 	}
@@ -118,7 +118,7 @@ func newErrLessonNotFound(name string) *base.AIError {
 }
 
 // mapLessonsToNameLens extracts name lengths from lesson list.
-func mapLessonsToNameLens(lessons []lesson.Lesson) []int {
+func mapLessonsToNameLens(lessons []infocmd.Lesson) []int {
 	lens := make([]int, len(lessons))
 	for i, l := range lessons {
 		lens[i] = len(l.Name)

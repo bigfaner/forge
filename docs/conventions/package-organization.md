@@ -77,14 +77,13 @@ leaf（叶子层）
 
 | 包 | 职责 |
 |---|------|
-| `pkg/types` | 纯类型定义（Status, Priority, Surface 等枚举与结构体） |
+| `pkg/types` | 纯类型定义（Status, Priority, Surface 等枚举）+ 版本信息 |
 | `pkg/git` | Git CLI 操作封装 |
 | `pkg/index` | 索引文件管理（原子写入、文件锁） |
-| `pkg/infocmd` | 命令元数据描述 |
+| `pkg/infocmd` | 通用信息命令扫描框架 + lesson/research 发现 |
 | `pkg/just` | Just 任务运行器集成 |
 | `pkg/project` | 项目根目录检测与标记文件 |
 | `pkg/facttable` | 事实表数据结构 |
-| `pkg/version` | 版本常量 |
 
 ### 3.2 Infrastructure 层
 
@@ -104,8 +103,6 @@ leaf（叶子层）
 | `pkg/task` | `forgeconfig`, `index`, `infocmd`, `types` | 任务增删改查、状态机、依赖排序、模板生成 |
 | `pkg/prompt` | `feature`, `forgeconfig`, `task` | Prompt 模板管理与渲染 |
 | `pkg/proposal` | `feature`, `infocmd` | Proposal 文档管理 |
-| `pkg/lesson` | `infocmd` | 经验教训记录 |
-| `pkg/research` | `infocmd` | 深度研究任务管理 |
 | `pkg/serverprobe` | `feature`, `just` | 服务器探测与 Just 集成 |
 | `pkg/testrunner` | `just` | 测试运行器 |
 
