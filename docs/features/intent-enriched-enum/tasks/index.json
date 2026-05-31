@@ -78,7 +78,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "breaking": true,
@@ -96,7 +96,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "breaking": true,
