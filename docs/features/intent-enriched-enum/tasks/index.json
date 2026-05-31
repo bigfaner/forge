@@ -22,7 +22,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-update-write-prd-pipeline-config.md",
       "record": "records/2-update-write-prd-pipeline-config.md",
       "type": "doc",

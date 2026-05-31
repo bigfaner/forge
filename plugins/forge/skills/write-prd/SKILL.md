@@ -23,13 +23,18 @@ ls docs/proposals/<slug>/proposal.md 2>/dev/null  # optional, not blocking
 
 ### Intent Detection
 
-Read the `intent` field from `docs/proposals/<slug>/proposal.md` frontmatter. This determines the PRD format:
+Read the `intent` field from `docs/proposals/<slug>/proposal.md` frontmatter. This determines the PRD format via the Pipeline Configuration table below.
 
-| Intent | PRD Format | User Stories | Test Pipeline |
-|--------|-----------|--------------|---------------|
-| `new-feature` | Full PRD (default) | Generated | Full (journey → contract → script) |
-| `refactor` | Spec-only PRD | **Skipped** | Skipped (quality-gate only) |
-| `cleanup` | Spec-only PRD | **Skipped** | Skipped (quality-gate only) |
+#### Pipeline Configuration
+
+| Intent | PRD Format | User Stories | API Handbook | Test Pipeline | Security Review |
+|--------|-----------|-------------|-------------|--------------|----------------|
+| `new-feature` | Full | Yes | Yes | Yes | If signal |
+| `enhancement` | Simplified (Background + Goals + Test Pipeline, skip User Stories) | No | If signal | Yes | If signal |
+| `refactor` | Spec-only | No | If signal | Yes | If signal |
+| `cleanup` | Spec-only | No | No | Yes | No |
+| `fix` | Spec-only | No | If signal | Yes (reproduce → fix → verify) | No |
+| `doc` | Minimal (title + goals + scope only) | No | No | No | No |
 
 **Default**: If `intent` is missing or empty, treat as `new-feature` — full PRD pipeline unchanged.
 
@@ -38,6 +43,26 @@ Read the `intent` field from `docs/proposals/<slug>/proposal.md` frontmatter. Th
 # Read intent from proposal frontmatter
 head -20 docs/proposals/<slug>/proposal.md | grep "^intent:"
 ```
+
+#### Override Signals
+
+Pipeline defaults are determined by intent, but PRD content signals can enable additional pipeline steps. During content generation, detect the following signals within the same LLM call:
+
+| Signal Type | Keywords / Patterns | Override Action |
+|-------------|-------------------|-----------------|
+| API 变更 | "API", "endpoint", "命令重命名", "接口变更", "breaking change" | Enable API Handbook |
+| 用户可见行为 | "用户可见", "UI 变更", "CLI 输出", "新选项" | Enable User Stories |
+| 安全相关 | "认证", "授权", "权限", "加密", "token" | Enable Security Review |
+| 性能相关 | "性能", "延迟", "吞吐量", "缓存" | Enable Performance Baseline |
+| 数据迁移 | "迁移", "schema 变更", "数据格式" | Enable Migration Plan |
+
+**Detection rules**:
+- Content generation and signal matching happen in parallel inference (same LLM call), not sequentially
+- Negation handling: skip signals in negative context (e.g., "不涉及 API 变更"). Relies on LLM context understanding, not keyword matching
+- Override only adds steps (开启), never removes. Worst case: unnecessary artifact generated, caught in user review
+- Multiple signals trigger independently and stack (e.g., both "API" and "性能" → enable both API Handbook and Performance Baseline)
+- When an override triggers, generate a comment in the PRD output documenting it (e.g., `<!-- Override: API handbook enabled by signal "接口变更" -->`)
+- For `doc` intent: Minimal PRD format has no pipeline steps that can be overridden — override signals become no-op by design
 
 <HARD-GATE>
 Do NOT write any code, scaffold any project, or take any implementation action until the PRD is finalized and approved. Present the PRD and get user approval first.
@@ -73,10 +98,22 @@ Do NOT write any code, scaffold any project, or take any implementation action u
 Explore context → Check proposal → Assess scope → Ask questions → Propose approaches → Present PRD sections → Write PRD Spec + User Stories + UI Functions → Create Manifest → Commit
 ```
 
-### refactor / cleanup intent (spec-only PRD)
+### enhancement intent (Simplified PRD)
 
 ```
-Explore context → Check proposal + detect intent → Assess scope → Ask questions (focused on change scope, constraints, verification) → Write Spec-only PRD → Create Manifest → Commit
+Explore context → Check proposal + detect intent → Assess scope → Ask questions (focused on enhancement target, improvement goals) → Write Simplified PRD (Background + Goals + Test Pipeline) → Detect override signals → Create Manifest → Commit
+```
+
+### refactor / cleanup / fix intent (spec-only PRD)
+
+```
+Explore context → Check proposal + detect intent → Assess scope → Ask questions (focused on change scope, constraints, verification) → Detect override signals → Write Spec-only PRD → Create Manifest → Commit
+```
+
+### doc intent (Minimal PRD)
+
+```
+Explore context → Check proposal + detect intent → Assess scope → Ask questions (focused on documentation scope) → Write Minimal PRD (title + goals + scope) → Create Manifest → Commit
 ```
 
 ## Checklist
@@ -97,13 +134,38 @@ Explore context → Check proposal + detect intent → Assess scope → Ask ques
 12. **Review & Commit** — commit all documents
 13. **Adversarial Eval** — run eval-prd if configured
 
-### refactor / cleanup intent (spec-only PRD)
+### enhancement intent (Simplified PRD)
 
 1. **Explore project context** — check files, docs, recent commits
 2. **Check proposal + detect intent** — read `docs/proposals/<slug>/proposal.md`, extract `intent` from frontmatter
-3. **Assess scope** — determine refactoring boundaries
+3. **Assess scope** — determine enhancement boundaries
+4. **Ask clarifying questions** — focus on what is being improved, improvement goals, verification criteria
+5. **Write Simplified PRD** — Background + Goals + Test Pipeline (skip User Stories); detect override signals; save to `docs/features/<slug>/prd/prd-spec.md`
+6. **Create Manifest** — save to `docs/features/<slug>/manifest.md`
+7. **Self-Check** — verify PRD passes checks
+8. **Review & Commit** — commit all documents
+9. **Adversarial Eval** — run eval-prd if configured
+
+### refactor / cleanup / fix intent (spec-only PRD)
+
+1. **Explore project context** — check files, docs, recent commits
+2. **Check proposal + detect intent** — read `docs/proposals/<slug>/proposal.md`, extract `intent` from frontmatter
+3. **Assess scope** — determine refactoring/fix boundaries
 4. **Ask clarifying questions** — focus on change scope, behavioral invariants, regression criteria
-5. **Write Spec-only PRD** — save to `docs/features/<slug>/prd/prd-spec.md` (must contain three mandatory fields, see Step 7A)
+5. **Detect override signals** — scan PRD content for override signals (see Override Signals table); generate `<!-- Override: ... -->` comments for any triggered signals
+6. **Write Spec-only PRD** — save to `docs/features/<slug>/prd/prd-spec.md` (must contain three mandatory fields, see Step 7A)
+7. **Create Manifest** — save to `docs/features/<slug>/manifest.md`
+8. **Self-Check** — verify PRD passes checks
+9. **Review & Commit** — commit all documents
+10. **Adversarial Eval** — run eval-prd if configured
+
+### doc intent (Minimal PRD)
+
+1. **Explore project context** — check files, docs, recent commits
+2. **Check proposal + detect intent** — read `docs/proposals/<slug>/proposal.md`, extract `intent` from frontmatter
+3. **Assess scope** — determine documentation scope
+4. **Ask clarifying questions** — focus on which documents change and why
+5. **Write Minimal PRD** — title (one sentence describing doc change target and purpose) + goals (list files to update/create and expected changes) + scope (boundaries of what docs are in/out); save to `docs/features/<slug>/prd/prd-spec.md`
 6. **Create Manifest** — save to `docs/features/<slug>/manifest.md`
 7. **Self-Check** — verify PRD passes checks
 8. **Review & Commit** — commit all documents
@@ -120,16 +182,39 @@ Explore context → Check proposal + detect intent → Assess scope → Ask ques
 | `prd/prd-ui-functions.md` | `templates/prd-ui-functions.md` | UI function highlights (requirements level, **mandatory** for features with UI surface) |
 | `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
 
-### refactor / cleanup intent (spec-only PRD)
+### enhancement intent (Simplified PRD)
+
+| File | Template | Description |
+|------|----------|-------------|
+| `prd/prd-spec.md` | `templates/prd-spec.md` | Simplified PRD — Background (what is being improved) + Goals (improvement targets) + Test Pipeline |
+| `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
+
+**Not generated for enhancement**:
+- `prd/prd-user-stories.md` — existing user base, no new user flows
+- `prd/prd-ui-functions.md` — unless override signal "用户可见行为" triggers User Stories
+
+### refactor / cleanup / fix intent (spec-only PRD)
 
 | File | Template | Description |
 |------|----------|-------------|
 | `prd/prd-spec.md` | `templates/prd-spec.md` | Spec-only PRD — must contain three mandatory fields (see Step 7A) |
 | `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
 
-**Not generated for refactor/cleanup**:
-- `prd/prd-user-stories.md` — "As a user / I want / So that" format is semantically empty for pure refactoring
-- `prd/prd-ui-functions.md` — refactoring does not introduce new UI surfaces
+**Not generated for refactor/cleanup/fix**:
+- `prd/prd-user-stories.md` — "As a user / I want / So that" format is semantically empty for pure refactoring/cleanup/fix
+- `prd/prd-ui-functions.md` — refactoring/cleanup/fix does not introduce new UI surfaces
+
+### doc intent (Minimal PRD)
+
+| File | Template | Description |
+|------|----------|-------------|
+| `prd/prd-spec.md` | `templates/prd-spec.md` | Minimal PRD — title (one sentence describing doc change target and purpose) + goals (list files to update/create) + scope (boundaries) |
+| `manifest.md` | `templates/manifest.md` | Feature index and traceability mapping |
+
+**Not generated for doc**:
+- `prd/prd-user-stories.md` — documentation changes have no user stories
+- `prd/prd-ui-functions.md` — documentation changes have no UI surfaces
+- Override signals are no-op for doc intent (Minimal PRD has no overridable pipeline steps)
 
 ## Step 1: Explore Project Context
 
@@ -212,9 +297,11 @@ docs/features/<slug>/
 ## Step 7: Write User Stories
 
 <EXTREMELY-IMPORTANT>
-**Intent Gate**: If `intent` is `refactor` or `cleanup`, **skip this entire step**. Do NOT generate `prd/prd-user-stories.md`. Proceed directly to Step 9 (Create Manifest).
+**Intent Gate**: If `intent` is `refactor`, `cleanup`, `fix`, `enhancement`, or `doc`, **skip this entire step**. Do NOT generate `prd/prd-user-stories.md`. Proceed directly to Step 9 (Create Manifest).
 
-The "As a user / I want / So that" format is semantically empty for pure refactoring and cleanup — there is no new user-observable behavior to describe as a user story.
+Exception: If override signal "用户可见行为" is triggered for `refactor`, `cleanup`, or `fix` intent, generate User Stories.
+
+The "As a user / I want / So that" format is semantically empty when there is no new user-observable behavior to describe as a user story.
 </EXTREMELY-IMPORTANT>
 
 **Doc-only Gate**: If all In Scope items are non-compilable artifacts (`.md`, `.yaml`, `.json` under `docs/`, `skills/`, etc.), skip this step and note that user stories are not needed for doc-only features. User stories serve gen-journeys → test script generation, which requires testable code.
@@ -237,13 +324,13 @@ So that [concrete benefit/goal]
 
 See `examples/user-stories.md` for concrete examples derived from Background roles.
 
-## Step 7A: Write Spec-Only PRD (refactor / cleanup intent)
+## Step 7A: Write Spec-Only PRD (refactor / cleanup / fix intent)
 
 <EXTREMELY-IMPORTANT>
-This step applies **only** when `intent` is `refactor` or `cleanup`. If `intent` is `new-feature` (or missing), skip this step entirely.
+This step applies **only** when `intent` is `refactor`, `cleanup`, or `fix`. If `intent` is `new-feature`, `enhancement`, or `doc`, skip this step entirely.
 </EXTREMELY-IMPORTANT>
 
-When `intent` is `refactor` or `cleanup`, the PRD spec must contain three mandatory fields that provide sufficient information for `/tech-design` without relying on user stories:
+When `intent` is `refactor`, `cleanup`, or `fix`, the PRD spec must contain three mandatory fields that provide sufficient information for `/tech-design` without relying on user stories:
 
 ### Mandatory Fields
 
@@ -286,7 +373,7 @@ When using `templates/prd-spec.md` for a spec-only PRD:
 ## Step 8: Write UI Functions (mandatory for UI features)
 
 <EXTREMELY-IMPORTANT>
-**Intent Gate**: If `intent` is `refactor` or `cleanup`, **skip this step**. Refactoring does not introduce new UI surfaces.
+**Intent Gate**: If `intent` is `refactor`, `cleanup`, `fix`, `enhancement`, or `doc`, **skip this step**. These intents do not introduce new UI surfaces by default.
 </EXTREMELY-IMPORTANT>
 
 For features with UI surfaces, create `prd/prd-ui-functions.md` using `templates/prd-ui-functions.md`.
@@ -300,7 +387,7 @@ Create `manifest.md` at the feature root using `templates/manifest.md`:
 - Fill in PRD entries and summaries
 - Replace `{{DATE}}` with today's date in `YYYY-MM-DD` format
 - Set status to `prd`
-- Include User Stories row only if `prd/prd-user-stories.md` was generated (skip for `refactor`/`cleanup` intent)
+- Include User Stories row only if `prd/prd-user-stories.md` was generated (skip for `refactor`/`cleanup`/`fix`/`enhancement`/`doc` intent unless override signal triggers it)
 - Include UI Functions row only if `prd/prd-ui-functions.md` was created
 
 ## Step 10: Self-Check
