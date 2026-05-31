@@ -1,7 +1,7 @@
 ---
 feature: "intent-enriched-enum"
 created: "2026-05-31"
-status: tasks
+status: completed
 mode: quick
 ---
 
