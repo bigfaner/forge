@@ -222,7 +222,18 @@ How to apply:
 
 ### Intent Propagation
 
-If `proposal.md` frontmatter has `intent` (e.g., `intent: cleanup`), use as default type for all tasks. Individual task `type` overrides. Missing intent → per-task Type Assignment. 1:1 mapping.
+If `proposal.md` has `intent`, use as default type. Individual task `type` overrides. Missing intent → per-task Type Assignment. Strict 1:1 mapping:
+
+| Intent | Task Type |
+|--------|-----------|
+| `new-feature` | `coding.feature` |
+| `enhancement` | `coding.enhancement` |
+| `refactor` | `coding.refactor` |
+| `cleanup` | `coding.cleanup` |
+| `fix` | `coding.fix` |
+| `doc` | `doc` |
+
+`doc` intent resolves to `doc` task type without sub-type distinction — `doc.consolidate` and `doc.drift` are skill-auto-generated types (not user-triggerable), unified under the `doc` umbrella.
 
 ### Template Selection
 
