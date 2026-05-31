@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	qualitygatepkg "forge-cli/internal/cmd/qualitygate"
+
 	"forge-cli/internal/cmd/base"
 	taskpkg "forge-cli/internal/cmd/task"
 	"forge-cli/pkg/feature"
@@ -1920,7 +1922,7 @@ func TestForgeStateLifecycle(t *testing.T) {
 	}
 
 	// Phase 3: all-completed reads and deletes state.json
-	result, _ := checkAllCompleted(false)
+	result, _ := qualitygatepkg.CheckAllCompleted(false)
 	if result == nil {
 		t.Fatal("checkAllCompleted should return result when all done with state")
 	}
@@ -2110,7 +2112,7 @@ func TestRunAllCompleted_NotAllDone(t *testing.T) {
 	}})
 
 	if os.Getenv("TEST_RUN_ALL_COMPLETED_NOT_DONE") == "1" {
-		_ = runQualityGate(nil, []string{})
+		_ = qualitygatepkg.RunQualityGate(nil, []string{})
 		return
 	}
 

@@ -9,6 +9,11 @@ import (
 	"forge-cli/pkg/types"
 )
 
+const (
+	estTimeQuickTask = "15min"
+	estTimeMedium    = "1-2h"
+)
+
 // ---------------------------------------------------------------------------
 // Core types
 // ---------------------------------------------------------------------------
@@ -734,7 +739,7 @@ var PipelineRegistry = []PipelineNode{
 	// --- Gen Scripts (per surface type) ---
 	{
 		Type: TypeTestGenScripts, Key: "gen-test-scripts-{surface-type}", ID: "T-test-gen-scripts-{surface-type}",
-		Title: "Generate {test-type-title} Scripts", Priority: string(types.PriorityP1), EstimatedTime: "1-2h",
+		Title: "Generate {test-type-title} Scripts", Priority: string(types.PriorityP1), EstimatedTime: estTimeMedium,
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", Expansion: "per-surface-type",
 		DependsOn:    []DepRef{{Ref: "T-eval-contract"}},
 		StrategyKind: "generate",
@@ -750,13 +755,13 @@ var PipelineRegistry = []PipelineNode{
 	// --- Validation ---
 	{
 		Type: TypeValidationCode, Key: "validate-code", ID: "T-validate-code",
-		Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: "15min",
+		Title: "Validate Code Quality", Priority: string(types.PriorityP2), EstimatedTime: estTimeQuickTask,
 		ConfigGate: GateValidation, IntentGate: GateAllowAll, GenerateCondition: CondAlways,
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},
 	{
 		Type: TypeValidationUx, Key: "validate-ux", ID: "T-validate-ux",
-		Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: "15min",
+		Title: "Validate User Experience", Priority: string(types.PriorityP2), EstimatedTime: estTimeQuickTask,
 		ConfigGate: GateValidation, IntentGate: GateAllowAll, GenerateCondition: CondAlways,
 		DependsOn:     []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 		UISurfaceOnly: true, MainSession: true,
@@ -770,7 +775,7 @@ var PipelineRegistry = []PipelineNode{
 	},
 	{
 		Type: TypeDocDrift, Key: "quick-drift-detection", ID: "T-quick-doc-drift",
-		Title: "Detect Spec Drift", Priority: string(types.PriorityP2), EstimatedTime: "15min",
+		Title: "Detect Spec Drift", Priority: string(types.PriorityP2), EstimatedTime: estTimeQuickTask,
 		ConfigGate: GateConsolidateSpecs, IntentGate: GateAllowAll, GenerateCondition: CondAlways, Mode: "quick",
 		DependsOn: []DepRef{{Resolve: ResolveLastRunTestOrBusiness}},
 	},

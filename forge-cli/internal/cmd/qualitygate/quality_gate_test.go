@@ -1,4 +1,4 @@
-package cmd
+package qualitygate
 
 import (
 	"fmt"
@@ -111,7 +111,7 @@ func TestCheckAllCompleted(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			result, _ := checkAllCompleted(false)
+			result, _ := CheckAllCompleted(false)
 
 			if tc.wantNil {
 				if result != nil {
@@ -138,7 +138,7 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755); err != nil {
 		t.Fatal(err)
 	}
-	_, err := checkAllCompleted(false)
+	_, err := CheckAllCompleted(false)
 	if err == nil {
 		t.Error("expected error when no feature set, got nil")
 	}
@@ -149,7 +149,7 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 
 func TestCheckAllCompleted_NoProject(t *testing.T) {
 	if os.Getenv("TEST_CHECK_ALL_COMPLETED_NO_PROJECT") == "1" {
-		_, err := checkAllCompleted(false)
+		_, err := CheckAllCompleted(false)
 		if err == nil {
 			t.Error("expected error when no project root, got nil")
 		}
@@ -431,9 +431,9 @@ func TestExtractSourceFiles(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got := extractSourceFiles(tc.output)
+			got := ExtractSourceFiles(tc.output)
 			if got != tc.want {
-				t.Errorf("extractSourceFiles() = %q, want %q", got, tc.want)
+				t.Errorf("ExtractSourceFiles() = %q, want %q", got, tc.want)
 			}
 		})
 	}
@@ -483,7 +483,7 @@ func TestGroupFilesByDir(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			groups := groupFilesByDir(tc.files)
+			groups := GroupFilesByDir(tc.files)
 			if tc.want == 0 {
 				if groups != nil {
 					t.Errorf("expected nil, got %v", groups)
@@ -502,7 +502,7 @@ func TestAddFixTask_MultiDirCreatesMultipleTasks(t *testing.T) {
 
 	// Simulate compile error with files in two different directories
 	output := "pkg/handler.go:10: error\ninternal/service.go:20: error"
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -533,7 +533,7 @@ func TestAddFixTask_SingleDirCreatesOneTask(t *testing.T) {
 
 	// Simulate compile error with files in the same directory
 	output := "pkg/handler.go:10: error\npkg/service.go:20: error"
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -596,7 +596,7 @@ func TestAddFixTask_BasicCompile(t *testing.T) {
 	output := "./internal/handler.go:42:2: undefined: foo\n./internal/handler.go:43:1: too many arguments"
 	errorDocPath := "tests/results/unit-raw-output.txt"
 
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, errorDocPath)
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", output, errorDocPath)
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -674,7 +674,7 @@ func TestAddFixTask_StepSpecificTestScripts(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, _ := helperSetup(t)
-			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := AddFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
@@ -708,7 +708,7 @@ func TestAddFixTask_TypeFromStep(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, indexPath := helperSetup(t)
-			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := AddFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
@@ -741,7 +741,7 @@ func TestAddFixTask_CleanupTaskNonBreaking(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, indexPath := helperSetup(t)
-			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := AddFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
@@ -778,7 +778,7 @@ func TestAddFixTask_FixTaskBreakingWithEstimatedTime(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, indexPath := helperSetup(t)
-			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := AddFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
@@ -816,7 +816,7 @@ func TestAddFixTask_TemplateSelection(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, _ := helperSetup(t)
-			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := AddFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
@@ -837,7 +837,7 @@ func TestAddFixTask_EmptyOutput(t *testing.T) {
 
 	// Soft-failure policy: empty output -> no source files -> surface inference fails
 	// -> fix-task is still created with empty surface key/type.
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "lint", "", "tests/results/unit-raw-output.txt")
 	if addErr != nil {
 		t.Fatalf("expected no error (soft-failure policy), got: %v", addErr)
 	}
@@ -851,7 +851,7 @@ func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 
 	// Soft-failure policy: no source files in output -> surface inference fails
 	// -> fix-task is still created with empty surface key/type.
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", "some random output without file references", "tests/results/unit-raw-output.txt")
 	if addErr != nil {
 		t.Fatalf("expected no error (soft-failure policy), got: %v", addErr)
 	}
@@ -863,9 +863,9 @@ func TestAddFixTask_NoSourceFilesInOutput(t *testing.T) {
 func TestAddFixTask_SequentialIDs(t *testing.T) {
 	projectRoot, featureSlug, indexPath := helperSetup(t)
 
-	id1, err1 := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
-	id2, err2 := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
-	id3, err3 := addFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
+	id1, err1 := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	id2, err2 := AddFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
+	id3, err3 := AddFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
 	for _, e := range []error{err1, err2, err3} {
 		if e != nil {
 			t.Fatalf("unexpected error: %v", e)
@@ -894,7 +894,7 @@ func TestAddFixTask_SequentialIDs(t *testing.T) {
 func TestAddFixTask_TitleContainsStep(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "lint", "a.go:1: error", "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "lint", "a.go:1: error", "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -915,7 +915,7 @@ func TestAddFixTask_DescriptionContainsErrorDoc(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	errorDoc := "tests/results/raw-output.txt"
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "test", "test.spec.ts:5: fail", errorDoc)
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "test", "test.spec.ts:5: fail", errorDoc)
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -936,7 +936,7 @@ func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	// First add
-	if _, err := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt"); err != nil {
+	if _, err := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt"); err != nil {
 		t.Fatalf("unexpected error on first add: %v", err)
 	}
 	state := feature.ReadForgeState(projectRoot)
@@ -948,7 +948,7 @@ func TestAddFixTask_ForgeStateResetEachTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Second add should reset again
-	if _, err := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt"); err != nil {
+	if _, err := AddFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt"); err != nil {
 		t.Fatalf("unexpected error on second add: %v", err)
 	}
 	state = feature.ReadForgeState(projectRoot)
@@ -1047,9 +1047,9 @@ func TestCountFixTasks(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			index := task.NewTaskIndex("test")
 			index.SetTasks(tc.tasks)
-			got := countFixTasks(index, tc.step)
+			got := CountFixTasks(index, tc.step)
 			if got != tc.want {
-				t.Errorf("countFixTasks(%q) = %d, want %d", tc.step, got, tc.want)
+				t.Errorf("CountFixTasks(%q) = %d, want %d", tc.step, got, tc.want)
 			}
 		})
 	}
@@ -1069,7 +1069,7 @@ func TestAddFixTask_CapEnforced(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, capErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr == nil {
 		t.Errorf("expected error when 3 active fix-tasks exist, got nil (taskID=%q)", taskID)
 	}
@@ -1091,7 +1091,7 @@ func TestAddFixTask_CapAllowsUnderLimit(t *testing.T) {
 	if err := task.SaveIndex(indexPath, index); err != nil {
 		t.Fatal(err)
 	}
-	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, capErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr != nil {
 		t.Fatalf("expected no error with 2 active fix-tasks, got %v", capErr)
 	}
@@ -1115,7 +1115,7 @@ func TestAddFixTask_ActiveOnlyCapAllowsUnderLimit(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Active-only count = 1 (f3), under cap of 3, so adding a 4th should succeed.
-	taskID, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, capErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr != nil {
 		t.Fatalf("expected no error with 1 active fix-task, got %v", capErr)
 	}
@@ -1149,7 +1149,7 @@ func TestHandleGateFailure_DistinctReasons(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			if os.Getenv("TEST_HANDLE_GATE") == "1" {
-				_ = handleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail", tc.breaking)
+				_ = HandleGateFailure(tc.step, "tests/results/fake.txt", tc.fixID, "some error detail", tc.breaking)
 				return
 			}
 			cmd := exec.Command(os.Args[0], "-test.run=TestHandleGateFailure_DistinctReasons/"+name)
@@ -1202,7 +1202,7 @@ func TestCheckAllCompleted_RejectedTaskReturnsNil(t *testing.T) {
 	if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
 		t.Fatal(err)
 	}
-	result, _ := checkAllCompleted(false)
+	result, _ := CheckAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent quality-gate from proceeding")
 	}
@@ -1230,7 +1230,7 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	// First call should succeed and consume the state
-	result, _ := checkAllCompleted(false)
+	result, _ := CheckAllCompleted(false)
 	if result == nil {
 		t.Fatal("first call should return result")
 	}
@@ -1240,7 +1240,7 @@ func TestCheckAllCompleted_ForgeStateConsumedOnSuccess(t *testing.T) {
 		t.Error("forge state should have AllCompleted=false after checkAllCompleted consumes it")
 	}
 	// Second call should return nil (AllCompleted=false, not signaling)
-	result2, _ := checkAllCompleted(false)
+	result2, _ := CheckAllCompleted(false)
 	if result2 != nil {
 		t.Error("second call should return nil after state was consumed")
 	}
@@ -1338,9 +1338,9 @@ func TestIsDocsOnly(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			index := task.NewTaskIndex("test")
 			index.SetTasks(tc.tasks)
-			got := isDocsOnly(index)
+			got := IsDocsOnly(index)
 			if got != tc.want {
-				t.Errorf("isDocsOnly() = %v, want %v", got, tc.want)
+				t.Errorf("IsDocsOnly() = %v, want %v", got, tc.want)
 			}
 		})
 	}
@@ -1387,7 +1387,7 @@ func TestCheckAllCompleted_DocsOnlyFlag(t *testing.T) {
 			if err := feature.WriteForgeState(dir, "test"); err != nil {
 				t.Fatal(err)
 			}
-			result, _ := checkAllCompleted(false)
+			result, _ := CheckAllCompleted(false)
 			if result == nil {
 				t.Fatal("expected non-nil result")
 			}
@@ -1422,7 +1422,7 @@ func TestCheckAllCompleted_ManyCompletedTasks(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-	result, _ := checkAllCompleted(false)
+	result, _ := CheckAllCompleted(false)
 	if result == nil {
 		t.Fatal("expected result with many completed tasks")
 	}
@@ -1449,7 +1449,7 @@ func TestCheckAllCompleted_AllBlockedReturnsNil(t *testing.T) {
 	if err := feature.WriteForgeState(dir, "test"); err != nil {
 		t.Fatal(err)
 	}
-	result, _ := checkAllCompleted(false)
+	result, _ := CheckAllCompleted(false)
 	if result != nil {
 		t.Error("all blocked tasks should return nil")
 	}
@@ -1478,7 +1478,7 @@ func TestCheckAllCompleted_MixedCompletedSkippedRejected(t *testing.T) {
 		t.Fatal(err)
 	}
 	// rejected is not completed or skipped, so should return nil
-	result, _ := checkAllCompleted(false)
+	result, _ := CheckAllCompleted(false)
 	if result != nil {
 		t.Error("rejected task should prevent quality-gate from proceeding")
 	}
@@ -1491,7 +1491,7 @@ func TestCheckAllCompleted_VerboseMode(t *testing.T) {
 		t.Fatal(err)
 	}
 	// No forge state -> should return nil but not error
-	result, _ := checkAllCompleted(true)
+	result, _ := CheckAllCompleted(true)
 	if result != nil {
 		t.Error("expected nil result without forge state")
 	}
@@ -1510,7 +1510,7 @@ func TestAddFixTask_SourceTaskIDEmpty(t *testing.T) {
 		t.Run(tc.step, func(t *testing.T) {
 			projectRoot, featureSlug, indexPath := helperSetup(t)
 
-			taskID, addErr := addFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
+			taskID, addErr := AddFixTask(projectRoot, featureSlug, tc.step, "handler.go:10: fail", "tests/results/fake.txt")
 			if addErr != nil {
 				t.Fatalf("unexpected error: %v", addErr)
 			}
@@ -1547,12 +1547,12 @@ func TestAddFixTask_CrossStepIndependence(t *testing.T) {
 		t.Fatal(err)
 	}
 	// compile is at cap -> should fail
-	_, capErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	_, capErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if capErr == nil {
 		t.Error("expected cap error for compile step at limit")
 	}
 	// lint has no fix tasks -> should succeed
-	taskID, lintErr := addFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
+	taskID, lintErr := AddFixTask(projectRoot, featureSlug, "lint", "b.go:2: error", "tests/results/out.txt")
 	if lintErr != nil {
 		t.Fatalf("expected no error for lint step (cross-step independent), got %v", lintErr)
 	}
@@ -1560,7 +1560,7 @@ func TestAddFixTask_CrossStepIndependence(t *testing.T) {
 		t.Fatal("expected non-empty task ID for lint fix task")
 	}
 	// unit-test has no fix tasks -> should succeed
-	taskID2, unitErr := addFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
+	taskID2, unitErr := AddFixTask(projectRoot, featureSlug, "unit-test", "c.go:3: error", "tests/results/out.txt")
 	if unitErr != nil {
 		t.Fatalf("expected no error for unit-test step (cross-step independent), got %v", unitErr)
 	}
@@ -1572,7 +1572,7 @@ func TestAddFixTask_CrossStepIndependence(t *testing.T) {
 func TestAddFixTask_VarsSourceTaskIDRemainsNA(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -1600,7 +1600,7 @@ func TestAddFixTask_TaskAddFailure(t *testing.T) {
 	if err := os.Remove(indexPath); err != nil {
 		t.Fatal(err)
 	}
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if addErr == nil {
 		t.Fatalf("expected error when task add fails (no index), got nil (taskID=%q)", taskID)
 	}
@@ -1636,7 +1636,7 @@ func TestAddFixTask_MarkdownCreationError(t *testing.T) {
 	if err := os.MkdirAll(blockerPath, 0755); err != nil {
 		t.Fatal(err)
 	}
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if addErr == nil {
 		t.Fatalf("expected error when markdown creation fails, got nil (taskID=%q)", taskID)
 	}
@@ -1661,7 +1661,7 @@ func TestAddFixTask_TemplateNotFoundError_NonexistentTemplate(t *testing.T) {
 	// current success path still works with the existing "fix-task" template.
 	projectRoot, featureSlug, _ := helperSetup(t)
 
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", "a.go:1: error", "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("expected no error with valid template, got: %v", addErr)
 	}
@@ -1937,7 +1937,7 @@ func TestAddFixTask_SurfaceInference(t *testing.T) {
 	}
 
 	output := "./admin-panel/src/App.tsx:10: error: undefined variable"
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", output, "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -1987,7 +1987,7 @@ func TestAddFixTask_SurfaceInferenceSoftFailure(t *testing.T) {
 
 	// Soft-failure policy: surface inference failure does NOT block fix-task creation.
 	// Task is created with empty surface key/type.
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", "handler.go:10: error", "tests/results/out.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", "handler.go:10: error", "tests/results/out.txt")
 	if addErr != nil {
 		t.Fatalf("expected no error (soft-failure policy), got: %v", addErr)
 	}
@@ -2506,7 +2506,7 @@ func TestAddFixTask_DescriptionContainsFailLines(t *testing.T) {
 	projectRoot, featureSlug, _ := helperSetup(t)
 
 	output := "--- FAIL: TestHandler (0.00s)\n    handler_test.go:10: error1\n--- FAIL: TestService (0.01s)\n    service_test.go:20: error2\nFAIL"
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "unit-test", output, "tests/results/raw-output.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "unit-test", output, "tests/results/raw-output.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -2532,7 +2532,7 @@ func TestAddFixTask_DescriptionFallbackOnCompile(t *testing.T) {
 
 	// compile output has no --- FAIL: lines, should use tail fallback
 	output := "./internal/handler.go:42:2: undefined: foo\n./internal/handler.go:43:1: too many arguments\nsome other line"
-	taskID, addErr := addFixTask(projectRoot, featureSlug, "compile", output, "tests/results/raw-output.txt")
+	taskID, addErr := AddFixTask(projectRoot, featureSlug, "compile", output, "tests/results/raw-output.txt")
 	if addErr != nil {
 		t.Fatalf("unexpected error: %v", addErr)
 	}
@@ -3025,7 +3025,7 @@ func TestAddRegressionFixTasks_CountFixTasksCompatibility(t *testing.T) {
 		t.Fatal(loadErr)
 	}
 	// countFixTasks uses prefix "fix test:" -- our new titles start with "fix test:".
-	count := countFixTasks(updatedIndex, "test")
+	count := CountFixTasks(updatedIndex, "test")
 	if count != 2 {
 		t.Errorf("countFixTasks should find 2 tasks with 'fix test:' prefix, got %d", count)
 	}

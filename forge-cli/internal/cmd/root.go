@@ -8,6 +8,7 @@ import (
 	featurepkg "forge-cli/internal/cmd/feature"
 	forensicpkg "forge-cli/internal/cmd/forensic"
 	promptpkg "forge-cli/internal/cmd/prompt"
+	qualitygatepkg "forge-cli/internal/cmd/qualitygate"
 	taskpkg "forge-cli/internal/cmd/task"
 	worktreepkg "forge-cli/internal/cmd/worktree"
 
@@ -48,7 +49,7 @@ func init() {
 
 	// Top-level commands
 	rootCmd.AddCommand(cleanupCmd)
-	rootCmd.AddCommand(qualityGateCmd)
+	rootCmd.AddCommand(qualitygatepkg.QualityGateCmd)
 	rootCmd.AddCommand(verifyTaskDoneCmd)
 	rootCmd.AddCommand(featurepkg.Cmd)
 	rootCmd.AddCommand(versionCmd)
@@ -62,8 +63,4 @@ func init() {
 
 	// Version is hidden from --help but accessible via `forge version`
 	versionCmd.Hidden = true
-
-	// Task group subcommands — registered via taskpkg.Register() above
-	// Worktree group subcommands — registered via worktreepkg.Register() above
-	// Prompt group subcommands — registered via promptpkg.Register() above
 }
