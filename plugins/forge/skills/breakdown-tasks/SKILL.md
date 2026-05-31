@@ -194,7 +194,7 @@ P0 | P1 | P2. Classified by structural properties, not subjective importance:
 | `coding.enhancement` | Task improves existing behavior without adding new capabilities |
 | `coding.cleanup` | Task removes dead code, fixes technical debt, or improves code hygiene |
 | `coding.refactor` | Task restructures code without changing behavior (rename, reorganize, extract) |
-| `coding.fix` | Auto-generated for test failures via `forge task add`; do not assign manually |
+| `coding.fix` | 可由 fix intent 自动映射，但不可通过 `forge task add` CLI 手动创建 |
 | `doc` | Tasks producing only markdown, specs, or templates (non-compilable, non-runnable) |
 | `doc.consolidate` | User manually creates a consolidation task for legacy projects — merging scattered spec files into `docs/business-rules/` or `docs/conventions/` |
 | `doc.drift` | User manually creates a drift audit task — detecting inconsistencies between existing specs and current code |
@@ -206,7 +206,18 @@ Fallback: `coding.feature`. **Classify by output artifact, not intent.** Quality
 </HARD-RULE>
 
 ### Intent Propagation
-If `proposal.md` has `intent`, use as default type. Individual task `type` overrides. Missing intent → per-task Type Assignment. 1:1 mapping.
+If `proposal.md` has `intent`, use as default type. Individual task `type` overrides. Missing intent → per-task Type Assignment. Strict 1:1 mapping:
+
+| Intent | Task Type |
+|--------|-----------|
+| `new-feature` | `coding.feature` |
+| `enhancement` | `coding.enhancement` |
+| `refactor` | `coding.refactor` |
+| `cleanup` | `coding.cleanup` |
+| `fix` | `coding.fix` |
+| `doc` | `doc` |
+
+`doc` intent resolves to `doc` task type without sub-type distinction — `doc.consolidate` and `doc.drift` are skill-auto-generated types (not user-triggerable), unified under the `doc` umbrella.
 
 ### Template Selection
 All Affected Files non-compilable → `templates/task-doc.md`. Any compilable/runnable → `templates/task.md`.
