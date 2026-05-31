@@ -8,7 +8,7 @@
       "title": "Update brainstorm intent mapping to 6-value enum",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-update-brainstorm-intent-mapping.md",
       "record": "records/1-update-brainstorm-intent-mapping.md",
       "type": "doc",
