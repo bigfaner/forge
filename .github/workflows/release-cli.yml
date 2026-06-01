@@ -22,15 +22,17 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
+          cache-dependency-path: forge-cli/go.sum
 
       - name: Build
+        working-directory: forge-cli
         run: |
-          VERSION=$(cat forge-cli/scripts/version.txt | tr -d '[:space:]')
+          VERSION=$(cat scripts/version.txt | tr -d '[:space:]')
           EXT=$([ "${{ matrix.goos }}" = "windows" ] && echo ".exe" || echo "")
           BINARY="forge-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}"
           LDFLAGS="-s -w -X forge-cli/pkg/types.Version=${VERSION}"
           CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
-            go build -ldflags="$LDFLAGS" -o "bin/${BINARY}" ./cmd/forge
+            go build -ldflags="$LDFLAGS" -o "../bin/${BINARY}" ./cmd/forge
 
       - uses: actions/upload-artifact@v4
         with:
