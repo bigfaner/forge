@@ -16,8 +16,8 @@ Verification checklist for PRD quality before presenting to the user.
 | Scope consistency | In-scope items match what's described in Functional Specs and user stories |
 | No vague language | No "better", "faster", "improved" without quantification |
 | Placement completeness | Every UI Function has a Placement section with Mode and target |
-| Placement consistency | existing-page routes exist in sitemap.json (if sitemap available) |
-| Sitemap availability | If sitemap.json not found, warn: "Sitemap unavailable — existing-page routes cannot be validated. Run /gen-web-sitemap." |
+| Placement consistency | existing-page routes exist in sitemap.json (only when project has `web` surface — check via `forge surfaces --json`) |
+| Sitemap availability | If project has `web` surface but sitemap.json not found, warn: "Sitemap unavailable — existing-page routes cannot be validated. Run /gen-web-sitemap." If no `web` surface, skip this check entirely |
 | Page Composition valid | Page Composition table lists all pages with correct UI Function references |
 | db-schema filled | db-schema frontmatter is "yes" or "no" (not empty) |
 
