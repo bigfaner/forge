@@ -146,7 +146,7 @@ function Write-VerifyInstructions {
     Write-Host ""
     Write-Host "To verify the installation:"
     Write-Host ""
-    Write-Host "  forge --version"
+    Write-Host "  forge version"
     Write-Host ""
     Write-Host "Next steps:"
     Write-Host ""

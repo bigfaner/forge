@@ -50,6 +50,8 @@
 
 ### 安装步骤
 
+**macOS / Linux：**
+
 ```bash
 # 1. 安装 forge CLI
 curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
@@ -59,6 +61,19 @@ forge upgrade
 
 # 3. 在项目中初始化
 cd my-project && forge init
+```
+
+**Windows (PowerShell)：**
+
+```powershell
+# 1. 安装 forge CLI
+irm https://github.com/bigfaner/forge/releases/latest/download/install.ps1 | iex
+
+# 2. 安装 forge Plugin（CLI binary + Plugin 一步到位）
+forge upgrade
+
+# 3. 在项目中初始化
+cd my-project; forge init
 ```
 
 本地开发者构建：`git clone` -> `cd forge-cli && bash scripts/install-local.sh` -> `forge upgrade`
