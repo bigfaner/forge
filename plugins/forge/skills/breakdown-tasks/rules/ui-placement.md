@@ -23,9 +23,9 @@ If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/protot
 This procedure activates when `prd/prd-ui-functions.md` exists.
 
 1. Read the Page Composition table from `prd/prd-ui-functions.md`
-2. Check if `docs/sitemap/sitemap.json` exists. If not, WARN: `"sitemap.json not found — cannot verify existing-page routes. Run /gen-sitemap for full validation."` and proceed without route verification (skip step 3).
+2. Check if `docs/sitemap/sitemap.json` exists. If not, WARN: `"sitemap.json not found — cannot verify existing-page routes. Run /gen-web-sitemap for full validation."` and proceed without route verification (skip step 3).
 3. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
-4. If route not found in sitemap, ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-sitemap first or verify the route is correct."`
+4. If route not found in sitemap, ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-web-sitemap first or verify the route is correct."`
 5. If no Placement sections found in any UI Function, ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Edit prd/prd-ui-functions.md to add Placement sections, or re-run /write-prd."`
 
 ## UI Task Split Rules

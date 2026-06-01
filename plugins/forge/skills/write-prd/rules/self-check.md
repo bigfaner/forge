@@ -17,7 +17,7 @@ Verification checklist for PRD quality before presenting to the user.
 | No vague language | No "better", "faster", "improved" without quantification |
 | Placement completeness | Every UI Function has a Placement section with Mode and target |
 | Placement consistency | existing-page routes exist in sitemap.json (if sitemap available) |
-| Sitemap availability | If sitemap.json not found, warn: "Sitemap unavailable — existing-page routes cannot be validated. Run /gen-sitemap." |
+| Sitemap availability | If sitemap.json not found, warn: "Sitemap unavailable — existing-page routes cannot be validated. Run /gen-web-sitemap." |
 | Page Composition valid | Page Composition table lists all pages with correct UI Function references |
 | db-schema filled | db-schema frontmatter is "yes" or "no" (not empty) |
 

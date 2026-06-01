@@ -15,7 +15,7 @@ docs/
   decisions/            — Technical decisions (/learn)
   lessons/              — Lessons learned (/learn)
   proposals/            — Improvement proposals (docs/proposals/{slug}/proposal.md, via /brainstorm or ad-hoc)
-  sitemap/sitemap.json  — Page element map (project-level, /gen-sitemap)
+  sitemap/sitemap.json  — Page element map (project-level, /gen-web-sitemap)
 ```
 
 > Agents read `docs/business-rules/` and `docs/conventions/` during task execution for domain constraints and coding standards. Each file carries a `domains` frontmatter field (auto-managed by `/consolidate-specs`) with topic keywords — agents use it to load only files relevant to the current task, skipping the rest. `/consolidate-specs` also performs drift verification to keep specs in sync with code.

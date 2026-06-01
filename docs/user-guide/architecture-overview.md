@@ -238,7 +238,7 @@ Forge 在用户项目中维护以下目录结构：
 │   ├── decisions/               # 技术决策（/learn 生成）
 │   ├── lessons/                 # 经验教训（/learn 生成）
 │   ├── proposals/               # 改进提案（/brainstorm 生成）
-│   ├── sitemap/sitemap.json     # 页面元素映射（/gen-sitemap 生成）
+│   ├── sitemap/sitemap.json     # 页面元素映射（/gen-web-sitemap 生成）
 │   │
 │   └── features/<slug>/         # Feature 工作区（核心）
 │       ├── manifest.md          # Feature 入口（自动维护）
@@ -362,7 +362,7 @@ Forge 提供两种工作模式，根据功能复杂度选择：
 │ 辅助 Skill（任意阶段可用）                            │
 │                                                     │
 │ /consolidate-specs  /learn  /forensic  /deep-research│
-│ /clean-code  /gen-sitemap  /test-guide               │
+│ /clean-code  /gen-web-sitemap  /test-guide           │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```

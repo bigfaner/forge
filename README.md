@@ -309,7 +309,7 @@ forge --help
 
 ### 测试生命周期
 
-`/gen-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `/consolidate-specs`
+`/gen-web-sitemap` -> `/gen-journeys` -> `/eval-journey` -> `/gen-contracts` -> `/eval-contract` -> `/gen-test-scripts` -> `/run-tests` -> `/consolidate-specs`
 
 ### 执行
 
@@ -321,7 +321,7 @@ forge --help
 
 ### 辅助
 
-`/fix-bug` / `/git-commit` / `/git-checkout` / `/learn` / `/consolidate-specs` / `/init-forge` / `/gen-sitemap` / `/extract-design-md` / `/forensic` / `/deep-research` / `/clean-code` / `/test-guide` / `/simplify-skill`
+`/fix-bug` / `/git-commit` / `/git-checkout` / `/learn` / `/consolidate-specs` / `/init-forge` / `/gen-web-sitemap` / `/extract-design-md` / `/forensic` / `/deep-research` / `/clean-code` / `/test-guide` / `/simplify-skill`
 
 ---
 

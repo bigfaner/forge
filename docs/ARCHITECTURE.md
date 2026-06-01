@@ -262,7 +262,7 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 | T-test-gen-scripts | `/gen-test-scripts` | `tests/<journey>/*` | 是 |
 | T-test-run | `/run-tests` | `results/latest.md` | 是 |
 
-前置任务：`/gen-sitemap`（生成 `sitemap.json` 页面元素映射）。
+前置任务：`/gen-web-sitemap`（生成 `sitemap.json` 页面元素映射）。
 
 #### Quick 模式
 
@@ -467,7 +467,7 @@ docs/
 │   └── ...
 ├── decisions/               # 技术决策（/learn）
 ├── lessons/                 # 经验教训（/learn）
-└── sitemap/sitemap.json     # 页面元素映射（/gen-sitemap）
+└── sitemap/sitemap.json     # 页面元素映射（/gen-web-sitemap）
 ```
 
 ### 测试目录

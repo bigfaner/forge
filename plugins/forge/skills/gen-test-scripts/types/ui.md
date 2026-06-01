@@ -124,7 +124,7 @@ Read `docs/sitemap/sitemap.json`. For each route referenced in test cases:
 
 The sitemap serves as a secondary reference for understanding page structure. Locators are NOT derived from sitemap element data keyed by test-case Element IDs -- all locator derivation comes from the Fact Table (Step 1).
 
-If a route referenced in test cases does not exist in sitemap, **emit a WARNING** listing the missing routes and suggest re-running `/gen-sitemap`. Proceed using the Fact Table from Step 1 for the missing routes -- do not abort.
+If a route referenced in test cases does not exist in sitemap, **emit a WARNING** listing the missing routes and suggest re-running `/gen-web-sitemap`. Proceed using the Fact Table from Step 1 for the missing routes -- do not abort.
 
 ## Verification Method
 

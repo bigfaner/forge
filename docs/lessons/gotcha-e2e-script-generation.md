@@ -35,7 +35,7 @@ Step 1.5 的 Required reads 表有 5 类源文件（Router、Config、API handle
 
 SKILL.md 写了 "use Fact Table DOM structure from Step 1.5"，但 Step 1.5 没有 frontend 读取——这个 fallback 引用了一个不存在的数据来源。
 
-**Fix**：sitemap 缺失路由时 emit WARNING 并建议 re-run `/gen-sitemap`，同时用 Step 1.5 的 Fact Table 继续推断（现在 Fact Table 有 frontend 数据了）。
+**Fix**：sitemap 缺失路由时 emit WARNING 并建议 re-run `/gen-web-sitemap`，同时用 Step 1.5 的 Fact Table 继续推断（现在 Fact Table 有 frontend 数据了）。
 
 ### 第四层：策略和语法在 SKILL.md 与 generate.md 之间混在一起
 
