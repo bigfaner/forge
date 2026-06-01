@@ -246,7 +246,7 @@ internal/cmd/
 191、forge task add 的--template参数更改为--type，通过type来查找模板。 done
 192、改动现有功能的提案，要列举受影响的点。doing
 193、forge init 支持auto.eval.*。除了auto.eval.proposal.*之外，其它只支持full模式，不支持quick模式。done
-194、优化cli内置的Claude.md模板，要对齐forge cli现状。doing
+194、优化cli内置的Claude.md模板，要对齐forge cli现状。done
 195、forge task list 按照依赖顺序从上到下依次排列。DAG图。done
 196、slim 任务prompt模板，去掉冗余的描述信息。done
 197、引入模板引擎：条件化构造prompt或任务模板。done
@@ -254,7 +254,7 @@ internal/cmd/
 198、eval-proposal只执行一轮时，必须要执行自由专家评审。done
 199、run-tests等CLI自动生成的任务，要根据forge的规范调整任务模板，指定当前feature的journey、contract、test-scripts等路径。done
   如docs/features/<slug>/testing/journeys/<journey>/contracts
-200、梳理并重组forge cli的代码包，输出规范。doing
+200、梳理并重组forge cli的代码包，输出规范。done
 201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。done
 202、全面查核forge cli自动添加任务的能力，最近出现好几起bug。现在这一部分逻辑，很脆弱，增加或减少任务类型就会导致pipeline断裂。done
   如下图，在执行过程中，突然多了一个T-quick-doc-drift任务。
