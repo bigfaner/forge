@@ -8,7 +8,7 @@
       "title": "Create install.sh and install.ps1 scripts",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-create-install-scripts.md",
       "record": "records/1-create-install-scripts.md",
       "surface-key": ".",
