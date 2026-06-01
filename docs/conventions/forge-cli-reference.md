@@ -1,6 +1,6 @@
 ---
 title: "Forge CLI 命令参考"
-domains: [cli, commands, reference, skills, task-list]
+domains: [cli, commands, reference, skills, task-list, validate]
 ---
 
 # Forge CLI 命令参考
@@ -39,7 +39,7 @@ domains: [cli, commands, reference, skills, task-list]
 | `forge task status <task-id>` | 查询任务状态（只读） | `status.go` |
 | `forge task query` | 查询任务信息 | `query.go` |
 | `forge task check-deps` | 检查任务依赖关系 | `check_deps.go` |
-| `forge task validate-index [file]` | 验证 index.json 文件 | `validate_index.go` |
+| `forge task validate [file]` | 验证 index.json 文件及 AC 数量（≥1 且 ≤6） | `validate.go` |
 | `forge task add` | 向当前 feature 添加新任务 | `add.go` |
 | `forge task index` | 从任务 markdown 文件构建或重建 index.json | `index.go` |
 | `forge task migrate` | 为所有任务推断 type 字段并迁移 index.json | `migrate.go` |

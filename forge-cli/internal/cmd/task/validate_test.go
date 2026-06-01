@@ -1254,7 +1254,7 @@ func TestRunValidate_WithFileArg(t *testing.T) {
 		_ = os.WriteFile(indexFile, data, 0644)
 
 		// Should not exit (would kill test process)
-		_ = runValidateIndex(nil, []string{indexFile})
+		_ = runValidate(nil, []string{indexFile})
 	})
 }
 
@@ -1808,4 +1808,460 @@ func TestValidator_ValidateLiveness_BlockedOnRejectedViaWildcard(t *testing.T) {
 	if !found {
 		t.Errorf("blocked on wildcard with rejected task should warn, got: %v", v.warnings)
 	}
+}
+
+// --- AC count validation tests ---
+
+func TestCountACItems(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    int
+	}{
+		{
+			name: "no acceptance criteria section",
+			content: `# Task
+## Description
+Some description.
+`,
+			want: 0,
+		},
+		{
+			name: "single AC item",
+			content: `# Task
+## Acceptance Criteria
+- [ ] Item 1
+`,
+			want: 1,
+		},
+		{
+			name: "multiple AC items",
+			content: `# Task
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+`,
+			want: 3,
+		},
+		{
+			name: "six AC items (max allowed)",
+			content: `# Task
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+- [ ] Item 4
+- [ ] Item 5
+- [ ] Item 6
+`,
+			want: 6,
+		},
+		{
+			name: "seven AC items (over max)",
+			content: `# Task
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+- [ ] Item 4
+- [ ] Item 5
+- [ ] Item 6
+- [ ] Item 7
+`,
+			want: 7,
+		},
+		{
+			name: "AC section followed by another section stops counting",
+			content: `# Task
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+## Implementation Notes
+- [ ] This should not count
+- [ ] Neither should this
+`,
+			want: 2,
+		},
+		{
+			name: "checked items not counted",
+			content: `# Task
+## Acceptance Criteria
+- [x] Done item
+- [ ] Pending item
+- [x] Another done
+`,
+			want: 1,
+		},
+		{
+			name: "whitespace before checkbox still counted",
+			content: `# Task
+## Acceptance Criteria
+  - [ ] Indented item
+`,
+			want: 1,
+		},
+		{
+			name: "empty AC section",
+			content: `# Task
+## Acceptance Criteria
+## Implementation Notes
+`,
+			want: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := countACItems(tt.content)
+			if got != tt.want {
+				t.Errorf("countACItems() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidator_ValidateACCount(t *testing.T) {
+	t.Run("valid AC count (1-6)", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Task with 3 AC items
+		taskContent := `---
+id: "1"
+---
+# Task
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateACCount(featureSlug, map[string]task.Task{
+			"task1": {ID: "1", File: "task.md"},
+		})
+		if len(v.errors) != 0 {
+			t.Errorf("expected no errors for valid AC count, got: %v", v.errors)
+		}
+	})
+
+	t.Run("AC count zero errors", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Task with no AC section
+		taskContent := `---
+id: "1"
+---
+# Task
+## Description
+Some description.
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateACCount(featureSlug, map[string]task.Task{
+			"task1": {ID: "1", File: "task.md"},
+		})
+		if len(v.errors) != 1 {
+			t.Fatalf("expected 1 error for zero AC, got %d: %v", len(v.errors), v.errors)
+		}
+		if !contains(v.errors[0], "0 acceptance criteria") {
+			t.Errorf("error should mention 0 acceptance criteria, got: %s", v.errors[0])
+		}
+	})
+
+	t.Run("AC count exceeds 6 errors", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Task with 7 AC items
+		taskContent := `---
+id: "1"
+---
+# Task
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+- [ ] Item 4
+- [ ] Item 5
+- [ ] Item 6
+- [ ] Item 7
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateACCount(featureSlug, map[string]task.Task{
+			"task1": {ID: "1", File: "task.md"},
+		})
+		if len(v.errors) != 1 {
+			t.Fatalf("expected 1 error for AC > 6, got %d: %v", len(v.errors), v.errors)
+		}
+		if !contains(v.errors[0], "7 acceptance criteria") {
+			t.Errorf("error should mention 7 acceptance criteria, got: %s", v.errors[0])
+		}
+	})
+
+	t.Run("error includes task file name and ID", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		taskContent := `---
+id: "2"
+---
+# Task
+## Description
+No AC section.
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "2-task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateACCount(featureSlug, map[string]task.Task{
+			"task2": {ID: "2", File: "2-task.md"},
+		})
+		if len(v.errors) != 1 {
+			t.Fatalf("expected 1 error, got %d: %v", len(v.errors), v.errors)
+		}
+		errMsg := v.errors[0]
+		if !contains(errMsg, "2-task.md") {
+			t.Errorf("error should include file name '2-task.md', got: %s", errMsg)
+		}
+		if !contains(errMsg, "2") {
+			t.Errorf("error should include task ID '2', got: %s", errMsg)
+		}
+	})
+
+	t.Run("empty file field skipped", func(t *testing.T) {
+		v := &validator{}
+		v.validateACCount("test-feature", map[string]task.Task{
+			"task1": {ID: "1", File: ""},
+		})
+		if len(v.errors) != 0 {
+			t.Errorf("expected no errors for empty file field, got: %v", v.errors)
+		}
+	})
+
+	t.Run("missing file skipped", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Don't create the file — validateACCount should skip silently
+		v := &validator{filePath: filepath.Join(dir, "docs", "features", featureSlug, "tasks", "index.json")}
+		v.validateACCount(featureSlug, map[string]task.Task{
+			"task1": {ID: "1", File: "nonexistent.md"},
+		})
+		if len(v.errors) != 0 {
+			t.Errorf("expected no errors for missing file, got: %v", v.errors)
+		}
+	})
+}
+
+func TestValidator_ValidateACCount_Integration(t *testing.T) {
+	t.Run("full run with valid AC count passes", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		// Create directory structure
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create task file with valid AC count
+		taskContent := `---
+id: "1"
+title: "Task 1"
+---
+# Task 1
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create index file
+		index := &task.TaskIndex{
+			Feature:      featureSlug,
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
+			StatusEnum:   []string{"pending", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "coding.feature"},
+		})
+
+		indexFile := filepath.Join(tasksDir, "index.json")
+		data, err := json.Marshal(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		err = v.run()
+		if err != nil {
+			t.Errorf("run() returned error: %v", err)
+		}
+	})
+
+	t.Run("full run with AC > 6 fails", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Create task file with 7 AC items
+		taskContent := `---
+id: "1"
+title: "Task 1"
+---
+# Task 1
+## Acceptance Criteria
+- [ ] Item 1
+- [ ] Item 2
+- [ ] Item 3
+- [ ] Item 4
+- [ ] Item 5
+- [ ] Item 6
+- [ ] Item 7
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		index := &task.TaskIndex{
+			Feature:      featureSlug,
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
+			StatusEnum:   []string{"pending", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "coding.feature"},
+		})
+
+		indexFile := filepath.Join(tasksDir, "index.json")
+		data, err := json.Marshal(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		err = v.run()
+		if err == nil {
+			t.Error("expected error for AC > 6")
+		}
+		found := false
+		for _, e := range v.errors {
+			if contains(e, "7 acceptance criteria") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected error about 7 acceptance criteria, got: %v", v.errors)
+		}
+	})
+
+	t.Run("full run with AC = 0 fails", func(t *testing.T) {
+		dir := t.TempDir()
+		featureSlug := "test-feature"
+
+		tasksDir := filepath.Join(dir, "docs", "features", featureSlug, "tasks")
+		if err := os.MkdirAll(tasksDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+
+		// Task file with no AC section
+		taskContent := `---
+id: "1"
+title: "Task 1"
+---
+# Task 1
+## Description
+No AC.
+`
+		if err := os.WriteFile(filepath.Join(tasksDir, "task.md"), []byte(taskContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		index := &task.TaskIndex{
+			Feature:      featureSlug,
+			PRD:          "prd/prd-spec.md",
+			Design:       "design/tech-design.md",
+			StatusEnum:   []string{"pending", "completed"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		index.SetTasks(map[string]task.Task{
+			"task1": {ID: "1", Title: "Task 1", Status: "pending", Priority: "P0", File: "task.md", Type: "coding.feature"},
+		})
+
+		indexFile := filepath.Join(tasksDir, "index.json")
+		data, err := json.Marshal(index)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(indexFile, data, 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		v := &validator{filePath: indexFile}
+		err = v.run()
+		if err == nil {
+			t.Error("expected error for AC = 0")
+		}
+		found := false
+		for _, e := range v.errors {
+			if contains(e, "0 acceptance criteria") {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected error about 0 acceptance criteria, got: %v", v.errors)
+		}
+	})
 }

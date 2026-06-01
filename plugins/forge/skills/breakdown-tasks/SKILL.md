@@ -239,23 +239,58 @@ Fix-task override (for reference, used by executors during test runs):
 forge task add --type <derived-fix-type> --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<cause>"
 ```
 
-## Step 5: Generate index.json
+## Step 5: Task Sizing Audit
+
+After all task files are written and before generating `index.json`, perform a focused self-audit on every task.
+
+### Audit Checklist
+
+For each task file in `tasks/`, check:
+
+1. **Multi-verb detection**: Does the title contain conjunctions linking independent verb phrases (e.g., "and", "or", "and then") that describe separate actions targeting different concerns? If yes → split.
+2. **AC cross-domain detection**: Does any single task's Acceptance Criteria cover two or more unrelated functional domains? If yes → split.
+3. **Operational ceiling**: Does the task modify more than 8 files with the same pattern? If yes → split by file group (complexity tier, feature area, or directory).
+
+### Split Protocol
+
+When a violation is found:
+1. Split the offending task into separate task files, each with its own focused title and AC subset.
+2. Assign new sequential IDs following the `<phase>.<sub>` convention.
+3. Re-wire `dependencies` in descendant tasks if needed.
+4. Output an audit report:
+
+```
+Task Sizing Audit Report:
+- SPLIT: <original-id> "<original-title>" → <new-id-1> "<title-1>", <new-id-2> "<title-2>"
+  Reason: <which check failed and why>
+- PASS: <id> "<title>"
+```
+
+If all tasks pass, output: `Task Sizing Audit: all N tasks passed.`
+
+### Hard Gate
+
+<HARD-GATE>
+If after splitting any task still has >6 AC, split further. Do not proceed to Step 6 (Generate index.json) until every task passes all three checks.
+</HARD-GATE>
+
+## Step 6: Generate index.json
 ```bash
 forge task index --feature <slug>
 ```
 Scans `.md`, auto-generates stage-gates + test tasks (based on `surfaces` in `.forge/config.yaml`), produces `index.json`, validates.
 
-## Step 6: Validate
+## Step 7: Validate
 ```bash
-forge task validate-index docs/features/<slug>/tasks/index.json
+forge task validate docs/features/<slug>/tasks/index.json
 ```
 
-## Step 7: Update Manifest
+## Step 8: Update Manifest
 Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Section | Design Section | UI Component | Placement | Tasks; "---" for N/A). Advance status to `tasks`.
 
-## Step 8: Commit Planning Artifacts
+## Step 9: Commit Planning Artifacts
 
-Only execute if Step 6 validation passed. If validation failed, fix issues first.
+Only execute if Step 7 validation passed. If validation failed, fix issues first.
 
 <HARD-RULE>
 Stage only planning artifact paths — never use `git add -A` or `git add .`.
@@ -271,7 +306,7 @@ Other uncommitted changes remain unstaged.
 ## Output Checklist
 - [ ] `tasks/phase-inventory.json` written (only if `rules/phase-detection.md` was loaded; skip for artifact-driven fallback)
 - [ ] Task files follow naming conventions
-- [ ] `index.json` valid, `forge task validate-index` passes
+- [ ] `index.json` valid, `forge task validate` passes
 - [ ] Stage-gate files auto-generated
 - [ ] Every PRD AC covered by >=1 task
 - [ ] DAG (no cycles)

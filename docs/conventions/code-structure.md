@@ -92,7 +92,7 @@ var getTaskPhase = task.GetTaskPhase  // 避免此模式
 
 **正确模式**：
 ```go
-// internal/cmd/task/validate_index.go
+// internal/cmd/task/validate.go
 import "forge-cli/pkg/task"
 // 直接调用
 phase := task.GetTaskPhase(g.id)
@@ -130,9 +130,9 @@ Scope string `yaml:"scope"`
 | 编号 | 偏差项 | 违反规则 | 当前状态 | 目标状态 |
 |:----:|--------|----------|----------|----------|
 | ~~CS-1~~ | `cmd.Debugf` 重复定义 | TECH-code-structure-002 | **已修复** — `cmd/output.go` 中的重复定义已删除，仅保留 `base.Debugf` | N/A |
-| CS-2 | `getTaskPhase` 别名有生产调用 | TECH-code-structure-003 | 5 处生产调用通过别名而非直接调用 | 迁移为 `task.GetTaskPhase` 直接调用 |
-| CS-3 | `checkExistingTaskState` 别名 | TECH-code-structure-003 | 1 处生产调用通过别名 | 迁移为 `task.CheckExistingTaskState` 直接调用 |
-| CS-4 | `compareVersionIDs` 别名 | TECH-code-structure-003 | 1 处生产调用通过别名 | 迁移为 `task.CompareVersionIDs` 直接调用 |
+| ~~CS-2~~ | `getTaskPhase` 别名有生产调用 | TECH-code-structure-003 | **已修复** — 别名已删除，5 处调用迁移为 `task.GetTaskPhase()` 直接调用 | N/A |
+| ~~CS-3~~ | `checkExistingTaskState` 别名 | TECH-code-structure-003 | **已修复** — 别名已删除，调用迁移为 `task.CheckExistingTaskState()` 直接调用 | N/A |
+| ~~CS-4~~ | `compareVersionIDs` 别名 | TECH-code-structure-003 | **已修复** — 别名已删除，调用迁移为 `task.CompareVersionIDs()` 直接调用 | N/A |
 | ~~CS-5~~ | `Scope` deprecated 字段 | TECH-code-structure-005 | **已修复** — `FrontmatterData.Scope` 已从 `frontmatter.go` 移除，`CheckLegacyScope` 保留用于迁移检测 | N/A |
 
 ## 5. 参考
