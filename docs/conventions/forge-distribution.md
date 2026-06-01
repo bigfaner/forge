@@ -1,6 +1,6 @@
 ---
 title: "Forge Plugin Distribution Model"
-domains: [plugin, distribution, path-resolution, skills, hooks, references, CLAUDE_PLUGIN_ROOT]
+domains: [plugin, distribution, path-resolution, skills, hooks, references, CLAUDE_PLUGIN_ROOT, intent, pipeline-branching]
 ---
 
 # Forge Plugin 架构与分发机制
@@ -176,15 +176,20 @@ Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于
 
 ### Intent-Driven Pipeline Branching
 
-每个 feature 有一个 intent（`new-feature`、`refactor`、`cleanup`），决定 pipeline 的路径：
+每个 feature 有一个 intent（`new-feature`、`enhancement`、`refactor`、`cleanup`、`fix`、`doc`），决定 pipeline 的路径：
 
-| Intent | Mode | Test Pipeline | 说明 |
-|--------|------|--------------|------|
-| `new-feature` | Breakdown（有 PRD+Design）或 Quick（有 Proposal） | 正常生成 | 默认值，根据文档存在自动选择 mode |
-| `refactor` | 同上 | 跳过 | 不生成测试 pipeline 任务 |
-| `cleanup` | 强制 Quick | 跳过 | 忽略文档存在，始终走 Quick mode |
+| Intent | Mode | PRD Format | Test Pipeline | 说明 |
+|--------|------|-----------|--------------|------|
+| `new-feature` | Breakdown（有 PRD+Design）或 Quick（有 Proposal） | Full | 正常生成 | 默认值，根据文档存在自动选择 mode |
+| `enhancement` | 同上 | Simplified | 正常生成 | 改进现有行为，跳过 User Stories |
+| `refactor` | 同上 | Spec-only | 跳过 | 不生成测试 pipeline 任务 |
+| `cleanup` | 强制 Quick | Spec-only | 跳过 | 忽略文档存在，始终走 Quick mode |
+| `fix` | 同上 | Spec-only | 跳过 | Bug 修复 |
+| `doc` | 同上 | Minimal | 跳过 | 纯文档变更 |
 
-Intent 存储在 proposal frontmatter 的 `intent` 字段，`forge task index` 通过 `BuildIndexOpts.Intent` 传递。
+`doc.consolidate` 和 `doc.drift` 是低频内部任务类型，自动由 skills 生成，属于 `doc` umbrella — 无需单独 intent。
+
+Intent 存储在 proposal frontmatter 的 `intent` 字段，`forge task index` 通过 `BuildIndexOpts.Intent` 传递。各 skill（brainstorm、write-prd、tech-design、breakdown-tasks、quick-tasks）通过 Intent Detection 读取此字段，按 Pipeline Configuration 表决定工作流分支。Override Signals 可在内容生成时启用额外 pipeline 步骤（如 API 变更信号启用 API Handbook）。
 
 ### 测试 Pipeline
 

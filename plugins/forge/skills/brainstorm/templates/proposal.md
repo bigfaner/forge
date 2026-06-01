@@ -2,7 +2,7 @@
 created: "{{DATE}}"
 author: "{{AUTHOR}}"
 status: Draft
-intent: "new-feature"
+intent: "new-feature"  # valid values: new-feature | enhancement | refactor | cleanup | fix | doc
 ---
 
 # Proposal: {{PROPOSAL_TITLE}}
