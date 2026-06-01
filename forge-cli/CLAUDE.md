@@ -25,13 +25,6 @@ Use the `/git-commit` SKILL
 
 `cmd → internal → pkg`, reverse is strictly forbidden. Modules interact through interfaces.
 
-### Version Bump
-
-Code changes must bump the version in `scripts/version.txt`. Follow semver:
-- Patch: bug fixes, dead code removal (x.y.Z)
-- Minor: new features, new commands (x.Y.z)
-- Major: breaking CLI changes (X.y.z)
-
 ## Common Commands
 
 ```bash

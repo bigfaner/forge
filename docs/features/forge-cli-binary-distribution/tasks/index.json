@@ -57,7 +57,7 @@
       "title": "Remove Version Bump rules from forge-cli/CLAUDE.md",
       "priority": "P1",
       "estimatedTime": "0.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-remove-version-bump-rules.md",
       "record": "records/5-remove-version-bump-rules.md",
       "type": "doc"
