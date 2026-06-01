@@ -47,7 +47,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-create-release-cli-command.md",
       "record": "records/4-create-release-cli-command.md",
       "type": "doc"
