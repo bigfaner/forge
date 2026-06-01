@@ -21,7 +21,7 @@
       "title": "Implement forge upgrade CLI subcommand",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-add-upgrade-command.md",
       "record": "records/2-add-upgrade-command.md",
       "surface-key": ".",
@@ -34,7 +34,7 @@
       "title": "Create GitHub Actions release workflow",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-create-release-workflow.md",
       "record": "records/3-create-release-workflow.md",
       "type": "doc"
