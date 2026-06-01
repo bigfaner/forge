@@ -1,7 +1,7 @@
 ---
 feature: "forge-cli-binary-distribution"
 created: "2026-06-01"
-status: tasks
+status: completed
 mode: quick
 ---
 
