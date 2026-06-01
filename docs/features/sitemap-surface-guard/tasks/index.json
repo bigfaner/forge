@@ -8,7 +8,7 @@
       "title": "gen-web-sitemap: Add Step 0 surface type check",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-gen-sitemap-surface-check.md",
       "record": "records/1-gen-sitemap-surface-check.md",
       "type": "doc",

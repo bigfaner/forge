@@ -76,8 +76,33 @@ See `rules/schema.md` for the complete field reference, layout-vs-page element d
 ## Process Flow
 
 ```
-1. Load existing sitemap -> 2. Analyze layout & build route registry -> 3. Discover routes -> 4. Explore pages -> 5. Merge & dedup & validate -> 6. Write
+0. Surface check -> 1. Load existing sitemap -> 2. Analyze layout & build route registry -> 3. Discover routes -> 4. Explore pages -> 5. Merge & dedup & validate -> 6. Write
 ```
+
+### Step 0: Surface Check
+
+<HARD-RULE>
+Only execute when the project has a `web` surface. `gen-web-sitemap` is exclusively for web projects — it depends on agent-browser, browser DOM traversal, and accessibility tree capture, none of which apply to CLI, API, TUI, or Mobile surfaces.
+</HARD-RULE>
+
+**Check:**
+
+```bash
+forge surfaces --json
+```
+
+Parse the returned JSON to extract the list of surface types.
+
+**Decision:**
+
+- If the surface list contains `web` (including monorepo multi-surface scenarios): **PASS** — proceed to Step 1.
+- If the surface list does **not** contain `web`: **STOP** and output:
+
+```
+No web surface detected. gen-web-sitemap is only applicable to web projects.
+```
+
+- If `forge surfaces --json` returns empty output or the command fails: **STOP** — treat as no web surface and output the same message above.
 
 ### Step 1: Load Existing Sitemap
 
