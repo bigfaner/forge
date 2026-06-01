@@ -30,7 +30,7 @@ All project types use a hybrid translation strategy:
 | Type | Auxiliary Information | Inference Method |
 |------|----------------------|-----------------|
 | CLI | Recursive `forge --help` subcommand discovery | Match PRD description -> subcommand -> argument format |
-| Web | `sitemap.json` (accessibility tree + element IDs) | Match PRD description -> route -> DOM selector |
+| Web | `sitemap.json` (accessibility tree + element IDs) — **web surface only**; skip sitemap lookup entirely for non-web projects (CLI, TUI) | Match PRD description -> route -> DOM selector |
 | TUI | Run program to capture initial screen + help output | Match PRD description -> menu option -> key-binding |
 
 ## ux-snapshot.md Format
