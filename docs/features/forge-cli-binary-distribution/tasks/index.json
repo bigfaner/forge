@@ -1,0 +1,121 @@
+{
+  "feature": "forge-cli-binary-distribution",
+  "proposal": "docs/proposals/forge-cli-binary-distribution/proposal.md",
+  "created": "2026-06-01",
+  "tasks": {
+    "1-create-install-scripts": {
+      "id": "1",
+      "title": "Create install.sh and install.ps1 scripts",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-create-install-scripts.md",
+      "record": "records/1-create-install-scripts.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2-add-upgrade-command": {
+      "id": "2",
+      "title": "Implement forge upgrade CLI subcommand",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "2-add-upgrade-command.md",
+      "record": "records/2-add-upgrade-command.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "3-create-release-workflow": {
+      "id": "3",
+      "title": "Create GitHub Actions release workflow",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "3-create-release-workflow.md",
+      "record": "records/3-create-release-workflow.md",
+      "type": "doc"
+    },
+    "4-create-release-cli-command": {
+      "id": "4",
+      "title": "Create /release-cli slash command",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-create-release-cli-command.md",
+      "record": "records/4-create-release-cli-command.md",
+      "type": "doc"
+    },
+    "5-remove-version-bump-rules": {
+      "id": "5",
+      "title": "Remove Version Bump rules from forge-cli/CLAUDE.md",
+      "priority": "P1",
+      "estimatedTime": "0.5h",
+      "status": "pending",
+      "file": "5-remove-version-bump-rules.md",
+      "record": "records/5-remove-version-bump-rules.md",
+      "type": "doc"
+    },
+    "6-remove-init-forge": {
+      "id": "6",
+      "title": "Remove /init-forge command",
+      "priority": "P2",
+      "estimatedTime": "0.5h",
+      "status": "pending",
+      "file": "6-remove-init-forge.md",
+      "record": "records/6-remove-init-forge.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4",
+        "5",
+        "6",
+        "3"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
