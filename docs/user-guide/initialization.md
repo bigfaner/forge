@@ -20,15 +20,16 @@
 ## 快速开始
 
 ```bash
-# 1. 安装 Forge 插件（项目级）
-/plugin marketplace add git@github.com:bigfaner/forge.git
-/plugin install forge@forge --scope project
+# 1. 安装 forge CLI
+curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
 
-# 2. 初始化项目
-/init-forge      # 编译安装 forge CLI 二进制
-forge init       # 一站式初始化项目环境
+# 2. 安装 forge Plugin（CLI + Plugin 一步到位）
+forge upgrade
 
-# 3. 验证
+# 3. 在项目中初始化
+cd my-project && forge init
+
+# 4. 验证
 forge --version
 forge surfaces   # 查看已检测的项目 surface 类型
 ```
@@ -366,30 +367,18 @@ FORGE_DETECT_DEPTH=5 forge surfaces detect
 ### 1. 安装 Forge CLI
 
 ```bash
-# 在 Claude Code 中执行
-/init-forge
-```
+# 安装 forge CLI binary
+curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
 
-输出：
-
-```
-Found forge-cli at: /path/to/project/forge-cli
-Building forge CLI...
-forge CLI installed successfully to ~/.forge/bin/
-```
-
-刷新终端环境：
-
-```bash
+# 刷新终端环境
 source ~/.zshrc    # zsh 用户
 source ~/.bashrc   # bash 用户
-```
 
-验证安装：
+# 安装 forge Plugin
+forge upgrade
 
-```bash
+# 验证安装
 forge --version
-# 输出类似：forge version 3.0.0
 ```
 
 ### 2. 初始化项目
