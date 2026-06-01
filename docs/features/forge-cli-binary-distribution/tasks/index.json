@@ -67,7 +67,7 @@
       "title": "Remove /init-forge command",
       "priority": "P2",
       "estimatedTime": "0.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "6-remove-init-forge.md",
       "record": "records/6-remove-init-forge.md",
       "type": "doc"
