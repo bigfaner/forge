@@ -104,6 +104,7 @@ Plugin/技能系统中对能力适用范围做显式声明是常见模式（如 
 - `sitemap.json` schema 变更
 - `hooks/guide.md` 中 sitemap 的文档描述更新
 - 其他 web 专属 skill 的 surface 守卫（可作为后续 follow-up）
+- 非 web surface 的布局结构化数据源（TUI screen layout、Mobile view hierarchy 等）——非 web 项目跳过 sitemap 后的 placement 信息空白是已知 gap，通过 follow-up proposal 解决
 
 ## Key Risks
 
@@ -121,6 +122,16 @@ Plugin/技能系统中对能力适用范围做显式声明是常见模式（如 
 - [ ] `breakdown-tasks` 在无 `web` surface 的项目中，跳过 sitemap route 校验
 - [ ] `gen-test-scripts/types/ui.md` 已有守卫经审查确认充分，无需额外修改（或有修改点并记录）
 - [ ] Monorepo 项目（多 surface 含 web）中所有 sitemap 相关功能正常工作
+
+## Follow-up: Surface Layout Generalization
+
+本 proposal 仅做 guard（非 web 项目跳过 sitemap 步骤），不补偿跳过后的 placement 信息空白。这是一个已知 gap：
+
+- **TUI**：有界面布局（screen、panel、widget tree）但无结构化数据源，agent 只能从代码和设计稿推断
+- **Mobile**：有 view hierarchy 和导航流但无对应抓取工具（web 有 agent-browser，TUI/Mobile 无等价物）
+- **API**：无 UI 布局需求，不涉及
+
+后续 proposal 应将 sitemap 概念泛化为 `surface-layout`：按 surface type 选择对应数据源（web → 无障碍树、TUI → 终端布局快照、Mobile → view hierarchy），下游 skill（`ui-functions.md`、`ui-placement.md`）根据 surface type 读取对应数据，而非简单跳过。
 
 ## Next Steps
 

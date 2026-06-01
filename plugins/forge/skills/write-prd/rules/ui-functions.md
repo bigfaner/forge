@@ -4,7 +4,7 @@ Detailed rules for writing prd-ui-functions.md in Step 8.
 
 ## Placement Rules (mandatory for every UI Function)
 
-1. Read `docs/sitemap/sitemap.json` to understand existing page inventory
+1. **Surface check**: If the project has a `web` surface (check via `forge surfaces --json`), read `docs/sitemap/sitemap.json` to understand existing page inventory. If no `web` surface, skip sitemap reading — sitemap is a web-specific artifact, and non-web projects have no sitemap data
 2. For each UI Function, declare its Placement:
    - `new-page` — this function creates a brand new page
    - `existing-page:<route>` — this function adds UI to an existing page (route from sitemap)

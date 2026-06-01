@@ -114,7 +114,21 @@ Minimum Fact Table entries required for UI type (all must be non-UNKNOWN):
 
 ## Sitemap Resolution
 
-**Only execute when the project has `web-ui` interface AND UI-type test cases exist.**
+**Surface guard**: Only execute when the project has a `web` surface AND UI-type test cases exist.
+
+**Check:**
+
+```bash
+forge surfaces --json
+```
+
+Parse the returned JSON to extract the list of surface types.
+
+**Decision:**
+
+- If the surface list contains `web` AND UI-type test cases exist: **PASS** — proceed with sitemap resolution below.
+- If the surface list does **not** contain `web`: **SKIP** sitemap resolution entirely — sitemap is a web-specific artifact, non-web projects have no sitemap data.
+- If `forge surfaces --json` returns empty output or the command fails: **SKIP** — treat as no web surface.
 
 Read `docs/sitemap/sitemap.json`. For each route referenced in test cases:
 

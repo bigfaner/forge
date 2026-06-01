@@ -1,0 +1,122 @@
+{
+  "feature": "sitemap-surface-guard",
+  "proposal": "docs/proposals/sitemap-surface-guard/proposal.md",
+  "created": "2026-06-01",
+  "tasks": {
+    "1-gen-sitemap-surface-check": {
+      "id": "1",
+      "title": "gen-web-sitemap: Add Step 0 surface type check",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-gen-sitemap-surface-check.md",
+      "record": "records/1-gen-sitemap-surface-check.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "2-write-prd-sitemap-guard": {
+      "id": "2",
+      "title": "write-prd: Conditionalize sitemap references by surface type",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-write-prd-sitemap-guard.md",
+      "record": "records/2-write-prd-sitemap-guard.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "3-breakdown-tasks-surface-guard": {
+      "id": "3",
+      "title": "breakdown-tasks/ui-placement: Add surface guard before route validation",
+      "priority": "P1",
+      "estimatedTime": "0.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-breakdown-tasks-surface-guard.md",
+      "record": "records/3-breakdown-tasks-surface-guard.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "4-eval-surface-guard": {
+      "id": "4",
+      "title": "eval/validate-ux-pipeline: Add explicit surface guard for web sitemap reference",
+      "priority": "P1",
+      "estimatedTime": "0.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-eval-surface-guard.md",
+      "record": "records/4-eval-surface-guard.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "5-audit-ui-test-guard": {
+      "id": "5",
+      "title": "gen-test-scripts/types/ui: Audit existing surface guard for consistency",
+      "priority": "P2",
+      "estimatedTime": "0.5h",
+      "dependencies": [
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-audit-ui-test-guard.md",
+      "record": "records/5-audit-ui-test-guard.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

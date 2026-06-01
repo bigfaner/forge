@@ -23,10 +23,11 @@ If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/protot
 This procedure activates when `prd/prd-ui-functions.md` exists.
 
 1. Read the Page Composition table from `prd/prd-ui-functions.md`
-2. Check if `docs/sitemap/sitemap.json` exists. If not, WARN: `"sitemap.json not found — cannot verify existing-page routes. Run /gen-web-sitemap for full validation."` and proceed without route verification (skip step 3).
-3. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
-4. If route not found in sitemap, ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-web-sitemap first or verify the route is correct."`
-5. If no Placement sections found in any UI Function, ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Edit prd/prd-ui-functions.md to add Placement sections, or re-run /write-prd."`
+2. **Surface check**: Run `forge surfaces --json` and check if the result contains a `web` surface type. If no `web` surface is detected (or the command fails/returns empty), this is not a web project — STOP and INFO: `"No web surface detected — skipping sitemap route verification (sitemap is web-only)."` then skip steps 3–4 and proceed to step 5.
+3. Check if `docs/sitemap/sitemap.json` exists. If not, WARN: `"sitemap.json not found — cannot verify existing-page routes. Run /gen-web-sitemap for full validation."` and proceed without route verification (skip step 4).
+4. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
+5. If route not found in sitemap, ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-web-sitemap first or verify the route is correct."`
+6. If no Placement sections found in any UI Function, ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Edit prd/prd-ui-functions.md to add Placement sections, or re-run /write-prd."`
 
 ## UI Task Split Rules
 
