@@ -274,7 +274,7 @@ ssh -T git@github.com
 
 ### 2. forge init 失败或配置错误
 
-**症状**：运行 `/init-forge` 后 `forge --help` 仍然不可用，或 `.forge/config.yaml` 未生成。
+**症状**：运行 `forge init` 后 `.forge/config.yaml` 未生成，或配置有误。
 
 **排查步骤**：
 

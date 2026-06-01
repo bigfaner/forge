@@ -45,20 +45,23 @@
 
 ### 前置要求
 
-- [Go 1.25+](https://golang.org/dl/)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) CLI
+- curl（macOS/Linux 自带，Windows 10+ 自带）
 
 ### 安装步骤
 
 ```bash
-# Marketplace 安装（推荐）
-/plugin marketplace add git@github.com:bigfaner/forge.git
-/plugin install forge@forge --scope project
-/init-forge
-forge --help
+# 1. 安装 forge CLI
+curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
+
+# 2. 安装 forge Plugin（CLI binary + Plugin 一步到位）
+forge upgrade
+
+# 3. 在项目中初始化
+cd my-project && forge init
 ```
 
-或本地安装：`git clone` -> `/plugin marketplace add .` -> `/plugin install forge@forge` -> `/init-forge`
+本地开发者构建：`git clone` -> `cd forge-cli && bash scripts/install-local.sh` -> `forge upgrade`
 
 ### 5 分钟体验
 
@@ -103,6 +106,7 @@ forge --help
 | 命令 | 用途 |
 |------|------|
 | `forge init` | 初始化 Forge 项目环境 |
+| `forge upgrade` | 升级 CLI binary + Plugin |
 | `forge config` | 管理项目配置（.forge/config.yaml） |
 | `forge surfaces` | 查询项目 surfaces 配置 |
 | `forge feature` | 设置或显示当前 feature 上下文 |
@@ -321,7 +325,7 @@ forge --help
 
 ### 辅助
 
-`/fix-bug` / `/git-commit` / `/git-checkout` / `/learn` / `/consolidate-specs` / `/init-forge` / `/gen-web-sitemap` / `/extract-design-md` / `/forensic` / `/deep-research` / `/clean-code` / `/test-guide` / `/simplify-skill`
+`/fix-bug` / `/git-commit` / `/git-checkout` / `/learn` / `/consolidate-specs` / `/gen-web-sitemap` / `/extract-design-md` / `/forensic` / `/deep-research` / `/clean-code` / `/test-guide` / `/simplify-skill`
 
 ---
 

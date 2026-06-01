@@ -20,23 +20,9 @@ Forge 支持以下操作系统和架构：
 | Linux | x86_64 (amd64)、ARM64 |
 | Windows | x86_64 (amd64)、ARM64 |
 
-### Go 环境
+### curl
 
-Forge CLI 使用 Go 语言构建，需要 Go 1.25 或更高版本。
-
-**检查当前版本：**
-
-```bash
-go version
-```
-
-预期输出类似 `go version go1.25.0 darwin/arm64`。
-
-**安装或升级 Go：**
-
-1. 访问 [Go 官方下载页](https://golang.org/dl/)
-2. 下载对应操作系统的安装包并安装
-3. 安装完成后重新打开终端，运行 `go version` 确认
+Forge CLI 通过 curl 下载预编译二进制文件。macOS 和 Linux 自带 curl，Windows 10+ 也已内置。
 
 ### Claude Code CLI
 
@@ -75,118 +61,25 @@ winget install --id Casey.Just
 
 ## 安装方式
 
-### 方式一：Marketplace 安装（推荐）
+### 方式一：Binary 安装（推荐）
 
-适用于大多数用户，直接从 GitHub 仓库安装最新发布版本。
-
-**步骤：**
-
-1. 在 Claude Code 中添加 Forge 到 marketplace：
-
-```bash
-/plugin marketplace add git@github.com:bigfaner/forge.git
-```
-
-2. 安装 Forge 插件到当前项目：
-
-```bash
-/plugin install forge@forge --scope project
-```
-
-3. 初始化 Forge CLI（构建并安装 forge 二进制文件）：
-
-```bash
-/init-forge
-```
-
-4. 刷新终端环境变量：
-
-```bash
-# zsh 用户
-source ~/.zshrc
-
-# bash 用户
-source ~/.bashrc
-```
-
-5. 验证安装：
-
-```bash
-forge --version
-```
-
-### 方式二：本地构建安装
-
-适用于无法直接访问 GitHub 的环境，或需要对 Forge 源码进行修改的场景。
+适用于大多数用户，下载预编译二进制文件，无需安装 Go。
 
 **步骤：**
 
-1. 克隆 Forge 仓库到本地：
+1. 安装 forge CLI（macOS / Linux）：
 
 ```bash
-git clone git@github.com:bigfaner/forge.git
-cd forge
+curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
 ```
 
-2. 将本地仓库添加为 marketplace 源：
+Windows 用户（PowerShell）：
 
-```bash
-/plugin marketplace add .
+```powershell
+irm https://github.com/bigfaner/forge/releases/latest/download/install.ps1 | iex
 ```
 
-3. 安装插件：
-
-```bash
-/plugin install forge@forge --scope project
-```
-
-4. 初始化 Forge CLI：
-
-```bash
-/init-forge
-```
-
-5. 刷新终端环境变量：
-
-```bash
-# zsh 用户
-source ~/.zshrc
-
-# bash 用户
-source ~/.bashrc
-```
-
-6. 验证安装：
-
-```bash
-forge --version
-```
-
-### 方式三：开发模式安装
-
-适用于 Forge 的贡献者和开发者，需要从源码构建并迭代开发。
-
-**步骤：**
-
-1. 克隆仓库并进入 forge-cli 目录：
-
-```bash
-git clone git@github.com:bigfaner/forge.git
-cd forge
-```
-
-2. 手动构建和安装 Forge CLI：
-
-```bash
-# Linux / macOS
-cd forge-cli && bash scripts/install-local.sh
-
-# Windows (PowerShell)
-cd forge-cli
-powershell -ExecutionPolicy Bypass -File scripts/install-local.ps1
-```
-
-3. 刷新终端环境变量：
+2. 刷新终端环境变量：
 
 ```bash
 # zsh 用户
@@ -198,20 +91,67 @@ source ~/.bashrc
 # Windows — 重新打开终端
 ```
 
-4. 按方式一或方式二的步骤安装 plugin：
+3. 安装 forge Plugin（CLI + Plugin 一步到位）：
 
 ```bash
-/plugin marketplace add git@github.com:bigfaner/forge.git
-/plugin install forge@forge --scope project
+forge upgrade
 ```
 
-5. 验证安装：
+4. 验证安装：
 
 ```bash
 forge --version
 ```
 
-> **开发提示：** 开发模式下修改 CLI 源码后，需要重新执行步骤 2 重新构建安装。Forge CLI 安装位置为 `~/.forge/bin/forge`。
+> **后续升级：** 运行 `forge upgrade` 即可同时升级 CLI binary 和 Plugin。
+
+### 方式二：本地构建安装（开发者）
+
+适用于 Forge 的贡献者和开发者，需要从源码构建并迭代开发。
+
+**前置条件：** [Go 1.25+](https://golang.org/dl/)
+
+**步骤：**
+
+1. 克隆仓库并构建安装 CLI：
+
+```bash
+git clone git@github.com:bigfaner/forge.git
+cd forge
+
+# Linux / macOS
+cd forge-cli && bash scripts/install-local.sh
+
+# Windows (PowerShell)
+cd forge-cli
+powershell -ExecutionPolicy Bypass -File scripts/install-local.ps1
+```
+
+2. 刷新终端环境变量：
+
+```bash
+# zsh 用户
+source ~/.zshrc
+
+# bash 用户
+source ~/.bashrc
+
+# Windows — 重新打开终端
+```
+
+3. 安装 Plugin：
+
+```bash
+forge upgrade
+```
+
+4. 验证安装：
+
+```bash
+forge --version
+```
+
+> **开发提示：** 修改 CLI 源码后，需要重新执行步骤 1 中的 `bash scripts/install-local.sh` 重新构建安装。Forge CLI 安装位置为 `~/.forge/bin/forge`。
 
 ---
 
@@ -225,7 +165,7 @@ forge --version
 forge --version
 ```
 
-应输出当前安装的版本号（如 `3.0.0-rc.37`）。
+应输出当前安装的版本号（如 `5.16.0`）。
 
 ### 2. 检查 Forge 帮助信息
 
@@ -261,25 +201,19 @@ just --version
 
 ## 常见问题
 
-### Go 版本不兼容
+### Go 版本不兼容（仅开发者构建）
 
-**症状：** 构建时报错 `go: ...: module ... requires go >= 1.25` 或编译失败。
+**症状：** 使用 `install-local.sh` 构建时报错 `go: ...: module ... requires go >= 1.25`。
 
-**解决方案：**
+**解决方案：** Binary 安装用户不受影响。开发者需要升级 Go 至 1.25+：
 
 ```bash
-# 检查当前 Go 版本
-go version
-
-# 如果版本低于 1.25，升级 Go
 # macOS
 brew upgrade go
 
 # Linux — 从 https://golang.org/dl/ 下载最新版本
 # Windows — 从 https://golang.org/dl/ 下载安装包
 ```
-
-升级后重新打开终端并验证 `go version`。
 
 ### Claude Code 未安装或未找到
 
