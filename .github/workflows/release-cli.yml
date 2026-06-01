@@ -64,4 +64,5 @@ jobs:
             artifacts/forge-*
             artifacts/checksums.txt
             forge-cli/scripts/install.sh
+            forge-cli/scripts/install.ps1
           generate_release_notes: true
