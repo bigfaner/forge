@@ -1,7 +1,7 @@
 ---
 feature: "sitemap-surface-guard"
 created: "2026-06-01"
-status: tasks
+status: completed
 mode: quick
 ---
 
