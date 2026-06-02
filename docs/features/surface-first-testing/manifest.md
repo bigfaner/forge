@@ -1,7 +1,7 @@
 ---
 feature: "surface-first-testing"
 created: "2026-06-02"
-status: tasks
+status: completed
 mode: quick
 ---
 
