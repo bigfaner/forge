@@ -38,7 +38,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 ## Workflow
 
 ```
-0. Stale State Recovery -> 1. Detect Surface -> 1.5. Discover Journeys -> 2. Load Orchestration Rules -> 3. Env Check -> 4. Execute Sequence (per-journey) -> 5. Parse Results -> 6. Generate Report
+0. Stale State Recovery -> 1. Detect Surface -> 1.5. Discover Journeys -> 2. Load Orchestration Rules -> 2.5. Load Convention -> 3. Env Check -> 4. Execute Sequence (per-journey) -> 5. Parse Results -> 6. Generate Report
 ```
 
 ### Step 0: Stale State Recovery
@@ -135,6 +135,32 @@ Supported types: web, api, cli, tui, mobile
 ```
 
 Exit with code 2 (blocking error).
+
+### Step 2.5: Load Convention (Timeout & Lifecycle)
+
+Read per-surface test strategy from Convention files for timeout and lifecycle rules.
+
+#### Legacy Structure Detection
+
+Before loading Convention files, check whether the project uses the legacy (framework-first) structure:
+
+1. Check if `docs/conventions/testing/` contains any `.md` files that are NOT inside a subdirectory (i.e., flat files like `go.md`, `vitest.md`).
+2. If legacy files are detected:
+   - Output migration prompt: "Legacy Convention structure detected in `docs/conventions/testing/` (framework-first files). Run `/test-guide` to regenerate with the new surface-first structure (`testing/{surface}/core.md`)."
+   - Abort with exit code 2 (blocking error, per BIZ-error-reporting-001).
+3. If no legacy files, proceed to Convention loading.
+
+#### Convention Loading
+
+1. Load the surface Convention from `docs/conventions/testing/{surface}/core.md`.
+2. Extract the following fields for use in orchestration:
+   - **Timeout strategy**: per-test-case timeout values and overall suite timeout
+   - **Lifecycle rules**: setup/teardown sequence expectations, retry policies
+3. If `core.md` does not exist for the detected surface, proceed without Convention overrides (use defaults from orchestration rules in Step 2).
+
+<HARD-RULE>
+Convention loading is surface-driven. Do NOT fall back to loading framework-specific flat files from the legacy structure.
+</HARD-RULE>
 
 ### Step 3: Environment Readiness Check
 
@@ -235,7 +261,7 @@ Follow the same failure handling rules for test and teardown as 4a.
 
 ### Step 5: Parse Results
 
-Parse test results based on the test runner's output format (auto-detected). Convention files (`docs/conventions/testing/<convention>.md`) are referenced by test scripts generated during the `/gen-test-scripts` pipeline — they are not loaded during run-tests.
+Parse test results based on the test runner's output format (auto-detected). Convention files (`docs/conventions/testing/{surface}/core.md`) were loaded in Step 2.5 for timeout and lifecycle rules.
 
 Read `rules/result-parsing.md` for parsing strategies.
 
@@ -293,6 +319,7 @@ Per BIZ-error-reporting-001 (defined in `docs/business-rules/error-reporting.md`
 | No journeys found (testing/ missing or empty) | stderr error suggesting /gen-journeys | 2 |
 | Surface info unavailable (both sources fail) | stderr error with recovery hint | 2 |
 | Unsupported surface-type | stderr error listing supported types | 2 |
+| Legacy Convention structure detected | Output migration prompt suggesting /test-guide | 2 |
 | Environment readiness check fails | Abort with diagnostic output | 1 |
 | Dev recipe fails | Execute teardown, exit with dev's code | 1 |
 | Probe fails (all retries) | Execute teardown, exit 1 (HARD-GATE) | 1 |

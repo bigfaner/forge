@@ -60,7 +60,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-update-run-tests.md",
       "record": "records/5-update-run-tests.md",
       "type": "doc"
