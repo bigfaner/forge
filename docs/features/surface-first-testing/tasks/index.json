@@ -8,7 +8,7 @@
       "title": "新增 surface 策略模板和 test-type-model 参考",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-create-surface-templates.md",
       "record": "records/1-create-surface-templates.md",
       "type": "doc"
@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-rewrite-test-guide.md",
       "record": "records/2-rewrite-test-guide.md",
       "type": "doc"
@@ -34,7 +34,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-guide-hook.md",
       "record": "records/3-update-guide-hook.md",
       "type": "doc"

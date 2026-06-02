@@ -76,6 +76,20 @@ All keys return `true` or empty. Check with: `forge config get <key>`; if output
 - `forge task validate-index <path>` — validate index.json structure
 - `forge cleanup` — clean stale artifacts
 
+## Testing
+
+| Surface | Test Type | Execution |
+|---------|-----------|-----------|
+| `cli` | CLI Functional Test | subprocess (exit code + stdout) |
+| `tui` | Terminal Functional Test | subprocess + stdin pipe |
+| `api` | API Functional Test | HTTP client |
+| `web` | Web E2E Test | browser automation |
+| `mobile` | Mobile E2E Test | Maestro YAML / manual |
+
+> **"e2e" is reserved for Web and Mobile only.** CLI/TUI/API tests use "Functional Test" — their validation is protocol-level, not device-level automation.
+
+Test file locations: `tests/{surface}/` for cli/tui/api, `tests/e2e/` for web/mobile. Run `/test-guide` for full per-surface strategy.
+
 ## Terminology
 
 - **Surface**: a testable system entry point managed by Forge (e.g. a web app, an API server, a CLI binary). Each Surface is identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`.
