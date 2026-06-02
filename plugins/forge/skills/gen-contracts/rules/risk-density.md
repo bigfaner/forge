@@ -46,15 +46,15 @@ After generating Outcomes for all Steps in the Journey:
 
 ## Surface-Required Outcome Derivation
 
-gen-contracts reads the surface type's required_outcomes from the corresponding surface rule file in the gen-journeys skill (resolve relative to the gen-journeys skill directory):
+gen-contracts reads the surface type's required_outcomes from the table below (derived from surface rule conventions):
 
-| Surface | Rule File | Required Outcomes |
-|---------|-----------|-------------------|
-| CLI     | `rules/surface-cli.md` | `not-found`, `already-exists` |
-| API     | `rules/surface-api.md` | `unauthorized` (for authenticated endpoints) |
-| TUI     | `rules/surface-tui.md` | `timeout` (for async Cmds) |
-| WebUI   | `rules/surface-web.md` | `validation-error`, `session-expired` |
-| Mobile  | `rules/surface-mobile.md` | (best-effort, no mandatory Outcomes) |
+| Surface | Required Outcomes |
+|---------|-------------------|
+| CLI     | `not-found` (resource access Steps), `already-exists` (resource creation Steps) |
+| API     | `unauthorized` (for authenticated endpoints) |
+| TUI     | `timeout` (for async Cmds) |
+| Web     | `validation-error` (form submission Steps), `session-expired` (session-dependent Steps) |
+| Mobile  | (best-effort, no mandatory Outcomes) |
 
 ### Derivation Rules
 

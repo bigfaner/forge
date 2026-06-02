@@ -53,10 +53,28 @@ When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode tas
 
 Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model.
 
-1. Read `docs/conventions/testing/index.md` to discover available Convention files. Select the Convention matching the project's language/framework based on index descriptions and project context. Load the selected Convention from `docs/conventions/testing/<convention>.md`.
-2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
-3. On failure: ask user.
-4. **Detect surfaces**: Check `.forge/config.yaml` `surfaces` field, `docs/conventions/`, project directory structure, and dependencies for surface types (cli, api, tui, web, mobile).
+### 0.1 Surface Detection
+
+Detect the project's surface types via `forge surfaces`. See `gen-journeys/SKILL.md` "Surface Detection" section for the full detection flow, exit code contract, and detection flow steps.
+
+<HARD-RULE>
+Surface detection must complete before Convention loading begins. If the `forge surfaces` command returns exit code 1, the pipeline must pause and wait for user input. Never proceed with a guessed surface type. Do NOT scan project files independently for surface detection -- always use `forge surfaces <path>`.
+</HARD-RULE>
+
+### 0.2 Convention Loading (Surface-First)
+
+Load surface-specific Convention files for each detected surface type:
+
+1. **Legacy detection**: Check if `docs/conventions/testing/` contains any `.md` files that are NOT inside a subdirectory (i.e., flat files like `go.md`, `vitest.md`). If legacy files are detected:
+   - Output migration prompt: "Legacy Convention structure detected in `docs/conventions/testing/` (framework-first files). Run `/test-guide` to regenerate with the new surface-first structure (`testing/{surface}/core.md`)."
+   - Proceed without loading the legacy files.
+2. **Load surface Convention**: For each detected surface type, load `docs/conventions/testing/{surface}/core.md`.
+3. **No Convention found**: Proceed with LLM defaults. Output hint: "No test Convention files found for surface `{surface}` in `docs/conventions/testing/{surface}/core.md`. Generation will use LLM defaults. Run `/test-guide` to create one."
+4. **Resolve framework**: If `core.md` was loaded, read its assertion preference table to identify the target framework. Otherwise scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.) for auto-detection. On failure: ask user.
+
+<HARD-RULE>
+Convention loading is surface-driven, not framework-driven. The `{surface}` segment comes from Step 0.1 surface detection via `forge surfaces`. Do NOT fall back to loading framework-specific flat files.
+</HARD-RULE>
 
 <HARD-RULE>
 Do NOT silently default to any language or surface.
@@ -65,7 +83,7 @@ Do NOT silently default to any language or surface.
 ## Process Flow
 
 ```
-0. Resolve language + surfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
+0. Resolve surfaces (forge surfaces CLI) + Convention loading (surface-first) -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
 ```
 
 ### Step 1: Read Journey Documents
@@ -77,7 +95,7 @@ Do NOT silently default to any language or surface.
    - Happy path steps (sequence number, user action, expected result)
    - Edge cases (referenced step, precondition, user action, expected result)
    - Journey Invariants (cross-step properties)
-4. Load the project's surface type from `.forge/config.yaml` and read the corresponding surface rule from gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory) to identify required_outcomes.
+4. For each detected surface type, load the surface-required Outcomes from `rules/risk-density.md` (Surface-Required Outcome Derivation table) to identify required_outcomes for the detected surface types.
 
 <HARD-RULE>
 Every Journey in the manifest MUST be processed. Do not skip Journeys based on Risk level or step count.
@@ -174,21 +192,21 @@ LLM-derived boundary Outcomes MUST be annotated with `source: inferred` and incl
 
 After generating Outcomes for all Steps in a Journey, output a density checkpoint (format in `rules/risk-density.md`). If actual total is below target, review Steps for missed boundary scenarios. If above target, merge semantically similar Outcomes.
 
-#### 3.7 TUI Async Cmd Await Semantics
+#### 3.7 TUI Async Cmd Await Semantics *(TUI-specific)*
 
-For TUI Steps involving async operations, declare `await` semantics per `rules/tui-async.md`, including timeout outcomes for async Cmds.
+**Applies to: TUI surface only.** For TUI Steps involving async operations, declare `await` semantics per `rules/tui-async.md`, including timeout outcomes for async Cmds. Skip this step for non-TUI surfaces.
 
-#### 3.8 State Verification Levels
+#### 3.8 State Verification Levels *(applies to all surface types)*
 
-Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `rules/tui-async.md`.
+**Applies to: all surface types.** Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `rules/tui-async.md` (State Verification Levels section).
 
-#### 3.9 Journey-Level Invariants
+#### 3.9 Journey-Level Invariants *(applies to all surface types)*
 
-Every Contract file MUST end with a `## Journey Invariants` section per `rules/tui-async.md`. At least 1 invariant is mandatory.
+**Applies to: all surface types.** Every Contract file MUST end with a `## Journey Invariants` section per `rules/tui-async.md` (Journey-Level Invariants section). At least 1 invariant is mandatory.
 
-#### 3.10 Batch Processing
+#### 3.10 Batch Processing *(applies to all surface types)*
 
-Auto-split into batches when Contracts > 15 or tokens > 50k per `rules/tui-async.md`.
+**Applies to: all surface types.** Auto-split into batches when Contracts > 15 or tokens > 50k per `rules/tui-async.md` (Batch Processing section).
 
 ### Step 4: Validate Contracts (Schema Validation + Retry)
 

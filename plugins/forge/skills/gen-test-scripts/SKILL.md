@@ -1,6 +1,6 @@
 ---
 name: gen-test-scripts
-description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/. Test type naming follows Surface → Test Type mapping (see docs/reference/test-type-model.md).
+description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/. Test type naming follows Surface → Test Type mapping (cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test).
 ---
 
 # Gen Test Scripts
@@ -33,47 +33,60 @@ Check previous stage artifacts. Abort and prompt user if missing:
 When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode task templates), the eval report prerequisite is **conditionally waived**:
 
 - **Skip**: eval-contract report check (`testing/<journey>/.eval-report.md`) is bypassed entirely
-- **Proceed directly**: move to Step 0 (Load Convention Files) and Step 1 (Code Reconnaissance) without eval verification
+- **Proceed directly**: move to Step 0 (Load Convention Files — surface-first) and Step 1 (Code Reconnaissance) without eval verification
 - **Mark output**: every test file generated under SKIP_EVAL_GATE MUST include a header comment: `// SKIP_EVAL_GATE: generated without eval-contract verification. Review with extra scrutiny.`
 
 **When SKIP_EVAL_GATE is NOT set** (Breakdown mode or manual `/gen-test-scripts` invocation): the eval report Blocker remains mandatory. Behavior is unchanged.
 
 ## Step 0: Load Convention Files
 
-Load test framework knowledge from Convention files (no Profile/CLI dependency).
+Load per-surface test strategy from Convention files (surface-first structure).
 
 Load: `rules/convention-guide.md` — Convention file structure reference, section schema, validation rules, merge semantics, and growth path.
 
-### 0.1 Discover Convention Files
+### 0.1 Old Structure Detection
 
-1. Read `docs/conventions/testing/index.md` -- lists all available Conventions with name, description, and applicability conditions.
-2. Based on the project's language/framework context, select the matching Convention from the index.
-3. Load the selected Convention file from `docs/conventions/testing/<convention>.md`.
-4. If `index.md` does not exist, proceed to auto-detection (Step 0.2).
+Before loading Convention files, check whether the project uses the legacy (framework-first) structure:
+
+1. Check if `docs/conventions/testing/` contains any `.md` files that are NOT inside a subdirectory (i.e., flat files like `go.md`, `vitest.md`).
+2. If legacy files are detected:
+   - Output migration prompt: "Legacy Convention structure detected in `docs/conventions/testing/` (framework-first files). Run `/test-guide` to regenerate with the new surface-first structure (`testing/{surface}/core.md`)."
+   - Proceed with Step 0.2 using auto-detection (the old files are not loaded).
+3. If no legacy files, proceed to Step 0.2.
+
+### 0.2 Discover Convention Files (Surface-First)
+
+1. Determine the active surface type (from Step 0.5).
+2. Load the surface Convention from `docs/conventions/testing/{surface}/core.md`.
+3. If `core.md` does not exist for the detected surface, proceed to auto-detection (Step 0.3).
 
 <HARD-RULE>
-Do NOT use `domains` frontmatter filtering. Selection is based on index.md descriptions and project context, with LLM autonomous judgment.
+Convention loading is surface-driven, not framework-driven. The `{surface}` segment comes from Step 0.5 surface detection. Do NOT fall back to loading framework-specific flat files.
 </HARD-RULE>
 
-### 0.2 Resolve Target Framework
+### 0.3 Resolve Target Framework
 
-1. **Convention file match**: If a Convention was loaded from index.md, use its framework declaration.
-2. **Existing test file scan**: Scan `tests/` for file patterns to confirm the Convention's framework matches the project.
+1. **Convention assertion preference table**: If `core.md` was loaded, read its assertion preference table (per-framework rows) to identify the target framework.
+2. **Existing test file scan**: Scan `tests/` for file patterns to confirm the framework matches the project.
 3. **User specification**: If signals are ambiguous, ask the user which framework to use.
-4. **No Convention found**: Proceed with LLM defaults + Code Reconnaissance (Step 1). Output hint: "No test Convention files found in `docs/conventions/testing/`. Generation will use LLM defaults. Run `/forge:test-guide` to create one."
+4. **No Convention found**: Proceed with LLM defaults + Code Reconnaissance (Step 1). Output hint: "No test Convention files found for surface `{surface}` in `docs/conventions/testing/{surface}/core.md`. Generation will use LLM defaults. Run `/test-guide` to create one."
 
 <HARD-RULE>
 If no Convention files are found and no framework can be detected from existing test files, ask the user which framework to use. Do NOT silently default.
 </HARD-RULE>
 
-### 0.3 Validate Convention Content
+### 0.4 Validate Convention Content
 
-For the loaded Convention file, check required sections: `framework`, `discovery`, `structure`, `assertions`.
+For the loaded Convention file (`core.md`), check required sections per the surface template: file location, isolation model, assertion focus, timeout strategy, lifecycle, Contract/Journey ratio, anti-patterns.
 
 - **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area.
-- **Invalid section content** (e.g., empty framework name): Treat as missing. Log warning.
+- **Invalid section content** (e.g., empty isolation model): Treat as missing. Log warning.
 
-Use the loaded Convention content for all framework-specific rules in subsequent steps.
+Use the loaded Convention content for all surface-specific strategy in subsequent steps. Framework implementation details come from the assertion preference table within `core.md`.
+
+<HARD-RULE>
+`types/*.md` (loaded in Step 2.5) is the primary authority for generation-time framework strategies. `core.md` is the authority for surface-level strategy (isolation model, assertion focus, etc.). When both cover the same aspect (assertion preferences), `types/*.md` takes precedence.
+</HARD-RULE>
 
 ## Step 0.5: Surface Detection
 
@@ -87,7 +100,7 @@ Load `rules/step-0.5-validation.md` for the complete surface detection and strat
 
 ## Test Type Terminology
 
-Test type names follow the Surface → Test Type mapping defined in `docs/reference/test-type-model.md`:
+Test type names follow the Surface → Test Type mapping:
 
 | Surface | Test Type | Tag |
 |---------|-----------|-----|
@@ -97,7 +110,7 @@ Test type names follow the Surface → Test Type mapping defined in `docs/refere
 | `web` | Web 端到端测试 (Web E2E Test) | `@web-e2e` |
 | `mobile` | 移动端端到端测试 (Mobile E2E Test) | `@mobile-e2e` |
 
-Generated test code comments and `@feature` tags MUST use these surface-specific test type names, NOT the generic "e2e" label. The "e2e" term is reserved exclusively for Web and Mobile surfaces.
+The "e2e" term is reserved exclusively for Web and Mobile surfaces. CLI, TUI, and API surfaces use "functional" terminology. Generated test code comments and `@feature` tags MUST use these surface-specific test type names, NOT the generic "e2e" label.
 
 ## Step 1: Code Reconnaissance (Build Fact Table)
 
@@ -171,8 +184,8 @@ Reconnaissance Hints in type files are discovery aids only. Information discover
 
 ### 2.5.1 Extract Interface Types from Contracts
 
-1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, UI interactions, TUI rendering, mobile gestures).
-2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> UI/TUI/Mobile).
+1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, Web interactions, TUI rendering, mobile gestures).
+2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> Web/TUI/Mobile).
 3. Record the detected type set (e.g., `{CLI, API}`).
 
 ### 2.5.2 Load Shared Principles
@@ -183,7 +196,7 @@ Always load `types/_shared.md` regardless of detected types. This file defines t
 
 For each interface type in the detected set, load the corresponding type file:
 
-1. Map interface type to filename: `CLI` -> `types/cli.md`, `TUI` -> `types/tui.md`, `UI` -> `types/ui.md`, `Mobile` -> `types/mobile.md`, `API` -> `types/api.md`.
+1. Map interface type to filename: `CLI` -> `types/cli.md`, `TUI` -> `types/tui.md`, `Web` -> `types/web.md`, `Mobile` -> `types/mobile.md`, `API` -> `types/api.md`.
 2. Read each matched type file via Read tool.
 3. Extract Golden Rules (generation constraints) and Reconnaissance Hints (discovery aids).
 

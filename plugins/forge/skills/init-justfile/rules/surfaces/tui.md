@@ -1,51 +1,51 @@
 # Surface: tui
 
-> **测试类型参考**：TUI surface 的测试类型为 **终端功能测试（Terminal Functional Test）**，通过子进程 + stdin pipe 验证终端渲染输出 + 交互响应序列。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **Test Type Reference**: The test type for TUI surface is **Terminal Functional Test**, which verifies terminal rendered output + interactive response sequences via subprocess + stdin pipe.
 
-## 编排序列
+## Orchestration Sequence
 
-| 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
-|------|---------|---------|---------|---------|
-| test | 测试通过 | 测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | 清理完成 | 清理失败（残留进程） | — | 结束 |
+| Step | Exit Code 0 | Exit Code 1 | Exit Code 2 | Next Action |
+|------|-------------|-------------|-------------|-------------|
+| test | Tests passed | Tests failed | Test environment error (retryable) | Proceed to teardown |
+| teardown | Cleanup complete | Cleanup failed (residual processes) | — | End |
 
-注意事项：
-- **无 dev 步骤**：TUI surface 不启动持久化服务
-- **无 probe 步骤**：TUI 应用无需 HTTP 健康检查
-- **无聚合配方**：TUI surface 不生成 `tui` 聚合配方
-- test 退出码 2 允许重跑，skill 应提示用户 "测试环境异常，建议重试"
+Notes:
+- **No dev step**: TUI surface does not start a persistent service
+- **No probe step**: TUI applications do not require HTTP health checks
+- **No aggregate recipe**: TUI surface does not generate a `tui` aggregate recipe
+- Exit code 2 for test step allows re-running; the skill should prompt the user "Test environment error, consider retrying"
 
-## 配方调用契约
+## Recipe Invocation Contract
 
-| 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
-|--------|----------|--------------|--------------|
-| tui-test | `just tui-test` | 所有终端功能测试通过 | 至少一个测试失败 |
-| tui-teardown | `just tui-teardown` | 清理完成 | 清理失败 |
+| Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
+|-------------|---------------|----------------------|----------------------|
+| tui-test | `just tui-test [journey]` | All terminal functional tests passed | At least one test failed |
+| tui-teardown | `just tui-teardown` | Cleanup complete | Cleanup failed |
 
-实现约束：
-- 每个配方必须支持 `[linux]` 和 `[windows]` 双平台变体
-- `tui-teardown` 必须用 `just --dry-run` 验证语法
-- **不生成** `tui-dev`、`tui-probe` 或 `tui` 聚合配方
+Implementation constraints:
+- Each recipe must support both `[linux]` and `[windows]` platform variants
+- `tui-teardown` must be validated with `just --dry-run`
+- **Do not generate** `tui-dev`, `tui-probe`, or `tui` aggregate recipes
 
-## journey 过滤策略
+## Journey Filter Strategy
 
-| journey 标签 | 匹配规则 | 说明 |
-|-------------|---------|------|
-| `@tui` | 精确匹配 | tui surface 的专用 journey |
-| 其他 | 忽略 | 非 tui 相关 journey 不由本规则处理 |
+| Journey Tag | Match Rule | Description |
+|-------------|-----------|-------------|
+| `@tui` | Exact match | Journey dedicated to tui surface |
+| Other | Ignore | Non-tui journeys are not handled by this rule |
 
-## 配方模板（双平台）
+## Recipe Template (Dual Platform)
 
 ```just
-# Run terminal functional tests
+# Run terminal functional tests (optionally filter by journey)
 # user-customized
-tui-test:
+tui-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement tui-test" >&2; exit 1
 
 # user-customized
-tui-test:
+tui-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement tui-test" >&2; exit 1
@@ -65,4 +65,4 @@ tui-teardown:
     echo "TODO: implement tui-teardown" >&2; exit 1
 ```
 
-**LLM 指令**：将 TODO 桩替换为从语言模板和 Convention 知识推导出的实际命令。上述桩代码展示了所需的配方结构和双平台属性模式。**不生成** `tui-dev`、`tui-probe` 或 `tui` 聚合配方。
+**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern. **Do not generate** `tui-dev`, `tui-probe`, or `tui` aggregate recipes.

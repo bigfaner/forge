@@ -1,24 +1,24 @@
 ---
-type: ui
+type: web
 conventions:
-  - testing-ui.md
+  - testing-web.md
   - frontend.md
 ---
 
-# UI Type Instructions
+# Web Type Instructions
 
-Type-specific generation instructions for **UI** (browser DOM interaction) test scripts. Loaded by the dispatcher after interface detection.
+Type-specific generation instructions for **Web** (browser DOM interaction) test scripts. Loaded by the dispatcher after interface detection.
 
-**Test type**: Web 端到端测试 (Web E2E Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile).
+**Test type**: Web 端到端测试 (Web E2E Test). Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile). The generic "e2e" label does NOT apply to CLI, TUI, or API surfaces.
 
 This file defines two zones:
 
-- **Golden Rules**: Framework-agnostic constraints that govern all UI test generation. These rules are mandatory and cannot be overridden by Convention files.
-- **Reconnaissance Hints**: Discovery-only guidance for extracting UI-specific information from source code. Hints inform the Fact Table, not the generated code directly.
+- **Golden Rules**: Framework-agnostic constraints that govern all Web test generation. These rules are mandatory and cannot be overridden by Convention files.
+- **Reconnaissance Hints**: Discovery-only guidance for extracting Web-specific information from source code. Hints inform the Fact Table, not the generated code directly.
 
 ## Golden Rules
 
-UI-specific constraints beyond the universal principles in `_shared.md` (Isolation, Determinism, Timeout Protection, Idempotency, Resource Cleanup).
+Web-specific constraints beyond the universal principles in `_shared.md` (Isolation, Determinism, Timeout Protection, Idempotency, Resource Cleanup).
 
 ### Session Reuse
 
@@ -42,7 +42,7 @@ For tests that depend on external services (third-party APIs, payment gateways, 
 
 ### Viewport Management
 
-All UI tests must define an explicit default viewport size. Responsive testing uses explicit viewport switching as a pre-step, not as a default.
+All Web tests must define an explicit default viewport size. Responsive testing uses explicit viewport switching as a pre-step, not as a default.
 
 **Constraint**: The Convention defines the default viewport dimensions. Tests that verify responsive behavior must explicitly set the target viewport as a setup step before assertions. No test may depend on the runner's default viewport.
 
@@ -78,7 +78,7 @@ Test case files provide scenario context only, never locators or selectors.
 
 <!-- Discovery-only: information extracted here populates the Fact Table. These hints do not directly guide code generation. -->
 
-UI-specific source code patterns to search during Step 1 Code Reconnaissance:
+Web-specific source code patterns to search during Step 1 Code Reconnaissance:
 
 | Pattern | What to Extract | Discovery Method |
 |---------|----------------|------------------|
@@ -90,7 +90,7 @@ UI-specific source code patterns to search during Step 1 Code Reconnaissance:
 
 ## Classification Indicators
 
-Classify test cases as **UI** when they involve any of:
+Classify test cases as **Web** when they involve any of:
 
 - Browser DOM interaction (click, type, select, hover)
 - Page navigation and routing
@@ -101,20 +101,20 @@ Classify test cases as **UI** when they involve any of:
 
 ## Fact Table Required Keys
 
-Minimum Fact Table entries required for UI type (all must be non-UNKNOWN):
+Minimum Fact Table entries required for Web type (all must be non-UNKNOWN):
 
 | Required Key Pattern | Example |
 |---------------------|---------|
 | `FRONTEND_BASE` | `http://localhost:3000` |
 | `TESTID_*` entries | `TESTID_BTN_CONFIRM: btn-confirm`, `TESTID_MAP_CARD: map-card-${bizKey}` |
 
-**If all required keys for UI are UNKNOWN**: skip UI test generation, emit a WARNING explaining why, and suggest the user verify frontend source files exist before re-running. Do NOT generate UI tests with UNKNOWN values.
+**If all required keys for Web are UNKNOWN**: skip Web test generation, emit a WARNING explaining why, and suggest the user verify frontend source files exist before re-running. Do NOT generate Web tests with UNKNOWN values.
 
 **If some keys are non-UNKNOWN**: proceed. Individual UNKNOWN keys are acceptable (e.g., `TESTID_MAP_CARD` unknown but `TESTID_BTN_CONFIRM` known).
 
 ## Sitemap Resolution
 
-**Surface guard**: Only execute when the project has a `web` surface AND UI-type test cases exist.
+**Surface guard**: Only execute when the project has a `web` surface AND Web-type test cases exist.
 
 **Check:**
 
@@ -126,7 +126,7 @@ Parse the returned JSON to extract the list of surface types.
 
 **Decision:**
 
-- If the surface list contains `web` AND UI-type test cases exist: **PASS** — proceed with sitemap resolution below.
+- If the surface list contains `web` AND Web-type test cases exist: **PASS** — proceed with sitemap resolution below.
 - If the surface list does **not** contain `web`: **SKIP** sitemap resolution entirely — sitemap is a web-specific artifact, non-web projects have no sitemap data.
 - If `forge surfaces --json` returns empty output or the command fails: **SKIP** — treat as no web surface.
 
@@ -142,7 +142,7 @@ If a route referenced in test cases does not exist in sitemap, **emit a WARNING*
 
 ## Verification Method
 
-Confirm the project exposes a UI interface before generating test scripts:
+Confirm the project exposes a Web interface before generating test scripts:
 
 | Check | Method |
 |-------|--------|
@@ -159,7 +159,7 @@ Integration test cases verify that a component embedded on an existing page is v
 - `Source` field contains "Placement + Integration Spec", **or**
 - `Test ID` field contains "integration-"
 
-Integration tests use the same framework and file structure as standard tests. They are grouped with UI test cases and emitted into the same test file.
+Integration tests use the same framework and file structure as standard tests. They are grouped with Web test cases and emitted into the same test file.
 
 **Script generation strategy** -- for each integration test case:
 
@@ -169,9 +169,9 @@ Integration tests use the same framework and file structure as standard tests. T
 4. **Assert position** (if feasible): verify the component appears at expected position
 5. **Verify data rendering**: assert expected text content is present within the component locator
 
-## UI Antipattern Guards
+## Web Antipattern Guards
 
-Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcoded Configuration, Vacuous Assertions, Source-Code-Level Testing), UI-specific forbidden patterns:
+Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcoded Configuration, Vacuous Assertions, Source-Code-Level Testing), Web-specific forbidden patterns:
 
 | Pattern | Why Forbidden | What To Do Instead |
 |---------|--------------|-------------------|
@@ -194,4 +194,4 @@ Web surface targets a **balanced 50/50** ratio between Contract tests and Journe
 
 ## Output
 
-UI test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.
+Web test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.

@@ -1,79 +1,77 @@
-# Surface: mobile — 移动端端到端测试编排
+# Surface: mobile — Mobile E2E Test Orchestration
 
-本规则文件定义 run-tests skill 对 mobile surface 的移动端端到端测试编排序列。消费方为 SKILL.md 调度器。
+This rule file defines the mobile E2E test orchestration sequence for the mobile surface in the run-tests skill. The consumer is the SKILL.md dispatcher.
 
-测试类型术语定义参见 `docs/reference/test-type-model.md`。
+## Orchestration Sequence
 
-## 编排序列
+| Step | just Recipe | Exit Code 0 | Exit Code 1 | Exit Code 2 | Next Action |
+|------|------------|-------------|-------------|-------------|-------------|
+| test-setup | `just <recipe-prefix>-test-setup` | Emulator ready, test environment prepared | Emulator startup failed or environment unavailable | — | Proceed to dev |
+| dev | `just <recipe-prefix>-dev` | Emulator running, app deployed and ready | Startup failed (emulator unavailable) | — | Proceed to probe |
+| probe | `just <recipe-prefix>-probe` | Appium health check passed | Appium unresponsive | — | Proceed to test |
+| test | `just <recipe-prefix>-test <journey>` | Mobile E2E tests passed | Mobile E2E tests failed | Test environment error (retryable) | Proceed to teardown |
+| teardown | `just <recipe-prefix>-teardown` | Cleanup complete (emulator stopped, processes cleaned) | Cleanup failed (residual emulators / processes) | — | End |
 
-| 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
-|------|----------|---------|---------|---------|---------|
-| test-setup | `just mobile-test-setup` | 模拟器就绪，测试环境准备完成 | 模拟器启动失败或环境不可用 | — | 进入 dev |
-| dev | `just mobile-dev` | 模拟器运行，应用部署就绪 | 启动失败（模拟器不可用） | — | 进入 probe |
-| probe | `just mobile-probe` | Appium 健康检查通过 | Appium 无响应 | — | 进入 test |
-| test | `just mobile-test` | 移动端端到端测试通过 | 移动端端到端测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | `just mobile-teardown` | 清理完成（模拟器停止、进程清理） | 清理失败（残留模拟器/进程） | — | 结束 |
+## Probe Retry Strategy
 
-## Probe 重试策略
+- Maximum 3 retries with 5-second intervals
+- If all 3 attempts fail, treat as exit code 1 (retryable)
 
-- 最多重试 3 次，间隔 5 秒
-- 3 次均失败视为退出码 1（retryable）
+## Failure Handling
 
-## 失败处理
+### test-setup failure
 
-### test-setup 失败
+When test-setup fails, exit immediately without executing subsequent steps. Exit with test-setup's exit code.
 
-test-setup 失败时直接退出，不执行后续步骤。以 test-setup 的退出码退出。
+### dev failure
 
-### dev 失败
+When dev exits non-zero, **do not continue** with subsequent steps; proceed directly to teardown and exit with dev's exit code.
 
-dev 退出非零时**不继续**后续步骤，直接执行 teardown 并以 dev 的退出码退出。
-
-### probe 失败（HARD-GATE）
+### probe failure (HARD-GATE)
 
 <HARD-GATE>
-probe 失败后，在同一编排周期内：
-- **禁止**重试 probe（重试由 probe 重试策略在上限内处理，非周期级重试）
-- **禁止**重启 dev
-- 必须执行 teardown 后退出
+After probe fails, within the same orchestration cycle:
+- **MUST NOT** retry probe (retries are handled by the probe retry strategy within limits, not cycle-level retries)
+- **MUST NOT** restart dev
+- MUST execute teardown before exiting
 </HARD-GATE>
 
-probe 最终失败后：
-- 退出码 1（retryable）：执行 teardown，以 exit 1 退出
-- 退出码 2（blocking）：执行 teardown，以 exit 2 退出
+After probe ultimately fails:
+- Exit code 1 (retryable): Execute teardown, exit with exit code 1
+- Exit code 2 (blocking): Execute teardown, exit with exit code 2
 
-### test 失败
+### test failure
 
-- 退出码 1：执行 teardown，以 exit 1 退出
-- 退出码 2（retryable）：执行 teardown，提示用户 "测试环境异常，建议重试"，以 exit 2 退出
+- Exit code 1: Execute teardown, exit with exit code 1
+- Exit code 2 (retryable): Execute teardown, prompt the user "Test environment error, consider retrying", exit with exit code 2
 
-### teardown 失败
+### teardown failure
 
-teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。以当前步骤的退出码退出。
+When teardown fails, log the error and preserve `.forge/test-state.json` for recovery. Exit with the current step's exit code.
 
-## Suite 名称
+## Suite Name
 
-测试报告 suite 名称使用 `mobile-e2e/<journey-name>` 格式。
+Test report suite names use the `mobile-e2e/<journey-name>` format.
 
-## Journey 过滤
+## Journey Filter
 
-| 标签 | 匹配规则 |
-|------|---------|
-| `@mobile` | 精确匹配 |
+| Tag | Match Rule |
+|-----|-----------|
+| `@mobile` | Exact match |
 
-## Per-Journey 执行
+## Per-Journey Execution
 
-Mobile surface 的 dev/probe 生命周期包裹所有 journey 测试：
+The dev/probe lifecycle for mobile surface wraps all journey tests. Use the `recipe-prefix` determined in SKILL.md Step 1 (for single-surface projects, the surface-type "mobile"; for multi-surface projects, the surface-key) to construct recipe names:
 
 ```
-just mobile-test-setup
-just mobile-dev
-just mobile-probe (with retry)
+just <recipe-prefix>-test-setup
+just <recipe-prefix>-dev
+just <recipe-prefix>-probe (with retry)
 for each journey in JOURNEYS:
-    just mobile-test <journey>
+    just <recipe-prefix>-test <journey>
     record results
-    on failure: just mobile-teardown, exit
-just mobile-teardown
+    on failure: just <recipe-prefix>-teardown, exit
+just <recipe-prefix>-teardown
 ```
 
-test-setup、dev 和 probe 执行一次，per-journey 循环 test，teardown 执行一次。测试配方调用格式为 `just mobile-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。
+test-setup, dev, and probe execute once, test runs in a per-journey loop, teardown executes once. The test recipe invocation format is `just <recipe-prefix>-test <journey>`, where `<journey>` is a directory name discovered from `docs/features/<slug>/testing/`. `<recipe-prefix>` is "mobile" for single-surface projects, or the corresponding surface-key for multi-surface projects.

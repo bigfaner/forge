@@ -62,10 +62,9 @@ test journey='':
     # --- Run Tests ---
     # Dispatch by surface type — adjust the test command below to match your project.
     if [ "{{journey}}" != "" ]; then
-        cd tests && E2E_FEATURE=1 npx playwright test features/{{journey}}/
+        cargo test --test {{journey}}
     else
-        if [ ! -d tests/node_modules ]; then npm install --prefix tests; fi
-        cd tests && npx playwright test
+        cargo test
     fi
 
 lint:
@@ -87,17 +86,7 @@ ci: install compile build unit-test lint
 
 # test-setup: prepare test environment (install test dependencies, seed data, etc.)
 test-setup:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ ! -f tests/package.json ]; then
-        echo "Error: tests/package.json not found" >&2
-        exit 1
-    fi
-    if [ ! -d tests/node_modules ]; then
-        npm install --prefix tests
-    fi
-    npx --prefix tests playwright install chromium
-    echo "OK: test dependencies ready"
+    echo "OK: Rust test dependencies managed by Cargo"
 
 # probe: check if configured services are healthy
 probe path="":

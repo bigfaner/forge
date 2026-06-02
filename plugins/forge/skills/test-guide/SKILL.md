@@ -1,285 +1,325 @@
 ---
 name: test-guide
-description: Guide users through generating Convention files. Auto-detects test frameworks from project signals, generates Convention drafts, and writes after user review with retry feedback loop.
+description: Generate per-surface test Convention files. Reads Surface config from .forge/config.yaml, renders surface strategy templates, and produces a top-level testing quick-reference index.
 allowed-tools: Bash Read Write Edit Grep Glob
 disable-model-invocation: true
-argument-hint: '[--scope <scope>] [--force]'
+argument-hint: '[--force]'
 ---
 
 # /forge:test-guide
 
 MANUAL-ONLY. Do NOT auto-invoke -- only when user explicitly asks to `/forge:test-guide`.
 
-Guide users through creating test Convention files (`docs/conventions/testing/<scope>.md`). The skill auto-detects project test frameworks from file signals, generates a Convention draft conforming to the 4-section schema, and writes the file after user review.
+Generate per-surface test Convention files (`docs/conventions/testing/{surface}/core.md`) by reading Surface configuration from `.forge/config.yaml`, rendering built-in surface strategy templates, and producing a top-level testing quick-reference index.
 
 ## Parameters
 
-| Parameter  | Values                    | Default         | Description                                        |
-| ---------- | ------------------------- | --------------- | -------------------------------------------------- |
-| `--scope`  | language or framework name | (auto-detect)  | Override the Convention file scope (e.g., `go`, `javascript`, `python`) |
-| `--force`  | (flag)                    | false           | Overwrite existing Convention file without confirmation |
+| Parameter  | Values  | Default | Description                                      |
+| ---------- | ------- | ------- | ------------------------------------------------ |
+| `--force`  | (flag)  | false   | Overwrite existing Convention files without confirmation |
 
 ## Process Flow
 
 ```
-0. Check existing Convention -> 1. Auto-detect framework -> 2. Scan test files -> 3. Generate draft -> 4. User review -> 5. Write Convention
+0. Check existing Convention -> 1. Read Surface config -> 2. Detect framework (auxiliary) -> 3. Render per-surface core.md -> 4. Generate index.md -> 5. User review -> 6. Write files
 ```
 
 ### Step 0: Check Existing Convention Files
 
-Check whether a Convention file already exists for the target scope.
+Check whether Convention files already exist for any surface.
 
-1. Glob `docs/conventions/testing/*.md` in the project root (exclude `index.md` and `*.draft.md`).
+1. Glob `docs/conventions/testing/*/core.md` in the project root.
 2. Read each file's YAML frontmatter `title` field.
-3. If a Convention file with matching scope already exists:
+3. For each existing file:
    - Read its full content.
-   - Record it as `existing_convention` for diff comparison in Step 4.
+   - Record it as `existing_conventions[surface]` for diff comparison in Step 5.
    - If `--force` is set: proceed to Step 1 (will overwrite).
-   - If `--force` is NOT set: note the existing file and proceed -- Step 4 will present a diff.
+   - If `--force` is NOT set: note existing files and proceed -- Step 5 will present diffs.
 
 **If no existing Convention files found**: proceed to Step 1 (fresh generation).
 
-### Step 1: Auto-Detect Framework
+### Step 1: Read Surface Configuration
 
-Detect the project's test framework from file system signals. This step does NOT execute any code -- it reads file names, dependency lists, and file contents.
+Read the project's Surface configuration to determine which surfaces need Convention files.
 
-#### 1a. Detect language signals
+#### 1a. Parse `.forge/config.yaml`
 
-Detect language from marker files and apply the classification algorithm per `rules/signal-detection.md`.
+Read `.forge/config.yaml` and extract the `surfaces` field. The field value is a comma-separated string of surface keys.
 
-#### 1b. Detect framework details
+```yaml
+# Example: single surface
+surfaces: cli
 
-For each detected language, probe for framework-specific signals per `rules/signal-detection.md`. Each framework requires three signal types to confirm detection:
-1. Marker file (language marker present)
-2. Dependency (framework listed in dependency file)
-3. Test files (file pattern matches exist)
+# Example: multiple surfaces
+surfaces: cli,api
+```
 
-Record detected frameworks with confidence levels per `rules/signal-detection.md`.
+Parse into `active_surfaces` array.
 
-#### 1c. Apply false-positive exclusion
+#### 1b. Validate surface keys
 
-Apply the exclusion rules from `rules/signal-detection.md` to eliminate misclassification:
-- Framework dependency overrides generic dependency
-- Test file patterns are language-specific (React dependency does not imply test framework)
-- Ginkgo vs go testing precedence
-- pytest vs unittest distinction
-- Build tool ambiguity resolution
+Each surface key must be one of the supported surface types:
 
-#### 1d. Handle detection results
+| Surface Key | Strategy Template | Test Type |
+|-------------|-------------------|-----------|
+| `cli` | `templates/surfaces/cli.md` | CLI Functional Test |
+| `api` | `templates/surfaces/api.md` | API Functional Test |
+| `web` | `templates/surfaces/web.md` | Web E2E Test |
+| `tui` | `templates/surfaces/tui.md` | Terminal Functional Test |
+| `mobile` | `templates/surfaces/mobile.md` | Mobile E2E Test |
 
-- **High confidence** (all 3 signals confirmed): proceed to Step 2 with detected framework.
-- **Medium confidence** (2 signals, usually missing test files): proceed to Step 2 with detected framework, note cold start.
-- **Low confidence** (marker only): present cold start candidate list from `rules/convention-structure.md`, ask user to select framework.
+If an unsupported surface key is found: output error `"Unsupported surface: <key>. Supported: cli, api, web, tui, mobile"` and abort.
 
-### Step 2: Scan Test Files & Extract Patterns
+If `surfaces` field is missing or empty: output error `"No surfaces configured in .forge/config.yaml. Run 'forge init' or manually add surfaces field."` and abort.
 
-Scan existing test files to extract concrete patterns. This step provides the strongest signal for customizing the draft.
+### Step 2: Detect Framework (Auxiliary Step)
 
-#### 2a. Locate test files
+Detect the project's test framework(s) from file system signals. This step does NOT execute any code -- it reads file names, dependency lists, and file contents. Its results are used ONLY to fill the assertion preference table in core.md.
 
-Use Glob to find test files by language-specific patterns per `rules/pattern-extraction.md`. Focus on `tests/` and `tests/e2e/` directories first (forge convention), then project-wide.
+#### 2a. Detect language and framework signals
 
-#### 2b. Extract patterns from test files
+Follow the detection algorithm in `rules/signal-detection.md`:
 
-For each test file found, extract imports, tags/markers, test function naming, and assertion style per `rules/pattern-extraction.md`.
+1. Detect language from marker files.
+2. For each detected language, probe for framework-specific signals.
+3. Apply false-positive exclusion rules.
+4. Record detected frameworks with confidence levels.
 
-#### 2c. Compile findings
+#### 2b. Map framework to assertion preference
 
-Summarize extracted patterns into a structured finding per `rules/pattern-extraction.md`.
+For each detected framework, produce an assertion preference row:
 
-**If no test files found** (cold start): proceed to Step 3 with framework detection results only (no extracted patterns).
+| Detected Framework | Assertion Library | Mock Mechanism | Fixture Pattern |
+|--------------------|-------------------|----------------|-----------------|
+| Go testing + testify | testify/assert | interfaces + test doubles | TestMain setup |
+| Ginkgo + Gomega | Gomega Expect | Ginkgo fake | BeforeEach/AfterEach |
+| Vitest | expect (built-in) | vi.mock() | beforeEach/fixture |
+| Jest | expect (built-in) | jest.mock() | beforeEach |
+| pytest | Python assert + pytest.raises | unittest.mock / pytest-mock | @pytest.fixture |
+| cargo test | assert! macro | mockall | #[cfg(test)] module |
+| JUnit 5 | JUnit 5 Assertions | Mockito | @BeforeEach |
 
-### Step 3: Generate Convention Draft
+#### 2c. Cold start handling
 
-Generate a Convention file draft based on detected framework and extracted patterns per `rules/draft-generation.md`.
+If no test files exist (medium or low confidence detection): use the default assertion preference row from `rules/convention-structure.md` Cold Start Framework Candidates table for the detected language.
 
-#### 3a. Select template source
+### Step 3: Render Per-Surface Convention Files
 
-Check if a built-in Convention template exists in `docs/conventions/testing/` for the detected framework:
+For each surface in `active_surfaces`, generate a Convention file from the corresponding template.
 
-| Detected Framework | Built-in Template |
-|--------------------|-------------------|
-| Go testing         | `docs/conventions/testing/go.md` |
-| Ginkgo             | `docs/conventions/testing/ginkgo.md` |
-| Vitest             | `docs/conventions/testing/vitest.md` |
-| pytest             | `docs/conventions/testing/pytest.md` |
-| JUnit              | `docs/conventions/testing/junit.md` |
-| Rust               | `docs/conventions/testing/rust.md` |
+#### 3a. Load surface strategy template
 
-If a built-in template exists, use it as the base and customize with extracted patterns.
-If no template exists, generate from scratch using LLM knowledge + extracted patterns.
+Read the template file for the current surface from `templates/surfaces/<surface>.md`.
 
-#### 3b. Customize with extracted patterns
+#### 3b. Fill assertion preference table
 
-Override template defaults with patterns extracted in Step 2:
+Replace the template placeholder row in the `## 断言偏好表` section:
 
-| Extracted Pattern | Convention Field Override |
-|-------------------|--------------------------|
-| Actual test file paths | `discovery.test_dir` |
-| Actual import statements | `assertions.library` |
-| Actual test function names | `structure.case_pattern` |
-| Actual tag formats | `Tags section` |
-| Actual assertion functions used | `assertions.key patterns` |
+Template row:
+```
+| {{ASSERTION_LIBRARY}} | {{MOCK_MECHANISM}} | {{FIXTURE_PATTERN}} |
+```
 
-#### 3c. Validate draft completeness
+Replace with the detected framework's assertion preference from Step 2b. If multiple frameworks are detected, add one row per framework.
 
-Validate the draft against the 4-section schema per `rules/draft-generation.md`:
-- **framework**: name, language, runner_command are non-empty
-- **discovery**: file_pattern is non-empty
-- **structure**: suite_pattern is non-empty
-- **assertions**: style and library are non-empty
-- **Tags**: tag format is defined
-- **Result Format**: execution command is non-empty
+If no framework was detected (completely cold start): keep the placeholder row and add a comment:
+```
+<!-- TODO: Run /forge:test-guide after adding test dependencies to fill this table -->
+```
 
-If validation fails, fill gaps with LLM-inferred defaults and flag as "inferred (not detected from project)".
+#### 3c. Generate index.md for the surface
 
-### Step 4: Present Draft & User Review
+Create `docs/conventions/testing/<surface>/index.md` as a file index pointing to `core.md`:
 
-Present the Convention draft to the user for review. This step implements a feedback loop with retry.
+```markdown
+---
+title: "<Surface Name> 测试约定"
+domains: [testing, <surface>]
+---
 
-#### 4a. Present the draft
+<!-- auto-generated by forge:test-guide -->
+
+# <Surface Name> 测试约定
+
+- [测试策略 (core.md)](core.md)
+```
+
+### Step 4: Generate Top-Level Index
+
+Generate `docs/conventions/testing/index.md` as a quick-reference table covering all active surfaces.
+
+#### 4a. Build quick-reference table
+
+Create the index with a summary table:
+
+```markdown
+---
+title: "测试约定速查表"
+domains: [testing]
+---
+
+<!-- auto-generated by forge:test-guide -->
+
+# 测试约定速查表
+
+| Surface | 测试类型 | 文件位置 | 断言重点 | 详细策略 |
+|---------|---------|---------|---------|---------|
+| cli | CLI 功能测试 | tests/<journey>/ | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
+| api | API 功能测试 | tests/<journey>/ | status code + response body + headers | [api/core.md](api/core.md) |
+| web | Web E2E 测试 | tests/<journey>/ | DOM 可见性 + 用户操作 + URL | [web/core.md](web/core.md) |
+| tui | 终端功能测试 | tests/<journey>/ | 精确文本 + 正则匹配 + 快照 | [tui/core.md](tui/core.md) |
+| mobile | Mobile E2E 测试 | tests/<journey>/ | UI 可见性 + 操作响应 + 屏幕 ID | [mobile/core.md](mobile/core.md) |
+```
+
+Only include rows for surfaces present in `active_surfaces`.
+
+### Step 5: Present Drafts & User Review
+
+Present all generated Convention files to the user for review.
+
+#### 5a. Present summary
 
 ```
-Convention Draft for: <framework name>
+Convention Drafts Generated
+============================
 
-Generated from: <detection signals summary>
-Template source: <built-in template name or "LLM-generated">
+Surfaces: <active_surfaces list>
+Framework detected: <framework name> (confidence: <level>)
 
---- Draft Content ---
-<full Convention file content with YAML frontmatter and all sections>
---- End Draft ---
-
-Validation: ALL required sections present / MISSING: <list>
-Confidence: <high/medium/low>
+Files to write:
+  docs/conventions/testing/index.md (quick-reference table)
+  <for each surface>:
+    docs/conventions/testing/<surface>/index.md
+    docs/conventions/testing/<surface>/core.md
 
 Review options:
-  (a)ccept - Write to docs/conventions/testing/<scope>.md
+  (a)ccept - Write all files
   (e)dit   - Tell me what to change
   (r)eject - Discard and regenerate with feedback
 ```
 
-#### 4b. Handle user response
+#### 5b. Handle user response
 
 Initialize retry counter: `retry_count = 0`, `max_retries = 2`.
 
-- **(a)ccept**: proceed to Step 5 to write the file.
+- **(a)ccept**: proceed to Step 6 to write all files.
 - **(e)dit**:
   1. Ask: "What would you like to change?"
-  2. Apply the requested changes to the draft (preserving unchanged sections).
-  3. Re-present the updated draft with diff markers for changed sections.
+  2. Apply the requested changes to the affected draft(s).
+  3. Re-present the updated summary with diff markers.
   4. Do NOT increment retry counter.
-  5. Return to 4b for next response.
+  5. Return to 5b for next response.
 - **(r)eject with feedback**:
-  1. Parse user feedback to identify approved sections and rejected sections.
-  2. Regenerate ONLY rejected sections, preserving approved sections verbatim.
+  1. Parse user feedback to identify approved and rejected files/sections.
+  2. Regenerate ONLY rejected files/sections, preserving approved content verbatim.
   3. Increment `retry_count`.
-  4. If `retry_count <= max_retries`: re-present updated draft, return to 4b.
-  5. If `retry_count > max_retries`: proceed to 4c (retry exhausted).
+  4. If `retry_count <= max_retries`: re-present summary, return to 5b.
+  5. If `retry_count > max_retries`: proceed to 5c (retry exhausted).
 
-#### 4c. Retry exhausted
+#### 5c. Retry exhausted
 
 After 2 retries are exhausted and the user still rejects:
 
-1. Mark all sections as `[DRAFT - needs manual review]`.
-2. Write the draft to `docs/conventions/testing/<scope>.draft.md`.
+1. Mark all files as `[DRAFT - needs manual review]`.
+2. Write all drafts to `docs/conventions/testing/*.draft.md` (one per surface).
 3. Output:
 
 ```
-Retry limit reached. Draft written to:
-  docs/conventions/testing/<scope>.draft.md
+Retry limit reached. Drafts written to:
+  docs/conventions/testing/<surface>/core.draft.md
+  ...
 
-Please manually edit the file, then rename to:
-  docs/conventions/testing/<scope>.md
-
+Please manually edit the files, then rename from .draft.md to .md.
 The pipeline will wait for confirmation before proceeding.
 ```
 
-4. Ask the user: "Have you finished editing? (y)es / (n)o, I'll edit later"
-   - `y`: Rename `.draft.md` to `.md`, proceed to Step 5 for confirmation.
-   - `n`: Abort. User will handle the draft file manually.
+#### 5d. Existing Convention files (from Step 0)
 
-#### 4d. Existing Convention file (from Step 0)
+If existing Convention files were found in Step 0:
 
-If an existing Convention file was found in Step 0:
-
-1. Present the diff between the existing Convention content and the new draft content.
-2. Ask the user: "An existing Convention file was found at `docs/conventions/testing/<scope>.md`. The proposed changes are shown above. (a)ccept update / (k)eep existing / (e)dit"
-   - **a**: proceed to Step 5 to overwrite.
-   - **k**: abort, keep existing file unchanged.
+1. Present the diff between existing content and new draft for each file.
+2. Ask: "Existing Convention files found. (a)ccept update / (k)eep existing / (e)dit"
+   - **a**: proceed to Step 6 to overwrite.
+   - **k**: abort, keep existing files unchanged.
    - **e**: ask user what to change, then re-present (counts toward retry limit).
 
-### Step 5: Write Convention File
+### Step 6: Write Convention Files
 
-Write the Convention file with the confirmed content.
+Write all confirmed Convention files.
 
-#### 5a. Ensure directory exists
+#### 6a. Ensure directory structure exists
 
 ```bash
 mkdir -p docs/conventions/testing
+for surface in <active_surfaces>; do
+  mkdir -p "docs/conventions/testing/$surface"
+done
 ```
 
-#### 5b. Write Convention file
+#### 6b. Write files
 
-Write `docs/conventions/testing/<scope>.md` following the Convention structure per `rules/convention-structure.md`.
+For each surface in `active_surfaces`:
+- Write `docs/conventions/testing/<surface>/index.md` following the format from Step 3c.
+- Write `docs/conventions/testing/<surface>/core.md` following the Convention structure per `rules/convention-structure.md`.
+
+Write `docs/conventions/testing/index.md` following the format from Step 4a.
 
 Every generated file MUST include the auto-generated marker:
 
 ```markdown
----
-title: "<Framework Name> Testing Convention"
----
-
 <!-- auto-generated by forge:test-guide -->
 ```
 
-#### 5c. Report result
+#### 6c. Report result
 
-After writing the file:
+After writing all files:
 
 ```
-Created: docs/conventions/testing/<scope>.md
+Created: docs/conventions/testing/index.md (quick-reference table)
 
-Sections:
-  Framework: <framework name>
-  Discovery: <test dir and file pattern>
-  Structure: <suite and case patterns>
-  Assertion: <assertion library>
-  Tags: <tag format>
-  Result Format: <format type>
+<for each surface>:
+  Created: docs/conventions/testing/<surface>/index.md
+  Created: docs/conventions/testing/<surface>/core.md
+    Sections: 文件位置, 隔离模型, 断言重点, 超时策略, 生命周期, Contract/Journey 比例, 反模式, 断言偏好表
+    Framework: <detected framework>
 
 Next steps:
-  - Run `/forge:init-justfile` to generate e2e recipes using this Convention
-  - Run `/forge:gen-test-scripts` to generate tests using this Convention
-  - Edit the Convention file to add optional sections (Import Patterns, Code Style, Anti-patterns, Helpers)
+  - Run `/forge:init-justfile` to generate test recipes using these Conventions
+  - Run `/forge:gen-test-scripts` to generate tests using these Conventions
+  - Run `/forge:run-tests` to execute tests per surface
 ```
 
-If the file was overwritten (existing Convention updated):
+## Surface Strategy Templates
 
-```
-Updated: docs/conventions/testing/<scope>.md
+Per-surface strategy templates are located at `templates/surfaces/<surface>.md`. Each template defines 7 mandatory sections plus an assertion preference table:
 
-Changes:
-  <summary of what changed>
-```
+1. **文件位置**: Test directory, file naming, build tags
+2. **隔离模型**: Isolation model specific to the surface
+3. **断言重点**: Assertion dimensions and minimum requirements
+4. **超时策略**: Timeout strategy at multiple levels
+5. **生命周期**: Test lifecycle steps
+6. **Contract/Journey 比例**: Balance between Contract and Journey tests
+7. **反模式**: Common anti-patterns and alternatives
+8. **断言偏好表**: Per-framework assertion, mock, and fixture preferences (filled from Step 2)
 
-## File Signal Reference
+## Framework Detection Reference
 
-See `rules/signal-detection.md` for the complete file signal detection reference.
+See `rules/signal-detection.md` for the complete file signal detection reference. Framework detection is an auxiliary step -- its results populate only the assertion preference table in core.md, not the overall Convention structure.
 
-## Draft Generation Reference
+## Test Type Model Reference
 
-See `rules/draft-generation.md` for the complete draft generation rules including schema validation, retry logic, and file write rules.
+See `references/test-type-model.md` for the complete Surface -> Test Type mapping model, including classification criteria and "e2e" terminology constraints.
 
 ## Notes
 
 - **No code execution**: This skill is entirely LLM-driven file analysis and generation. It reads files and writes files. It does NOT run `go test`, `npm test`, or any other test command.
-- **Convention file structure**: Generated files follow the section structure from built-in Convention templates. The required sections (framework, discovery, structure, assertions, Tags, Result Format) are always present. Optional sections (Import Patterns, Code Style, Anti-patterns, Helpers) are included when signal strength supports them.
-- **Multi-framework projects**: If the project uses multiple languages (e.g., Go backend + TypeScript frontend), generate separate Convention files for each. The user selects which languages to generate in Step 1.
-- **Existing Convention files**: When a Convention file already exists, the skill presents a diff and asks for confirmation. It never silently overwrites without `--force`.
-- **Cold start**: When no test files exist, the skill uses dependency detection for framework identification and presents candidates for user selection.
-- **Draft feedback loop**: User rejections trigger regeneration of only the rejected sections. After 2 retries, the draft is written as `.draft.md` for manual editing.
+- **Surface-first organization**: Convention files are organized by Surface (cli/api/web/tui/mobile), not by framework. Framework information is reduced to a single row in the assertion preference table within each surface's core.md.
+- **Multi-surface projects**: If the project has multiple surfaces (e.g., cli + api), generate separate core.md for each surface. The top-level index.md provides a unified quick-reference.
+- **Existing Convention files**: When Convention files already exist, the skill presents diffs and asks for confirmation. It never silently overwrites without `--force`.
+- **Cold start**: When no test files exist, the skill uses dependency detection for framework identification and fills the assertion preference table from defaults.
+- **Draft feedback loop**: User rejections trigger regeneration of only the rejected files/sections. After 2 retries, drafts are written as `.draft.md` for manual editing.
 
 <EXTREMELY-IMPORTANT>
-- When regenerating after rejection, preserve approved sections verbatim and regenerate ONLY rejected sections.
-- After 2 retry rejections, write the draft as `.draft.md` for manual editing. Do NOT force-apply.
+- When regenerating after rejection, preserve approved files/sections verbatim and regenerate ONLY rejected files/sections.
+- After 2 retry rejections, write drafts as `.draft.md` for manual editing. Do NOT force-apply.
 </EXTREMELY-IMPORTANT>

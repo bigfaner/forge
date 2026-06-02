@@ -1,52 +1,50 @@
-# Surface: tui — 终端功能测试编排
+# Surface: tui — Terminal Functional Test Orchestration
 
-本规则文件定义 run-tests skill 对 tui surface 的终端功能测试编排序列。消费方为 SKILL.md 调度器。
+This rule file defines the terminal functional test orchestration sequence for the tui surface in the run-tests skill. The consumer is the SKILL.md dispatcher.
 
-测试类型术语定义参见 `docs/reference/test-type-model.md`。
+## Orchestration Sequence
 
-## 编排序列
+| Step | just Recipe | Exit Code 0 | Exit Code 1 | Exit Code 2 | Next Action |
+|------|------------|-------------|-------------|-------------|-------------|
+| test | `just <recipe-prefix>-test <journey>` | Terminal functional tests passed | Terminal functional tests failed | Test environment error (retryable) | Proceed to teardown |
+| teardown | `just <recipe-prefix>-teardown` | Cleanup complete | Cleanup failed | — | End |
 
-| 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
-|------|----------|---------|---------|---------|---------|
-| test | `just tui-test` | 终端功能测试通过 | 终端功能测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | `just tui-teardown` | 清理完成 | 清理失败 | — | 结束 |
+Notes:
+- **No dev step**: TUI surface does not start a persistent service
+- **No probe step**: TUI applications do not require HTTP health checks
+- **No aggregate recipe**: TUI surface does not execute a `just tui` aggregate recipe
 
-注意事项：
-- **无 dev 步骤**：TUI surface 不启动持久化服务
-- **无 probe 步骤**：TUI 应用无需 HTTP 健康检查
-- **无聚合配方**：TUI surface 不执行 `just tui` 聚合配方
+## Failure Handling
 
-## 失败处理
+### test failure
 
-### test 失败
+- Exit code 1: Execute teardown, exit with exit code 1
+- Exit code 2 (retryable): Execute teardown, prompt the user "Test environment error, consider retrying", exit with exit code 2
 
-- 退出码 1：执行 teardown，以 exit 1 退出
-- 退出码 2（retryable）：执行 teardown，提示用户 "测试环境异常，建议重试"，以 exit 2 退出
+### teardown failure
 
-### teardown 失败
+When teardown fails, log the error and preserve `.forge/test-state.json` for recovery. Exit with the current step's exit code.
 
-teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。以当前步骤的退出码退出。
+## Suite Name
 
-## Suite 名称
+Test report suite names use the `tui-functional/<journey-name>` format.
 
-测试报告 suite 名称使用 `tui-functional/<journey-name>` 格式。
+## Journey Filter
 
-## Journey 过滤
+| Tag | Match Rule |
+|-----|-----------|
+| `@tui` | Exact match |
 
-| 标签 | 匹配规则 |
-|------|---------|
-| `@tui` | 精确匹配 |
+## Per-Journey Execution
 
-## Per-Journey 执行
-
-TUI surface 的 test 步骤按 journey 逐个执行：
+The test step for TUI surface executes per journey. Use the `recipe-prefix` determined in SKILL.md Step 1 (for single-surface projects, the surface-type "tui"; for multi-surface projects, the surface-key) to construct recipe names:
 
 ```
 for each journey in JOURNEYS:
-    just tui-test <journey>
+    just <recipe-prefix>-test <journey>
     record results
-    on failure: just tui-teardown, exit
-just tui-teardown
+    on failure: just <recipe-prefix>-teardown, exit
+just <recipe-prefix>-teardown
 ```
 
-测试配方调用格式为 `just tui-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。
+The test recipe invocation format is `just <recipe-prefix>-test <journey>`, where `<journey>` is a directory name discovered from `docs/features/<slug>/testing/`. `<recipe-prefix>` is "tui" for single-surface projects, or the corresponding surface-key for multi-surface projects.

@@ -2,7 +2,7 @@
 
 API surface 适用于提供 HTTP API 的后端服务（REST、GraphQL 等）。测试重点是 status code、response schema、认证/授权、幂等性。
 
-**Test type**: API 功能测试 (API Functional Test). Test type definition and classification criteria: see `docs/reference/test-type-model.md`. Generated test code MUST use `@api-functional` tags, NOT `@e2e`.
+**Test type**: API Functional Test. Verifies HTTP status codes, response schemas, authentication/authorization, and idempotency via HTTP client invocation. Generated test code MUST use `@api-functional` tags, NOT `@e2e`.
 
 ## Detection Signals
 

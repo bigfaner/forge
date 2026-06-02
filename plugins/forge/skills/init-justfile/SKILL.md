@@ -72,7 +72,7 @@ Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variant
 | Recipe | Signature | Description |
 |--------|-----------|-------------|
 | `unit-test` | `just unit-test` (no parameters) | Language-level unit tests, no filtering needed |
-| `<key>-test` | `just <key>-test` (no parameters) | Surface-level advanced tests |
+| `<key>-test` | `just <key>-test [journey]` | Surface-level advanced tests; optional journey parameter filters to a specific journey, omit to run all |
 | `<key>-probe` | `just <key>-probe` (no parameters) | Surface health check |
 
 ## Process Flow
@@ -89,25 +89,36 @@ Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variant
 
 ### Step 0: Load Convention
 
-Load test framework knowledge from Convention files. This provides the information needed to generate `unit-test` and surface-level test recipes in Step 3.
+Load test strategy knowledge from surface-first Convention files. This provides the information needed to generate `unit-test` and surface-level test recipes in Step 3.
 
-1. List files in `docs/conventions/` directory.
-2. For each file with `domains` frontmatter containing `testing`, read the file.
-3. Extract the **Framework** section from the loaded Convention files.
-4. From the Framework section, note:
-   - Framework name (e.g., "Go testing package + testify/assert", "Vitest", "Ginkgo v2 + Gomega")
+**Surface-first loading** (new structure):
+
+1. List subdirectories under `docs/conventions/testing/`.
+2. For each subdirectory matching a configured surface key (from Step 1s):
+   - Read `docs/conventions/testing/<surface>/core.md`.
+   - Extract the **Assertion Preferences** table for framework-specific test runner, assertion library, and mock mechanism.
+   - Extract the **File Location** section for test file patterns and directory rules.
+   - Extract the **Lifecycle** section for build tag / marker syntax (e.g., `//go:build <surface>-<type>`).
+3. From the collected Convention data, note per-surface:
+   - Framework name (e.g., "Go testing package + testify/assert", "Vitest")
    - File pattern (e.g., `*_test.go`, `*.test.ts`)
-   - Test runner (e.g., `go test`, `vitest run`, `ginkgo`)
-   - Build tag / marker (e.g., `//go:build <surface>-<type>`)
+   - Test runner (e.g., `go test`, `vitest run`)
+   - Build tag / marker (e.g., `//go:build cli-functional`)
    - Result format output flags (e.g., `-json -v`, `--reporter=json`)
-5. Also extract the **Tags** section for build-tag/marker syntax.
-6. Also extract the **Result Format** section for output flags and format type.
+
+**Fallback — legacy structure**:
+
+If `docs/conventions/testing/` contains flat files with `domains` frontmatter (e.g., `go.md`, `vitest.md`) instead of surface subdirectories:
+1. Read each file with `domains` frontmatter containing `testing`.
+2. Extract the **Framework**, **Tags**, and **Result Format** sections.
+3. Output migration hint: "Legacy Convention structure detected (flat files). Run `/forge:test-guide` to migrate to surface-first structure (`testing/{surface}/`)."
+4. Use extracted data as Convention knowledge for this run.
 
 <HARD-RULE>
 Use the language-specific template from `templates/<lang>.just` as the **starting point** for language-level recipe generation. Then customize recipes using Convention knowledge (from Step 0) and LLM understanding of the detected language/framework. The generation process is:
 
 1. **Load template**: Read `templates/<lang>.just` (where `<lang>` is one of: `go`, `node`, `python`, `rust`, `mixed`). Use `templates/generic.just` as fallback when no language-specific template matches.
-2. **Apply Convention overrides**: Replace recipe bodies with Convention-sourced commands where available (e.g., test runner, build tags, output flags from the Framework and Result Format sections).
+2. **Apply Convention overrides**: Replace recipe bodies with Convention-sourced commands where available (e.g., test runner, build tags, output flags from the Assertion Preferences and Lifecycle sections).
 3. **LLM customization**: Adjust remaining recipes based on detected project structure (entry points, dependency managers, tool presence).
 
 Templates define the **recipe structure** (names, groups, boundary markers, shared recipes like `probe` and `test-setup`). The LLM customizes **recipe bodies** (actual commands) based on Convention content and project signals.
@@ -116,7 +127,7 @@ Templates define the **recipe structure** (names, groups, boundary markers, shar
 **If no Convention files found** (cold start):
 - Proceed to Step 1 for file signal detection.
 - LLM will generate recipes from common patterns for the detected language/framework.
-- Output hint: "No test Convention files found in docs/conventions/. Recipes will use LLM defaults. Run `/forge:test-guide` to create a Convention file."
+- Output hint: "No test Convention files found in docs/conventions/testing/. Recipes will use LLM defaults. Run `/forge:test-guide` to create surface-first Convention files."
 
 ### Step 1: Detect Project Type and Entry Points
 
@@ -210,7 +221,7 @@ Generate `unit-test`, `compile`, `build`, `lint`, `fmt`, `check`, `clean`, `inst
    - `generic.just` as fallback when no language-specific template matches
 
 2. **Apply Convention overrides**: For each recipe body, check if Convention (loaded in Step 0) provides a more precise command:
-   - `unit-test`: Use Convention's test runner + file pattern + output flags (e.g., `go test -json -v ./...` with `-tags` from Tags section)
+   - `unit-test`: Use Convention's test runner + file pattern + output flags (e.g., `go test -json -v ./...` with `-tags` from Lifecycle section)
    - Other recipes: Override template defaults with Convention-sourced commands where available
 
 3. **LLM customization**: Adjust remaining recipe bodies based on detected project structure:
@@ -443,7 +454,7 @@ Surface targets:
   just web            -> aggregate: dev->probe->test->teardown
   ... (repeat for each surface)
 
-Convention: docs/conventions/testing/go.md (Go testing package + testify/assert)
+Convention: docs/conventions/testing/cli/core.md (Go testing package + testify/assert)
 Edit justfile to customize commands for your project.
 Recipes marked `# user-customized` will be preserved on re-generation.
 forge quality-gate will now use `just unit-test` for per-task gates.
@@ -460,7 +471,7 @@ Targets:
   just lint                       -> golangci-lint run ./...
   ... (all standard targets listed with resolved commands)
 
-Convention: docs/conventions/testing/go.md (Go testing package + testify/assert)
+Convention: docs/conventions/testing/cli/core.md (Go testing package + testify/assert)
 Edit justfile to customize commands for your project.
 Run `/forge:init-justfile` again after configuring surfaces in .forge/config.yaml to add surface-aware recipes.
 ```
@@ -469,14 +480,14 @@ If no Convention was used:
 
 ```
 No Convention file found. Recipes generated from LLM defaults.
-Run `/forge:test-guide` to create a Convention file for consistent future generation.
+Run `/forge:test-guide` to create surface-first Convention files for consistent future generation.
 ```
 
 ## Notes
 
 - **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
 - **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
-- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../../../../docs/reference/test-type-model.md).
+- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../test-guide/references/test-type-model.md).
 - **Mixed project naming**: When multiple surfaces exist, recipes use the surface-key as prefix (e.g., `admin-panel-dev`, `payment-api-test`) to avoid collisions. Single-surface projects use the surface-type as prefix (e.g., `web-dev`).
 - **Targets invoked by forge skills**: `compile`, `unit-test`, `<key>-test`, `<key>-teardown`, `install`. The remaining targets are for manual use.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.

@@ -38,7 +38,7 @@ Check previous stage artifacts. Abort and prompt user if missing:
 ## Workflow
 
 ```
-0. Stale State Recovery -> 1. Detect Surface -> 1.5. Discover Journeys -> 2. Load Orchestration Rules -> 3. Env Check -> 4. Execute Sequence (per-journey) -> 5. Parse Results -> 6. Generate Report
+0. Stale State Recovery -> 1. Detect Surface -> 1.5. Discover Journeys -> 2. Load Orchestration Rules -> 2.5. Load Convention -> 3. Env Check -> 4. Execute Sequence (per-journey) -> 5. Parse Results -> 6. Generate Report
 ```
 
 ### Step 0: Stale State Recovery
@@ -52,7 +52,7 @@ Check for `.forge/test-state.json`. If it exists from a previous interrupted ses
 
 ### Step 1: Detect Surface
 
-Obtain `surface-type` from two sources in priority order:
+Obtain `surface-type`, `surface-key`, and `recipe-prefix` from two sources in priority order:
 
 **Source 1 (preferred): Task frontmatter**
 
@@ -66,7 +66,25 @@ forge surfaces --json <source-directory-path>
 
 Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
-Parse JSON response to extract the `type` field.
+Parse JSON response to extract:
+- `type` field (surface-type, e.g., "web", "cli")
+- `key` field (surface-key, e.g., "admin-panel", ".")
+
+**Determine recipe-prefix**:
+
+The recipe-prefix determines how just recipes are named. The rule follows init-justfile's recipe naming convention:
+
+1. If `forge surfaces --json` returns multiple surfaces (array length > 1), use each surface's `key` field as `recipe-prefix` for that surface.
+2. If only one surface exists (array length == 1), use the surface's `type` field as `recipe-prefix` — this ensures backward compatibility with single-surface projects where recipes are named `<type>-test` (e.g., `cli-test`).
+3. When the `key` field is `"."` (single-surface default), use the `type` field as `recipe-prefix`.
+
+| Scenario | recipe-prefix | Example |
+|----------|--------------|---------|
+| Single surface (key=".") | `type` | `cli-test`, `cli-teardown` |
+| Single surface (key="my-cli") | `type` | `cli-test`, `cli-teardown` |
+| Multi surface | `key` | `admin-panel-test`, `payment-api-test` |
+
+Store `surface-type`, `surface-key`, and `recipe-prefix` for use in subsequent steps.
 
 **When both sources fail** (surface info unavailable):
 
@@ -136,6 +154,32 @@ Supported types: web, api, cli, tui, mobile
 
 Exit with code 2 (blocking error).
 
+### Step 2.5: Load Convention (Timeout & Lifecycle)
+
+Read per-surface test strategy from Convention files for timeout and lifecycle rules.
+
+#### Legacy Structure Detection
+
+Before loading Convention files, check whether the project uses the legacy (framework-first) structure:
+
+1. Check if `docs/conventions/testing/` contains any `.md` files that are NOT inside a subdirectory (i.e., flat files like `go.md`, `vitest.md`).
+2. If legacy files are detected:
+   - Output migration prompt: "Legacy Convention structure detected in `docs/conventions/testing/` (framework-first files). Run `/test-guide` to regenerate with the new surface-first structure (`testing/{surface}/core.md`)."
+   - Abort with exit code 2 (blocking error, per BIZ-error-reporting-001).
+3. If no legacy files, proceed to Convention loading.
+
+#### Convention Loading
+
+1. Load the surface Convention from `docs/conventions/testing/{surface}/core.md`.
+2. Extract the following fields for use in orchestration:
+   - **Timeout strategy**: per-test-case timeout values and overall suite timeout
+   - **Lifecycle rules**: setup/teardown sequence expectations, retry policies
+3. If `core.md` does not exist for the detected surface, proceed without Convention overrides (use defaults from orchestration rules in Step 2).
+
+<HARD-RULE>
+Convention loading is surface-driven. Do NOT fall back to loading framework-specific flat files from the legacy structure.
+</HARD-RULE>
+
 ### Step 3: Environment Readiness Check
 
 Read the rule file `rules/env-check.md` for the detection framework. Execute the environment checks defined for the detected surface type.
@@ -155,87 +199,40 @@ Execute the sequence defined in the loaded rule file's "Orchestration Sequence" 
 **State file**: Before starting the sequence, write teardown state to `.forge/test-state.json`:
 
 ```json
-{"teardown": "<teardown-recipe>", "timestamp": "<ISO8601>"}
+{"teardown": "<recipe-prefix>-teardown", "timestamp": "<ISO8601>"}
 ```
 
 #### 4a. Web/API/Mobile Sequence (full lifecycle)
 
-Execute steps in order: dev -> probe -> **[per-journey test loop]** -> teardown (mobile adds test-setup before dev).
-
-**Lifecycle model**: dev and probe execute **once**. Then for each journey in `JOURNEYS`, execute `just <surface>-test <journey>`. Finally teardown executes **once**.
+Execute: dev -> probe -> **[per-journey test loop]** -> teardown. dev and probe execute **once**, then per-journey tests loop, teardown executes **once**.
 
 **Sequence:**
 
-1. Execute `just <surface>-dev`
-2. Execute `just <surface>-probe` (with retry logic)
-3. **For each journey in `JOURNEYS`**:
-   - Execute `just <surface>-test <journey>`
-   - Record results for this journey
-   - On test failure: execute teardown, exit (see failure handling below)
-4. Execute `just <surface>-teardown`
+1. Execute `just <recipe-prefix>-dev`
+2. Execute `just <recipe-prefix>-probe` (with retry logic)
+3. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>-test <journey>`, record results
+4. Execute `just <recipe-prefix>-teardown`
 
-**For each step:**
-
-1. Execute the just recipe
-2. Check exit code
-3. Follow the rule file's failure handling instructions for that exit code
-
-**Probe HARD-GATE** (web, api, mobile only):
-
-<HARD-GATE>
-After probe fails (all retries exhausted):
-- Execute teardown immediately
-- Exit with probe's exit code
-- Do NOT retry probe or restart dev in this orchestration cycle
-</HARD-GATE>
-
-**Probe retry logic** (web, api, mobile only):
-
-When probe returns non-zero:
-- Retry up to 3 times with 5-second intervals
-- If all 3 retries fail, treat as probe failure (exit code 1)
-- If any retry succeeds (exit 0), proceed to per-journey test loop
-
-**Dev failure** (web, api, mobile only):
-
-When dev returns non-zero:
-- Execute teardown immediately
-- Exit with dev's exit code
-
-**Test failure (per journey):**
-
-- Exit code 1: Execute teardown, exit 1
-- Exit code 2: Execute teardown, suggest retry ("Test environment error, suggest retry"), exit 2
-
-**Teardown execution:**
+See the loaded surface rule file (`rules/surfaces/<type>.md`) for per-step failure handling (dev/probe/test/teardown exit codes), probe retry strategy, and probe HARD-GATE.
 
 <HARD-RULE>
 Teardown is mandatory. Execute teardown even when a previous step fails.
 </HARD-RULE>
 
-After successful teardown, delete `.forge/test-state.json`.
-
-If teardown fails, log the error and leave `.forge/test-state.json` for recovery on next run.
-
 #### 4b. CLI/TUI Sequence (simplified)
 
-Execute: **[per-journey test loop]** -> teardown.
-
-No dev, probe, or probe retry logic applies.
+Execute: **[per-journey test loop]** -> teardown. No dev or probe steps.
 
 **Sequence:**
 
-1. **For each journey in `JOURNEYS`**:
-   - Execute `just <surface>-test <journey>`
-   - Record results for this journey
-   - On test failure: execute teardown, exit (see failure handling below)
-2. Execute `just <surface>-teardown`
+1. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>-test <journey>`, record results
+2. Execute `just <recipe-prefix>-teardown`
 
-Follow the same failure handling rules for test and teardown as 4a.
+See the loaded surface rule file (`rules/surfaces/<type>.md`) for per-step failure handling. Teardown follows the same HARD-RULE as 4a.
 
 ### Step 5: Parse Results
 
-Parse test results based on the test runner's output format (auto-detected). Convention files (`docs/conventions/testing/<convention>.md`) are referenced by test scripts generated during the `/gen-test-scripts` pipeline — they are not loaded during run-tests.
+Parse test results based on the test runner's output format (auto-detected). Convention files (`docs/conventions/testing/{surface}/core.md`) were loaded in Step 2.5 for timeout and lifecycle rules.
 
 Read `rules/result-parsing.md` for parsing strategies.
 
@@ -257,7 +254,7 @@ After completion, report to the user:
 
 ```
 Test Results: X/Y passed (Z failed)
-Surface: <surface-type>
+Surface: <surface-type> (recipe-prefix: <recipe-prefix>)
 Journeys: <journey1>, <journey2>
 Sequence: <executed steps>
 
@@ -271,7 +268,7 @@ If all tests pass:
 
 ```
 Test Results: X/X passed
-Surface: <surface-type>
+Surface: <surface-type> (recipe-prefix: <recipe-prefix>)
 Journeys: <journey1>, <journey2>
 Report: tests/<journey>/results/latest.md
 ```
@@ -293,6 +290,7 @@ Per BIZ-error-reporting-001 (defined in `docs/business-rules/error-reporting.md`
 | No journeys found (testing/ missing or empty) | stderr error suggesting /gen-journeys | 2 |
 | Surface info unavailable (both sources fail) | stderr error with recovery hint | 2 |
 | Unsupported surface-type | stderr error listing supported types | 2 |
+| Legacy Convention structure detected | Output migration prompt suggesting /test-guide | 2 |
 | Environment readiness check fails | Abort with diagnostic output | 1 |
 | Dev recipe fails | Execute teardown, exit with dev's code | 1 |
 | Probe fails (all retries) | Execute teardown, exit 1 (HARD-GATE) | 1 |

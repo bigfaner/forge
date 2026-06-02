@@ -1,47 +1,47 @@
 # Surface: mobile
 
-> **测试类型参考**：Mobile surface 的测试类型为 **移动端端到端测试（Mobile E2E Test）**，通过 Maestro YAML / 设备自动化验证 UI 元素可见性 + 用户操作响应 + 屏幕 ID 变更。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **Test Type Reference**: The test type for mobile surface is **Mobile E2E Test**, which verifies UI element visibility + user interaction response + screen ID changes via Maestro YAML / device automation.
 
-## 编排序列
+## Orchestration Sequence
 
-| 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
-|------|---------|---------|---------|---------|
-| test-setup | 模拟器就绪，测试环境准备完成 | 模拟器启动失败或环境不可用 | — | 进入 dev |
-| dev | 模拟器运行，应用部署就绪 | 启动失败（模拟器不可用） | — | 进入 probe |
-| probe | Appium 健康检查通过 | Appium 无响应 | — | 进入 test |
-| test | 测试通过 | 测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | 清理完成 | 清理失败（残留模拟器/进程） | — | 结束 |
+| Step | Exit Code 0 | Exit Code 1 | Exit Code 2 | Next Action |
+|------|-------------|-------------|-------------|-------------|
+| test-setup | Emulator ready, test environment prepared | Emulator startup failed or environment unavailable | — | Proceed to dev |
+| dev | Emulator running, app deployed and ready | Startup failed (emulator unavailable) | — | Proceed to probe |
+| probe | Appium health check passed | Appium unresponsive | — | Proceed to test |
+| test | Tests passed | Tests failed | Test environment error (retryable) | Proceed to teardown |
+| teardown | Cleanup complete (emulator stopped, processes cleaned) | Cleanup failed (residual emulators / processes) | — | End |
 
-注意事项：
-- test-setup 负责模拟器准备，是 mobile surface 的前置步骤；test-setup 失败时直接退出，不继续后续步骤
-- dev 失败时**不继续**后续步骤，直接 teardown 并退出
-- probe 最多重试 3 次，间隔 5 秒；3 次均失败视为退出码 1
-- test 退出码 2 允许重跑，skill 应提示用户 "测试环境异常，建议重试"
+Notes:
+- test-setup is responsible for emulator preparation and is a prerequisite step for mobile surface; if test-setup fails, exit immediately without continuing to subsequent steps
+- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown and exit
+- Probe retries up to 3 times with 5-second intervals; if all 3 attempts fail, treat as exit code 1
+- Exit code 2 for test step allows re-running; the skill should prompt the user "Test environment error, consider retrying"
 
-## 配方调用契约
+## Recipe Invocation Contract
 
-| 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
-|--------|----------|--------------|--------------|
-| mobile-test-setup | `just mobile-test-setup` | 模拟器就绪，测试环境准备完成 | 模拟器启动失败，stderr 含错误详情 |
-| mobile-dev | `just mobile-dev` | 模拟器运行，应用部署就绪 | 启动失败，stderr 含错误详情 |
-| mobile-probe | `just mobile-probe` | Appium 健康检查通过 | Appium 无响应 |
-| mobile-test | `just mobile-test` | 所有移动端端到端测试通过 | 至少一个测试失败 |
-| mobile-teardown | `just mobile-teardown` | 模拟器停止，进程清理完成 | 残留模拟器或清理异常 |
-| mobile | `just mobile` | 聚合配方：test-setup→dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
+| Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
+|-------------|---------------|----------------------|----------------------|
+| mobile-test-setup | `just mobile-test-setup` | Emulator ready, test environment prepared | Emulator startup failed, stderr contains error details |
+| mobile-dev | `just mobile-dev` | Emulator running, app deployed and ready | Startup failed, stderr contains error details |
+| mobile-probe | `just mobile-probe` | Appium health check passed | Appium unresponsive |
+| mobile-test | `just mobile-test [journey]` | All mobile E2E tests passed | At least one test failed |
+| mobile-teardown | `just mobile-teardown` | Emulator stopped, process cleanup complete | Residual emulators or cleanup error |
+| mobile | `just mobile` | Aggregate recipe: test-setup->dev->probe->test->teardown complete flow | Any sub-step failed |
 
-实现约束：
-- 每个配方必须支持 `[linux]` 和 `[windows]` 双平台变体
-- `mobile` 聚合配方按编排序列顺序调用子配方，遇到非零退出码立即中断
-- `mobile-teardown` 必须用 `just --dry-run` 验证语法
+Implementation constraints:
+- Each recipe must support both `[linux]` and `[windows]` platform variants
+- The `mobile` aggregate recipe calls sub-recipes in orchestration sequence order, stopping immediately on a non-zero exit code
+- `mobile-teardown` must be validated with `just --dry-run`
 
-## journey 过滤策略
+## Journey Filter Strategy
 
-| journey 标签 | 匹配规则 | 说明 |
-|-------------|---------|------|
-| `@mobile` | 精确匹配 | mobile surface 的专用 journey |
-| 其他 | 忽略 | 非 mobile 相关 journey 不由本规则处理 |
+| Journey Tag | Match Rule | Description |
+|-------------|-----------|-------------|
+| `@mobile` | Exact match | Journey dedicated to mobile surface |
+| Other | Ignore | Non-mobile journeys are not handled by this rule |
 
-## 配方模板（双平台）
+## Recipe Template (Dual Platform)
 
 ```just
 # Prepare emulator and test environment for mobile tests
@@ -83,15 +83,15 @@ mobile-probe:
     set -euo pipefail
     echo "TODO: implement mobile-probe (Appium health check)" >&2; exit 1
 
-# Run Mobile E2E tests
+# Run Mobile E2E tests (optionally filter by journey)
 # user-customized
-mobile-test:
+mobile-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement mobile-test" >&2; exit 1
 
 # user-customized
-mobile-test:
+mobile-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement mobile-test" >&2; exit 1
@@ -117,4 +117,4 @@ mobile:
     just mobile-test-setup && just mobile-dev && just mobile-probe && just mobile-test; rc=$?; just mobile-teardown; exit $rc
 ```
 
-**LLM 指令**：将 TODO 桩替换为从语言模板和 Convention 知识推导出的实际命令。上述桩代码展示了所需的配方结构和双平台属性模式。
+**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.

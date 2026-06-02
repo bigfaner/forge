@@ -3,9 +3,11 @@ title: "Surface 测试类型模型"
 domains: [testing, surface, test-type]
 ---
 
+<!-- Migrated from docs/reference/test-type-model.md. Complete reference for Surface -> Test Type mapping. -->
+
 # Surface 测试类型模型
 
-本文档定义 Surface → Test Type 的映射模型，作为 Forge 测试管线的概念权威参考。所有 skill 文件、task type 命名和 justfile recipe 中的测试类型术语以本文档为准。
+本文档定义 Surface -> Test Type 的映射模型，作为 Forge 测试管线的概念权威参考。所有 skill 文件、task type 命名和 justfile recipe 中的测试类型术语以本文档为准。
 
 ## 映射表
 

@@ -69,7 +69,7 @@ docs/conventions/testing/
 - 新增 Step：读取 `.forge/config.yaml` 获取 Surface 类型
 - 从内置模板（`templates/surfaces/*.md`）生成 per-surface 的 index.md + core.md
 - 生成顶层 `docs/conventions/testing/index.md` 速查表
-- 移除旧框架检测 → 单文件生成的流程
+- 重构框架检测为辅助步骤，结果用于填充 core.md 断言偏好表（不再驱动单文件生成流程）
 
 **5. 下游 skill 适配**
 
@@ -82,8 +82,8 @@ docs/conventions/testing/
 这不是行业常见做法的移植，而是从第一性原理推导的设计决策：
 
 - **Surface 作为首要组织轴**：CLI 测试在 Go 和 Python 之间的共同点（子进程隔离、exit code 断言、stdout 解析），远大于 CLI 测试和 Web E2E 测试在 Go 中的共同点。测试策略的本质差异在 Surface，不在语言。
-- **零 Framework 文件**：LLM 已有语言/framework 知识，Convention 文件只补充 LLM 推断不出的项目特有规则。消除了传统"代码模板"思路带来的维护负担。
-- **guide.md 作为冷启动答案**：用户初始项目不存在任何 Convention 文件，但 guide.md hook 始终在 context 中，确保 agent 从第一个会话就能正确回答测试相关问题。
+- **零 Framework 一级文件**：LLM 已有语言/framework 知识，Convention 文件只补充 LLM 推断不出的项目特有规则。Framework 信息降格为 core.md 断言偏好表中的行（per-framework 一行），消除了传统"代码模板"思路带来的维护负担。
+- **扩展成本透明**：新增 Surface 需三项工作——编写 `templates/surfaces/` 模板、在 guide.md 速查表增加一行（20行预算内）、更新下游 skill 的 Surface 枚举。非零成本，但增量可控。
 
 ## Requirements Analysis
 
@@ -101,12 +101,14 @@ docs/conventions/testing/
 - **guide.md 增量 <= 20 行**：guide.md 是每次会话的固定 token 成本，必须精简。
 - **Convention 加载路径向后兼容**：如果用户项目中存在旧结构 convention 文件，下游 skill 应能识别并给出迁移提示，而非静默失败。
 - **零 framework 文件维护**：新增语言/framework 支持时，只需 LLM 知识即可，不需新增 Convention 文件。
+- **core.md 内容膨胀防护**：core.md 只允许包含 7 个固定段落 + 断言偏好表。断言偏好表的列固定为：断言库、mock 机制、fixture 模式。新增列需通过提案评审，防止 core.md 退化为按 Surface 分组的 Framework 文件。
 
 ### Constraints & Dependencies
 
 - test-guide 的 surface 检测依赖 `.forge/config.yaml` 中的 surfaces 配置
 - gen-test-scripts 和 run-tests 的 convention 加载逻辑需要同步修改
 - guide.md 是 hook 文件，修改后影响所有用户的每次会话
+- Surface 类型集合当前为封闭集（cli/api/web/tui/mobile 共 5 类）。新增 Surface 类型需重新评估 guide.md 行数预算（每增一行速查表占约 1 行）和 `templates/surfaces/` 模板维护成本，并更新下游 skill 的 Surface 枚举
 
 ## Alternatives & Industry Benchmarking
 
@@ -125,7 +127,7 @@ docs/conventions/testing/
 | Do nothing | — | 零改动 | agent 每次猜测试位置和策略；test-type-model 不分发 | Rejected: 问题持续恶化 |
 | 框架优先 + Surface 段落 | 现有结构 | 改动最小 | 单文件膨胀；新增 surface 仍需改所有框架文件 | Rejected: 根本问题未解决 |
 | 渐进叠加 | — | 安全，可逐步迁移 | 长期维护两套结构；加载逻辑复杂 | Rejected: 技术债 |
-| **Surface-first 全链路重构** | 第一性原理推导 | 信息就近；新增 surface 只加目录；guide.md 冷启动 | 全量改动影响面大 | **Selected: 根本性解决问题** |
+| **Surface-first 全链路重构** | 第一性原理推导 | 信息就近；guide.md 冷启动 | 全量改动影响面大；新增 surface 需维护速查表（20行预算内）和模板 | **Selected: 根本性解决问题** |
 
 ## Feasibility Assessment
 
@@ -172,7 +174,7 @@ docs/conventions/testing/
 
 ### Out of Scope
 
-- gen-test-scripts type rules（`types/cli.md` 等）— 已有完整策略，不改动
+- gen-test-scripts type rules（`types/cli.md` 等）— 已有完整策略，不改动。策略信息权威关系：`types/*.md` 为 gen-test-scripts 生成时的首要权威（包含完整 framework 代码策略）；`core.md` 为 surface 策略权威（隔离模型、断言重点等）。两者信息重叠部分（断言偏好），`core.md` 断言偏好表源自 `types/*.md`，以 `types/*.md` 为准
 - run-tests surface orchestration rules（`rules/surfaces/`）— 生命周期不变
 - `.forge/config.yaml` 的 surface 配置机制 — 不变
 - 用户项目中旧 convention 文件的自动迁移脚本
@@ -196,6 +198,7 @@ docs/conventions/testing/
 - [ ] run-tests 能从 `docs/conventions/testing/{surface}/core.md` 读取超时和生命周期规则
 - [ ] 用户初始项目中不存在任何 convention 文件时，agent 能从 guide.md 正确回答测试位置和策略问题
 - [ ] `docs/reference/test-type-model.md` 的内容 100% 融入 plugin（guide.md 精华版 + test-guide/references/ 完整版）
+- [ ] gen-test-scripts 生成的测试代码使用 per-surface build tag 命名（如 `cli_functional` 而非 `e2e`），与 e2e 术语约束一致
 
 ## Next Steps
 

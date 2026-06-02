@@ -8,7 +8,7 @@ conventions:
 
 Type-specific generation instructions for **Mobile** (touch, gestures, screen transitions) test scripts. Loaded by the dispatcher when interface detection identifies Mobile-type test cases.
 
-**Test type**: 移动端端到端测试 (Mobile E2E Test). See `docs/reference/test-type-model.md` for the authoritative definition. Generated test code MUST use `@mobile-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Web).
+**Test type**: 移动端端到端测试 (Mobile E2E Test). Generated test code MUST use `@mobile-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Web).
 
 This file defines two zones:
 

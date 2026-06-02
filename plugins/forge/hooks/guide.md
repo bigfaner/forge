@@ -76,8 +76,22 @@ All keys return `true` or empty. Check with: `forge config get <key>`; if output
 - `forge task validate-index <path>` — validate index.json structure
 - `forge cleanup` — clean stale artifacts
 
+## Testing
+
+| Surface | Test Type | Execution |
+|---------|-----------|-----------|
+| `cli` | CLI Functional Test | subprocess (exit code + stdout) |
+| `tui` | Terminal Functional Test | subprocess + stdin pipe |
+| `api` | API Functional Test | HTTP client |
+| `web` | Web E2E Test | browser automation |
+| `mobile` | Mobile E2E Test | Maestro YAML / manual |
+
+> **"e2e" is reserved for Web and Mobile only.** CLI/TUI/API tests use "Functional Test" — their validation is protocol-level, not device-level automation.
+
+Test file locations: all tests go to `tests/<journey>/` regardless of surface type. Journey names come from gen-journeys. Run `/test-guide` for full per-surface strategy.
+
 ## Terminology
 
 - **Surface**: a testable system entry point managed by Forge (e.g. a web app, an API server, a CLI binary). Each Surface is identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`.
 - **Surface Type**: the kind of surface — one of `web`, `api`, `cli`, `tui`, `mobile`. Determines the orchestration strategy for build/dev/test. `web`/`api` require probe + teardown; `mobile` adds test-setup before the same lifecycle (test-setup → dev → probe → test → teardown); `cli`/`tui` use build → dev → test. Auto-detected via `forge surfaces detect`.
-- **Test Type**: the test classification derived from Surface Type. Each surface maps to a specific test type: `cli` → CLI Functional Test, `tui` → Terminal Functional Test, `api` → API Functional Test, `web` → Web E2E Test, `mobile` → Mobile E2E Test. "e2e" is used exclusively for Web/Mobile surfaces. See [test-type-model.md](../../docs/reference/test-type-model.md) for the full mapping and classification rules.
+- **Test Type**: the test classification derived from Surface Type. Each surface maps to a specific test type: `cli` → CLI Functional Test, `tui` → Terminal Functional Test, `api` → API Functional Test, `web` → Web E2E Test, `mobile` → Mobile E2E Test. "e2e" is used exclusively for Web/Mobile surfaces.

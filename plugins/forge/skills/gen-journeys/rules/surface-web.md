@@ -2,7 +2,7 @@
 
 Web surface 适用于基于浏览器的 Web 应用程序（React、Vue、Svelte 等）。测试重点是用户交互流程、状态转换、可访问性和浏览器自动化。
 
-**Test type**: Web 端到端测试 (Web E2E Test). Test type definition and classification criteria: see `docs/reference/test-type-model.md`. Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile).
+**Test type**: Web E2E Test. Verifies DOM element visibility, user interaction responses, and page state transitions via browser automation. Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile).
 
 ## Detection Signals
 
@@ -27,7 +27,7 @@ Web surface 适用于基于浏览器的 Web 应用程序（React、Vue、Svelte 
 
 ## General Testing Principles
 
-1. **Browser automation**: Web tests use browser automation frameworks (Playwright, Cypress, Selenium, etc.). The specific framework is defined by the project's Convention file, not by this surface rule.
+1. **Browser automation**: Web tests use Playwright (default). The specific framework is defined by the project's Convention file, not by this surface rule.
 2. **User-centric assertions**: Test from the user's perspective -- what they see and interact with. Avoid asserting internal component state or implementation details.
 3. **State transitions**: Verify that UI state changes correctly in response to user actions:
    - Form submissions update displayed data
