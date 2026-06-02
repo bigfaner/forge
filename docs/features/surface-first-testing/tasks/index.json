@@ -58,9 +58,9 @@
       "title": "Fix test-guide test directory paths in SKILL.md + surface templates",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "14-fix-test-guide-paths.md",
-      "record": "",
+      "record": "records/14-fix-test-guide-paths.md",
       "type": "doc"
     },
     "15-unify-surface-descriptions": {

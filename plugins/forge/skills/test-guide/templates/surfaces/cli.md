@@ -9,7 +9,7 @@ domains: [testing, cli]
 
 ## 文件位置
 
-- **目录**: `tests/cli/` 或 `tests/<journey>/`（当 Journey 仅包含 CLI 测试时）
+- **目录**: `tests/<journey>/`（Journey 名称由 gen-journeys 生成）
 - **文件命名**: `<feature>_<command>_test.<ext>`（Go）、`test_<feature>_<command>.<ext>`（Python）、`<feature>.<command>.test.<ext>`（Node.js）
 - **Build tag**: `//go:build cli_functional`（Go）、`@cli-functional`（BDD tag）
 - **约束**: 不得使用 `e2e` 作为 build tag 或测试分类名
