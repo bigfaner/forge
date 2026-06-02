@@ -73,7 +73,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-update-init-justfile.md",
       "record": "records/6-update-init-justfile.md",
       "type": "doc"
