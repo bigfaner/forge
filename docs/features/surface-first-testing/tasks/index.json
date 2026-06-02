@@ -28,7 +28,7 @@
       "title": "Fix recipe parameter mismatch + run-tests surface-key usage",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "11-fix-recipe-params.md",
       "record": "records/11-fix-recipe-params.md",
       "type": "doc"

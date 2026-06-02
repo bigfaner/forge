@@ -22,7 +22,7 @@
 |--------|----------|--------------|--------------|
 | api-dev | `just api-dev` | API 服务器就绪，监听端口 | 启动失败，stderr 含错误详情 |
 | api-probe | `just api-probe` | HTTP GET /healthz 返回 2xx | 连接拒绝或超时 |
-| api-test | `just api-test` | 所有 API 功能测试通过 | 至少一个测试失败 |
+| api-test | `just api-test [journey]` | 所有 API 功能测试通过 | 至少一个测试失败 |
 | api-teardown | `just api-teardown` | 进程终止，端口释放 | 进程残留或清理异常 |
 | api | `just api` | 聚合配方：dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
 
@@ -67,15 +67,15 @@ api-probe:
     set -euo pipefail
     echo "TODO: implement api-probe (HTTP GET /healthz)" >&2; exit 1
 
-# Run API functional tests
+# Run API functional tests (optionally filter by journey)
 # user-customized
-api-test:
+api-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement api-test" >&2; exit 1
 
 # user-customized
-api-test:
+api-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement api-test" >&2; exit 1

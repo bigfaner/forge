@@ -6,8 +6,8 @@
 
 | 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
 |------|----------|---------|---------|---------|---------|
-| test | `just tui-test` | 终端功能测试通过 | 终端功能测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | `just tui-teardown` | 清理完成 | 清理失败 | — | 结束 |
+| test | `just <recipe-prefix>-test <journey>` | 终端功能测试通过 | 终端功能测试失败 | 测试环境异常（需重试） | 进入 teardown |
+| teardown | `just <recipe-prefix>-teardown` | 清理完成 | 清理失败 | — | 结束 |
 
 注意事项：
 - **无 dev 步骤**：TUI surface 不启动持久化服务
@@ -37,14 +37,14 @@ teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。
 
 ## Per-Journey 执行
 
-TUI surface 的 test 步骤按 journey 逐个执行：
+TUI surface 的 test 步骤按 journey 逐个执行。使用 SKILL.md Step 1 确定的 `recipe-prefix`（单 surface 项目为 surface-type "tui"，多 surface 项目为 surface-key）构造配方名：
 
 ```
 for each journey in JOURNEYS:
-    just tui-test <journey>
+    just <recipe-prefix>-test <journey>
     record results
-    on failure: just tui-teardown, exit
-just tui-teardown
+    on failure: just <recipe-prefix>-teardown, exit
+just <recipe-prefix>-teardown
 ```
 
-测试配方调用格式为 `just tui-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。
+测试配方调用格式为 `just <recipe-prefix>-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。`<recipe-prefix>` 在单 surface 项目中为 "tui"，在多 surface 项目中为对应的 surface-key。

@@ -22,7 +22,7 @@
 |--------|----------|--------------|--------------|
 | web-dev | `just web-dev` | 开发服务器就绪，监听端口 | 启动失败，stderr 含错误详情 |
 | web-probe | `just web-probe` | HTTP 健康检查返回 2xx | 连接拒绝或超时 |
-| web-test | `just web-test` | 所有 Web 端到端测试通过 | 至少一个测试失败 |
+| web-test | `just web-test [journey]` | 所有 Web 端到端测试通过 | 至少一个测试失败 |
 | web-teardown | `just web-teardown` | 进程终止，端口释放 | 进程残留或清理异常 |
 | web | `just web` | 聚合配方：dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
 
@@ -69,15 +69,15 @@ web-probe:
     set -euo pipefail
     echo "TODO: implement web-probe (HTTP health check)" >&2; exit 1
 
-# Run Web E2E tests
+# Run Web E2E tests (optionally filter by journey)
 # user-customized
-web-test:
+web-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement web-test" >&2; exit 1
 
 # user-customized
-web-test:
+web-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement web-test" >&2; exit 1

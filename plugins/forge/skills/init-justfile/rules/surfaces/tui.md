@@ -19,7 +19,7 @@
 
 | 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
 |--------|----------|--------------|--------------|
-| tui-test | `just tui-test` | 所有终端功能测试通过 | 至少一个测试失败 |
+| tui-test | `just tui-test [journey]` | 所有终端功能测试通过 | 至少一个测试失败 |
 | tui-teardown | `just tui-teardown` | 清理完成 | 清理失败 |
 
 实现约束：
@@ -37,15 +37,15 @@
 ## 配方模板（双平台）
 
 ```just
-# Run terminal functional tests
+# Run terminal functional tests (optionally filter by journey)
 # user-customized
-tui-test:
+tui-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement tui-test" >&2; exit 1
 
 # user-customized
-tui-test:
+tui-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement tui-test" >&2; exit 1

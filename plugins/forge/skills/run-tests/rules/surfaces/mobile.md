@@ -6,11 +6,11 @@
 
 | 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
 |------|----------|---------|---------|---------|---------|
-| test-setup | `just mobile-test-setup` | 模拟器就绪，测试环境准备完成 | 模拟器启动失败或环境不可用 | — | 进入 dev |
-| dev | `just mobile-dev` | 模拟器运行，应用部署就绪 | 启动失败（模拟器不可用） | — | 进入 probe |
-| probe | `just mobile-probe` | Appium 健康检查通过 | Appium 无响应 | — | 进入 test |
-| test | `just mobile-test` | 移动端端到端测试通过 | 移动端端到端测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | `just mobile-teardown` | 清理完成（模拟器停止、进程清理） | 清理失败（残留模拟器/进程） | — | 结束 |
+| test-setup | `just <recipe-prefix>-test-setup` | 模拟器就绪，测试环境准备完成 | 模拟器启动失败或环境不可用 | — | 进入 dev |
+| dev | `just <recipe-prefix>-dev` | 模拟器运行，应用部署就绪 | 启动失败（模拟器不可用） | — | 进入 probe |
+| probe | `just <recipe-prefix>-probe` | Appium 健康检查通过 | Appium 无响应 | — | 进入 test |
+| test | `just <recipe-prefix>-test <journey>` | 移动端端到端测试通过 | 移动端端到端测试失败 | 测试环境异常（需重试） | 进入 teardown |
+| teardown | `just <recipe-prefix>-teardown` | 清理完成（模拟器停止、进程清理） | 清理失败（残留模拟器/进程） | — | 结束 |
 
 ## Probe 重试策略
 
@@ -61,17 +61,17 @@ teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。
 
 ## Per-Journey 执行
 
-Mobile surface 的 dev/probe 生命周期包裹所有 journey 测试：
+Mobile surface 的 dev/probe 生命周期包裹所有 journey 测试。使用 SKILL.md Step 1 确定的 `recipe-prefix`（单 surface 项目为 surface-type "mobile"，多 surface 项目为 surface-key）构造配方名：
 
 ```
-just mobile-test-setup
-just mobile-dev
-just mobile-probe (with retry)
+just <recipe-prefix>-test-setup
+just <recipe-prefix>-dev
+just <recipe-prefix>-probe (with retry)
 for each journey in JOURNEYS:
-    just mobile-test <journey>
+    just <recipe-prefix>-test <journey>
     record results
-    on failure: just mobile-teardown, exit
-just mobile-teardown
+    on failure: just <recipe-prefix>-teardown, exit
+just <recipe-prefix>-teardown
 ```
 
-test-setup、dev 和 probe 执行一次，per-journey 循环 test，teardown 执行一次。测试配方调用格式为 `just mobile-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。
+test-setup、dev 和 probe 执行一次，per-journey 循环 test，teardown 执行一次。测试配方调用格式为 `just <recipe-prefix>-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。`<recipe-prefix>` 在单 surface 项目中为 "mobile"，在多 surface 项目中为对应的 surface-key。

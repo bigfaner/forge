@@ -72,7 +72,7 @@ Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variant
 | Recipe | Signature | Description |
 |--------|-----------|-------------|
 | `unit-test` | `just unit-test` (no parameters) | Language-level unit tests, no filtering needed |
-| `<key>-test` | `just <key>-test` (no parameters) | Surface-level advanced tests |
+| `<key>-test` | `just <key>-test [journey]` | Surface-level advanced tests; optional journey parameter filters to a specific journey, omit to run all |
 | `<key>-probe` | `just <key>-probe` (no parameters) | Surface health check |
 
 ## Process Flow

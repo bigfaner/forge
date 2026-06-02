@@ -6,10 +6,10 @@
 
 | 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
 |------|----------|---------|---------|---------|---------|
-| dev | `just web-dev` | 服务启动成功，等待就绪 | 启动失败（依赖缺失/端口占用） | — | 进入 probe |
-| probe | `just web-probe` | 健康检查通过 | 健康检查超时（服务未就绪） | — | 进入 test |
-| test | `just web-test` | Web 端到端测试通过 | Web 端到端测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | `just web-teardown` | 清理完成 | 清理失败（残留进程） | — | 结束 |
+| dev | `just <recipe-prefix>-dev` | 服务启动成功，等待就绪 | 启动失败（依赖缺失/端口占用） | — | 进入 probe |
+| probe | `just <recipe-prefix>-probe` | 健康检查通过 | 健康检查超时（服务未就绪） | — | 进入 test |
+| test | `just <recipe-prefix>-test <journey>` | Web 端到端测试通过 | Web 端到端测试失败 | 测试环境异常（需重试） | 进入 teardown |
+| teardown | `just <recipe-prefix>-teardown` | 清理完成 | 清理失败（残留进程） | — | 结束 |
 
 ## Probe 重试策略
 
@@ -54,19 +54,19 @@ teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。
 
 ## Per-Journey 执行
 
-Web surface 的 dev/probe 生命周期包裹所有 journey 测试：
+Web surface 的 dev/probe 生命周期包裹所有 journey 测试。使用 SKILL.md Step 1 确定的 `recipe-prefix`（单 surface 项目为 surface-type "web"，多 surface 项目为 surface-key）构造配方名：
 
 ```
-just web-dev
-just web-probe (with retry)
+just <recipe-prefix>-dev
+just <recipe-prefix>-probe (with retry)
 for each journey in JOURNEYS:
-    just web-test <journey>
+    just <recipe-prefix>-test <journey>
     record results
-    on failure: just web-teardown, exit
-just web-teardown
+    on failure: just <recipe-prefix>-teardown, exit
+just <recipe-prefix>-teardown
 ```
 
-dev 和 probe 执行一次，per-journey 循环 test，teardown 执行一次。测试配方调用格式为 `just web-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。
+dev 和 probe 执行一次，per-journey 循环 test，teardown 执行一次。测试配方调用格式为 `just <recipe-prefix>-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。`<recipe-prefix>` 在单 surface 项目中为 "web"，在多 surface 项目中为对应的 surface-key。
 
 ## Suite 名称
 

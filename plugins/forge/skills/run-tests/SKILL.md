@@ -52,7 +52,7 @@ Check for `.forge/test-state.json`. If it exists from a previous interrupted ses
 
 ### Step 1: Detect Surface
 
-Obtain `surface-type` from two sources in priority order:
+Obtain `surface-type`, `surface-key`, and `recipe-prefix` from two sources in priority order:
 
 **Source 1 (preferred): Task frontmatter**
 
@@ -66,7 +66,25 @@ forge surfaces --json <source-directory-path>
 
 Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
-Parse JSON response to extract the `type` field.
+Parse JSON response to extract:
+- `type` field (surface-type, e.g., "web", "cli")
+- `key` field (surface-key, e.g., "admin-panel", ".")
+
+**Determine recipe-prefix**:
+
+The recipe-prefix determines how just recipes are named. The rule follows init-justfile's recipe naming convention:
+
+1. If `forge surfaces --json` returns multiple surfaces (array length > 1), use each surface's `key` field as `recipe-prefix` for that surface.
+2. If only one surface exists (array length == 1), use the surface's `type` field as `recipe-prefix` — this ensures backward compatibility with single-surface projects where recipes are named `<type>-test` (e.g., `cli-test`).
+3. When the `key` field is `"."` (single-surface default), use the `type` field as `recipe-prefix`.
+
+| Scenario | recipe-prefix | Example |
+|----------|--------------|---------|
+| Single surface (key=".") | `type` | `cli-test`, `cli-teardown` |
+| Single surface (key="my-cli") | `type` | `cli-test`, `cli-teardown` |
+| Multi surface | `key` | `admin-panel-test`, `payment-api-test` |
+
+Store `surface-type`, `surface-key`, and `recipe-prefix` for use in subsequent steps.
 
 **When both sources fail** (surface info unavailable):
 
@@ -181,24 +199,24 @@ Execute the sequence defined in the loaded rule file's "Orchestration Sequence" 
 **State file**: Before starting the sequence, write teardown state to `.forge/test-state.json`:
 
 ```json
-{"teardown": "<teardown-recipe>", "timestamp": "<ISO8601>"}
+{"teardown": "<recipe-prefix>-teardown", "timestamp": "<ISO8601>"}
 ```
 
 #### 4a. Web/API/Mobile Sequence (full lifecycle)
 
 Execute steps in order: dev -> probe -> **[per-journey test loop]** -> teardown (mobile adds test-setup before dev).
 
-**Lifecycle model**: dev and probe execute **once**. Then for each journey in `JOURNEYS`, execute `just <surface>-test <journey>`. Finally teardown executes **once**.
+**Lifecycle model**: dev and probe execute **once**. Then for each journey in `JOURNEYS`, execute `just <recipe-prefix>-test <journey>`. Finally teardown executes **once**. Use `recipe-prefix` from Step 1 (surface-key for multi-surface projects, surface-type for single-surface projects).
 
 **Sequence:**
 
-1. Execute `just <surface>-dev`
-2. Execute `just <surface>-probe` (with retry logic)
+1. Execute `just <recipe-prefix>-dev`
+2. Execute `just <recipe-prefix>-probe` (with retry logic)
 3. **For each journey in `JOURNEYS`**:
-   - Execute `just <surface>-test <journey>`
+   - Execute `just <recipe-prefix>-test <journey>`
    - Record results for this journey
    - On test failure: execute teardown, exit (see failure handling below)
-4. Execute `just <surface>-teardown`
+4. Execute `just <recipe-prefix>-teardown`
 
 **For each step:**
 
@@ -247,15 +265,15 @@ If teardown fails, log the error and leave `.forge/test-state.json` for recovery
 
 Execute: **[per-journey test loop]** -> teardown.
 
-No dev, probe, or probe retry logic applies.
+No dev, probe, or probe retry logic applies. Use `recipe-prefix` from Step 1 (surface-key for multi-surface projects, surface-type for single-surface projects).
 
 **Sequence:**
 
 1. **For each journey in `JOURNEYS`**:
-   - Execute `just <surface>-test <journey>`
+   - Execute `just <recipe-prefix>-test <journey>`
    - Record results for this journey
    - On test failure: execute teardown, exit (see failure handling below)
-2. Execute `just <surface>-teardown`
+2. Execute `just <recipe-prefix>-teardown`
 
 Follow the same failure handling rules for test and teardown as 4a.
 
@@ -283,7 +301,7 @@ After completion, report to the user:
 
 ```
 Test Results: X/Y passed (Z failed)
-Surface: <surface-type>
+Surface: <surface-type> (recipe-prefix: <recipe-prefix>)
 Journeys: <journey1>, <journey2>
 Sequence: <executed steps>
 
@@ -297,7 +315,7 @@ If all tests pass:
 
 ```
 Test Results: X/X passed
-Surface: <surface-type>
+Surface: <surface-type> (recipe-prefix: <recipe-prefix>)
 Journeys: <journey1>, <journey2>
 Report: tests/<journey>/results/latest.md
 ```

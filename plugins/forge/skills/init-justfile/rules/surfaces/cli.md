@@ -19,7 +19,7 @@
 
 | 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
 |--------|----------|--------------|--------------|
-| cli-test | `just cli-test` | 所有 CLI 功能测试通过 | 至少一个测试失败 |
+| cli-test | `just cli-test [journey]` | 所有 CLI 功能测试通过 | 至少一个测试失败 |
 | cli-teardown | `just cli-teardown` | 清理完成 | 清理失败 |
 
 实现约束：
@@ -37,15 +37,15 @@
 ## 配方模板（双平台）
 
 ```just
-# Run CLI functional tests
+# Run CLI functional tests (optionally filter by journey)
 # user-customized
-cli-test:
+cli-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement cli-test" >&2; exit 1
 
 # user-customized
-cli-test:
+cli-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement cli-test" >&2; exit 1

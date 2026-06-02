@@ -25,7 +25,7 @@
 | mobile-test-setup | `just mobile-test-setup` | 模拟器就绪，测试环境准备完成 | 模拟器启动失败，stderr 含错误详情 |
 | mobile-dev | `just mobile-dev` | 模拟器运行，应用部署就绪 | 启动失败，stderr 含错误详情 |
 | mobile-probe | `just mobile-probe` | Appium 健康检查通过 | Appium 无响应 |
-| mobile-test | `just mobile-test` | 所有移动端端到端测试通过 | 至少一个测试失败 |
+| mobile-test | `just mobile-test [journey]` | 所有移动端端到端测试通过 | 至少一个测试失败 |
 | mobile-teardown | `just mobile-teardown` | 模拟器停止，进程清理完成 | 残留模拟器或清理异常 |
 | mobile | `just mobile` | 聚合配方：test-setup→dev→probe→test→teardown 完整流程 | 任一子步骤失败 |
 
@@ -83,15 +83,15 @@ mobile-probe:
     set -euo pipefail
     echo "TODO: implement mobile-probe (Appium health check)" >&2; exit 1
 
-# Run Mobile E2E tests
+# Run Mobile E2E tests (optionally filter by journey)
 # user-customized
-mobile-test:
+mobile-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement mobile-test" >&2; exit 1
 
 # user-customized
-mobile-test:
+mobile-test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement mobile-test" >&2; exit 1
