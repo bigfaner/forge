@@ -148,11 +148,11 @@ tests/
 
 | 旧模型概念 | 新模型概念 | 变化说明 |
 |-----------|-----------|---------|
-| 按接口类型分类（CLI/API/TUI/UI/Mobile） | 按 Journey（用户工作流）组织 | 组织维度从"技术接口"转向"用户场景" |
+| 按接口类型分类（CLI/API/TUI/Web/Mobile） | 按 Journey（用户工作流）组织 | 组织维度从"技术接口"转向"用户场景" |
 | 单步 TC（一条命令/一个端点） | Step + Contract（工作流中的一步） | TC 成为 Journey 中的 Step，保留完整工作流上下文 |
 | TC Steps（自由格式操作列表） | Contract 六维声明（结构化验证） | 从非结构化描述升级为六维规范 |
 | TC Expected（自由文本预期） | Outcome（Preconditions 互斥的多结果） | 支持每步多结果（成功、失败、边界情况） |
-| Type 字段（CLI/API/TUI/UI/Mobile） | Journey 维度内的 interface-specific 描述 | 类型信息融入 Contract 维度而非顶层分类 |
+| Type 字段（CLI/API/TUI/Web/Mobile） | Journey 维度内的 interface-specific 描述 | 类型信息融入 Contract 维度而非顶层分类 |
 | Setup 声明（API 数据准备） | Contract Preconditions + Fact Table | 数据准备作为 Preconditions 约束 |
 | `{stepN.field}` 引用 | Contract 内的语义描述符 + gen-test-scripts 的精确匹配 | 声明阶段用自然语言，代码生成阶段用 Fact Table 精确匹配 |
 | staging 目录 + graduation 流程 | Tag-Based Promotion（`@feature` -> `@regression`） | 标签驱动而非文件移动 |

@@ -53,10 +53,47 @@ When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode tas
 
 Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model.
 
-1. Read `docs/conventions/testing/index.md` to discover available Convention files. Select the Convention matching the project's language/framework based on index descriptions and project context. Load the selected Convention from `docs/conventions/testing/<convention>.md`.
-2. Fallback: scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.). Also check subdirectories for monorepo.
-3. On failure: ask user.
-4. **Detect surfaces**: Check `.forge/config.yaml` `surfaces` field, `docs/conventions/`, project directory structure, and dependencies for surface types (cli, api, tui, web, mobile).
+### 0.1 Surface Detection
+
+Detect the project's surface types using the `forge surfaces` CLI command:
+
+```bash
+forge surfaces .
+```
+
+**Exit code contract**:
+
+| Exit Code | Meaning | Action |
+|-----------|---------|--------|
+| 0 | Surface types found. stdout contains one surface type per line (e.g., `web`, `api`). | Parse stdout to collect all surface type strings. Proceed to Convention loading. |
+| 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
+
+**Detection flow**:
+
+1. Run `forge surfaces .` (or the relevant source path for the feature being tested)
+2. If exit code is 0: parse stdout to collect all surface type strings (one per line)
+3. If exit code is 1: pause the pipeline and ask the user to configure surfaces
+
+**Supported surface types**: `web`, `api`, `cli`, `tui`, `mobile`
+
+<HARD-RULE>
+Surface detection must complete before Convention loading begins. If the `forge surfaces` command returns exit code 1, the pipeline must pause and wait for user input. Never proceed with a guessed surface type. Do NOT scan project files independently for surface detection -- always use `forge surfaces <path>`.
+</HARD-RULE>
+
+### 0.2 Convention Loading (Surface-First)
+
+Load surface-specific Convention files for each detected surface type:
+
+1. **Legacy detection**: Check if `docs/conventions/testing/` contains any `.md` files that are NOT inside a subdirectory (i.e., flat files like `go.md`, `vitest.md`). If legacy files are detected:
+   - Output migration prompt: "Legacy Convention structure detected in `docs/conventions/testing/` (framework-first files). Run `/test-guide` to regenerate with the new surface-first structure (`testing/{surface}/core.md`)."
+   - Proceed without loading the legacy files.
+2. **Load surface Convention**: For each detected surface type, load `docs/conventions/testing/{surface}/core.md`.
+3. **No Convention found**: Proceed with LLM defaults. Output hint: "No test Convention files found for surface `{surface}` in `docs/conventions/testing/{surface}/core.md`. Generation will use LLM defaults. Run `/test-guide` to create one."
+4. **Resolve framework**: If `core.md` was loaded, read its assertion preference table to identify the target framework. Otherwise scan existing source/test files (`go.mod`, `package.json`, `*_test.go`, etc.) for auto-detection. On failure: ask user.
+
+<HARD-RULE>
+Convention loading is surface-driven, not framework-driven. The `{surface}` segment comes from Step 0.1 surface detection via `forge surfaces`. Do NOT fall back to loading framework-specific flat files.
+</HARD-RULE>
 
 <HARD-RULE>
 Do NOT silently default to any language or surface.
@@ -65,7 +102,7 @@ Do NOT silently default to any language or surface.
 ## Process Flow
 
 ```
-0. Resolve language + surfaces -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
+0. Resolve surfaces (forge surfaces CLI) + Convention loading (surface-first) -> 1. Read Journeys -> 2. Code Reconnaissance (Fact Table) -> 3. Generate Contracts (risk-driven density + boundary derivation) -> 4. Validate (schema + retry) -> 5. Write Output + Fact Table
 ```
 
 ### Step 1: Read Journey Documents
@@ -77,7 +114,7 @@ Do NOT silently default to any language or surface.
    - Happy path steps (sequence number, user action, expected result)
    - Edge cases (referenced step, precondition, user action, expected result)
    - Journey Invariants (cross-step properties)
-4. Load the project's surface type from `.forge/config.yaml` and read the corresponding surface rule from gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory) to identify required_outcomes.
+4. For each detected surface type, load the surface-required Outcomes from `rules/risk-density.md` (Surface-Required Outcome Derivation table) to identify required_outcomes for the detected surface types.
 
 <HARD-RULE>
 Every Journey in the manifest MUST be processed. Do not skip Journeys based on Risk level or step count.

@@ -38,7 +38,7 @@
       "title": "Fix gen-contracts: surface detection, Convention loading, surfaceType naming",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "12-fix-gen-contracts.md",
       "record": "records/12-fix-gen-contracts.md",
       "type": "doc"
