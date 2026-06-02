@@ -21,18 +21,16 @@ Constants fall into five categories. Each has distinct extraction criteria and c
 
 **Extraction threshold**: Any path string that appears more than once OR that represents a project-internal convention (not an arbitrary user-supplied value) must be a named constant.
 
-**Examples from codebase**:
+**Examples from codebase** (current state -- all extracted):
 
-| Magic Value | Location | Category |
+| Constant Name | Location | Category |
 |---|---|---|
-| `"tests/results/raw-output.txt"` | `quality_gate.go:255,284` | Test output path |
-| `"tests/results/unit-raw-output.txt"` | `quality_gate.go:159,186,507` | Test output path |
-| `"tests/results/"` | `init.go:46` (gitignore entry) | Gitignore path |
-| `"/health"` | `serverprobe.go:31` | Default health-check path |
+| `TestOutputFileName = "raw-output.txt"` | `pkg/feature/constants.go` | Test output file name |
+| `UnitTestOutputFileName = "unit-raw-output.txt"` | `pkg/feature/constants.go` | Test output file name |
+| `"tests/results/"` | `init.go:46` (gitignore entry) | Gitignore path (static list, acceptable) |
+| `defaultHealthPath` | `pkg/serverprobe/constants.go` | Default health-check path |
 
 **Target state**: All such paths defined as `const` in the relevant package's `constants.go` or in the existing `pkg/feature/constants.go` for shared paths.
-
-**Rationale**: `pkg/feature/constants.go` already centralizes the majority of path constants (`TestBaseDir`, `TestResultsDir`, `ForgeDir`, etc.). The test output file names (`raw-output.txt`, `unit-raw-output.txt`) are the gap -- they appear as inline string literals in `quality_gate.go` despite being project conventions.
 
 ### 2. Color Constants
 
@@ -40,20 +38,16 @@ Constants fall into five categories. Each has distinct extraction criteria and c
 
 **Extraction threshold**: Any color value used for UI display must be a named constant or style variable in a single location per package.
 
-**Examples from codebase**:
+**Examples from codebase** (current state -- all centralized):
 
-| Magic Value | Location | Category |
+| Constant Name | Location | Category |
 |---|---|---|
-| `"#7DCFFF"` | `init.go:217` (modeHighlight) | Hex color |
-| `"#7DCFFF"` | `init_surfaces.go:20` (surfaceStyle) | Hex color (duplicated) |
-| `"#FF8700"` | `init_surfaces.go:17` (conflictStyle) | Hex color |
-| `"#9ECE6A"` | `init_surfaces.go:23` (sourceStyle) | Hex color |
-| `"\033[33m"` / `"\033[0m"` | `list.go:181` | ANSI escape (yellow) |
-| `"green"`, `"yellow"`, `"red"`, `"gray"` | `tree.go:217-231` (statusColor) | Named colors |
+| `colorModeHighlight = "#7DCFFF"` | `internal/cmd/styles.go` | Hex color (mode keywords) |
+| `colorConflict = "#FF8700"` | `internal/cmd/styles.go` | Hex color (conflict text) |
+| `colorSource = "#9ECE6A"` | `internal/cmd/styles.go` | Hex color (source text) |
+| `"green"`, `"yellow"`, `"red"`, `"gray"` | `tree.go` (statusColor function) | Named colors (acceptable) |
 
-**Target state**: All hex color strings and ANSI codes extracted to package-level style constants (e.g., in `internal/cmd/styles.go` or `internal/cmd/constants.go`). The `statusColor` function in `tree.go` is already centralized and acceptable -- named color strings inside a single mapping function are not magic values.
-
-**Rationale**: The duplicate `"#7DCFFF"` across `init.go` and `init_surfaces.go` demonstrates the risk: if the design language changes, two files must be updated independently. Centralizing ensures a single source of truth.
+**Target state**: All hex color strings and ANSI codes extracted to package-level style constants in `internal/cmd/styles.go`. The `statusColor` function in `tree.go` is already centralized and acceptable -- named color strings inside a single mapping function are not magic values.
 
 ### 3. Timeout and Duration Constants
 
@@ -61,18 +55,17 @@ Constants fall into five categories. Each has distinct extraction criteria and c
 
 **Extraction threshold**: Any `time.Duration` expression in production code must be a named `const` unless it is a one-off value in test-only code.
 
-**Examples from codebase**:
+**Examples from codebase** (current state -- all extracted):
 
-| Magic Value | Location | Category |
+| Constant Name | Location | Category |
 |---|---|---|
-| `5 * time.Second` | `quality_gate.go:351` (probe retry interval) | Probe interval |
-| `5 * time.Second` | `serverprobe.go:61` (probe timeout) | Probe timeout (duplicated value) |
-| `5 * time.Second` | `lock.go:16` (lock timeout) | Lock acquisition timeout |
-| `50 * time.Millisecond` | `lock.go:55` (backoff interval) | Lock retry backoff |
+| `probeRetryInterval = 5 * time.Second` | `internal/cmd/qualitygate/constants.go` | Probe retry interval |
+| `maxProbeRetries = 3` | `internal/cmd/qualitygate/constants.go` | Max probe retry count |
+| `defaultProbeTimeout = 5 * time.Second` | `pkg/serverprobe/constants.go` | Probe timeout |
+| `defaultLockTimeout = 5 * time.Second` | `pkg/index/lock.go` | Lock acquisition timeout |
+| `lockRetryBackoff = 50 * time.Millisecond` | `pkg/index/lock.go` | Lock retry backoff |
 
 **Target state**: Each distinct semantic timeout defined as a named `const` in the owning package. When the same duration value serves different purposes (probe timeout vs lock timeout vs retry interval), each must have its own constant with a descriptive name -- do not share a constant merely because the numeric value coincides.
-
-**Rationale**: The value `5 * time.Second` appears in three packages with three different semantics. Merging them into one shared constant would couple unrelated concerns. Each package defines its own constant with a name that reflects its purpose.
 
 ### 4. Sentinel Values
 
@@ -80,12 +73,12 @@ Constants fall into five categories. Each has distinct extraction criteria and c
 
 **Extraction threshold**: Any integer literal used as a sentinel (not a count, index, or math operand) must be a named constant with a comment explaining its semantics.
 
-**Examples from codebase**:
+**Examples from codebase** (current state -- all extracted):
 
-| Magic Value | Location | Category |
+| Constant Name | Location | Category |
 |---|---|---|
-| `99999` | `list.go:442` (fallback sort key) | Sort fallback |
-| `99999` | `claim.go:376` (cycle task depth) | Unreachable depth |
+| `fallbackSortPriority = 99999` | `internal/cmd/task/list.go` | Sort fallback for unparseable IDs |
+| `unreachableDepth = 99999` | `internal/cmd/task/claim.go` | Unreachable depth for cycle tasks |
 
 **Target state**: Each sentinel extracted to a named `const` with a descriptive name and doc comment.
 
@@ -161,45 +154,44 @@ The following table catalogs all magic values identified in the Evidence sources
 
 | # | Magic Value | File:Line | Current State | Remediation |
 |---|---|---|---|---|
-| P1 | `"tests/results/raw-output.txt"` | `quality_gate.go:255,284` | Inline string, duplicated 2x | Extract to `pkg/feature/constants.go` or `pkg/testrunner/constants.go` |
-| P2 | `"tests/results/unit-raw-output.txt"` | `quality_gate.go:159,186,507` | Inline string, duplicated 3x | Extract to `pkg/feature/constants.go` or `pkg/testrunner/constants.go` |
-| P3 | `"tests/results/"` | `init.go:46` | Inline in gitignore entries list | Acceptable -- part of a static gitignore entries list, not a runtime path. No extraction needed. |
-| P4 | `"/health"` | `serverprobe.go:31` | Inline default path | Extract to named constant `defaultHealthPath` in `pkg/serverprobe/` |
+| P1 | `"raw-output.txt"` | `pkg/feature/constants.go` | **Fixed**: extracted as `TestOutputFileName` | Done |
+| P2 | `"unit-raw-output.txt"` | `pkg/feature/constants.go` | **Fixed**: extracted as `UnitTestOutputFileName` | Done |
+| P3 | `"tests/results/"` | `init.go:46` | Acceptable -- part of a static gitignore entries list, not a runtime path. No extraction needed. | N/A |
+| P4 | `"/health"` | `pkg/serverprobe/constants.go` | **Fixed**: extracted as `defaultHealthPath` | Done |
 
 ### Color Deviations
 
 | # | Magic Value | File:Line | Current State | Remediation |
 |---|---|---|---|---|
-| C1 | `"#7DCFFF"` | `init.go:217` | Inline in lipgloss style | Centralize to `internal/cmd/styles.go` as `colorModeHighlight` |
-| C2 | `"#7DCFFF"` | `init_surfaces.go:20` | Inline, duplicated from C1 | Reference shared constant from `internal/cmd/styles.go` |
-| C3 | `"#FF8700"` | `init_surfaces.go:17` | Inline in lipgloss style | Centralize to `internal/cmd/styles.go` as `colorConflict` |
-| C4 | `"#9ECE6A"` | `init_surfaces.go:23` | Inline in lipgloss style | Centralize to `internal/cmd/styles.go` as `colorSource` |
-| C5 | `"\033[33m"` / `"\033[0m"` | `list.go:181` | Raw ANSI escape codes | Replace with lipgloss style or named ANSI constants |
+| C1 | `"#7DCFFF"` | `internal/cmd/styles.go` | **Fixed**: centralized as `colorModeHighlight` | Done |
+| C2 | `"#FF8700"` | `internal/cmd/styles.go` | **Fixed**: centralized as `colorConflict` | Done |
+| C3 | `"#9ECE6A"` | `internal/cmd/styles.go` | **Fixed**: centralized as `colorSource` | Done |
+| C4 | `"\033[33m"` / `"\033[0m"` | `list.go` | **Fixed**: ANSI codes cleaned up | Done |
 
 ### Timeout Deviations
 
 | # | Magic Value | File:Line | Current State | Remediation |
 |---|---|---|---|---|
-| T1 | `5 * time.Second` | `quality_gate.go:351` | Inline in `probeWithRetry` call | Extract to `const probeRetryInterval` in `internal/cmd/` |
-| T2 | `5 * time.Second` | `serverprobe.go:61` | Inline in `ProbeServers` | Extract to `const defaultProbeTimeout` in `pkg/serverprobe/` |
-| T3 | `5 * time.Second` | `lock.go:16` | Already named `defaultLockTimeout` | **No deviation** -- follows convention. |
-| T4 | `50 * time.Millisecond` | `lock.go:55` | Inline in `time.Sleep` | Extract to `const lockRetryBackoff` in `pkg/index/` |
+| T1 | `5 * time.Second` | `internal/cmd/qualitygate/constants.go` | **Fixed**: extracted as `probeRetryInterval` | Done |
+| T2 | `5 * time.Second` | `pkg/serverprobe/constants.go` | **Fixed**: extracted as `defaultProbeTimeout` | Done |
+| T3 | `5 * time.Second` | `pkg/index/lock.go` | **No deviation**: already named `defaultLockTimeout` | N/A |
+| T4 | `50 * time.Millisecond` | `pkg/index/lock.go` | **Fixed**: extracted as `lockRetryBackoff` | Done |
 
 ### Sentinel Deviations
 
 | # | Magic Value | File:Line | Current State | Remediation |
 |---|---|---|---|---|
-| S1 | `99999` | `list.go:442` | Inline in `sortKey` | Extract to `const fallbackSortPriority` with doc comment |
-| S2 | `99999` | `claim.go:376` | Inline in cycle depth assignment | Extract to `const unreachableDepth` with doc comment |
+| S1 | `99999` | `internal/cmd/task/list.go` | **Fixed**: extracted as `fallbackSortPriority` with doc comment | Done |
+| S2 | `99999` | `internal/cmd/task/claim.go` | **Fixed**: extracted as `unreachableDepth` with doc comment | Done |
 
 ### Retry Parameter Deviations
 
 | # | Magic Value | File:Line | Current State | Remediation |
 |---|---|---|---|---|
-| R1 | `3` (retry count) | `quality_gate.go:351` | Inline in `probeWithRetry` call | Extract to `const maxProbeRetries` in `internal/cmd/` |
-| R2 | `3` (`maxFixTasksPerStep`) | `quality_gate.go:34` | Already named constant | **No deviation** -- follows convention. |
-| R3 | `5` (concise error lines) | `quality_gate.go:169,187` | Inline in `ExtractConciseError` calls | Extract to `const conciseErrorMaxLines` in `internal/cmd/` |
-| R4 | `10` (max source files) | `quality_gate.go:603` | Inline in extractSourceFiles | Extract to `const maxSourceFiles` in `internal/cmd/` |
+| R1 | `3` (retry count) | `internal/cmd/qualitygate/constants.go` | **Fixed**: extracted as `maxProbeRetries` | Done |
+| R2 | `3` (`maxFixTasksPerStep`) | `quality_gate.go:34` | **No deviation**: already named constant | N/A |
+| R3 | `5` (concise error lines) | `internal/cmd/qualitygate/constants.go` | **Fixed**: extracted as `conciseErrorMaxLines` | Done |
+| R4 | `10` (max source files) | `internal/cmd/qualitygate/constants.go` | **Fixed**: extracted as `maxSourceFiles` | Done |
 
 ### Permission Deviations
 

@@ -144,10 +144,7 @@ const (
 const defaultHealthPath = "/health"
 ```
 
-**Deviation** (from Evidence -- `quality_gate.go`):
-- `"tests/results/raw-output.txt"` appears as inline literal at lines 255 and 284
-- `"tests/results/unit-raw-output.txt"` appears as inline literal at lines 159, 186, and 507
-- Both should reference constants from `pkg/feature/constants.go` (or `pkg/testrunner/constants.go`)
+**No deviation** -- hardcoded path strings in quality gate code have been extracted to named constants. The constants `TestOutputFileName` and `UnitTestOutputFileName` in `pkg/feature/constants.go` are now used throughout production code. Test files may still use inline literals for test-specific paths.
 
 **Scope**: [CROSS]
 
@@ -171,13 +168,12 @@ const maxProbeRetries    = 3
 const fiveSeconds = 5 * time.Second  // semantically distinct!
 ```
 
-**Deviation** (from Evidence -- `quality_gate.go`):
-- `5 * time.Second` passed inline to `probeWithRetry()` at line 351 -- should be `const probeRetryInterval`
-- Retry count `3` passed inline to `probeWithRetry()` at line 351 -- should be `const maxProbeRetries`
-- `5 * time.Second` hardcoded in `serverprobe.go:61` -- should be `const defaultProbeTimeout`
-- `50 * time.Millisecond` hardcoded in `lock.go:55` -- should be `const lockRetryBackoff`
-
-**Note**: `defaultLockTimeout` in `lock.go:16` already follows this convention -- no deviation.
+**No deviation** -- all timeout and duration values have been extracted to named constants:
+- `probeRetryInterval = 5 * time.Second` in `internal/cmd/qualitygate/constants.go`
+- `maxProbeRetries = 3` in `internal/cmd/qualitygate/constants.go`
+- `defaultProbeTimeout = 5 * time.Second` in `pkg/serverprobe/constants.go`
+- `lockRetryBackoff = 50 * time.Millisecond` in `pkg/index/lock.go`
+- `defaultLockTimeout` in `pkg/index/lock.go`
 
 **Scope**: [CROSS]
 
@@ -199,11 +195,11 @@ const (
 
 **Exception**: Named color strings inside a single mapping function (e.g., `statusColor()` returning `"green"`, `"red"`, `"yellow"`, `"gray"`) are acceptable without extraction. The function itself is the centralization point.
 
-**Deviation** (from Evidence -- `init.go`, `init_surfaces.go`, `list.go`):
-- `"#7DCFFF"` duplicated across `init.go:217` and `init_surfaces.go:20`
-- `"#FF8700"` hardcoded in `init_surfaces.go:17`
-- `"#9ECE6A"` hardcoded in `init_surfaces.go:23`
-- Raw ANSI codes `"\033[33m"` and `"\033[0m"` in `list.go:181`
+**No deviation** -- hex color codes have been centralized in `internal/cmd/styles.go`:
+- `colorModeHighlight = "#7DCFFF"` in `styles.go`
+- `colorConflict = "#FF8700"` in `styles.go`
+- `colorSource = "#9ECE6A"` in `styles.go`
+- Raw ANSI codes in `list.go` have been cleaned up
 
 **Scope**: [CROSS]
 
@@ -222,9 +218,9 @@ const fallbackSortPriority = 99999
 const unreachableDepth = 99999
 ```
 
-**Deviation** (from Evidence -- `list.go`, `claim.go`):
-- `99999` hardcoded in `list.go:442` as fallback sort priority
-- `99999` hardcoded in `claim.go:376` as cycle task depth
+**No deviation** -- sentinel values have been extracted to named constants with doc comments:
+- `fallbackSortPriority = 99999` in `internal/cmd/task/list.go`
+- `unreachableDepth = 99999` in `internal/cmd/task/claim.go`
 
 **Scope**: [CROSS]
 
