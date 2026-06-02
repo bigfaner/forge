@@ -138,12 +138,12 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(dir, feature.FeaturesDir), 0755); err != nil {
 		t.Fatal(err)
 	}
-	_, err := CheckAllCompleted(false)
-	if err == nil {
-		t.Error("expected error when no feature set, got nil")
+	result, err := CheckAllCompleted(false)
+	if err != nil {
+		t.Errorf("expected no error when no feature set, got: %v", err)
 	}
-	if !strings.Contains(err.Error(), "No feature set") {
-		t.Errorf("expected 'No feature set' error, got: %v", err)
+	if result != nil {
+		t.Errorf("expected nil result when no feature set, got: %+v", result)
 	}
 }
 

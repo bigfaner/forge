@@ -62,8 +62,8 @@ type AllCompletedResult struct {
 }
 
 // CheckAllCompleted verifies all tasks are done and returns test context.
-// Returns (nil, nil) when tasks are not all done — caller should exit silently.
-// Returns (nil, error) for infrastructure failures (no project, no feature).
+// Returns (nil, nil) when tasks are not all done or no feature is set — caller should exit silently.
+// Returns (nil, error) for infrastructure failures (no project).
 func CheckAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	projectRoot, err := project.FindProjectRoot()
 	if err != nil {
@@ -75,7 +75,7 @@ func CheckAllCompleted(verbose bool) (*AllCompletedResult, error) {
 	featureSlug, err := feature.GetCurrentFeature(projectRoot)
 	if err != nil {
 		base.Debugf(verbose, "feature not found: %v", err)
-		return nil, base.ErrFeatureNotSet()
+		return nil, nil
 	}
 	base.Debugf(verbose, "feature: %s", featureSlug)
 
