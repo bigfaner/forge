@@ -5,72 +5,72 @@ description: Core concepts of the Journey-Contract test model, directory convent
 
 # Journey-Contract Test Model
 
-Forge 测试管道以用户工作流（Journey）为组织单元，通过 Contract 六维声明定义预期行为，由 Tag-Based Promotion 管理测试生命周期。
+The Forge test pipeline organizes around user workflows (Journeys), defines expected behavior through six-dimension Contract declarations, and manages test lifecycles via Tag-Based Promotion.
 
 ## Core Concepts
 
 ### Journey
 
-Journey 描述用户完成某个目标的真实工作流，是测试的主要组织单元——一个 Journey 对应一个连贯的用户工作流。
+A Journey describes a real user workflow for achieving a goal. It is the primary organizational unit for testing — one Journey corresponds to one coherent user workflow.
 
 | Property | Description |
 |----------|-------------|
-| Name | kebab-case 标识符（如 `task-lifecycle`） |
-| Risk | `High`（有状态变更/数据丢失风险）、`Medium`（多步交互无不可逆副作用）、`Low`（只读操作） |
-| Steps | 有序的用户动作序列，每个带预期结果 |
-| Invariants | 跨步骤不变量，必须在整个 Journey 中成立 |
+| Name | kebab-case identifier (e.g., `task-lifecycle`) |
+| Risk | `High` (state changes / data loss risk), `Medium` (multi-step interactions without irreversible side effects), `Low` (read-only operations) |
+| Steps | Ordered sequence of user actions, each with expected outcomes |
+| Invariants | Cross-step constraints that must hold throughout the entire Journey |
 
-每个 Journey 在独立的临时工作目录中执行，防止并行执行时的交叉干扰。
+Each Journey executes in its own temporary working directory to prevent cross-contamination during parallel execution.
 
 ### Step
 
-Step 是 Journey 中的单个用户动作。每个 Step 映射到一个 Contract，包含一个或多个 Outcome。
+A Step is a single user action within a Journey. Each Step maps to a Contract containing one or more Outcomes.
 
 | Property | Description |
 |----------|-------------|
-| Sequence number | Journey 内的 1-based 序号 |
-| User action | 用户执行的操作（运行命令、点击按钮、发送请求等） |
-| Expected outcomes | 一个或多个 Outcome 声明，各有独立的 Preconditions |
+| Sequence number | 1-based index within the Journey |
+| User action | The operation the user performs (running a command, clicking a button, sending a request, etc.) |
+| Expected outcomes | One or more Outcome declarations, each with independent Preconditions |
 
 ### Contract
 
-Contract 是 Step 的验证机制，通过六维声明定义系统预期行为。所有维度在 Outcome 层声明，Invariants 额外在 Journey 层声明。
+A Contract is the verification mechanism for a Step, defining expected system behavior through six-dimension declarations. All dimensions are declared at the Outcome level; Invariants are additionally declared at the Journey level.
 
 ### Outcome
 
-Outcome 是特定场景（成功、错误变体、边界情况）下完整的 Contract 维度声明集合。同一 Step 内的 Outcome 通过 Preconditions 区分，且必须互斥——同一系统状态下最多只有一个 Outcome 的 Preconditions 可被满足。
+An Outcome is a complete set of Contract dimension declarations for a specific scenario (success, error variant, edge case). Outcomes within the same Step are distinguished by Preconditions and must be mutually exclusive — at most one Outcome's Preconditions can be satisfied for any given system state.
 
 | Property | Required | Description |
 |----------|----------|-------------|
-| Name | Yes | 描述性标签（如 `success`、`not-in-progress`） |
-| Preconditions | Yes | 使此 Outcome 成为活跃状态所需的系统状态 |
-| Input | Yes | 用户提供给系统的输入 |
-| Output | Yes | 系统产生的输出（语义描述符） |
-| State | Yes | 系统状态变更 |
-| Side-effect | No | 外部副作用（默认 `none`） |
-| Invariants | No | 步骤级不变量（默认无约束） |
+| Name | Yes | Descriptive label (e.g., `success`, `not-in-progress`) |
+| Preconditions | Yes | System state required for this Outcome to become active |
+| Input | Yes | Input provided by the user to the system |
+| Output | Yes | Output produced by the system (semantic descriptors) |
+| State | Yes | System state changes |
+| Side-effect | No | External side effects (default: `none`) |
+| Invariants | No | Step-level invariants (default: no constraints) |
 
 ## Semantic Descriptors
 
-所有维度值使用语义描述符——自然语言描述预期行为，表达业务意图而非精确匹配模式。
+All dimension values use semantic descriptors — natural language descriptions of expected behavior that express business intent rather than precise matching patterns.
 
-**规则**：
-- 禁止包含 regex 语法（`\d`、`.*`、`[^...]`、`(?:...)`、`\s`、`\w`、`\b`、`$`、`^` 等）
-- 禁止包含框架特定的断言模式
-- 必须是表达业务意图的自然语言
+**Rules**:
+- MUST NOT contain regex syntax (`\d`, `.*`, `[^...]`, `(?:...)`, `\s`, `\w`, `\b`, `$`, `^`, etc.)
+- MUST NOT contain framework-specific assertion patterns
+- MUST be natural language expressing business intent
 
-正确示例：
+Correct examples:
 - `"success confirmation containing feature-slug"`
 - `"task status changed from pending to in_progress"`
 - `"stderr contains error message about missing feature"`
 
-错误示例（这些属于 gen-test-scripts 阶段）：
-- `"Feature\s+([\w-]+)\s+created"`（regex）
-- `"assert.Equal(t, 0, exitCode)"`（框架断言）
+Incorrect examples (these belong in the gen-test-scripts phase):
+- `"Feature\s+([\w-]+)\s+created"` (regex)
+- `"assert.Equal(t, 0, exitCode)"` (framework assertion)
 
 ## Contract File Format
 
-每个 Contract 存储为结构化 Markdown 文件，人可读且机器可解析。
+Each Contract is stored as a structured Markdown file that is both human-readable and machine-parseable.
 
 ### Template
 
@@ -98,65 +98,65 @@ Outcome 是特定场景（成功、错误变体、边界情况）下完整的 Co
 
 ### Parseable Structure Rules
 
-1. **Journey name**: 从文件路径提取：`docs/features/<slug>/testing/<journey>/contracts/step-N-*.md`
-2. **Step sequence**: 从文件名提取：`step-<N>-<slug>.md`
-3. **Outcome sections**: `## Outcome "<name>"` 标题声明新 Outcome 块
-4. **Dimension format**: 每行 `- <DimensionName>: <value>`
-5. **Journey Invariants**: `## Journey Invariants` 节在每个 Contract 文件中必须出现且仅出现一次
+1. **Journey name**: Extracted from the file path: `docs/features/<slug>/testing/<journey>/contracts/step-N-*.md`
+2. **Step sequence**: Extracted from the filename: `step-<N>-<slug>.md`
+3. **Outcome sections**: `## Outcome "<name>"` headings declare new Outcome blocks
+4. **Dimension format**: Each line follows `- <DimensionName>: <value>`
+5. **Journey Invariants**: The `## Journey Invariants` section MUST appear exactly once in each Contract file
 
 ## Directory Convention
 
 ```
 docs/features/<slug>/testing/
-  <journey-name>/                     # Journey 目录（kebab-case）
-    journey.md                        # Journey 叙述文档
-    contracts/                        # Contract 规范目录
-      step-1-<action-slug>.md         # Step 1 的 Contract
-      step-2-<action-slug>.md         # Step 2 的 Contract
+  <journey-name>/                     # Journey directory (kebab-case)
+    journey.md                        # Journey narrative document
+    contracts/                        # Contract specification directory
+      step-1-<action-slug>.md         # Contract for Step 1
+      step-2-<action-slug>.md         # Contract for Step 2
       step-N-<action-slug>.md
 
 tests/
-  <journey-name>/                     # 生成的测试文件
+  <journey-name>/                     # Generated test files
     <test-file-1>
     <test-file-2>
 ```
 
 ### Rules
 
-1. **Journey 目录**：`docs/features/<slug>/testing/<journey>/` 以用户工作流命名（kebab-case），包含 journey.md 和 contracts/
-2. **Contract 目录**：`testing/<journey>/contracts/` 包含每个 Step 的 Contract 规范文件，命名 `step-<N>-<action-slug>.md`
-3. **测试文件**：由 gen-test-scripts 直接生成到 `tests/<journey>/`，遵循项目测试框架命名约定
-4. **无 staging 区域**：测试直接生成到最终位置，不经过中间目录
+1. **Journey directory**: `docs/features/<slug>/testing/<journey>/` is named after the user workflow (kebab-case), containing journey.md and contracts/
+2. **Contract directory**: `testing/<journey>/contracts/` contains Contract specification files for each Step, named `step-<N>-<action-slug>.md`
+3. **Test files**: Generated directly into `tests/<journey>/` by gen-test-scripts, following project test framework naming conventions
+4. **No staging area**: Tests are generated directly to their final location, without intermediate directories
 
 ## Tag-Based Promotion
 
-测试通过标签而非文件移动管理生命周期：
+Tests manage their lifecycle via tags rather than file movement:
 
 | Stage | Tag | Action |
 |-------|-----|--------|
-| New | `@feature` | 新生成的测试自动注入 |
-| Promoted | `@regression` | `/run-tests` 自动升级 |
+| New | `@feature` | Automatically injected into newly generated tests |
+| Promoted | `@regression` | Automatically upgraded by `/run-tests` |
 | CI selection | -- | Use test framework's native tag filter (e.g., `go test -tags=regression`, `pytest -m regression`) |
 
-标签使用测试框架的原生机制（Go build tag、pytest marker、describe 分组等）。
+Tags use the test framework's native mechanism (Go build tags, pytest markers, describe groups, etc.).
 
-## Migration Guide: 旧测试模型 -> Journey-Contract 模型
+## Migration Guide: Old Test Model -> Journey-Contract Model
 
-旧模型按接口类型分类测试、使用单步 TC 格式、依赖 staging+graduation 生命周期。本指南提供迁移到 Journey-Contract 模型的完整映射和步骤。
+The old model classified tests by interface type, used single-step TC format, and relied on a staging+graduation lifecycle. This guide provides the complete mapping and steps for migrating to the Journey-Contract model.
 
 ### Concept Mapping
 
-| 旧模型概念 | 新模型概念 | 变化说明 |
-|-----------|-----------|---------|
-| 按接口类型分类（CLI/API/TUI/Web/Mobile） | 按 Journey（用户工作流）组织 | 组织维度从"技术接口"转向"用户场景" |
-| 单步 TC（一条命令/一个端点） | Step + Contract（工作流中的一步） | TC 成为 Journey 中的 Step，保留完整工作流上下文 |
-| TC Steps（自由格式操作列表） | Contract 六维声明（结构化验证） | 从非结构化描述升级为六维规范 |
-| TC Expected（自由文本预期） | Outcome（Preconditions 互斥的多结果） | 支持每步多结果（成功、失败、边界情况） |
-| Type 字段（CLI/API/TUI/Web/Mobile） | Journey 维度内的 interface-specific 描述 | 类型信息融入 Contract 维度而非顶层分类 |
-| Setup 声明（API 数据准备） | Contract Preconditions + Fact Table | 数据准备作为 Preconditions 约束 |
-| `{stepN.field}` 引用 | Contract 内的语义描述符 + gen-test-scripts 的精确匹配 | 声明阶段用自然语言，代码生成阶段用 Fact Table 精确匹配 |
-| staging 目录 + graduation 流程 | Tag-Based Promotion（`@feature` -> `@regression`） | 标签驱动而非文件移动 |
-| 6 个硬编码 language profile | Convention 驱动（`docs/conventions/testing/<surface>/core.md`） | 可扩展、可编辑的 Convention 文件 |
+| Old Model Concept | New Model Concept | Change Description |
+|-------------------|-------------------|-------------------|
+| Classification by interface type (CLI/API/TUI/Web/Mobile) | Organization by Journey (user workflow) | Organization axis shifted from "technical interface" to "user scenario" |
+| Single-step TC (one command / one endpoint) | Step + Contract (one step within a workflow) | TC becomes a Step within a Journey, preserving complete workflow context |
+| TC Steps (freeform operation list) | Contract six-dimension declarations (structured verification) | Upgraded from unstructured descriptions to six-dimension specifications |
+| TC Expected (freeform text expectations) | Outcome (Preconditions-mutually-exclusive multi-result) | Supports multiple results per step (success, failure, edge cases) |
+| Type field (CLI/API/TUI/Web/Mobile) | Interface-specific descriptions within the Journey dimension | Type information is embedded in Contract dimensions rather than top-level classification |
+| Setup declarations (API data preparation) | Contract Preconditions + Fact Table | Data preparation expressed as Preconditions constraints |
+| `{stepN.field}` references | Semantic descriptors within Contracts + precise matching via gen-test-scripts | Declaration phase uses natural language; code generation phase uses Fact Table for precise matching |
+| staging directory + graduation process | Tag-Based Promotion (`@feature` -> `@regression`) | Tag-driven rather than file movement |
+| 6 hardcoded language profiles | Convention-driven (`docs/conventions/testing/<surface>/core.md`) | Extensible, editable Convention files |
 
 ### Directory Restructuring
 
@@ -166,31 +166,31 @@ tests/
 tests/e2e/
   features/
     <feature-name>/
-      *_test.go            # 按 feature 分组的测试
-  *_test.go                # 顶层散落的测试
+      *_test.go            # Tests grouped by feature
+  *_test.go                # Top-level scattered tests
 ```
 
 #### New Structure
 
 ```
 docs/features/<slug>/testing/
-  <journey-name>/               # 按用户工作流分组
+  <journey-name>/               # Grouped by user workflow
     journey.md
     contracts/
       step-1-<action>.md
       step-N-<action>.md
 
 tests/
-  <journey-name>/               # 生成的测试文件
+  <journey-name>/               # Generated test files
     <test-files>
 ```
 
 ### Tag-Based Promotion
 
-| 流程 | 说明 |
-|------|------|
-| 测试直接生成到 `tests/<journey>/` | 无 staging 目录 |
-| 自动 `@feature` tag | 无需显式 staging |
-| `/run-tests` (tag promotion) | 标签从 `@feature` 变为 `@regression` |
-| 文件始终在最终位置 | 无文件移动 |
-| 使用测试框架原生的标签过滤机制（如 `go test -tags=regression`） | 按标签选择 |
+| Process | Description |
+|---------|-------------|
+| Tests generated directly to `tests/<journey>/` | No staging directory |
+| Automatic `@feature` tag | No explicit staging required |
+| `/run-tests` (tag promotion) | Tag changes from `@feature` to `@regression` |
+| Files always in their final location | No file movement |
+| Uses test framework's native tag filtering mechanism (e.g., `go test -tags=regression`) | Select by tag |

@@ -88,9 +88,9 @@
       "title": "Translate init-justfile + run-tests + gen-contracts surface rules to English",
       "priority": "P2",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "17-translate-surface-rules-en.md",
-      "record": "",
+      "record": "records/17-translate-surface-rules-en.md",
       "type": "doc"
     },
     "18-reduce-cross-skill-redundancy": {

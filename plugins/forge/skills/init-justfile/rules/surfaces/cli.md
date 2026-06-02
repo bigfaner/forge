@@ -1,40 +1,40 @@
 # Surface: cli
 
-> **测试类型参考**：CLI surface 的测试类型为 **CLI 功能测试（CLI Functional Test）**，通过子进程执行验证进程退出码 + stdout/stderr 输出。
+> **Test Type Reference**: The test type for CLI surface is **CLI Functional Test**, which verifies process exit codes + stdout/stderr output via subprocess execution.
 
-## 编排序列
+## Orchestration Sequence
 
-| 步骤 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
-|------|---------|---------|---------|---------|
-| test | 测试通过 | 测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | 清理完成 | 清理失败（残留进程） | — | 结束 |
+| Step | Exit Code 0 | Exit Code 1 | Exit Code 2 | Next Action |
+|------|-------------|-------------|-------------|-------------|
+| test | Tests passed | Tests failed | Test environment error (retryable) | Proceed to teardown |
+| teardown | Cleanup complete | Cleanup failed (residual processes) | — | End |
 
-注意事项：
-- **无 dev 步骤**：CLI surface 不启动持久化服务
-- **无 probe 步骤**：CLI 工具无需 HTTP 健康检查
-- **无聚合配方**：CLI surface 不生成 `cli` 聚合配方
-- test 退出码 2 允许重跑，skill 应提示用户 "测试环境异常，建议重试"
+Notes:
+- **No dev step**: CLI surface does not start a persistent service
+- **No probe step**: CLI tools do not require HTTP health checks
+- **No aggregate recipe**: CLI surface does not generate a `cli` aggregate recipe
+- Exit code 2 for test step allows re-running; the skill should prompt the user "Test environment error, consider retrying"
 
-## 配方调用契约
+## Recipe Invocation Contract
 
-| 配方名 | just 签名 | 退出码 0 语义 | 退出码 1 语义 |
-|--------|----------|--------------|--------------|
-| cli-test | `just cli-test [journey]` | 所有 CLI 功能测试通过 | 至少一个测试失败 |
-| cli-teardown | `just cli-teardown` | 清理完成 | 清理失败 |
+| Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
+|-------------|---------------|----------------------|----------------------|
+| cli-test | `just cli-test [journey]` | All CLI functional tests passed | At least one test failed |
+| cli-teardown | `just cli-teardown` | Cleanup complete | Cleanup failed |
 
-实现约束：
-- 每个配方必须支持 `[linux]` 和 `[windows]` 双平台变体
-- `cli-teardown` 必须用 `just --dry-run` 验证语法
-- **不生成** `cli-dev`、`cli-probe` 或 `cli` 聚合配方
+Implementation constraints:
+- Each recipe must support both `[linux]` and `[windows]` platform variants
+- `cli-teardown` must be validated with `just --dry-run`
+- **Do not generate** `cli-dev`, `cli-probe`, or `cli` aggregate recipes
 
-## journey 过滤策略
+## Journey Filter Strategy
 
-| journey 标签 | 匹配规则 | 说明 |
-|-------------|---------|------|
-| `@cli` | 精确匹配 | cli surface 的专用 journey |
-| 其他 | 忽略 | 非 cli 相关 journey 不由本规则处理 |
+| Journey Tag | Match Rule | Description |
+|-------------|-----------|-------------|
+| `@cli` | Exact match | Journey dedicated to cli surface |
+| Other | Ignore | Non-cli journeys are not handled by this rule |
 
-## 配方模板（双平台）
+## Recipe Template (Dual Platform)
 
 ```just
 # Run CLI functional tests (optionally filter by journey)
@@ -65,4 +65,4 @@ cli-teardown:
     echo "TODO: implement cli-teardown" >&2; exit 1
 ```
 
-**LLM 指令**：将 TODO 桩替换为从语言模板和 Convention 知识推导出的实际命令。上述桩代码展示了所需的配方结构和双平台属性模式。**不生成** `cli-dev`、`cli-probe` 或 `cli` 聚合配方。
+**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern. **Do not generate** `cli-dev`, `cli-probe`, or `cli` aggregate recipes.

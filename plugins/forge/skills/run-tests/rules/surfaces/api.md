@@ -1,62 +1,62 @@
-# Surface: api — API 功能测试编排
+# Surface: api — API Functional Test Orchestration
 
-本规则文件定义 run-tests skill 对 api surface 的 API 功能测试编排序列。消费方为 SKILL.md 调度器。
+This rule file defines the API functional test orchestration sequence for the api surface in the run-tests skill. The consumer is the SKILL.md dispatcher.
 
-## 编排序列
+## Orchestration Sequence
 
-| 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |
-|------|----------|---------|---------|---------|---------|
-| dev | `just <recipe-prefix>-dev` | API 服务启动成功，等待就绪 | 启动失败（依赖缺失/端口占用） | — | 进入 probe |
-| probe | `just <recipe-prefix>-probe` | 健康检查通过（GET /healthz 返回 2xx） | 健康检查超时（服务未就绪） | — | 进入 test |
-| test | `just <recipe-prefix>-test <journey>` | API 功能测试通过 | API 功能测试失败 | 测试环境异常（需重试） | 进入 teardown |
-| teardown | `just <recipe-prefix>-teardown` | 清理完成 | 清理失败（残留进程） | — | 结束 |
+| Step | just Recipe | Exit Code 0 | Exit Code 1 | Exit Code 2 | Next Action |
+|------|------------|-------------|-------------|-------------|-------------|
+| dev | `just <recipe-prefix>-dev` | API service started successfully, waiting for readiness | Startup failed (missing dependencies / port in use) | — | Proceed to probe |
+| probe | `just <recipe-prefix>-probe` | Health check passed (GET /healthz returns 2xx) | Health check timed out (service not ready) | — | Proceed to test |
+| test | `just <recipe-prefix>-test <journey>` | API functional tests passed | API functional tests failed | Test environment error (retryable) | Proceed to teardown |
+| teardown | `just <recipe-prefix>-teardown` | Cleanup complete | Cleanup failed (residual processes) | — | End |
 
-## Probe 重试策略
+## Probe Retry Strategy
 
-- 最多重试 3 次，间隔 5 秒
-- 3 次均失败视为退出码 1（retryable）
+- Maximum 3 retries with 5-second intervals
+- If all 3 attempts fail, treat as exit code 1 (retryable)
 
-## 失败处理
+## Failure Handling
 
-### dev 失败
+### dev failure
 
-dev 退出非零时**不继续**后续步骤，直接执行 teardown 并以 dev 的退出码退出。
+When dev exits non-zero, **do not continue** with subsequent steps; proceed directly to teardown and exit with dev's exit code.
 
-### probe 失败（HARD-GATE）
+### probe failure (HARD-GATE)
 
 <HARD-GATE>
-probe 失败后，在同一编排周期内：
-- **禁止**重试 probe（重试由 probe 重试策略在上限内处理，非周期级重试）
-- **禁止**重启 dev
-- 必须执行 teardown 后退出
+After probe fails, within the same orchestration cycle:
+- **MUST NOT** retry probe (retries are handled by the probe retry strategy within limits, not cycle-level retries)
+- **MUST NOT** restart dev
+- MUST execute teardown before exiting
 </HARD-GATE>
 
-probe 最终失败后：
-- 退出码 1（retryable）：执行 teardown，以 exit 1 退出
-- 退出码 2（blocking）：执行 teardown，以 exit 2 退出
+After probe ultimately fails:
+- Exit code 1 (retryable): Execute teardown, exit with exit code 1
+- Exit code 2 (blocking): Execute teardown, exit with exit code 2
 
-### test 失败
+### test failure
 
-- 退出码 1：执行 teardown，以 exit 1 退出
-- 退出码 2（retryable）：执行 teardown，提示用户 "测试环境异常，建议重试"，以 exit 2 退出
+- Exit code 1: Execute teardown, exit with exit code 1
+- Exit code 2 (retryable): Execute teardown, prompt the user "Test environment error, consider retrying", exit with exit code 2
 
-### teardown 失败
+### teardown failure
 
-teardown 失败时记录错误，保留 `.forge/test-state.json` 用于恢复。以当前步骤的退出码退出。
+When teardown fails, log the error and preserve `.forge/test-state.json` for recovery. Exit with the current step's exit code.
 
-## Suite 名称
+## Suite Name
 
-测试报告 suite 名称使用 `api-functional/<journey-name>` 格式。
+Test report suite names use the `api-functional/<journey-name>` format.
 
-## Journey 过滤
+## Journey Filter
 
-| 标签 | 匹配规则 |
-|------|---------|
-| `@api` | 精确匹配 |
+| Tag | Match Rule |
+|-----|-----------|
+| `@api` | Exact match |
 
-## Per-Journey 执行
+## Per-Journey Execution
 
-API surface 的 dev/probe 生命周期包裹所有 journey 测试。使用 SKILL.md Step 1 确定的 `recipe-prefix`（单 surface 项目为 surface-type "api"，多 surface 项目为 surface-key）构造配方名：
+The dev/probe lifecycle for API surface wraps all journey tests. Use the `recipe-prefix` determined in SKILL.md Step 1 (for single-surface projects, the surface-type "api"; for multi-surface projects, the surface-key) to construct recipe names:
 
 ```
 just <recipe-prefix>-dev
@@ -68,4 +68,4 @@ for each journey in JOURNEYS:
 just <recipe-prefix>-teardown
 ```
 
-dev 和 probe 执行一次，per-journey 循环 test，teardown 执行一次。测试配方调用格式为 `just <recipe-prefix>-test <journey>`，其中 `<journey>` 是从 `docs/features/<slug>/testing/` 发现的目录名。`<recipe-prefix>` 在单 surface 项目中为 "api"，在多 surface 项目中为对应的 surface-key。
+dev and probe execute once, test runs in a per-journey loop, teardown executes once. The test recipe invocation format is `just <recipe-prefix>-test <journey>`, where `<journey>` is a directory name discovered from `docs/features/<slug>/testing/`. `<recipe-prefix>` is "api" for single-surface projects, or the corresponding surface-key for multi-surface projects.
