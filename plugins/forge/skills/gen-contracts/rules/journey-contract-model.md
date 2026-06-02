@@ -156,7 +156,7 @@ tests/
 | Setup 声明（API 数据准备） | Contract Preconditions + Fact Table | 数据准备作为 Preconditions 约束 |
 | `{stepN.field}` 引用 | Contract 内的语义描述符 + gen-test-scripts 的精确匹配 | 声明阶段用自然语言，代码生成阶段用 Fact Table 精确匹配 |
 | staging 目录 + graduation 流程 | Tag-Based Promotion（`@feature` -> `@regression`） | 标签驱动而非文件移动 |
-| 6 个硬编码 language profile | Convention 驱动（`docs/conventions/testing-<scope>.md`） | 可扩展、可编辑的 Convention 文件 |
+| 6 个硬编码 language profile | Convention 驱动（`docs/conventions/testing/<surface>/core.md`） | 可扩展、可编辑的 Convention 文件 |
 
 ### Directory Restructuring
 

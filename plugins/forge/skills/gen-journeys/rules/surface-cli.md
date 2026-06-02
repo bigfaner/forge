@@ -2,7 +2,7 @@
 
 CLI surface 适用于以命令行方式交互的应用程序。测试重点是 exit code、stdout/stderr 输出、参数校验和 subprocess 隔离。
 
-**Test type**: CLI 功能测试 (CLI Functional Test). Test type: CLI 功能测试，通过子进程调用验证进程退出码、stdout/stderr 输出和参数校验行为。Generated test code MUST use `@cli-functional` tags, NOT `@e2e`.
+**Test type**: CLI Functional Test. Verifies process exit codes, stdout/stderr output, and argument validation via subprocess invocation. Generated test code MUST use `@cli-functional` tags, NOT `@e2e`.
 
 ## Detection Signals
 

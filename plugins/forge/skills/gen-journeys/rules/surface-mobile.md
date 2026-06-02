@@ -2,7 +2,7 @@
 
 Mobile surface 适用于原生或跨平台移动应用程序（Android、iOS）。这是 Forge 的 **best-effort** 支持级别 -- 只生成 Maestro YAML 骨架和 deep link 测试，复杂场景标记 `manual-only`。
 
-**Test type**: 移动端端到端测试 (Mobile E2E Test). Test type: 移动端端到端测试，通过 Maestro YAML / 设备自动化验证 UI 元素可见性、用户操作响应和 deep link 导航。Generated test code MUST use `@mobile-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Web).
+**Test type**: Mobile E2E Test. Verifies UI element visibility, user interaction responses, and deep link navigation via Maestro YAML / device automation. Generated test code MUST use `@mobile-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Web).
 
 ## Detection Signals
 

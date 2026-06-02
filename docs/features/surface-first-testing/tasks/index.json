@@ -68,9 +68,9 @@
       "title": "Unify gen-journeys test type format + fix gen-contracts stale paths",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "15-unify-surface-descriptions.md",
-      "record": "",
+      "record": "records/15-unify-surface-descriptions.md",
       "type": "doc"
     },
     "16-fix-concept-attribution": {

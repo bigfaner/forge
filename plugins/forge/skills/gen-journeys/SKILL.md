@@ -302,7 +302,7 @@ gen-journeys output must be in a format that gen-contracts can directly consume.
 - Edge cases referencing happy path steps with divergent preconditions
 - Journey Invariants (cross-step properties)
 
-This structure directly maps to gen-contracts' input expectations (Section 5.1 of model-and-directory-spec.md).
+This structure directly maps to gen-contracts' input expectations (defined in gen-contracts/rules/journey-contract-model.md).
 </HARD-RULE>
 
 ### Batch Processing
@@ -383,10 +383,10 @@ AUTO_COMMIT mode is intended for automated pipeline execution where human review
 
 ## Reference
 
-The authoritative model definition is at `docs/features/<slug>/design/model-and-directory-spec.md` (if it exists in the project). Key concepts used by this skill:
+The authoritative model definition is at `gen-contracts/rules/journey-contract-model.md` (core concepts: Journey, Step, Contract, Outcome, directory conventions, tag-based promotion). Key concepts used by this skill:
 
-- **Journey**: User's real workflow to accomplish a goal (Section 1.1)
-- **Step**: Single user action within a Journey (Section 1.2)
-- **Risk Classification**: High/Medium/Low severity guiding test density (Section 1.1)
-- **Journey Invariants**: Cross-step properties that must hold throughout (Section 1.3)
-- **Semantic Descriptors**: Natural-language descriptions used in Contracts (Section 1.5)
+- **Journey**: User's real workflow to accomplish a goal
+- **Step**: Single user action within a Journey
+- **Risk Classification**: High/Medium/Low severity guiding test density
+- **Journey Invariants**: Cross-step properties that must hold throughout
+- **Semantic Descriptors**: Natural-language descriptions used in Contracts

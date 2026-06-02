@@ -32,4 +32,10 @@ mode: quick
 | 9 | Fix stale test-type-model references in gen-journeys + run-tests + init-justfile | pending | 9-fix-rules-refs.md |
 | 10 | Fix guide.md stale reference + unify test directory strategy | pending | 10-fix-guide-directory-strategy.md |
 | 11 | Fix recipe parameter mismatch + run-tests surface-key usage | pending | 11-fix-recipe-params.md |
-| 12 | Fix gen-contracts: surface detection, Convention loading, surfaceType naming | pending | 12-fix-gen-contracts.md |
+| 12 | Fix gen-contracts: surface detection, Convention loading, surfaceType naming | completed | 12-fix-gen-contracts.md |
+| 13 | Rewrite test-guide draft-generation.md for surface-first + remove orphan template | pending | 13-fix-draft-generation.md |
+| 14 | Fix test-guide test directory paths in SKILL.md + surface templates | pending | 14-fix-test-guide-paths.md |
+| 15 | Unify gen-journeys test type format + fix gen-contracts stale paths | pending | 15-unify-surface-descriptions.md |
+| 16 | Fix gen-contracts concept attribution + run-tests cross-skill reference | pending | 16-fix-concept-attribution.md |
+| 17 | Translate init-justfile + run-tests + gen-contracts surface rules to English | pending | 17-translate-surface-rules-en.md |
+| 18 | Reduce cross-skill redundancy in surface detection + orchestration | pending | 18-reduce-cross-skill-redundancy.md |
