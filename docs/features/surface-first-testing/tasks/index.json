@@ -98,9 +98,9 @@
       "title": "Reduce cross-skill redundancy in surface detection + orchestration",
       "priority": "P2",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "18-reduce-cross-skill-redundancy.md",
-      "record": "",
+      "record": "records/18-reduce-cross-skill-redundancy.md",
       "type": "doc"
     },
     "2-rewrite-test-guide": {

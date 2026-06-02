@@ -204,78 +204,31 @@ Execute the sequence defined in the loaded rule file's "Orchestration Sequence" 
 
 #### 4a. Web/API/Mobile Sequence (full lifecycle)
 
-Execute steps in order: dev -> probe -> **[per-journey test loop]** -> teardown (mobile adds test-setup before dev).
-
-**Lifecycle model**: dev and probe execute **once**. Then for each journey in `JOURNEYS`, execute `just <recipe-prefix>-test <journey>`. Finally teardown executes **once**. Use `recipe-prefix` from Step 1 (surface-key for multi-surface projects, surface-type for single-surface projects).
+Execute: dev -> probe -> **[per-journey test loop]** -> teardown. dev and probe execute **once**, then per-journey tests loop, teardown executes **once**.
 
 **Sequence:**
 
 1. Execute `just <recipe-prefix>-dev`
 2. Execute `just <recipe-prefix>-probe` (with retry logic)
-3. **For each journey in `JOURNEYS`**:
-   - Execute `just <recipe-prefix>-test <journey>`
-   - Record results for this journey
-   - On test failure: execute teardown, exit (see failure handling below)
+3. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>-test <journey>`, record results
 4. Execute `just <recipe-prefix>-teardown`
 
-**For each step:**
-
-1. Execute the just recipe
-2. Check exit code
-3. Follow the rule file's failure handling instructions for that exit code
-
-**Probe HARD-GATE** (web, api, mobile only):
-
-<HARD-GATE>
-After probe fails (all retries exhausted):
-- Execute teardown immediately
-- Exit with probe's exit code
-- Do NOT retry probe or restart dev in this orchestration cycle
-</HARD-GATE>
-
-**Probe retry logic** (web, api, mobile only):
-
-When probe returns non-zero:
-- Retry up to 3 times with 5-second intervals
-- If all 3 retries fail, treat as probe failure (exit code 1)
-- If any retry succeeds (exit 0), proceed to per-journey test loop
-
-**Dev failure** (web, api, mobile only):
-
-When dev returns non-zero:
-- Execute teardown immediately
-- Exit with dev's exit code
-
-**Test failure (per journey):**
-
-- Exit code 1: Execute teardown, exit 1
-- Exit code 2: Execute teardown, suggest retry ("Test environment error, suggest retry"), exit 2
-
-**Teardown execution:**
+See the loaded surface rule file (`rules/surfaces/<type>.md`) for per-step failure handling (dev/probe/test/teardown exit codes), probe retry strategy, and probe HARD-GATE.
 
 <HARD-RULE>
 Teardown is mandatory. Execute teardown even when a previous step fails.
 </HARD-RULE>
 
-After successful teardown, delete `.forge/test-state.json`.
-
-If teardown fails, log the error and leave `.forge/test-state.json` for recovery on next run.
-
 #### 4b. CLI/TUI Sequence (simplified)
 
-Execute: **[per-journey test loop]** -> teardown.
-
-No dev, probe, or probe retry logic applies. Use `recipe-prefix` from Step 1 (surface-key for multi-surface projects, surface-type for single-surface projects).
+Execute: **[per-journey test loop]** -> teardown. No dev or probe steps.
 
 **Sequence:**
 
-1. **For each journey in `JOURNEYS`**:
-   - Execute `just <recipe-prefix>-test <journey>`
-   - Record results for this journey
-   - On test failure: execute teardown, exit (see failure handling below)
+1. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>-test <journey>`, record results
 2. Execute `just <recipe-prefix>-teardown`
 
-Follow the same failure handling rules for test and teardown as 4a.
+See the loaded surface rule file (`rules/surfaces/<type>.md`) for per-step failure handling. Teardown follows the same HARD-RULE as 4a.
 
 ### Step 5: Parse Results
 

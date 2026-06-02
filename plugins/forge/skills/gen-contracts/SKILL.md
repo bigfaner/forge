@@ -55,26 +55,7 @@ Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contra
 
 ### 0.1 Surface Detection
 
-Detect the project's surface types using the `forge surfaces` CLI command:
-
-```bash
-forge surfaces .
-```
-
-**Exit code contract**:
-
-| Exit Code | Meaning | Action |
-|-----------|---------|--------|
-| 0 | Surface types found. stdout contains one surface type per line (e.g., `web`, `api`). | Parse stdout to collect all surface type strings. Proceed to Convention loading. |
-| 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
-
-**Detection flow**:
-
-1. Run `forge surfaces .` (or the relevant source path for the feature being tested)
-2. If exit code is 0: parse stdout to collect all surface type strings (one per line)
-3. If exit code is 1: pause the pipeline and ask the user to configure surfaces
-
-**Supported surface types**: `web`, `api`, `cli`, `tui`, `mobile`
+Detect the project's surface types via `forge surfaces`. See `gen-journeys/SKILL.md` "Surface Detection" section for the full detection flow, exit code contract, and detection flow steps.
 
 <HARD-RULE>
 Surface detection must complete before Convention loading begins. If the `forge surfaces` command returns exit code 1, the pipeline must pause and wait for user input. Never proceed with a guessed surface type. Do NOT scan project files independently for surface detection -- always use `forge surfaces <path>`.

@@ -52,21 +52,9 @@ An Outcome is a complete set of Contract dimension declarations for a specific s
 
 ## Semantic Descriptors
 
-All dimension values use semantic descriptors — natural language descriptions of expected behavior that express business intent rather than precise matching patterns.
+All dimension values use semantic descriptors -- natural language descriptions of expected behavior that express business intent rather than precise matching patterns.
 
-**Rules**:
-- MUST NOT contain regex syntax (`\d`, `.*`, `[^...]`, `(?:...)`, `\s`, `\w`, `\b`, `$`, `^`, etc.)
-- MUST NOT contain framework-specific assertion patterns
-- MUST be natural language expressing business intent
-
-Correct examples:
-- `"success confirmation containing feature-slug"`
-- `"task status changed from pending to in_progress"`
-- `"stderr contains error message about missing feature"`
-
-Incorrect examples (these belong in the gen-test-scripts phase):
-- `"Feature\s+([\w-]+)\s+created"` (regex)
-- `"assert.Equal(t, 0, exitCode)"` (framework assertion)
+See `rules/dimension-rules.md` "Semantic Descriptors" section for the full rules (regex prohibition, good/bad examples) and the HARD-RULE.
 
 ## Contract File Format
 
