@@ -1,6 +1,6 @@
 # Surface: api
 
-> **测试类型参考**：API surface 的测试类型为 **API 功能测试（API Functional Test）**，通过 HTTP 客户端验证 HTTP 状态码 + 响应体 JSON + 响应 Header。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **测试类型参考**：API surface 的测试类型为 **API 功能测试（API Functional Test）**，通过 HTTP 客户端验证 HTTP 状态码 + 响应体 JSON + 响应 Header。
 
 ## 编排序列
 

@@ -2,7 +2,7 @@
 
 Web surface 适用于基于浏览器的 Web 应用程序（React、Vue、Svelte 等）。测试重点是用户交互流程、状态转换、可访问性和浏览器自动化。
 
-**Test type**: Web 端到端测试 (Web E2E Test). Test type definition and classification criteria: see `docs/reference/test-type-model.md`. Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile).
+**Test type**: Web 端到端测试 (Web E2E Test). Test type: Web 端到端测试，通过浏览器自动化验证 DOM 元素可见性、用户操作响应和页面状态转换。Generated test code MUST use `@web-e2e` tags. This is one of the two surfaces where "e2e" terminology is correct (the other being Mobile).
 
 ## Detection Signals
 

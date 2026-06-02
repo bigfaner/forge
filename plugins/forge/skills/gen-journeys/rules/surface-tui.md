@@ -2,7 +2,7 @@
 
 TUI surface 适用于在终端中提供交互式界面的应用程序（基于 Bubble Tea、tview、Textual 等框架）。测试重点是键盘输入、终端渲染输出、异步 Cmd 超时处理。
 
-**Test type**: 终端功能测试 (Terminal Functional Test). Test type definition and classification criteria: see `docs/reference/test-type-model.md`. Generated test code MUST use `@tui-functional` tags, NOT `@e2e`.
+**Test type**: 终端功能测试 (Terminal Functional Test). Test type: 终端功能测试，通过子进程 + stdin pipe 验证终端渲染输出、键盘输入响应和异步 Cmd 超时处理。Generated test code MUST use `@tui-functional` tags, NOT `@e2e`.
 
 ## Detection Signals
 

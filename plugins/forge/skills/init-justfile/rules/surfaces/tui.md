@@ -1,6 +1,6 @@
 # Surface: tui
 
-> **测试类型参考**：TUI surface 的测试类型为 **终端功能测试（Terminal Functional Test）**，通过子进程 + stdin pipe 验证终端渲染输出 + 交互响应序列。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **测试类型参考**：TUI surface 的测试类型为 **终端功能测试（Terminal Functional Test）**，通过子进程 + stdin pipe 验证终端渲染输出 + 交互响应序列。
 
 ## 编排序列
 

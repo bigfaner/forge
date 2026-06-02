@@ -1,6 +1,6 @@
 # Surface: web
 
-> **测试类型参考**：Web surface 的测试类型为 **Web 端到端测试（Web E2E Test）**，通过浏览器自动化验证 DOM 元素可见性 + 用户操作响应 + 页面 URL 变更 + 元素属性值。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **测试类型参考**：Web surface 的测试类型为 **Web 端到端测试（Web E2E Test）**，通过浏览器自动化验证 DOM 元素可见性 + 用户操作响应 + 页面 URL 变更 + 元素属性值。
 
 ## 编排序列
 

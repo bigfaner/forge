@@ -1,6 +1,6 @@
 # Surface: mobile
 
-> **测试类型参考**：Mobile surface 的测试类型为 **移动端端到端测试（Mobile E2E Test）**，通过 Maestro YAML / 设备自动化验证 UI 元素可见性 + 用户操作响应 + 屏幕 ID 变更。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **测试类型参考**：Mobile surface 的测试类型为 **移动端端到端测试（Mobile E2E Test）**，通过 Maestro YAML / 设备自动化验证 UI 元素可见性 + 用户操作响应 + 屏幕 ID 变更。
 
 ## 编排序列
 

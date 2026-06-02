@@ -2,8 +2,6 @@
 
 本规则文件定义 run-tests skill 对 mobile surface 的移动端端到端测试编排序列。消费方为 SKILL.md 调度器。
 
-测试类型术语定义参见 `docs/reference/test-type-model.md`。
-
 ## 编排序列
 
 | 步骤 | just 配方 | 退出码 0 | 退出码 1 | 退出码 2 | 后续动作 |

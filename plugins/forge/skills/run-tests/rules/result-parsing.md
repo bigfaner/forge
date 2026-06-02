@@ -59,5 +59,5 @@ Plain text output from verbose test runners. Parse using line-by-line scanning:
 Regardless of format-type, these rules always apply:
 
 - **TC ID extraction**: Pattern `TC[_-](\d+)` from test name, normalize separator to hyphen -> `TC-NNN`
-- **Test type classification**: Infer from test name or content. UI tests reference pages/elements, API tests reference endpoints, CLI tests reference commands. When uncertain, classify as the dominant type for the project.
+- **Test type classification**: Infer from test name or content. Web tests reference pages/elements, API tests reference endpoints, CLI tests reference commands. When uncertain, classify as the dominant type for the project.
 - **Error messages**: Always capture the full error text, not just the first line

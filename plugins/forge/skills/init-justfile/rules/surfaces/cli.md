@@ -1,6 +1,6 @@
 # Surface: cli
 
-> **测试类型参考**：CLI surface 的测试类型为 **CLI 功能测试（CLI Functional Test）**，通过子进程执行验证进程退出码 + stdout/stderr 输出。详见 [测试类型模型](../../../../../docs/reference/test-type-model.md)。
+> **测试类型参考**：CLI surface 的测试类型为 **CLI 功能测试（CLI Functional Test）**，通过子进程执行验证进程退出码 + stdout/stderr 输出。
 
 ## 编排序列
 

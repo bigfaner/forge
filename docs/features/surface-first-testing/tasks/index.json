@@ -140,7 +140,7 @@
       "title": "Fix stale test-type-model references in gen-journeys + run-tests + init-justfile",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "9-fix-rules-refs.md",
       "record": "records/9-fix-rules-refs.md",
       "type": "doc"
