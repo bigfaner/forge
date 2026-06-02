@@ -66,7 +66,7 @@ Apply the surface type detected in Step 0.5 to constrain the generation plan. Ea
 ### Web Surface (Balanced 50/50)
 
 - **Balanced approach**: Generate Contract tests for each Outcome AND enrich the Journey smoke test with multi-step verification
-- **Execution model**: Convention-defined browser framework (per `types/ui.md`)
+- **Execution model**: Convention-defined browser framework (per `types/web.md`)
 - **Journey smoke tests**: Generate 1 comprehensive smoke test that verifies the happy path AND at least 1 failure path
 - **Ratio target**: Approximately equal Contract test functions and Journey smoke test functions
 

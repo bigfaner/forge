@@ -130,7 +130,7 @@
       "title": "Fix gen-test-scripts: stale references + rename ui.md → web.md",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "8-fix-gen-test-scripts-refs.md",
       "record": "records/8-fix-gen-test-scripts-refs.md",
       "type": "doc"

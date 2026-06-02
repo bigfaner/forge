@@ -5,11 +5,11 @@ conventions: []
 
 # Cross-Type Universal Golden Rules
 
-Framework-agnostic principles that apply to **all** interface types (CLI, TUI, UI, Mobile, API). Type files reference these principles in their Golden Rules section rather than duplicating them.
+Framework-agnostic principles that apply to **all** interface types (CLI, TUI, Web, Mobile, API). Type files reference these principles in their Golden Rules section rather than duplicating them.
 
 **Layer model**: `_shared.md` (abstract principles) → type file Golden Rules (type-specific constraints) → Convention (framework implementation).
 
-**Test type terminology**: Each surface maps to a specific test type name. Refer to `docs/reference/test-type-model.md` for the authoritative mapping. The generic "e2e" label is NOT used as a blanket term -- "e2e" applies only to Web and Mobile surfaces.
+**Test type terminology**: Each surface maps to a specific test type name — cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test. The generic "e2e" label is NOT used as a blanket term -- "e2e" applies only to Web and Mobile surfaces.
 
 ## Principle: Isolation
 
@@ -58,7 +58,7 @@ All I/O operations in tests must have an explicit upper-bound timeout. No test m
 
 Running a test multiple times against the same system under test must produce the same result. Repeated test execution must not accumulate side effects that break subsequent tests.
 
-**Constraint**: For stateful interfaces (API, CLI), each test must create its own test data and clean it up, or use ephemeral data that does not persist. For stateful interfaces with persistent side effects (UI, TUI, Mobile), repeated interaction with the system under test must not leave the application in a state that breaks subsequent tests.
+**Constraint**: For stateful interfaces (API, CLI), each test must create its own test data and clean it up, or use ephemeral data that does not persist. For stateful interfaces with persistent side effects (Web, TUI, Mobile), repeated interaction with the system under test must not leave the application in a state that breaks subsequent tests.
 
 **Rationale**: Idempotent tests support retries in CI. When a test fails due to transient infrastructure issues, re-running it must have the same chance of success as the first run. State accumulation from prior runs makes retries meaningless.
 

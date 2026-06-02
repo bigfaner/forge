@@ -1,6 +1,6 @@
 ---
 name: gen-test-scripts
-description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/. Test type naming follows Surface → Test Type mapping (see docs/reference/test-type-model.md).
+description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/. Test type naming follows Surface → Test Type mapping (cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test).
 ---
 
 # Gen Test Scripts
@@ -100,7 +100,7 @@ Load `rules/step-0.5-validation.md` for the complete surface detection and strat
 
 ## Test Type Terminology
 
-Test type names follow the Surface → Test Type mapping defined in `docs/reference/test-type-model.md`:
+Test type names follow the Surface → Test Type mapping:
 
 | Surface | Test Type | Tag |
 |---------|-----------|-----|
@@ -110,7 +110,7 @@ Test type names follow the Surface → Test Type mapping defined in `docs/refere
 | `web` | Web 端到端测试 (Web E2E Test) | `@web-e2e` |
 | `mobile` | 移动端端到端测试 (Mobile E2E Test) | `@mobile-e2e` |
 
-Generated test code comments and `@feature` tags MUST use these surface-specific test type names, NOT the generic "e2e" label. The "e2e" term is reserved exclusively for Web and Mobile surfaces.
+The "e2e" term is reserved exclusively for Web and Mobile surfaces. CLI, TUI, and API surfaces use "functional" terminology. Generated test code comments and `@feature` tags MUST use these surface-specific test type names, NOT the generic "e2e" label.
 
 ## Step 1: Code Reconnaissance (Build Fact Table)
 
@@ -184,8 +184,8 @@ Reconnaissance Hints in type files are discovery aids only. Information discover
 
 ### 2.5.1 Extract Interface Types from Contracts
 
-1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, UI interactions, TUI rendering, mobile gestures).
-2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> UI/TUI/Mobile).
+1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, Web interactions, TUI rendering, mobile gestures).
+2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> Web/TUI/Mobile).
 3. Record the detected type set (e.g., `{CLI, API}`).
 
 ### 2.5.2 Load Shared Principles
@@ -196,7 +196,7 @@ Always load `types/_shared.md` regardless of detected types. This file defines t
 
 For each interface type in the detected set, load the corresponding type file:
 
-1. Map interface type to filename: `CLI` -> `types/cli.md`, `TUI` -> `types/tui.md`, `UI` -> `types/ui.md`, `Mobile` -> `types/mobile.md`, `API` -> `types/api.md`.
+1. Map interface type to filename: `CLI` -> `types/cli.md`, `TUI` -> `types/tui.md`, `Web` -> `types/web.md`, `Mobile` -> `types/mobile.md`, `API` -> `types/api.md`.
 2. Read each matched type file via Read tool.
 3. Extract Golden Rules (generation constraints) and Reconnaissance Hints (discovery aids).
 
