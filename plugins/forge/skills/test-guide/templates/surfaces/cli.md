@@ -1,0 +1,77 @@
+---
+title: "CLI 测试策略"
+domains: [testing, cli]
+---
+
+<!-- Surface strategy template for CLI. Filled by test-guide skill at runtime. -->
+
+# CLI 测试策略
+
+## 文件位置
+
+- **目录**: `tests/cli/` 或 `tests/<journey>/`（当 Journey 仅包含 CLI 测试时）
+- **文件命名**: `<feature>_<command>_test.<ext>`（Go）、`test_<feature>_<command>.<ext>`（Python）、`<feature>.<command>.test.<ext>`（Node.js）
+- **Build tag**: `//go:build cli_functional`（Go）、`@cli-functional`（BDD tag）
+- **约束**: 不得使用 `e2e` 作为 build tag 或测试分类名
+
+## 隔离模型
+
+- **进程边界隔离**: 每个测试编译专用二进制，通过子进程调用，验证命令行行为。不测试内部函数
+- **二进制隔离**: 测试必须在 setup 阶段编译专用二进制（如 TestMain 或等效 setup 函数）。禁止使用 `go run`、PATH 解析或假设二进制已存在于特定位置
+- **环境密封**: 从完整宿主环境继承后覆盖测试专用变量，不依赖宿主环境的特定值
+- **工作目录隔离**: 每个测试使用临时目录作为工作目录
+
+## 断言重点
+
+CLI 测试必须对以下每个维度包含具体断言:
+
+| 维度 | 断言模式 | 示例 |
+|------|----------|------|
+| Exit code | 精确断言退出码 | 成功时 exit code 0，错误时 1 |
+| stdout | contains/exact/matches | stdout 包含预期输出 |
+| stderr | contains（错误场景） | stderr 包含预期错误信息 |
+| 输出格式 | JSON 结构或表头断言 | JSON 输出匹配预期结构 |
+
+每个断言必须验证至少一个具体的、有意义的值——仅检查 exit code 是必要的但不是充分的。
+
+## 超时策略
+
+CLI 测试采用两级超时:
+
+1. **测试函数级超时**: 测试运行器内置超时机制限制总执行时间
+2. **进程级超时守卫**: 生成的子进程必须在可配置秒数内退出。超时则发送 SIGKILL（或平台等效信号）终止进程树并清理所有子进程
+
+**理由**: 挂起的 CLI 子进程（如等待 stdin、死锁）可无限消耗 CI runner 时间。进程级守卫确保即使子进程忽略 SIGTERM 也能清理。
+
+## 生命周期
+
+1. **Setup**: 编译专用二进制，创建临时工作目录，设置环境变量
+2. **Execute**: 以子进程方式调用二进制，传入命令、参数和环境
+3. **Capture**: 收集 stdout、stderr 和 exit code
+4. **Assert**: 对捕获值与预期进行比较
+5. **Teardown**: 清理临时目录、终止残留子进程、释放资源
+
+## Contract/Journey 比例
+
+CLI surface 目标 **Contract 测试比例 >= 80%**。
+
+- **公式**: `Contract 测试函数数 / (Contract 测试函数数 + Journey 冒烟测试函数数) * 100%`
+- **最低要求**: 每个 Journey 生成 M 个 Contract 测试函数和恰好 1 个 Journey 冒烟测试（happy path）
+- **小型 Journey 调整**: 若 Journey 总 Outcomes < 5，1 个冒烟测试仍只计为 1 个函数，比例自然保持较高
+- **禁止**: 不得跳过冒烟测试来膨胀比例——每个 Journey 必须至少有 1 个冒烟测试
+
+## 反模式
+
+| 反模式 | 危害 | 替代方案 |
+|--------|------|----------|
+| 递归测试调用 | 进程爆炸，Windows 上孤儿进程无限累积 | 使用递归守卫环境变量或 run-filter 排除 |
+| 静态文件文本 Grep | 测试文档文本而非运行时行为 | 只测试运行时行为：调用 CLI 并断言输出 |
+| 无自动化的交互提示 | 测试挂起等待 stdin，CI 超时 | pipe 预期输入到 stdin 或使用非交互标志 |
+| Sleep 等待 | 时序不稳定 | 使用事件驱动等待或轮询+超时 |
+| 硬编码配置 | 环境变更即失败 | 所有配置来自环境变量或 Fact Table |
+
+## 断言偏好表
+
+| 断言库 | mock 机制 | fixture 模式 |
+|--------|-----------|-------------|
+| {{ASSERTION_LIBRARY}} | {{MOCK_MECHANISM}} | {{FIXTURE_PATTERN}} |
