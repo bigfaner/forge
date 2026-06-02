@@ -1,0 +1,147 @@
+{
+  "feature": "surface-first-testing",
+  "proposal": "docs/proposals/surface-first-testing/proposal.md",
+  "created": "2026-06-02",
+  "tasks": {
+    "1-create-surface-templates": {
+      "id": "1",
+      "title": "新增 surface 策略模板和 test-type-model 参考",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-create-surface-templates.md",
+      "record": "records/1-create-surface-templates.md",
+      "type": "doc"
+    },
+    "2-rewrite-test-guide": {
+      "id": "2",
+      "title": "重写 test-guide skill",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-rewrite-test-guide.md",
+      "record": "records/2-rewrite-test-guide.md",
+      "type": "doc"
+    },
+    "3-update-guide-hook": {
+      "id": "3",
+      "title": "更新 guide.md hook 测试速查表",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-guide-hook.md",
+      "record": "records/3-update-guide-hook.md",
+      "type": "doc"
+    },
+    "4-update-gen-test-scripts": {
+      "id": "4",
+      "title": "更新 gen-test-scripts Convention 加载路径",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "4-update-gen-test-scripts.md",
+      "record": "records/4-update-gen-test-scripts.md",
+      "type": "doc"
+    },
+    "5-update-run-tests": {
+      "id": "5",
+      "title": "更新 run-tests Convention 读取路径",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "5-update-run-tests.md",
+      "record": "records/5-update-run-tests.md",
+      "type": "doc"
+    },
+    "6-update-init-justfile": {
+      "id": "6",
+      "title": "更新 init-justfile Test recipe",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "6-update-init-justfile.md",
+      "record": "records/6-update-init-justfile.md",
+      "type": "doc"
+    },
+    "7-cleanup-regenerate": {
+      "id": "7",
+      "title": "清理旧文件并重新生成 Forge 项目 conventions",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "7-cleanup-regenerate.md",
+      "record": "records/7-cleanup-regenerate.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "6",
+        "4",
+        "5",
+        "7",
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
