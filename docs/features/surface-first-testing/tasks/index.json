@@ -78,9 +78,9 @@
       "title": "Fix gen-contracts concept attribution + run-tests cross-skill reference",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "16-fix-concept-attribution.md",
-      "record": "",
+      "record": "records/16-fix-concept-attribution.md",
       "type": "doc"
     },
     "17-translate-surface-rules-en": {

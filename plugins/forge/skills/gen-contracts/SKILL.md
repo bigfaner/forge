@@ -211,21 +211,21 @@ LLM-derived boundary Outcomes MUST be annotated with `source: inferred` and incl
 
 After generating Outcomes for all Steps in a Journey, output a density checkpoint (format in `rules/risk-density.md`). If actual total is below target, review Steps for missed boundary scenarios. If above target, merge semantically similar Outcomes.
 
-#### 3.7 TUI Async Cmd Await Semantics
+#### 3.7 TUI Async Cmd Await Semantics *(TUI-specific)*
 
-For TUI Steps involving async operations, declare `await` semantics per `rules/tui-async.md`, including timeout outcomes for async Cmds.
+**Applies to: TUI surface only.** For TUI Steps involving async operations, declare `await` semantics per `rules/tui-async.md`, including timeout outcomes for async Cmds. Skip this step for non-TUI surfaces.
 
-#### 3.8 State Verification Levels
+#### 3.8 State Verification Levels *(applies to all surface types)*
 
-Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `rules/tui-async.md`.
+**Applies to: all surface types.** Determine state verification level (full/partial/deferred) from Fact Table reconnaissance per `rules/tui-async.md` (State Verification Levels section).
 
-#### 3.9 Journey-Level Invariants
+#### 3.9 Journey-Level Invariants *(applies to all surface types)*
 
-Every Contract file MUST end with a `## Journey Invariants` section per `rules/tui-async.md`. At least 1 invariant is mandatory.
+**Applies to: all surface types.** Every Contract file MUST end with a `## Journey Invariants` section per `rules/tui-async.md` (Journey-Level Invariants section). At least 1 invariant is mandatory.
 
-#### 3.10 Batch Processing
+#### 3.10 Batch Processing *(applies to all surface types)*
 
-Auto-split into batches when Contracts > 15 or tokens > 50k per `rules/tui-async.md`.
+**Applies to: all surface types.** Auto-split into batches when Contracts > 15 or tokens > 50k per `rules/tui-async.md` (Batch Processing section).
 
 ### Step 4: Validate Contracts (Schema Validation + Retry)
 

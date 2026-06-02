@@ -10,8 +10,8 @@ Before executing tests, verify that the execution environment meets the requirem
 ## How It Works
 
 1. Read the current surface type from `forge surfaces`
-2. Look up the corresponding surface rule file in gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory) -- specifically the "Environment Readiness Checks" table
-3. Execute each check item listed for that surface type
+2. Look up the corresponding surface rule file in this skill's own `rules/surfaces/<type>.md` (resolve relative to the run-tests skill directory) for surface-specific readiness details
+3. Execute the per-surface detection items defined below in this file
 4. Report results: all-pass -> proceed to test execution; any-fail -> output diagnostics and abort
 
 <HARD-RULE>
@@ -20,7 +20,7 @@ Environment detection failure does NOT auto-fix. Only output diagnostic informat
 
 ## Per-Surface Detection Items
 
-The following sections define the detection items for each built-in surface type. When adding a new surface type, include an "Environment Readiness Checks" table in its surface rule file; this skill reads that table automatically.
+The following sections define the detection items for each built-in surface type. When adding a new surface type, add a corresponding detection section below and a surface rule file at `rules/surfaces/<type>.md`.
 
 ### CLI
 
@@ -101,4 +101,4 @@ This rule file is consumed during the run-tests workflow. The SKILL.md should:
 3. On failure: output diagnostics and abort (exit code 1, retryable)
 4. On success: proceed to test execution
 
-**Extensibility**: New surface types only need to add an "Environment Readiness Checks" table to their surface rule file in gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory). This env-check.md defines the detection framework; the surface rule files provide the per-type items.
+**Extensibility**: New surface types only need to add a surface rule file at this skill's own `rules/surfaces/<type>.md` and add a corresponding per-surface detection section in this file. This env-check.md defines the detection framework and per-type items; the surface rule files provide surface-specific orchestration details.
