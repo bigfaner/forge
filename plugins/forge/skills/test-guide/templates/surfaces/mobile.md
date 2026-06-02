@@ -9,7 +9,7 @@ domains: [testing, mobile]
 
 ## 文件位置
 
-- **目录**: `tests/e2e/` 或 `tests/<journey>/`（当 Journey 仅包含 Mobile 测试时）
+- **目录**: `tests/<journey>/`（Journey 名称由 gen-journeys 生成）
 - **文件命名**: `step<N>_<action>.yaml`（Maestro 格式）、`step<N>_<action>_deeplink.yaml`（深度链接变体）
 - **Build tag**: `@mobile-e2e`（BDD tag）——这是"e2e"术语正确使用的两个 surface 之一
 - **约束**: 仅 Web 和 Mobile surface 允许使用"e2e"术语

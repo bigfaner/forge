@@ -18,7 +18,7 @@
       "title": "Fix guide.md stale reference + unify test directory strategy",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "10-fix-guide-directory-strategy.md",
       "record": "records/10-fix-guide-directory-strategy.md",
       "type": "doc"
