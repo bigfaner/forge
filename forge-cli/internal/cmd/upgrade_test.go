@@ -21,25 +21,27 @@ import (
 
 // upgradeTestEnv provides a controlled environment for upgrade tests.
 type upgradeTestEnv struct {
-	stdout        bytes.Buffer
-	stderr        bytes.Buffer
-	origLookPath  func(string) (string, error)
-	origFetch     func(string) ([]byte, error)
-	origHTTPGet   func(url string) (*http.Response, error)
-	origRunClaude func([]string) error
-	origBinDir    func() string
-	origVersion   string
+	stdout              bytes.Buffer
+	stderr              bytes.Buffer
+	origLookPath        func(string) (string, error)
+	origFetch           func(string) ([]byte, error)
+	origHTTPGet         func(url string) (*http.Response, error)
+	origRunClaude       func([]string) error
+	origPluginInstalled func() bool
+	origBinDir          func() string
+	origVersion         string
 }
 
 func newUpgradeTestEnv(t *testing.T) *upgradeTestEnv {
 	t.Helper()
 	env := &upgradeTestEnv{
-		origLookPath:  lookPathForUpgrade,
-		origFetch:     fetchLatestRelease,
-		origHTTPGet:   httpGet,
-		origRunClaude: runClaudeCommand,
-		origBinDir:    forgeBinaryDir,
-		origVersion:   types.Version,
+		origLookPath:        lookPathForUpgrade,
+		origFetch:           fetchLatestRelease,
+		origHTTPGet:         httpGet,
+		origRunClaude:       runClaudeCommand,
+		origPluginInstalled: pluginInstalledCheck,
+		origBinDir:          forgeBinaryDir,
+		origVersion:         types.Version,
 	}
 
 	t.Cleanup(func() {
@@ -47,6 +49,7 @@ func newUpgradeTestEnv(t *testing.T) *upgradeTestEnv {
 		fetchLatestRelease = env.origFetch
 		httpGet = env.origHTTPGet
 		runClaudeCommand = env.origRunClaude
+		pluginInstalledCheck = env.origPluginInstalled
 		forgeBinaryDir = env.origBinDir
 		types.Version = env.origVersion
 	})
@@ -350,7 +353,7 @@ func TestReplaceWindowsBinary(t *testing.T) {
 
 	// Verify .old file is cleaned up
 	if _, err := os.Stat(forgePath + ".old"); !os.IsNotExist(err) {
-		t.Error(".old file should be cleaned up after replacement")
+		t.Error("old .old file should be cleaned up after replacement")
 	}
 }
 
@@ -690,5 +693,108 @@ func TestDefaultForgeBinaryDir(t *testing.T) {
 	expected := filepath.Join(home, ".forge", "bin")
 	if dir != expected {
 		t.Errorf("expected %q, got %q", expected, dir)
+	}
+}
+
+// --- Plugin update tests ---
+
+func TestUpgradePlugin_UsesQualifiedName(t *testing.T) {
+	env := newUpgradeTestEnv(t)
+	types.Version = "5.17.0"
+
+	lookPathForUpgrade = func(_ string) (string, error) {
+		return "/usr/bin/claude", nil
+	}
+	fetchLatestRelease = func(_ string) ([]byte, error) {
+		release := githubRelease{TagName: "forge-cli/v5.17.0"}
+		return json.Marshal(release)
+	}
+
+	pluginInstalledCheck = func() bool { return true }
+
+	var capturedArgs []string
+	runClaudeCommand = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+
+	action := upgradePlugin(&env.stdout)
+
+	if action.status != "UPGRADED" {
+		t.Errorf("expected UPGRADED, got %q", action.status)
+	}
+	// Verify fully qualified name "forge@forge" is used, not bare "forge"
+	expectedArgs := []string{"plugin", "update", "forge@forge"}
+	if len(capturedArgs) != len(expectedArgs) {
+		t.Fatalf("expected %d args, got %d: %v", len(expectedArgs), len(capturedArgs), capturedArgs)
+	}
+	for i, got := range capturedArgs {
+		if got != expectedArgs[i] {
+			t.Errorf("arg[%d]: expected %q, got %q", i, expectedArgs[i], got)
+		}
+	}
+}
+
+func TestUpgradePlugin_InstallUsesQualifiedName(t *testing.T) {
+	env := newUpgradeTestEnv(t)
+	types.Version = "5.17.0"
+
+	lookPathForUpgrade = func(_ string) (string, error) {
+		return "/usr/bin/claude", nil
+	}
+	fetchLatestRelease = func(_ string) ([]byte, error) {
+		release := githubRelease{TagName: "forge-cli/v5.17.0"}
+		return json.Marshal(release)
+	}
+
+	pluginInstalledCheck = func() bool { return false }
+
+	var capturedArgs []string
+	runClaudeCommand = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+
+	action := upgradePlugin(&env.stdout)
+
+	if action.status != "INSTALLED" {
+		t.Errorf("expected INSTALLED, got %q", action.status)
+	}
+	expectedArgs := []string{"plugin", "install", "forge@forge"}
+	if len(capturedArgs) != len(expectedArgs) {
+		t.Fatalf("expected %d args, got %d: %v", len(expectedArgs), len(capturedArgs), capturedArgs)
+	}
+	for i, got := range capturedArgs {
+		if got != expectedArgs[i] {
+			t.Errorf("arg[%d]: expected %q, got %q", i, expectedArgs[i], got)
+		}
+	}
+}
+
+func TestUpgradePlugin_UpdateFails(t *testing.T) {
+	env := newUpgradeTestEnv(t)
+	types.Version = "5.17.0"
+
+	lookPathForUpgrade = func(_ string) (string, error) {
+		return "/usr/bin/claude", nil
+	}
+	fetchLatestRelease = func(_ string) ([]byte, error) {
+		release := githubRelease{TagName: "forge-cli/v5.17.0"}
+		return json.Marshal(release)
+	}
+
+	pluginInstalledCheck = func() bool { return true }
+
+	runClaudeCommand = func(args []string) error {
+		return fmt.Errorf("some error")
+	}
+
+	action := upgradePlugin(&env.stdout)
+
+	if action.status != "FAILED" {
+		t.Errorf("expected FAILED, got %q", action.status)
+	}
+	if !strings.Contains(action.detail, "update failed") {
+		t.Errorf("expected 'update failed' in detail, got %q", action.detail)
 	}
 }

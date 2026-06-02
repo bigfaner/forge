@@ -43,6 +43,9 @@ var (
 	// runClaudeCommand executes claude with the given args.
 	runClaudeCommand = base.RunClaude
 
+	// pluginInstalledCheck reports whether the forge plugin is installed.
+	pluginInstalledCheck = pluginInstalledImpl
+
 	// forgeBinaryDir returns the directory containing the forge binary.
 	// Defaults to ~/.forge/bin.
 	forgeBinaryDir = defaultForgeBinaryDir
@@ -156,16 +159,20 @@ func upgradePlugin(out io.Writer) upgradeAction {
 	}
 
 	// Step 2: Install or update plugin
-	if pluginInstalled() {
+	// Use fully qualified name "forge@forge" (plugin@marketplace) because
+	// "claude plugin update forge" fails with "Plugin not found" when the
+	// marketplace name differs from the plugin name or resolution is ambiguous.
+	const qualifiedName = "forge@forge"
+	if pluginInstalledCheck() {
 		_, _ = fmt.Fprintf(out, "Updating forge plugin...\n")
-		if err := runClaudeCommand([]string{"plugin", "update", "forge"}); err != nil {
+		if err := runClaudeCommand([]string{"plugin", "update", qualifiedName}); err != nil {
 			return upgradeAction{status: "FAILED", target: "Plugin", detail: fmt.Sprintf("update failed: %v", err)}
 		}
 		return upgradeAction{status: "UPGRADED", target: "Plugin", detail: "updated to latest version"}
 	}
 
 	_, _ = fmt.Fprintf(out, "Installing forge plugin...\n")
-	if err := runClaudeCommand([]string{"plugin", "install", "forge"}); err != nil {
+	if err := runClaudeCommand([]string{"plugin", "install", qualifiedName}); err != nil {
 		return upgradeAction{status: "FAILED", target: "Plugin", detail: fmt.Sprintf("install failed: %v", err)}
 	}
 	return upgradeAction{status: "INSTALLED", target: "Plugin", detail: "installed latest version"}
@@ -201,8 +208,8 @@ func ensureMarketplaceAdded(out io.Writer) error {
 	})
 }
 
-// pluginInstalled checks if the forge plugin is already installed.
-func pluginInstalled() bool {
+// pluginInstalledImpl checks if the forge plugin is already installed.
+func pluginInstalledImpl() bool {
 	cmd := exec.Command("claude", "plugin", "list")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
