@@ -43,6 +43,66 @@
       "record": "records/12-fix-gen-contracts.md",
       "type": "doc"
     },
+    "13-fix-draft-generation": {
+      "id": "13",
+      "title": "Rewrite test-guide draft-generation.md for surface-first + remove orphan template",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "13-fix-draft-generation.md",
+      "record": "records/13-fix-draft-generation.md",
+      "type": "doc"
+    },
+    "14-fix-test-guide-paths": {
+      "id": "14",
+      "title": "Fix test-guide test directory paths in SKILL.md + surface templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "14-fix-test-guide-paths.md",
+      "record": "",
+      "type": "doc"
+    },
+    "15-unify-surface-descriptions": {
+      "id": "15",
+      "title": "Unify gen-journeys test type format + fix gen-contracts stale paths",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "15-unify-surface-descriptions.md",
+      "record": "",
+      "type": "doc"
+    },
+    "16-fix-concept-attribution": {
+      "id": "16",
+      "title": "Fix gen-contracts concept attribution + run-tests cross-skill reference",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "16-fix-concept-attribution.md",
+      "record": "",
+      "type": "doc"
+    },
+    "17-translate-surface-rules-en": {
+      "id": "17",
+      "title": "Translate init-justfile + run-tests + gen-contracts surface rules to English",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "17-translate-surface-rules-en.md",
+      "record": "",
+      "type": "doc"
+    },
+    "18-reduce-cross-skill-redundancy": {
+      "id": "18",
+      "title": "Reduce cross-skill redundancy in surface detection + orchestration",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "18-reduce-cross-skill-redundancy.md",
+      "record": "",
+      "type": "doc"
+    },
     "2-rewrite-test-guide": {
       "id": "2",
       "title": "重写 test-guide skill",
