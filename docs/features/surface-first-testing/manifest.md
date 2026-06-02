@@ -27,4 +27,9 @@ mode: quick
 | 6 | 更新 init-justfile Test recipe | pending | 6-update-init-justfile.md |
 | 7 | 清理旧文件并重新生成 Forge 项目 conventions | pending | 7-cleanup-regenerate.md |
 | T-review-doc | Review Documentation Quality | pending | review-doc.md |
-| T-quick-doc-drift | Detect Spec Drift | pending | quick-drift-detection.md |
+| T-quick-doc-drift | Detect Spec Drift | completed | quick-drift-detection.md |
+| 8 | Fix gen-test-scripts: stale references + rename ui.md → web.md | pending | 8-fix-gen-test-scripts-refs.md |
+| 9 | Fix stale test-type-model references in gen-journeys + run-tests + init-justfile | pending | 9-fix-rules-refs.md |
+| 10 | Fix guide.md stale reference + unify test directory strategy | pending | 10-fix-guide-directory-strategy.md |
+| 11 | Fix recipe parameter mismatch + run-tests surface-key usage | pending | 11-fix-recipe-params.md |
+| 12 | Fix gen-contracts: surface detection, Convention loading, surfaceType naming | pending | 12-fix-gen-contracts.md |

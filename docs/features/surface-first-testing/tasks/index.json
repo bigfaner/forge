@@ -13,6 +13,36 @@
       "record": "records/1-create-surface-templates.md",
       "type": "doc"
     },
+    "10-fix-guide-directory-strategy": {
+      "id": "10",
+      "title": "Fix guide.md stale reference + unify test directory strategy",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "10-fix-guide-directory-strategy.md",
+      "record": "records/10-fix-guide-directory-strategy.md",
+      "type": "doc"
+    },
+    "11-fix-recipe-params": {
+      "id": "11",
+      "title": "Fix recipe parameter mismatch + run-tests surface-key usage",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "11-fix-recipe-params.md",
+      "record": "records/11-fix-recipe-params.md",
+      "type": "doc"
+    },
+    "12-fix-gen-contracts": {
+      "id": "12",
+      "title": "Fix gen-contracts: surface detection, Convention loading, surfaceType naming",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "12-fix-gen-contracts.md",
+      "record": "records/12-fix-gen-contracts.md",
+      "type": "doc"
+    },
     "2-rewrite-test-guide": {
       "id": "2",
       "title": "重写 test-guide skill",
@@ -95,13 +125,33 @@
       "record": "records/7-cleanup-regenerate.md",
       "type": "doc"
     },
+    "8-fix-gen-test-scripts-refs": {
+      "id": "8",
+      "title": "Fix gen-test-scripts: stale references + rename ui.md → web.md",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "8-fix-gen-test-scripts-refs.md",
+      "record": "records/8-fix-gen-test-scripts-refs.md",
+      "type": "doc"
+    },
+    "9-fix-rules-refs": {
+      "id": "9",
+      "title": "Fix stale test-type-model references in gen-journeys + run-tests + init-justfile",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "9-fix-rules-refs.md",
+      "record": "records/9-fix-rules-refs.md",
+      "type": "doc"
+    },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "3"
+        "9"
       ],
       "status": "completed",
       "file": "quick-drift-detection.md",
@@ -115,13 +165,18 @@
       "priority": "P1",
       "estimatedTime": "30min",
       "dependencies": [
-        "6",
-        "4",
-        "5",
-        "7",
         "1",
         "2",
-        "3"
+        "3",
+        "5",
+        "7",
+        "10",
+        "11",
+        "4",
+        "6",
+        "12",
+        "8",
+        "9"
       ],
       "status": "completed",
       "file": "review-doc.md",
