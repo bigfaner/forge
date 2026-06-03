@@ -118,7 +118,7 @@
       "title": "Delete Related sections + reduce redundancy in tech-design",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "7-clean-tech-design.md",
       "record": "records/7-clean-tech-design.md",
       "type": "doc",

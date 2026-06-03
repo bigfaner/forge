@@ -83,33 +83,22 @@ Pipeline defaults are determined by intent, but PRD content signals can enable a
 - Override only adds steps (开启), never removes. Worst case: unnecessary artifact generated, caught in user review
 - Multiple signals trigger independently and stack (e.g., both "API" and "性能" → enable both API Handbook and Performance Baseline)
 - When an override triggers, generate a comment in the tech-design output documenting it (e.g., `<!-- Override: API handbook enabled by signal "接口变更" -->`)
-- For `doc` intent: Minimal design format has no pipeline steps that can be overridden — override signals become no-op by design
+- For `doc` intent: override signals are no-op — minimal design format has no pipeline steps that can be overridden
 
 ## Process Flow
-
-### new-feature intent (default)
 
 ```
 0. Detect test language → 1. Read PRD → 2. Explore context → 3. Identify decisions → 4. Ask questions → 5. Draft design → 6. Review → 7. Archive decisions (optional) → 8. Finalize → 9. Update Manifest → 10. Adversarial Eval Prompt → 11. Auto-extract Knowledge
 ```
 
-### enhancement intent
+**Intent-specific adjustments**:
 
-```
-0. Detect test language → 1. Read PRD (simplified) → 2. Explore context → 3. Identify decisions (improvement-focused) → 4. Ask questions → 5. Draft design (internal architecture focus) → 6. Review → 7. Archive decisions (optional) → 8. Finalize → 9. Update Manifest → 10. Adversarial Eval Prompt → 11. Auto-extract Knowledge
-```
-
-### refactor / cleanup / fix intent
-
-```
-0. Detect test language → 1. Read PRD (spec-only) → 2. Explore context → 3. Identify decisions (architecture-focused) → 4. Ask questions → 5. Draft design (internal architecture focus) → 6. Review → 7. Archive decisions (optional) → 8. Finalize (no API handbook, no ER diagram) → 9. Update Manifest → 10. Adversarial Eval Prompt → 11. Auto-extract Knowledge
-```
-
-### doc intent
-
-```
-0. Detect test language → 1. Read PRD (minimal) → 2. Explore context → 3. Identify decisions (scope-focused) → 4. Ask questions → 5. Draft design (minimal: title + goals + scope) → 6. Review → 7. Archive decisions (optional) → 8. Finalize → 9. Update Manifest → 10. Adversarial Eval Prompt → 11. Auto-extract Knowledge
-```
+| Step | `new-feature` | `enhancement` | `refactor` / `cleanup` / `fix` | `doc` |
+|------|--------------|---------------|-------------------------------|-------|
+| 1. Read PRD | Full | Simplified | Spec-only | Minimal |
+| 3. Decisions focus | All types | Improvement-focused | Architecture-focused | Scope-focused |
+| 5. Draft focus | Full design | Internal architecture | Internal architecture | Minimal: title + goals + scope |
+| 8. Finalize | All artifacts | Tech-design only | Tech-design only (no API handbook, no ER diagram) | Tech-design only |
 
 ## Step 0: Detect Test Language
 
@@ -208,115 +197,42 @@ Use `AskUserQuestion` for ALL uncertain areas.
 
 ## Step 5: Draft Design
 
-Present incrementally, section by section.
+Present incrementally, section by section. Apply quality checks from `rules/design-quality-checks.md` after each section (see Quality Check Matrix below).
 
-### new-feature intent (default)
+### Section Matrix
 
-| Section        | Content                 |
-| -------------- | ----------------------- |
-| Overview       | High-level approach     |
-| Architecture   | Component diagram       |
-| Interfaces     | Interface definitions   |
-| Data Models    | If `db-schema: "yes"`: generate `er-diagram.md` + `schema.sql`; inline becomes cross-reference. If `db-schema: "no"`: struct definitions as before. |
-| Error Handling | Error strategy          |
-| Integration Specs | Integration specifications for existing-page components |
-| Testing        | Test strategy           |
-| Security       | Security considerations |
+| Section | `new-feature` | `enhancement` | `refactor` / `cleanup` / `fix` | `doc` |
+|---------|--------------|---------------|-------------------------------|-------|
+| Overview | High-level approach | Improvement approach + goals | Refactoring approach + goals | What changes and why |
+| Architecture | Component diagram | Before/after improvement diagram | Before/after structure diagram | — |
+| Scope | — | — | — | Files to update/create, expected changes |
+| Interfaces | Interface definitions | **If** changes interfaces | **If** changes internal interfaces | — |
+| Data Models | If `db-schema: "yes"`: generate `er-diagram.md` + `schema.sql`; otherwise struct definitions | **If** changes data structures | **If** changes data structures | — |
+| Error Handling | Error strategy | **If** changes error paths | **If** changes error paths | — |
+| Integration Specs | Integration specifications | — | — | — |
+| Testing | Test strategy | Regression test strategy | Regression test strategy | — |
+| Security | Security considerations | **If** touches security-sensitive code | **If** touches security-sensitive code | — |
 
-After drafting each section, apply the quality checks from `rules/design-quality-checks.md`:
-- PRD Coverage Verification (5.1)
-- Breakdown-Readiness Check (5.2)
-- Cross-Layer Data Map (5.3)
-- Integration Specs (5.4)
-- DB Schema Branch (5.5) — conditional on `db-schema` value
+**Blank cells** mean the section is skipped for that intent. "If" means conditional — include only when applicable.
 
-### enhancement intent
+**Explicitly skipped (not overridable by signals)**:
+- `enhancement` / `refactor` / `cleanup` / `fix` / `doc`: **User Stories** — not read (no new user-observable behavior)
+- `refactor` / `cleanup` / `fix` / `doc`: **ER Diagram** — not generated (no database schema change)
+- `doc`: **Architecture, Interfaces, Data Models, Error Handling, Integration Specs, Testing, Security, API Handbook, ER Diagram** — all not applicable
 
-For enhancement, focus on **internal architecture** with improvement context. Skip sections not applicable to improvements.
+**Override signal note**: During content generation, detect override signals. If triggered, generate `<!-- Override: ... -->` comments. For `doc` intent, override signals are no-op (no pipeline steps to override).
 
-| Section        | Content                                              | Status   |
-| -------------- | ---------------------------------------------------- | -------- |
-| Overview       | High-level enhancement approach and improvement goals | Required |
-| Architecture   | Component diagram showing before/after improvement   | Required |
-| Interfaces     | Only if enhancement changes interfaces               | Conditional |
-| Data Models    | Only if enhancement changes data structures          | Conditional |
-| Error Handling | Only if enhancement changes error paths              | Conditional |
-| Integration Specs | **Skipped** — enhancement does not change external integrations by default | Skipped |
-| Testing        | Regression test strategy (existing tests + new tests for improved behavior) | Required |
-| Security       | Only if enhancement touches security-sensitive code  | Conditional |
+### Quality Check Matrix
 
-**Skipped for enhancement by default**:
-- **ER Diagram** — not generated unless override signal triggers it. Enhancement does not typically change the database schema
-- **User Stories** — not read. Enhancement targets existing user base, not new user flows
+After drafting each applicable section, apply quality checks from `rules/design-quality-checks.md`:
 
-After drafting each applicable section, apply the quality checks from `rules/design-quality-checks.md`:
-- PRD Coverage Verification (5.1) — map improvement goals from PRD to design elements
-- Breakdown-Readiness Check (5.2) — ensure component changes are enumerable
-- Cross-Layer Data Map (5.3) — only if enhancement spans layers
-- Integration Specs (5.4) — **skipped** for enhancement unless override signal triggers
-- DB Schema Branch (5.5) — **skipped** for enhancement unless override signal triggers
-
-Detect override signals during content generation. If triggered, generate `<!-- Override: ... -->` comments in the tech-design output.
-
-### refactor / cleanup / fix intent
-
-For refactoring, cleanup, and fix, focus on **internal architecture**. Skip external-facing sections.
-
-| Section        | Content                                              | Status   |
-| -------------- | ---------------------------------------------------- | -------- |
-| Overview       | High-level refactoring approach and goals            | Required |
-| Architecture   | Module/component diagram showing before/after structure | Required |
-| Interfaces     | Only if refactoring changes internal interfaces      | Conditional |
-| Data Models    | Only if refactoring changes data structures          | Conditional |
-| Error Handling | Only if refactoring changes error paths              | Conditional |
-| Integration Specs | **Skipped** — refactoring does not change external integrations | Skipped |
-| Testing        | Regression test strategy (existing tests + new tests for changed code) | Required |
-| Security       | Only if refactoring touches security-sensitive code  | Conditional |
-
-**Skipped for refactor/cleanup/fix**:
-- **API Handbook** — not generated. Refactoring/cleanup/fix does not introduce new external interfaces (unless override signal triggers).
-- **ER Diagram** — not generated. Refactoring/cleanup/fix does not change the database schema.
-- **Integration Specs** — not applicable. Refactoring/cleanup/fix does not change page integrations.
-- **User Stories** — not read. No new user-observable behavior.
-
-After drafting each applicable section, apply the quality checks from `rules/design-quality-checks.md`:
-- PRD Coverage Verification (5.1) — map regression criteria from spec's "验证标准" to design elements
-- Breakdown-Readiness Check (5.2) — ensure component changes are enumerable
-- Cross-Layer Data Map (5.3) — only if refactoring spans layers
-- Integration Specs (5.4) — **skipped** for refactor/cleanup/fix unless override signal triggers
-- DB Schema Branch (5.5) — **skipped** for refactor/cleanup/fix
-
-Detect override signals during content generation. If triggered, generate `<!-- Override: ... -->` comments in the tech-design output.
-
-### doc intent
-
-For documentation changes, focus on **scope and accuracy**. Minimal design output.
-
-| Section        | Content                                              | Status   |
-| -------------- | ---------------------------------------------------- | -------- |
-| Overview       | What documentation changes and why                   | Required |
-| Scope          | Files to update/create, expected changes             | Required |
-
-**Skipped for doc**:
-- **Architecture** — not applicable for documentation changes
-- **Interfaces** — not applicable
-- **Data Models** — not applicable
-- **Error Handling** — not applicable
-- **Integration Specs** — not applicable
-- **Testing** — not applicable (documentation changes have no test pipeline)
-- **Security** — not applicable
-- **API Handbook** — not generated
-- **ER Diagram** — not generated
-- **User Stories** — not read
-
-Override signals are no-op for doc intent — Minimal design format has no pipeline steps that can be overridden.
-
-After drafting, apply the quality checks from `rules/design-quality-checks.md`:
-- PRD Coverage Verification (5.1) — map documentation goals from PRD to design elements
-- Breakdown-Readiness Check (5.2) — ensure document changes are enumerable
-- Cross-Layer Data Map (5.3) — **skipped** for doc
-- Integration Specs (5.4) — **skipped** for doc
-- DB Schema Branch (5.5) — **skipped** for doc
+| Check | `new-feature` | `enhancement` | `refactor` / `cleanup` / `fix` | `doc` |
+|-------|--------------|---------------|-------------------------------|-------|
+| 5.1 PRD Coverage | Map AC from user stories | Map improvement goals from PRD | Map regression criteria from spec | Map documentation goals from PRD |
+| 5.2 Breakdown Readiness | All sections | All applicable sections | All applicable sections | All applicable sections |
+| 5.3 Cross-Layer Data Map | Yes | If spans layers | If spans layers | — |
+| 5.4 Integration Specs | Yes | If override signal | If override signal | — |
+| 5.5 DB Schema Branch | Conditional on `db-schema` | If override signal | — | — |
 
 ## Step 6: Get Approval
 
@@ -351,43 +267,15 @@ If no key decisions exist, silently skip this step.
 
 ## Step 8: Write Design Documents
 
-### new-feature intent (default)
+All intents save to `docs/features/<slug>/design/tech-design.md` using `templates/tech-design.md`.
 
-Save to:
-- `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md`
-- `docs/features/<slug>/design/api-handbook.md` — using `templates/api-handbook.md` (if feature has API surface)
-- `docs/features/<slug>/design/er-diagram.md` — using `templates/er-diagram.md` (if `db-schema: "yes"`)
-- `docs/features/<slug>/design/schema.sql` — using `templates/schema.sql` (if `db-schema: "yes"`)
+Additional artifacts by intent:
 
-### enhancement intent
-
-Save to:
-- `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md` (improvement-focused design)
-
-**Not generated for enhancement (unless override signal triggers)**:
-- `design/api-handbook.md` — enhancement does not introduce new external interfaces by default
-- `design/er-diagram.md` — enhancement does not typically change the database schema
-- `design/schema.sql` — enhancement does not typically change the database schema
-
-### refactor / cleanup / fix intent
-
-Save to:
-- `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md` (internal architecture focus)
-
-**Not generated for refactor/cleanup/fix (unless override signal triggers)**:
-- `design/api-handbook.md` — refactoring/cleanup/fix does not introduce new external interfaces
-- `design/er-diagram.md` — refactoring/cleanup/fix does not change the database schema
-- `design/schema.sql` — refactoring/cleanup/fix does not change the database schema
-
-### doc intent
-
-Save to:
-- `docs/features/<slug>/design/tech-design.md` — using `templates/tech-design.md` (minimal: title + goals + scope)
-
-**Not generated for doc**:
-- `design/api-handbook.md` — documentation changes have no API surface
-- `design/er-diagram.md` — documentation changes have no database schema
-- `design/schema.sql` — documentation changes have no database schema
+| Artifact | `new-feature` | `enhancement` | `refactor` / `cleanup` / `fix` | `doc` |
+|----------|--------------|---------------|-------------------------------|-------|
+| `api-handbook.md` | If API surface | If override signal | If override signal | — |
+| `er-diagram.md` | If `db-schema: "yes"` | If override signal | — | — |
+| `schema.sql` | If `db-schema: "yes"` | If override signal | — | — |
 
 ## Step 9: Update Manifest
 
@@ -435,11 +323,3 @@ After writing design documents and updating the manifest, run the knowledge extr
 
 Extraction covers four knowledge types: Decisions, Lessons, Conventions, Business Rules. Only genuinely non-obvious knowledge is extracted (conservative approach). User confirmation is required before writing to any knowledge directory.
 
-## Integration
-
-Works well with skills:
-
-- `/write-prd` - Creates PRD input and manifest
-- `/ui-design` - Preceding skill for UI features; UI design informs technical decisions
-- `/eval-design` - Evaluate tech-design.md quality before handing off to breakdown-tasks
-- `/breakdown-tasks` - Uses tech-design.md to create tasks
