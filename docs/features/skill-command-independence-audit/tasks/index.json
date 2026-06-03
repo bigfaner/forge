@@ -41,7 +41,7 @@
       "title": "Reduce overlapping logic in execute-task and run-tasks commands",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "12-reduce-execute-run-tasks.md",
       "record": "records/12-reduce-execute-run-tasks.md",
       "type": "doc",
