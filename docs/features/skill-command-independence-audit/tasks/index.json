@@ -63,7 +63,7 @@
       "title": "Inline contract model into gen-journeys + clean Related + reduce summaries",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-inline-gen-journeys.md",
       "record": "records/2-inline-gen-journeys.md",
       "type": "doc",
