@@ -28,7 +28,7 @@ func ProbeEndpoint(url string, timeout time.Duration) bool {
 // path is the health check path appended to each URL (defaults to "/health").
 func ProbeServers(projectRoot, path string) bool {
 	if path == "" {
-		path = "/health"
+		path = defaultHealthPath
 	}
 
 	configPath := feature.GetTestConfigPath(projectRoot)
