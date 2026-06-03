@@ -8,7 +8,7 @@
       "title": "统一所有 skill 使用 forge surfaces 文本模式",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-switch-to-text-mode.md",
       "record": "records/1-switch-to-text-mode.md",
       "type": "doc",

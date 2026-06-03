@@ -85,13 +85,26 @@ Set the `complexity` field in task frontmatter accordingly.
 
 **Dependencies**: linear chain unless parallel work implied. Simple integer IDs: `1`, `2`, `3`.
 
-**Surface-Key/Type Inference**: Use the two-layer resolution strategy:
+**Surface-Key/Type Inference**: Use `forge surfaces` (text mode) resolution strategy:
 
-1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set `surface-key` and `surface-type` on every task to the single surface's values.
+**Parsing rule** (unified across all skills):
+```
+forge surfaces text output parsing — per line:
+  if line contains '=':
+    key = part before '='
+    type = part after '='
+    → named surface
+  else:
+    key = (empty)
+    type = line
+    → scalar surface (no key)
+```
 
-2. **File-level query** (multi-surface projects): For each task, examine the affected file paths. Use path prefix matching against known surface directories first (from the project-level result). Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface → use its key+type; mixed or no match → leave both empty.
+1. **Single-surface projects** (output is a single line): Run `forge surfaces` once. All tasks share that surface's key and type. Skip per-file calls entirely — this eliminates N*M redundant CLI invocations. Set `surface-key` and `surface-type` on every task. For scalar surfaces, `surface-key` is left empty and `surface-type` is the type value.
 
-If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue.
+2. **Multi-surface projects** (output has multiple lines): For each task, examine the affected file paths. Use path prefix matching against known surface directories first (from the project-level result). Only call `forge surfaces <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface -> use its key+type; mixed or no match -> leave both empty.
+
+If `forge surfaces` fails or returns no surfaces configured, set both fields to empty strings and continue.
 
 **Reference Files Generation**:
 

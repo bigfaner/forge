@@ -54,14 +54,16 @@ If version < 1.50.0: `cargo install just`
 
 ### Surface-Level Targets (when surfaces configured)
 
-| Target                | Required | Purpose                                                              |
-| --------------------- | -------- | -------------------------------------------------------------------- |
-| `<key>-test-setup`    | No*      | Mobile only: prepare emulator and test environment                   |
-| `<key>-dev`           | No*      | Start dev server for surface (web/api/mobile only)                   |
-| `<key>-probe`         | No*      | Health check for surface (web/api/mobile only)                       |
-| `<key>-test`          | Yes      | Surface-level tests (functional for cli/tui/api, e2e for web/mobile) |
-| `<key>-teardown`      | Yes      | Stop services and cleanup                                            |
-| `<key>`               | No*      | Aggregate: test-setup->dev->probe->test->teardown (mobile) / dev->probe->test->teardown (web/api) |
+`<prefix>` is `<key>-` for named surfaces (e.g., `app-test`) or empty for scalar surfaces (e.g., `test`).
+
+| Target                  | Required | Purpose                                                              |
+| ----------------------- | -------- | -------------------------------------------------------------------- |
+| `<prefix>test-setup`    | No*      | Mobile only: prepare emulator and test environment                   |
+| `<prefix>dev`           | No*      | Start dev server for surface (web/api/mobile only)                   |
+| `<prefix>probe`         | No*      | Health check for surface (web/api/mobile only)                       |
+| `<prefix>test`          | Yes      | Surface-level tests (functional for cli/tui/api, e2e for web/mobile) |
+| `<prefix>teardown`      | Yes      | Stop services and cleanup                                            |
+| `<prefix>`              | No*      | Aggregate: test-setup->dev->probe->test->teardown (mobile) / dev->probe->test->teardown (web/api) |
 
 *CLI/TUI surfaces do NOT generate dev, probe, or aggregate recipes. Mobile also generates test-setup.
 
@@ -72,8 +74,8 @@ Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variant
 | Recipe | Signature | Description |
 |--------|-----------|-------------|
 | `unit-test` | `just unit-test` (no parameters) | Language-level unit tests, no filtering needed |
-| `<key>-test` | `just <key>-test [journey]` | Surface-level advanced tests; optional journey parameter filters to a specific journey, omit to run all |
-| `<key>-probe` | `just <key>-probe` (no parameters) | Surface health check |
+| `<prefix>test` | `just <prefix>test [journey]` | Surface-level advanced tests; `<prefix>` is `<key>-` for named surfaces or empty for scalar. Optional journey parameter filters to a specific journey, omit to run all |
+| `<prefix>probe` | `just <prefix>probe` (no parameters) | Surface health check |
 
 ## Process Flow
 
@@ -152,31 +154,41 @@ Detect project type and entry points per `rules/project-detection.md`. This cove
 
 ### Step 1s: Detect Surfaces
 
-<HARD-RULE>
-Surface-key naming MUST match `[a-zA-Z0-9_-]+`. If a surface-key contains invalid characters, emit an error and abort — do NOT generate recipes for that surface.
-</HARD-RULE>
-
 Detect surfaces configured in the project:
 
 ```bash
-forge surfaces --json 2>/dev/null
+forge surfaces 2>/dev/null
 ```
 
-**Outcome A — Surfaces configured** (JSON output is non-empty, not `[]`, not `{"error":"..."}`):
-
-Parse the JSON to extract surface entries. Each entry has `key` and `type` fields:
-
-```json
-{"surfaces": [{"key": "admin-panel", "type": "web"}, {"key": "payment-api", "type": "api"}]}
+**Parsing rule** (unified across all skills):
 ```
+forge surfaces text output parsing — per line:
+  if line contains '=':
+    key = part before '='
+    type = part after '='
+    → named surface
+  else:
+    key = (empty)
+    type = line
+    → scalar surface (no key)
+```
+
+**Outcome A — Surfaces configured** (text output is non-empty):
+
+Parse each line using the rule above. Each line produces one surface entry with `key` and `type`:
+
+| Text output | key | type | Form |
+|-------------|-----|------|------|
+| `tui` | (empty) | `tui` | scalar |
+| `myapp=tui` | `myapp` | `tui` | named |
+| `backend=api\nfrontend=web` | `backend` / `frontend` | `api` / `web` | named (multi) |
 
 For each surface entry:
-1. **Validate surface-key**: Check that `key` matches `[a-zA-Z0-9_-]+`. If not, emit error: `Error: invalid surface-key "<key>": must match [a-zA-Z0-9_-]+` and skip this surface.
-2. **Load surface rule file**: Read `rules/surfaces/<type>.md` relative to this SKILL.md's directory. If the file does not exist for the given type, emit warning: `Warning: no rule file for surface type "<type>" — skipping surface "<key>"` and skip this surface.
+1. **Load surface rule file**: Read `rules/surfaces/<type>.md` relative to this SKILL.md's directory. If the file does not exist for the given type, emit warning: `Warning: no rule file for surface type "<type>" — skipping surface "<key>"` and skip this surface.
 
 Collect the validated surfaces as `SURFACES_LIST`.
 
-**Outcome B — No surfaces configured** (output is `[]`, or `{"error":"..."}`, or command fails):
+**Outcome B — No surfaces configured** (output is empty or command fails):
 
 No surfaces detected. Skip surface recipe generation entirely. The justfile will contain only language-level targets — identical to the behavior before surface-aware support. This ensures **zero regression** for projects without surface configuration.
 
@@ -187,9 +199,9 @@ ls justfile Justfile 2>/dev/null
 ```
 
 - If `justfile` or `Justfile` already exists:
-  - Check if it already contains `unit-test`, `<key>-test`, and `<key>-teardown` recipes:
+  - Check if it already contains `unit-test`, `<prefix>test`, and `<prefix>teardown` recipes:
     ```bash
-    just --list 2>/dev/null | grep -E 'unit-test|<key>-test|<key>-teardown'
+    just --list 2>/dev/null | grep -E 'unit-test|<prefix>test|<prefix>teardown'
     ```
   - **If all expected recipes exist**: Output "justfile already contains required recipes. Skipping recipe generation." Proceed to Step 4 for verification only.
   - **If some recipes are missing**: Proceed to Step 3 to append only the missing recipes.
@@ -244,11 +256,11 @@ For each surface in `SURFACES_LIST` (collected in Step 1s):
    - **Orchestration sequence**: which steps apply (dev/probe/test/teardown).
    - **Recipe contracts**: recipe names, signatures, exit codes.
    - **Journey filter strategy**: which journey tags belong to this surface.
-3. Generate recipes for each step defined in the orchestration sequence.
+3. Generate recipes for each step defined in the orchestration sequence. Recipe names use `<prefix><verb>` where `<prefix>` is `<key>-` for named surfaces or empty for scalar surfaces.
 
-**Recipe naming**:
-- **Single surface project** (only one surface in `SURFACES_LIST`): use `<type>-<verb>` naming (e.g., `web-dev`, `web-test`). The surface-key IS the type.
-- **Mixed project** (multiple surfaces): use `<surface-key>-<verb>` naming (e.g., `admin-panel-dev`, `payment-api-test`). This distinguishes recipes between surfaces.
+**Recipe naming** (determined by surface form from Step 1s parsing):
+- **Scalar surface** (no key, only type): recipe names use the verb directly — `test`, `build`, `dev`, `teardown`. No prefix.
+- **Named surface** (has key): recipe names use `<key>-<verb>` — e.g., `app-test`, `admin-panel-dev`. This applies to both single and multi-surface projects.
 
 **Dual-platform variants**: Each recipe MUST have `[linux]` and `[windows]` attribute variants:
 
@@ -271,15 +283,22 @@ Every surface recipe MUST include `# user-customized` comment above the `[linux]
 </HARD-RULE>
 
 **Surface types without dev/probe** (cli, tui):
-- Do NOT generate `<key>-dev` or `<key>-probe` recipes.
-- Do NOT generate `<key>` aggregate recipe.
-- Generate only `<key>-test` and `<key>-teardown`.
+- Do NOT generate `<prefix>dev` or `<prefix>probe` recipes.
+- Do NOT generate `<prefix>` aggregate recipe.
+- Generate only `<prefix>test` and `<prefix>teardown`.
 
 **Aggregate recipes** (web, api, mobile):
-- Generate `<key>` aggregate recipe that calls sub-recipes in orchestration order.
+- Generate `<prefix>` aggregate recipe that calls sub-recipes in orchestration order.
 - On any sub-step failure, run teardown and exit with the failure code:
 
 ```just
+# scalar example (no key):
+test-all:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just dev && just probe && just test; rc=$?; just teardown; exit $rc
+
+# named example (key=web):
 web:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -344,13 +363,13 @@ lint:
 fmt:
 check:
 
-[group: <surface-key>]
-<key>-test-setup:   (mobile only)
-<key>-dev:          (if applicable)
-<key>-probe:        (if applicable)
-<key>-test:
-<key>-teardown:
-<key>:              (aggregate, if applicable)
+[group: <surface-key-or-type>]
+<prefix>test-setup:   (mobile only)
+<prefix>dev:          (if applicable)
+<prefix>probe:        (if applicable)
+<prefix>test:
+<prefix>teardown:
+<prefix>:              (aggregate, if applicable)
 
 ... (repeat for each surface)
 
@@ -376,14 +395,14 @@ just --dry-run check
 just --dry-run install
 ```
 
-For surface recipes, verify each generated recipe:
+For surface recipes, verify each generated recipe (`<prefix>` is `<key>-` for named surfaces or empty for scalar):
 
 ```bash
-just --dry-run <key>-test-setup # (mobile only)
-just --dry-run <key>-dev       # (if applicable)
-just --dry-run <key>-probe     # (if applicable)
-just --dry-run <key>-test
-just --dry-run <key>-teardown
+just --dry-run <prefix>test-setup # (mobile only)
+just --dry-run <prefix>dev       # (if applicable)
+just --dry-run <prefix>probe     # (if applicable)
+just --dry-run <prefix>test
+just --dry-run <prefix>teardown
 ```
 
 Fix any syntax failures before proceeding to Phase 2.
@@ -397,10 +416,10 @@ Execute each recipe for real to catch runtime errors. Recipes are classified by 
 | **Safe** (fast, no side effects)                      | `compile`, `lint`, `check` | Execute directly                                                                          |
 | **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean`    | Execute directly (artifacts can be cleaned; fmt changes are welcome)                      |
 | **Idempotent** (installs dependencies)                | `install`                  | Execute directly                                                                          |
-| **Long-running** (starts servers)                     | `<key>-dev`                | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
-| **Expensive** (runs full test suite)                  | `unit-test`, `<key>-test`  | Skip actual execution; verified by `--dry-run` only                                       |
+| **Long-running** (starts servers)                     | `<prefix>dev`                | Execute with timeout (10s), kill after timeout -- success = process still alive at timeout |
+| **Expensive** (runs full test suite)                  | `unit-test`, `<prefix>test`  | Skip actual execution; verified by `--dry-run` only                                       |
 
-For long-running recipes (`<key>-dev`): execute via `timeout 10 just <key>-dev 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
+For long-running recipes (`<prefix>dev`): execute via `timeout 10 just <prefix>dev 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure.
 
 #### 4c. Self-correction rules
 
@@ -447,6 +466,12 @@ Language targets:
   ... (all language targets listed)
 
 Surface targets:
+  just dev            -> go run ./cmd/server/main.go     (scalar, no prefix)
+  just probe          -> curl -sf http://localhost:8080/health
+  just test           -> go test ./tests/... -v -tags=web-e2e -json
+  just teardown       -> (cleanup script)
+  ... (repeat for each surface)
+  -- OR named --
   just web-dev        -> go run ./cmd/server/main.go
   just web-probe      -> curl -sf http://localhost:8080/health
   just web-test       -> go test ./tests/... -v -tags=web-e2e -json
@@ -487,9 +512,9 @@ Run `/forge:test-guide` to create surface-first Convention files for consistent 
 
 - **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
 - **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
-- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<key>-test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <key>-test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../test-guide/references/test-type-model.md).
-- **Mixed project naming**: When multiple surfaces exist, recipes use the surface-key as prefix (e.g., `admin-panel-dev`, `payment-api-test`) to avoid collisions. Single-surface projects use the surface-type as prefix (e.g., `web-dev`).
-- **Targets invoked by forge skills**: `compile`, `unit-test`, `<key>-test`, `<key>-teardown`, `install`. The remaining targets are for manual use.
+- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<prefix>test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <prefix>test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../test-guide/references/test-type-model.md).
+- **Recipe naming**: Scalar surfaces (no key) produce prefix-less recipes (`test`, `dev`, `teardown`). Named surfaces produce `<key>-` prefixed recipes (e.g., `admin-panel-dev`, `payment-api-test`). Multi-surface projects always use named keys, so each surface gets its own prefix.
+- **Targets invoked by forge skills**: `compile`, `unit-test`, `<prefix>test`, `<prefix>teardown`, `install`. The remaining targets are for manual use.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.
 
 <EXTREMELY-IMPORTANT>
@@ -498,7 +523,7 @@ Run `/forge:test-guide` to create surface-first Convention files for consistent 
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
 - Use language-specific templates from `templates/<lang>.just` as the starting point for recipe generation. Customize with Convention overrides and LLM knowledge. See Step 0 HARD-RULE for the three-layer generation process.
-- Surface-key MUST match `[a-zA-Z0-9_-]+`. Abort on invalid keys — never generate recipes for invalid surface names.
+- Surface data source is `forge surfaces` (text mode). Scalar surfaces (no `=` in output line) produce prefix-less recipes (`test`, `dev`, `teardown`). Named surfaces produce `<key>-` prefixed recipes.
 - CLI/TUI surfaces MUST NOT generate dev, probe, or aggregate recipes.
 - `# user-customized` marked recipes MUST be preserved during re-generation.
 </EXTREMELY-IMPORTANT>

@@ -10,7 +10,7 @@ argument-hint: '[--force]'
 
 MANUAL-ONLY. Do NOT auto-invoke -- only when user explicitly asks to `/forge:test-guide`.
 
-Generate per-surface test Convention files (`docs/conventions/testing/{surface}/core.md`) by reading Surface configuration from `.forge/config.yaml`, rendering built-in surface strategy templates, and producing a top-level testing quick-reference index.
+Generate per-surface test Convention files (`docs/conventions/testing/{surface}/core.md`) by reading Surface configuration via `forge surfaces` CLI, rendering built-in surface strategy templates, and producing a top-level testing quick-reference index.
 
 ## Parameters
 
@@ -42,35 +42,44 @@ Check whether Convention files already exist for any surface.
 
 Read the project's Surface configuration to determine which surfaces need Convention files.
 
-#### 1a. Parse `.forge/config.yaml`
+#### 1a. Parse `forge surfaces` output
 
-Read `.forge/config.yaml` and extract the `surfaces` field. The field value is a comma-separated string of surface keys.
+Run `forge surfaces` to obtain surface configuration. This ensures a consistent data source with other skills.
 
-```yaml
-# Example: single surface
-surfaces: cli
-
-# Example: multiple surfaces
-surfaces: cli,api
+```bash
+forge surfaces
 ```
 
-Parse into `active_surfaces` array.
+**Parsing rule** (unified across all skills):
+```
+forge surfaces text output parsing — per line:
+  if line contains '=':
+    key = part before '='
+    type = part after '='
+    → named surface
+  else:
+    key = (empty)
+    type = line
+    → scalar surface (no key)
+```
 
-#### 1b. Validate surface keys
+Parse each line to build `active_surfaces` array. Each entry has `key` (may be empty for scalar) and `type`.
 
-Each surface key must be one of the supported surface types:
+#### 1b. Validate surface types
 
-| Surface Key | Strategy Template | Test Type |
-|-------------|-------------------|-----------|
+Each surface type must be one of the supported types:
+
+| Surface Type | Strategy Template | Test Type |
+|--------------|-------------------|-----------|
 | `cli` | `templates/surfaces/cli.md` | CLI Functional Test |
 | `api` | `templates/surfaces/api.md` | API Functional Test |
 | `web` | `templates/surfaces/web.md` | Web E2E Test |
 | `tui` | `templates/surfaces/tui.md` | Terminal Functional Test |
 | `mobile` | `templates/surfaces/mobile.md` | Mobile E2E Test |
 
-If an unsupported surface key is found: output error `"Unsupported surface: <key>. Supported: cli, api, web, tui, mobile"` and abort.
+If an unsupported surface type is found: output error `"Unsupported surface: <type>. Supported: cli, api, web, tui, mobile"` and abort.
 
-If `surfaces` field is missing or empty: output error `"No surfaces configured in .forge/config.yaml. Run 'forge init' or manually add surfaces field."` and abort.
+If `forge surfaces` returns empty output or fails: output error `"No surfaces configured. Run 'forge init' or manually add surfaces to .forge/config.yaml."` and abort.
 
 ### Step 2: Detect Framework (Auxiliary Step)
 
@@ -105,11 +114,11 @@ If no test files exist (medium or low confidence detection): use the default ass
 
 ### Step 3: Render Per-Surface Convention Files
 
-For each surface in `active_surfaces`, generate a Convention file from the corresponding template.
+For each surface in `active_surfaces`, generate a Convention file from the corresponding template. Each entry has `type` (used for template and directory naming) and optionally `key` (non-empty for named surfaces).
 
 #### 3a. Load surface strategy template
 
-Read the template file for the current surface from `templates/surfaces/<surface>.md`.
+Read the template file for the current surface from `templates/surfaces/<type>.md` (where `<type>` is the surface type from the parsing step).
 
 #### 3b. Fill assertion preference table
 
@@ -129,7 +138,7 @@ If no framework was detected (completely cold start): keep the placeholder row a
 
 #### 3c. Generate index.md for the surface
 
-Create `docs/conventions/testing/<surface>/index.md` as a file index pointing to `core.md`:
+Create `docs/conventions/testing/<type>/index.md` as a file index pointing to `core.md`:
 
 ```markdown
 ---
@@ -251,16 +260,16 @@ Write all confirmed Convention files.
 
 ```bash
 mkdir -p docs/conventions/testing
-for surface in <active_surfaces>; do
-  mkdir -p "docs/conventions/testing/$surface"
+for surface_type in <active_surfaces types>; do
+  mkdir -p "docs/conventions/testing/$surface_type"
 done
 ```
 
 #### 6b. Write files
 
-For each surface in `active_surfaces`:
-- Write `docs/conventions/testing/<surface>/index.md` following the format from Step 3c.
-- Write `docs/conventions/testing/<surface>/core.md` following the Convention structure per `rules/convention-structure.md`.
+For each surface in `active_surfaces` (using `type` for directory naming):
+- Write `docs/conventions/testing/<type>/index.md` following the format from Step 3c.
+- Write `docs/conventions/testing/<type>/core.md` following the Convention structure per `rules/convention-structure.md`.
 
 Write `docs/conventions/testing/index.md` following the format from Step 4a.
 

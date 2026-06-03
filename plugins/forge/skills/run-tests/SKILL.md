@@ -61,28 +61,37 @@ Read the current task file (from `forge task status` or known task path). Extrac
 **Source 2 (fallback): `forge surfaces` CLI**
 
 ```bash
-forge surfaces --json <source-directory-path>
+forge surfaces <source-directory-path>
 ```
 
 Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
-Parse JSON response to extract:
-- `type` field (surface-type, e.g., "web", "cli")
-- `key` field (surface-key, e.g., "admin-panel", ".")
+**Parsing rule** (unified across all skills):
+```
+forge surfaces text output parsing — per line:
+  if line contains '=':
+    key = part before '='
+    type = part after '='
+    → named surface
+  else:
+    key = (empty)
+    type = line
+    → scalar surface (no key)
+```
 
 **Determine recipe-prefix**:
 
 The recipe-prefix determines how just recipes are named. The rule follows init-justfile's recipe naming convention:
 
-1. If `forge surfaces --json` returns multiple surfaces (array length > 1), use each surface's `key` field as `recipe-prefix` for that surface.
-2. If only one surface exists (array length == 1), use the surface's `type` field as `recipe-prefix` — this ensures backward compatibility with single-surface projects where recipes are named `<type>-test` (e.g., `cli-test`).
-3. When the `key` field is `"."` (single-surface default), use the `type` field as `recipe-prefix`.
+1. Parse each line using the rule above.
+2. If the line has no `=` (scalar surface), `recipe-prefix` is empty — recipes are named `<verb>` (e.g., `test`, `teardown`).
+3. If the line has `=` (named surface), `recipe-prefix` is `<key>-` — recipes are named `<key>-<verb>` (e.g., `admin-panel-test`).
 
 | Scenario | recipe-prefix | Example |
 |----------|--------------|---------|
-| Single surface (key=".") | `type` | `cli-test`, `cli-teardown` |
-| Single surface (key="my-cli") | `type` | `cli-test`, `cli-teardown` |
-| Multi surface | `key` | `admin-panel-test`, `payment-api-test` |
+| Scalar surface (no key) | (empty) | `test`, `teardown` |
+| Named surface (key="admin-panel") | `admin-panel-` | `admin-panel-test`, `admin-panel-teardown` |
+| Named surface (key="payment-api") | `payment-api-` | `payment-api-test`, `payment-api-teardown` |
 
 Store `surface-type`, `surface-key`, and `recipe-prefix` for use in subsequent steps.
 
@@ -199,8 +208,10 @@ Execute the sequence defined in the loaded rule file's "Orchestration Sequence" 
 **State file**: Before starting the sequence, write teardown state to `.forge/test-state.json`:
 
 ```json
-{"teardown": "<recipe-prefix>-teardown", "timestamp": "<ISO8601>"}
+{"teardown": "<recipe-prefix>teardown", "timestamp": "<ISO8601>"}
 ```
+
+Where `<recipe-prefix>` is `<key>-` for named surfaces or empty for scalar surfaces.
 
 #### 4a. Web/API/Mobile Sequence (full lifecycle)
 
@@ -208,10 +219,10 @@ Execute: dev -> probe -> **[per-journey test loop]** -> teardown. dev and probe 
 
 **Sequence:**
 
-1. Execute `just <recipe-prefix>-dev`
-2. Execute `just <recipe-prefix>-probe` (with retry logic)
-3. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>-test <journey>`, record results
-4. Execute `just <recipe-prefix>-teardown`
+1. Execute `just <recipe-prefix>dev`
+2. Execute `just <recipe-prefix>probe` (with retry logic)
+3. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>test <journey>`, record results
+4. Execute `just <recipe-prefix>teardown`
 
 See the loaded surface rule file (`rules/surfaces/<type>.md`) for per-step failure handling (dev/probe/test/teardown exit codes), probe retry strategy, and probe HARD-GATE.
 
@@ -225,8 +236,8 @@ Execute: **[per-journey test loop]** -> teardown. No dev or probe steps.
 
 **Sequence:**
 
-1. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>-test <journey>`, record results
-2. Execute `just <recipe-prefix>-teardown`
+1. **For each journey in `JOURNEYS`**: execute `just <recipe-prefix>test <journey>`, record results
+2. Execute `just <recipe-prefix>teardown`
 
 See the loaded surface rule file (`rules/surfaces/<type>.md`) for per-step failure handling. Teardown follows the same HARD-RULE as 4a.
 
