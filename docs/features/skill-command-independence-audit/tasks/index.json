@@ -140,7 +140,7 @@
       "title": "Delete Integration + reduce shared content in quick-tasks",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "9-clean-quick-tasks.md",
       "record": "records/9-clean-quick-tasks.md",
       "type": "doc",
