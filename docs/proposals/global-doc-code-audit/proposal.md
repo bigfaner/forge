@@ -1,7 +1,7 @@
 ---
 created: "2026-06-02"
 author: "fanhuifeng"
-status: Draft
+status: Approved
 intent: "cleanup"
 ---
 
