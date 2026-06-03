@@ -1,0 +1,309 @@
+{
+  "feature": "global-doc-code-audit",
+  "proposal": "docs/proposals/global-doc-code-audit/proposal.md",
+  "created": "2026-06-03",
+  "tasks": {
+    "1-l1-pilot-audit": {
+      "id": "1",
+      "title": "L1 Pilot Audit: README.md",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-l1-pilot-audit.md",
+      "record": "records/1-l1-pilot-audit.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "10-l3-lessons-batch4-audit": {
+      "id": "10",
+      "title": "L3 Lessons Audit Batch 4 (gotcha-main-session to gotcha-revert-mid)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "10-l3-lessons-batch4-audit.md",
+      "record": "records/10-l3-lessons-batch4-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "11-l3-lessons-batch5-audit": {
+      "id": "11",
+      "title": "L3 Lessons Audit Batch 5 (gotcha-review-task to gotcha-task-executor-invisible)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "11-l3-lessons-batch5-audit.md",
+      "record": "records/11-l3-lessons-batch5-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "12-l3-lessons-batch6-audit": {
+      "id": "12",
+      "title": "L3 Lessons Audit Batch 6 (gotcha-task-executor-invisible to lesson-vibe)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "12-l3-lessons-batch6-audit.md",
+      "record": "records/12-l3-lessons-batch6-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "13-l3-final-batch-audit": {
+      "id": "13",
+      "title": "L3 Final Batch: Remaining Lessons + All Decisions",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "13-l3-final-batch-audit.md",
+      "record": "records/13-l3-final-batch-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "14-cross-layer-verification-and-consolidation": {
+      "id": "14",
+      "title": "Cross-Layer Verification and Report Consolidation",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ],
+      "status": "pending",
+      "file": "14-cross-layer-verification-and-consolidation.md",
+      "record": "records/14-cross-layer-verification-and-consolidation.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "15-generate-fix-tasks": {
+      "id": "15",
+      "title": "Generate Fix Tasks from Audit Findings",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "14"
+      ],
+      "status": "pending",
+      "file": "15-generate-fix-tasks.md",
+      "record": "records/15-generate-fix-tasks.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "2-l1-core-docs-audit": {
+      "id": "2",
+      "title": "L1 Core User Docs Audit",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-l1-core-docs-audit.md",
+      "record": "records/2-l1-core-docs-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "3-l1-official-refs-audit": {
+      "id": "3",
+      "title": "L1 Official References Audit",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-l1-official-refs-audit.md",
+      "record": "records/3-l1-official-refs-audit.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "4-l2-business-rules-audit": {
+      "id": "4",
+      "title": "L2 Business Rules + CLAUDE.md Audit",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-l2-business-rules-audit.md",
+      "record": "records/4-l2-business-rules-audit.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "5-l2-conventions-batch1-audit": {
+      "id": "5",
+      "title": "L2 Conventions Audit Batch 1",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-l2-conventions-batch1-audit.md",
+      "record": "records/5-l2-conventions-batch1-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "6-l2-conventions-batch2-audit": {
+      "id": "6",
+      "title": "L2 Conventions Audit Batch 2",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "6-l2-conventions-batch2-audit.md",
+      "record": "records/6-l2-conventions-batch2-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "7-l3-lessons-batch1-audit": {
+      "id": "7",
+      "title": "L3 Lessons Audit Batch 1 (arch/gotcha-a to gotcha-breaking-change)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "7-l3-lessons-batch1-audit.md",
+      "record": "records/7-l3-lessons-batch1-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "8-l3-lessons-batch2-audit": {
+      "id": "8",
+      "title": "L3 Lessons Audit Batch 2 (gotcha-breaking-change to gotcha-fix-task-claim)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "8-l3-lessons-batch2-audit.md",
+      "record": "records/8-l3-lessons-batch2-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "9-l3-lessons-batch3-audit": {
+      "id": "9",
+      "title": "L3 Lessons Audit Batch 3 (gotcha-fix-task-claim to gotcha-macos-sleep)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "9-l3-lessons-batch3-audit.md",
+      "record": "records/9-l3-lessons-batch3-audit.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "11",
+        "12",
+        "13",
+        "15",
+        "2",
+        "4",
+        "6",
+        "8",
+        "7",
+        "1",
+        "10",
+        "14",
+        "5",
+        "9",
+        "3"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
