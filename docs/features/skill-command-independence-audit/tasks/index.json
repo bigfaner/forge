@@ -107,7 +107,7 @@
       "title": "Inline templates/rules into fix-bug command + reduce Knowledge Review",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "6-inline-fix-bug.md",
       "record": "records/6-inline-fix-bug.md",
       "type": "doc",
