@@ -161,7 +161,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-l2-business-rules-audit.md",
       "record": "records/4-l2-business-rules-audit.md",
       "type": "doc",
