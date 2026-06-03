@@ -74,7 +74,7 @@
       "title": "Inline test isolation into gen-test-scripts + delete Related sections",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-inline-gen-test-scripts.md",
       "record": "records/3-inline-gen-test-scripts.md",
       "type": "doc",
