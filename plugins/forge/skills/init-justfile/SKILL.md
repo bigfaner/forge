@@ -255,13 +255,13 @@ For each surface in `SURFACES_LIST` (collected in Step 1s):
 
 ```just
 # user-customized
-web-dev:
+web-dev [linux]:
     #!/usr/bin/env bash
     set -euo pipefail
     # Linux-specific dev command
 
 # user-customized
-web-dev:
+web-dev [windows]:
     #!/usr/bin/env bash
     set -euo pipefail
     # Windows-specific dev command
@@ -278,47 +278,18 @@ Every surface recipe MUST include `# user-customized` comment above the `[linux]
 
 **Aggregate recipes** (web, api, mobile):
 - Generate `<prefix>` aggregate recipe that calls sub-recipes in orchestration order.
-- On any sub-step failure, run teardown and exit with the failure code:
+- On any sub-step failure, run teardown and exit with the failure code.
 
-```just
-# scalar example (no key):
-test-all:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just dev && just probe && just test; rc=$?; just teardown; exit $rc
-
-# named example (key=web):
-web:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just web-dev && just web-probe && just web-test; rc=$?; just web-teardown; exit $rc
-```
+Aggregate pattern: `just <prefix>dev && just <prefix>probe && just <prefix>test; rc=$?; just <prefix>teardown; exit $rc`
 
 **Recipe content generation**: The LLM fills in recipe bodies based on:
 1. **Language template** (from Step 3a): provides the underlying command patterns (e.g., `go run`, `npm run dev`, `cargo run`) loaded from `templates/<lang>.just`.
 2. **Convention knowledge** (from Step 0): provides framework-specific test runners and patterns to override template defaults.
 3. **Surface rule file**: provides the orchestration sequence, exit code semantics, and recipe templates with `[linux]`/`[windows]` dual-platform structure.
 
-The LLM synthesizes these three sources to produce concrete recipe bodies. The surface rule files provide TODO-stub templates as the structural skeleton; the LLM replaces stubs with actual commands derived from the language template and Convention knowledge. For example, a web surface in a Go project would generate:
+The LLM synthesizes these three sources to produce concrete recipe bodies. The surface rule files provide TODO-stub templates as the structural skeleton; the LLM replaces stubs with actual commands derived from the language template and Convention knowledge.
 
-```just
-web-dev:
-    go run ./cmd/server/main.go
-
-web-probe:
-    curl -sf http://localhost:8080/health
-
-web-test:
-    go test ./tests/... -v -tags=web-e2e -json
-
-web-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ -f tests/results/.pid-server ]; then
-        kill "$(tr -d '\r' < tests/results/.pid-server)" 2>/dev/null || true
-        rm -f tests/results/.pid-server
-    fi
-```
+Example (web surface, Go project): `web-dev` uses `go run`, `web-probe` uses `curl`, `web-test` uses `go test -tags=web-e2e`, `web-teardown` kills the server PID.
 
 #### 3c. Boundary marker merge
 
@@ -421,87 +392,49 @@ When a recipe fails in Phase 2, analyze the error and apply corrections per `rul
 
 #### 4d. Report verification results
 
-After all recipes have been verified (or corrected):
-
-```
-Verification results:
-  [ok] compile         -> go vet ./... (executed)
-  [ok] unit-test       -> go test ./... (dry-run only)
-  [ok] web-dev         -> go run ./cmd/server/main.go (executed, 10s timeout)
-  [ok] web-probe       -> curl -sf http://localhost:8080/health (executed)
-  [ok] web-test        -> go test ./tests/... -v -tags=web-e2e (dry-run only)
-  [ok] web-teardown    -> bash cleanup script (executed)
-  [fix] lint           -> golangci-lint not found, replaced with go vet (executed, self-corrected)
-
-1 issue auto-corrected. Edit justfile to customize further.
-```
+Output one line per recipe: `[ok]` or `[fix]` + recipe name + resolved command + method (executed / dry-run only / self-corrected). Summarize auto-corrections at the end.
 
 ### Step 5: Output Confirmation
 
-**With surfaces configured:**
+Output format (adapt per project):
 
 ```
-Created justfile with surface-aware forge targets (Go project)
+Created justfile with <surface-aware | standard> forge targets (<Language> project)
 
-Surfaces:
-  admin-panel (web): web-dev, web-probe, web-test, web-teardown, web
-  payment-api (api): api-dev, api-probe, api-test, api-teardown, api
-  mobile-app (mobile): mobile-test-setup, mobile-dev, mobile-probe, mobile-test, mobile-teardown, mobile
+Surfaces:              (omit if no surfaces)
+  <key> (<type>): <generated recipes>
 
 Language targets:
-  just compile        -> go vet ./...
-  just unit-test      -> go test ./...
-  just lint           -> golangci-lint run ./...
-  ... (all language targets listed)
+  just <target>        -> <resolved command>
+  ...
 
-Surface targets:
-  just dev            -> go run ./cmd/server/main.go     (scalar, no prefix)
-  just probe          -> curl -sf http://localhost:8080/health
-  just test           -> go test ./tests/... -v -tags=web-e2e -json
-  just teardown       -> (cleanup script)
-  ... (repeat for each surface)
-  -- OR named --
-  just web-dev        -> go run ./cmd/server/main.go
-  just web-probe      -> curl -sf http://localhost:8080/health
-  just web-test       -> go test ./tests/... -v -tags=web-e2e -json
-  just web-teardown   -> (cleanup script)
-  just web            -> aggregate: dev->probe->test->teardown
-  ... (repeat for each surface)
+Surface targets:       (omit if no surfaces)
+  just <prefix><verb>  -> <resolved command>
+  ...
 
-Convention: docs/conventions/testing/cli/core.md (Go testing package + testify/assert)
-Edit justfile to customize commands for your project.
-Recipes marked `# user-customized` will be preserved on re-generation.
-forge quality-gate will now use `just unit-test` for per-task gates.
-```
-
-**Without surfaces (zero-regression path):**
-
-```
-Created justfile with standard forge targets (Go project)
-
-Targets:
-  just compile                    -> go vet ./...
-  just unit-test                  -> go test ./...
-  just lint                       -> golangci-lint run ./...
-  ... (all standard targets listed with resolved commands)
-
-Convention: docs/conventions/testing/cli/core.md (Go testing package + testify/assert)
-Edit justfile to customize commands for your project.
-Run `/forge:init-justfile` again after configuring surfaces in .forge/config.yaml to add surface-aware recipes.
-```
-
-If no Convention was used:
-
-```
-No Convention file found. Recipes generated from LLM defaults.
-Run `/forge:test-guide` to create surface-first Convention files for consistent future generation.
+Convention: <path> (<framework>) | No Convention file found. Run `/forge:test-guide` to create.
+Edit justfile to customize commands. Recipes marked `# user-customized` will be preserved on re-generation.
 ```
 
 ## Notes
 
 - **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
 - **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
-- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<prefix>test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <prefix>test` based on task surface-key. Test type terminology follows the [Surface Test Type Model](../test-guide/references/test-type-model.md).
+- **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<prefix>test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <prefix>test` based on task surface-key. Test type terminology follows the inline model below.
+
+<!-- INLINE:origin=test-guide/references/test-type-model.md -->
+**Surface -> Test Type mapping**:
+
+| Surface | Test Type | Verification | Execution Model |
+|---------|-----------|-------------|-----------------|
+| `cli` | CLI Functional Test | Exit code + stdout + stderr | Subprocess |
+| `tui` | Terminal Functional Test | Terminal output + stdin interaction | Subprocess + stdin pipe |
+| `api` | API Functional Test | HTTP status + response body + headers | HTTP client |
+| `web` | Web E2E Test | DOM visibility + user interaction + URL change | Browser automation |
+| `mobile` | Mobile E2E Test | UI visibility + user interaction + screen ID | Maestro YAML / manual |
+
+Key: "Functional" = protocol-level call verification (subprocess/HTTP); "E2E" = device-level automation (browser/mobile). The "e2e" label applies **only** to web and mobile surfaces.
+<!-- END INLINE:origin=test-guide/references/test-type-model.md -->
 - **Recipe naming**: Scalar surfaces (no key) produce prefix-less recipes (`test`, `dev`, `teardown`). Named surfaces produce `<key>-` prefixed recipes (e.g., `admin-panel-dev`, `payment-api-test`). Multi-surface projects always use named keys, so each surface gets its own prefix.
 - **Targets invoked by forge skills**: `compile`, `unit-test`, `<prefix>test`, `<prefix>teardown`, `install`. The remaining targets are for manual use.
 - **Cold start**: When no Convention files exist, the LLM generates recipes from common patterns for the detected language. These recipes use conservative defaults and may need manual adjustment.

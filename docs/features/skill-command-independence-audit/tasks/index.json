@@ -96,7 +96,7 @@
       "title": "Inline test-type model into init-justfile + reduce examples",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "5-inline-init-justfile.md",
       "record": "records/5-inline-init-justfile.md",
       "type": "doc",
