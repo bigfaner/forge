@@ -308,11 +308,3 @@ When tests fail, follow the diagnostic flow in `rules/failure-diagnosis.md`.
 When **>30% of tests fail simultaneously**, do NOT proceed to individual test fix tasks. Run app health diagnostics first.
 </HARD-RULE>
 
-## Related Skills
-
-| Skill | Usage |
-|-------|-------|
-| `/gen-test-scripts` | Generate executable test scripts |
-| `/init-justfile` | Generate surface-specific justfile recipes |
-
-After all tests pass, tag promotion (`@feature` → `@regression`) is handled automatically by the `/run-tests` skill.

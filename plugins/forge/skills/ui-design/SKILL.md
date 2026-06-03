@@ -226,10 +226,3 @@ After prototype is approved or skipped, use `AskUserQuestion`:
 - **Yes** → invoke `/tech-design` via `Skill` tool
 - **No** → done
 
-## Integration
-
-Works well with:
-
-- `/write-prd` — Produces `prd/prd-ui-functions.md` input
-- `/tech-design` — Next skill after UI design; informed by UI decisions
-- `/eval-ui` — Adversarial evaluation after UI design is created

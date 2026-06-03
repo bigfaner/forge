@@ -52,7 +52,7 @@
       "title": "Delete Related sections in consolidate-specs, run-tests, ui-design",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "13-delete-related-batch.md",
       "record": "records/13-delete-related-batch.md",
       "type": "doc",
