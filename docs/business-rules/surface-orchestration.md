@@ -1,6 +1,6 @@
 ---
 title: "Surface Orchestration Rules"
-domains: [surface, orchestration, probe, teardown, recipe, surface-key, surface-type]
+domains: [surface, orchestration, probe, teardown, recipe, surface-key, surface-type, scalar, sentinel]
 ---
 
 # Surface Orchestration Rules
@@ -59,6 +59,6 @@ Dev server failures MUST NOT proceed to subsequent steps -- immediately teardown
 
 ### BIZ-surface-orchestration-006: Surface-Key Naming Constraint
 
-**Rule**: Surface-key values MUST match `^[a-z][a-z0-9-]*$` -- must start with a lowercase letter, followed by lowercase letters, digits, or hyphens only. No `/`, `+`, uppercase, or underscore characters, ensuring compatibility with just recipe name syntax. Enforcement occurs in init-justfile recipe generation.
-**Context**: Prevents just recipe name injection and ensures generated recipe names are syntactically valid.
+**Rule**: Surface-key values MUST match `^[a-z][a-z0-9-]*$` -- must start with a lowercase letter, followed by lowercase letters, digits, or hyphens only. No `/`, `+`, uppercase, or underscore characters, ensuring compatibility with just recipe name syntax. Scalar surfaces (no explicit key, e.g., `surfaces: tui`) have no surface-key — the internal sentinel `"."` is never exposed to skills or recipes. Enforcement occurs in init-justfile recipe generation.
+**Context**: Prevents just recipe name injection and ensures generated recipe names are syntactically valid. Scalar surfaces bypass key validation entirely since they produce prefix-less recipes.
 **Source**: feature/surface-aware-justfile BIZ-006
