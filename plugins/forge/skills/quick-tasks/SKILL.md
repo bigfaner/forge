@@ -87,18 +87,7 @@ Set the `complexity` field in task frontmatter accordingly.
 
 **Surface-Key/Type Inference**: Use `forge surfaces` (text mode) resolution strategy:
 
-**Parsing rule** (unified across all skills):
-```
-forge surfaces text output parsing — per line:
-  if line contains '=':
-    key = part before '='
-    type = part after '='
-    → named surface
-  else:
-    key = (empty)
-    type = line
-    → scalar surface (no key)
-```
+**Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
 1. **Single-surface projects** (output is a single line): Run `forge surfaces` once. All tasks share that surface's key and type. Skip per-file calls entirely — this eliminates N*M redundant CLI invocations. Set `surface-key` and `surface-type` on every task. For scalar surfaces, `surface-key` is left empty and `surface-type` is the type value.
 

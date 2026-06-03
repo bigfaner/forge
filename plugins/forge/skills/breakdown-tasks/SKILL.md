@@ -171,18 +171,7 @@ Header in `(ref: ...)` MUST match an extracted header.
 ### Surface-Key/Type Inference
 Surface-key/type resolution uses `forge surfaces` (text mode):
 
-**Parsing rule** (unified across all skills):
-```
-forge surfaces text output parsing — per line:
-  if line contains '=':
-    key = part before '='
-    type = part after '='
-    → named surface
-  else:
-    key = (empty)
-    type = line
-    → scalar surface (no key)
-```
+**Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
 1. Run `forge surfaces` once with no file argument to get all project surfaces.
 

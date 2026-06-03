@@ -50,18 +50,7 @@ Run `forge surfaces` to obtain surface configuration. This ensures a consistent 
 forge surfaces
 ```
 
-**Parsing rule** (unified across all skills):
-```
-forge surfaces text output parsing — per line:
-  if line contains '=':
-    key = part before '='
-    type = part after '='
-    → named surface
-  else:
-    key = (empty)
-    type = line
-    → scalar surface (no key)
-```
+**Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
 Parse each line to build `active_surfaces` array. Each entry has `key` (may be empty for scalar) and `type`.
 

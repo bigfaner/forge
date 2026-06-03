@@ -52,21 +52,6 @@ Use these for ad-hoc lookups when a user mentions a slug:
 - `forge feature set <slug>` — set the active feature context for the session
 - `forge feature complete --if-done` — mark feature completed if all tasks done (stop hook)
 
-### Configuration
-
-Forge uses `forge config get <key>` to read project-level automation settings. Common keys:
-
-| Key | Purpose | Used by |
-|-----|---------|---------|
-| `auto.runTasks` | Auto-run task dispatch after quick pipeline | `/quick` |
-| `auto.knowledgeSave` | Auto-save extracted knowledge after bug fix | `/fix-bug` |
-| `auto.eval.proposal` | Auto-evaluate proposals after brainstorm | `/brainstorm` |
-| `auto.eval.prd` | Auto-evaluate PRD after write-prd | `/write-prd` |
-| `auto.eval.techDesign` | Auto-evaluate tech design | `/tech-design` |
-| `auto.eval.uiDesign` | Auto-evaluate UI design | `/ui-design` |
-
-All keys return `true` or empty. Check with: `forge config get <key>`; if output contains `true`, the behavior is enabled.
-
 ### Pipeline Utilities
 
 - `forge prompt get-by-task-id <id>` — retrieve task execution prompt (dispatcher/agent entry point)
@@ -75,6 +60,28 @@ All keys return `true` or empty. Check with: `forge config get <key>`; if output
 - `forge task index --feature <slug>` — regenerate task index from task files
 - `forge task validate-index <path>` — validate index.json structure
 - `forge cleanup` — clean stale artifacts
+
+### Surface Output Parsing
+
+`forge surfaces` (text mode) outputs one surface per line. Skills must use text mode (not `--json`) and apply the unified parsing rule:
+
+```
+Per line of forge surfaces output:
+  if line contains '=':
+    key = part before '='
+    type = part after '='
+    → named surface (key is set)
+  else:
+    key = (empty)
+    type = line
+    → scalar surface (no key)
+```
+
+| Config form | Text output | key | type |
+|-------------|------------|-----|------|
+| Scalar: `surfaces: tui` | `tui` | empty | `tui` |
+| Named: `surfaces: [{key: app, type: tui}]` | `app=tui` | `app` | `tui` |
+| Multi: two named surfaces | `backend=api` then `frontend=web` | per-line | per-line |
 
 ## Testing
 

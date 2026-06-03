@@ -160,18 +160,7 @@ Detect surfaces configured in the project:
 forge surfaces 2>/dev/null
 ```
 
-**Parsing rule** (unified across all skills):
-```
-forge surfaces text output parsing — per line:
-  if line contains '=':
-    key = part before '='
-    type = part after '='
-    → named surface
-  else:
-    key = (empty)
-    type = line
-    → scalar surface (no key)
-```
+**Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
 **Outcome A — Surfaces configured** (text output is non-empty):
 

@@ -66,18 +66,7 @@ forge surfaces <source-directory-path>
 
 Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
 
-**Parsing rule** (unified across all skills):
-```
-forge surfaces text output parsing — per line:
-  if line contains '=':
-    key = part before '='
-    type = part after '='
-    → named surface
-  else:
-    key = (empty)
-    type = line
-    → scalar surface (no key)
-```
+**Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
 **Determine recipe-prefix**:
 
