@@ -119,7 +119,7 @@
       "dependencies": [
         "14"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "15-generate-fix-tasks.md",
       "record": "records/15-generate-fix-tasks.md",
       "type": "doc",
