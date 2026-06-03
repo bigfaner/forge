@@ -1,7 +1,7 @@
 ---
 feature: "skill-command-independence-audit"
 created: "2026-06-04"
-status: tasks
+status: completed
 mode: quick
 ---
 
