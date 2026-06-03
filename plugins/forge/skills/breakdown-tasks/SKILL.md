@@ -169,15 +169,19 @@ Header in `(ref: ...)` MUST match an extracted header.
 - UI tasks use `rules/ui-placement.md` requirements instead — no overlap
 
 ### Surface-Key/Type Inference
-Surface-key/type resolution uses a two-layer strategy:
+Surface-key/type resolution uses `forge surfaces` (text mode):
 
-1. **Project-level shortcut** (single-surface projects): Run `forge surfaces --json` once with no file argument. If the result is a single surface (array length 1), all tasks share that surface-key and surface-type. **Skip per-file `forge surfaces` calls entirely** — this eliminates N*M redundant CLI invocations. Set both fields on every task.
+**Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
-2. **File-level query** (multi-surface projects): For each task, examine affected file paths. Use path prefix matching against known surface directories first. Only call `forge surfaces --json <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface → use its key+type; mixed/no match → leave both empty.
+1. Run `forge surfaces` once with no file argument to get all project surfaces.
 
-3. Write `surface-key` and `surface-type` into task frontmatter.
+2. **Single-surface projects** (output is a single line): All tasks share that surface's key and type. Skip per-file `forge surfaces` calls entirely — this eliminates N*M redundant CLI invocations. Set both fields on every task.
 
-If `forge surfaces --json` fails or returns no surfaces configured, set both fields to empty strings and continue. Do NOT block task generation.
+3. **Multi-surface projects** (output has multiple lines): For each task, examine affected file paths. Use path prefix matching against known surface directories first. Only call `forge surfaces <file-path>` for files whose path prefix is ambiguous across surfaces. Merge results: single surface -> use its key+type; mixed/no match -> leave both empty.
+
+4. Write `surface-key` and `surface-type` into task frontmatter. For scalar surfaces, `surface-key` is left empty (or omitted) and `surface-type` is the type value.
+
+If `forge surfaces` fails or returns no surfaces configured, set both fields to empty strings and continue. Do NOT block task generation.
 
 ### Priority Assignment
 
