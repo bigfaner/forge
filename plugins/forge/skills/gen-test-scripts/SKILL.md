@@ -236,6 +236,8 @@ Apply the surface type detected in Step 0.5 to constrain the generation plan. Lo
 | TEST-isolation-003 | CLI functional test fixtures | Helpers creating project directories MUST create all files required by code under test — including `tasks/index.json`, `.forge/config.yaml`, and any other files the production code checks for. | Include `index.json` in `ensureFeatureDir` |
 | TEST-isolation-004 | CLI functional tests (binary) | Test files invoking forge CLI commands SHOULD compile a dedicated forge binary from current source tree via `go build` and use it for all `exec.Command` invocations, rather than relying on system-installed `forge` via `$PATH`. | `TestMain` builds binary; tests use `exec.Command(forgeBinary, ...)` |
 
+<!-- END INLINE:origin=run-tests/rules/test-isolation.md -->
+
 ### Output Directory
 
 Tests go directly into `tests/<journey>/`. Contract specs are read from `docs/features/<slug>/testing/<journey>/contracts/`:

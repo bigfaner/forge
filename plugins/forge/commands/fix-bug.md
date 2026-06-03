@@ -356,6 +356,8 @@ Before presenting candidates in Step 5, grep target directories for similar exis
 - All output formats must follow the Write Formats and Classification & ID Rules sections above
 - Deduplication runs before presentation — never present a duplicate of existing knowledge
 
+<!-- END INLINE:origin=consolidate-specs/rules/ -->
+
 ---
 
 ## Output Summary
