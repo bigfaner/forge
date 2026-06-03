@@ -134,6 +134,7 @@ Scope string `yaml:"scope"`
 | ~~CS-3~~ | `checkExistingTaskState` 别名 | TECH-code-structure-003 | **已修复** — 别名已删除，调用迁移为 `task.CheckExistingTaskState()` 直接调用 | N/A |
 | ~~CS-4~~ | `compareVersionIDs` 别名 | TECH-code-structure-003 | **已修复** — 别名已删除，调用迁移为 `task.CompareVersionIDs()` 直接调用 | N/A |
 | ~~CS-5~~ | `Scope` deprecated 字段 | TECH-code-structure-005 | **已修复** — `FrontmatterData.Scope` 已从 `frontmatter.go` 移除，`CheckLegacyScope` 保留用于迁移检测 | N/A |
+| ~~CS-6~~ | `validate_index.go` 文件命名 | TECH-code-structure-002 | **已修复** — `internal/cmd/task/validate_index.go` 重命名为 `validate.go`，与 `forge task validate` 子命令名一致 | N/A |
 
 ## 5. 参考
 

@@ -188,13 +188,10 @@ grep -rn '[^0-9a-zA-Z_][2-9][0-9]*[^0-9a-zA-Z_]' forge-cli/pkg/*/ forge-cli/inte
 | `project` | 项目根目录检测 | 标准 Go 命名 |
 | `facttable` | 事实表数据结构 | 见偏差 N2 |
 | `forgeconfig` | Forge 配置文件解析 | 见偏差 N3 |
-| `version` | 版本常量 | 标准 Go 命名 |
 | `feature` | Feature 生命周期管理 | 标准 Go 命名 |
 | `task` | 任务管理 | 标准 Go 命名 |
 | `prompt` | Prompt 模板管理 | 标准 Go 命名 |
 | `proposal` | Proposal 文档管理 | 标准 Go 命名 |
-| `lesson` | 经验教训记录 | 标准 Go 命名 |
-| `research` | 深度研究管理 | 标准 Go 命名 |
 | `serverprobe` | 服务器探测 | 见偏差 N2 |
 | `testrunner` | 测试运行器 | 见偏差 N2 |
 
@@ -241,11 +238,11 @@ cd forge-cli && go vet ./...
 | 位置 | 当前模式 | 目标模式 | 说明 |
 |------|---------|---------|------|
 | `internal/cmd/task/` | `runAdd`, `runClaim`, `runList` | 无需变更 | 子包内函数名不需要重复包名前缀，上下文已明确 |
-| `internal/cmd/worktree/` | `runWorktreeRemove`, `runWorktreeList` | 可简化为 `runRemove`, `runList` | 加了 `Worktree` 前缀冗余 |
+| `internal/cmd/worktree/` | `runWorktreeRemove`, `runWorktreeList` | 可简化为 `runRemove`, `runList` | 加了 `Worktree` 前缀 — 当前保留，避免大范围重命名 |
 | `internal/cmd/fact/` | `runList`, `runGet`, `runSummary` | 无需变更 | 符合目标模式 |
 | `internal/cmd/forensic/` | `runExtract`, `runSearch`, `runSubagents` | 无需变更 | 符合目标模式 |
 
-**结论**：`internal/cmd/worktree/` 中的 `runWorktree*` 前缀冗余，但不构成严重问题。新代码应在子包中使用 `run<Subcommand>` 模式（不加包名前缀）。
+**结论**：`internal/cmd/worktree/` 中的 `runWorktree*` 前缀与目标模式不一致，但当前保留以避免不必要的大范围重命名。新代码应在子包中使用 `run<Subcommand>` 模式（不加包名前缀）。
 
 ## 6. 开发者工作流
 

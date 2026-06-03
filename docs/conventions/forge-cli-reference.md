@@ -19,7 +19,7 @@ domains: [cli, commands, reference, skills, task-list, validate]
 | `forge proposal [slug]` | 列出或查看 proposal 详情 | `proposal.go` |
 | `forge lesson [name]` | 列出或查看 lesson 详情 | `lesson.go` |
 | `forge cleanup` | 清理已完成的任务状态 | `cleanup.go` |
-| `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `quality_gate.go` |
+| `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `qualitygate/quality_gate.go` |
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
 | `forge research [slug]` | 列出或查看 research report 详情 | `research.go` |

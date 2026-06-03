@@ -27,8 +27,10 @@ Constants fall into five categories. Each has distinct extraction criteria and c
 |---|---|---|
 | `TestOutputFileName = "raw-output.txt"` | `pkg/feature/constants.go` | Test output file name |
 | `UnitTestOutputFileName = "unit-raw-output.txt"` | `pkg/feature/constants.go` | Test output file name |
-| `"tests/results/"` | `init.go:46` (gitignore entry) | Gitignore path (static list, acceptable) |
-| `defaultHealthPath` | `pkg/serverprobe/constants.go` | Default health-check path |
+| `"tests/results/"` | `init.go:35` (gitignore entry, `gitignoreEntries` slice) | Gitignore path (static list, acceptable) |
+| `defaultHealthPath = "/health"` | `pkg/serverprobe/constants.go` | Default health-check path |
+
+**Note**: Some constants exist as inline defaults in `pkg/testrunner/` code rather than as named constants, because they are single-use and contextually clear.
 
 **Target state**: All such paths defined as `const` in the relevant package's `constants.go` or in the existing `pkg/feature/constants.go` for shared paths.
 

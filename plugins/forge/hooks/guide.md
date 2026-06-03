@@ -11,7 +11,7 @@ docs/
   ARCHITECTURE.md       — System architecture
   business-rules/       — Cross-feature business rules (by domain, e.g. auth.md)
   conventions/          — Technical specs (coding standards, API conventions, naming rules)
-  reference/            — System specs (environment, deployment, tech stack)
+  reference/            — System specs (environment, deployment, tech stack) [optional]
   decisions/            — Technical decisions (/learn)
   lessons/              — Lessons learned (/learn)
   proposals/            — Improvement proposals (docs/proposals/{slug}/proposal.md, via /brainstorm or ad-hoc)
