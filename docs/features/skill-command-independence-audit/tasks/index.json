@@ -8,7 +8,7 @@
       "title": "Inline surface detection into gen-contracts + clean Related sections",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-inline-gen-contracts.md",
       "record": "records/1-inline-gen-contracts.md",
       "type": "doc",

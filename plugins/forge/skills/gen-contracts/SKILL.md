@@ -55,7 +55,42 @@ Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contra
 
 ### 0.1 Surface Detection
 
-Detect the project's surface types via `forge surfaces`. See `gen-journeys/SKILL.md` "Surface Detection" section for the full detection flow, exit code contract, and detection flow steps.
+Determine the project's configured surface types via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
+
+<!-- INLINE:origin=gen-journeys/SKILL.md#Surface Detection -->
+
+### Detection via CLI
+
+Query the project's configured surface types using `forge surfaces <path>`:
+
+```bash
+forge surfaces <path>
+```
+
+**Exit code contract**:
+
+| Exit Code | Meaning | Action |
+|-----------|---------|--------|
+| 0 | Surface types found. stdout contains one surface type per line (e.g., `web`, `api`). For monorepo configs, each configured surface appears on its own line. | Parse stdout to collect all surface type strings. Proceed to rule loading. |
+| 1 | No surface configured for the given path. stderr contains an error message with configuration guidance. | **Pause pipeline**. Show the stderr message to the user and ask them to configure surfaces via `forge init`. |
+
+### Detection Flow
+
+1. Run `forge surfaces .` (or the relevant source path for the feature being tested)
+2. If exit code is 0: parse stdout to collect all surface type strings (one per line)
+3. If exit code is 1: pause the pipeline and ask the user to configure surfaces
+4. Load the corresponding rule files for each detected surface type
+
+**Supported surface types**: `web`, `api`, `cli`, `tui`, `mobile`
+
+**Surface rule files** (loaded dynamically based on detected types):
+- `rules/surface-api.md`
+- `rules/surface-cli.md`
+- `rules/surface-mobile.md`
+- `rules/surface-tui.md`
+- `rules/surface-web.md`
+
+<!-- END INLINE:origin=gen-journeys/SKILL.md#Surface Detection -->
 
 <HARD-RULE>
 Surface detection must complete before Convention loading begins. If the `forge surfaces` command returns exit code 1, the pipeline must pause and wait for user input. Never proceed with a guessed surface type. Do NOT scan project files independently for surface detection -- always use `forge surfaces <path>`.
@@ -256,17 +291,7 @@ Output path is strictly `docs/features/<slug>/testing/<journey>/contracts/`. No 
 
 See `rules/validation.md` for the complete error handling table.
 
-## Related Skills
-
-| Skill | Usage |
-|-------|-------|
-| `/gen-journeys` | Generate Journey documents (input source) |
-| `/gen-test-scripts` | Generate executable test code from Contracts |
-| `/run-tests` | Execute test scripts and report results |
-
-## Reference
-
-The authoritative model definition is at `docs/features/<slug>/design/model-and-directory-spec.md` (if it exists in the project). Key concepts used by this skill:
+## Key Concepts
 
 - **Contract**: Six-dimension verification mechanism for Journey Steps
 - **Outcome**: A complete set of dimension declarations for a specific scenario
