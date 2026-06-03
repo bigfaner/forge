@@ -19,9 +19,8 @@
 | Status | Count |
 |--------|-------|
 | valid | 3 |
-| needs-update | 10 |
-| outdated | 4 |
-| duplicate | 3 |
+| needs-update | 12 |
+| outdated | 5 |
 
 ## Cross-Layer Influence Check
 

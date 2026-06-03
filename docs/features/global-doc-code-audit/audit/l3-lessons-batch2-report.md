@@ -18,10 +18,11 @@
 
 | Status | Count |
 |--------|-------|
-| valid | 5 |
-| outdated | 5 |
+| valid | 7 |
+| outdated | 7 |
 | needs-update | 6 |
-| duplicate | 4 |
+
+Note: Duplicate detection identified 1 formal duplicate (gotcha-eval-subagent-type.md as duplicate of gotcha-eval-prd-use-zcode-agents.md). The duplicate item is counted in its item-by-item status (outdated).
 
 ## Cross-Layer Influence Check
 

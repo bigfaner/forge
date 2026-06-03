@@ -18,10 +18,11 @@
 
 | Status | Count |
 |--------|-------|
-| valid | 6 |
-| outdated | 3 |
-| needs-update | 8 |
-| duplicate | 3 |
+| valid | 10 |
+| outdated | 1 |
+| needs-update | 9 |
+
+Note: Duplicate detection identified 1 formal duplicate (arch-prototype-navigation-contract.md as duplicate of arch-forge-skill-gap-analysis.md). Item #18 marked "valid (resolved)" is counted as valid. The duplicate item #6 is counted as valid in the item-by-item analysis since the duplicate classification comes from the Duplicate Detection section.
 
 ## Cross-Layer Influence Check
 

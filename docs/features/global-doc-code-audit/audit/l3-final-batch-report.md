@@ -26,15 +26,16 @@ Note: Some items span multiple classifications.
 
 ## Status Summary
 
-| Status | Lessons | Decisions | Total |
+| Status | Lessons | Decisions (files) | Total |
 |--------|---------|-----------|-------|
-| valid | 2 | 2 | 4 |
+| valid | 4 | 1 | 5 |
 | needs-update | 7 | 3 | 10 |
-| outdated | 3 | 3 | 6 |
-| duplicate | 1 | 0 | 1 |
-| empty-stub | 0 | 4 | 4 |
+| outdated | 2 | 1 | 3 |
+| empty-stub | 0 | 5 | 5 |
 
-Total: 23 items assessed (13 lessons + 10 decisions).
+Total: 23 items assessed (13 lessons + 10 decision files).
+
+Note: Decision counts are at file level. architecture.md contains 4 individual decisions (3 valid + 1 needs-update), testing.md contains 2 individual decisions (1 valid + 1 needs-update). At file level, both are classified needs-update because they contain at least one decision requiring update. Individual valid decisions: 5 (architecture D1,D2,D4, interface, testing D2).
 
 Note: 4 decision files (data-model.md, dependencies.md, error-handling.md, local-dev-deployment.md) are empty stubs containing only header rows with no actual decisions. These are counted in the empty-stub category separately from the standard L3 validity classifications.
 

@@ -18,10 +18,9 @@
 
 | Status | Count |
 |--------|-------|
-| valid | 4 |
-| needs-update | 9 |
-| outdated | 4 |
-| duplicate | 3 |
+| valid | 7 |
+| needs-update | 10 |
+| outdated | 3 |
 
 ## Item-by-Item Analysis
 

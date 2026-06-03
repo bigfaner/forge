@@ -1000,13 +1000,13 @@ L2 identified `qualitygate/` subpackage as undocumented and surface-specific tes
 
 ## Needs-Update Items — Batch Fix Task
 
-### FT-031 [fix-type] Batch Update 61 Knowledge Base Items with Stale Paths
+### FT-031 [fix-type] Batch Update 67 Knowledge Base Items with Stale Paths
 
 **Priority**: P3
 **Severity**: Low — core insights valid, only paths outdated
 
 **Context**:
-61 knowledge base items contain valid core insights but have outdated file paths, moved code references, or stale examples. Common path update patterns:
+67 knowledge base items (64 lessons + 3 decision files) contain valid core insights but have outdated file paths, moved code references, or stale examples. Common path update patterns:
 - **File path moves to subdirectories** (25+ items): `cmd/submit.go` -> `cmd/task/submit.go`, `cmd/claim.go` -> `cmd/task/claim.go`, `cmd/quality_gate.go` -> `cmd/qualitygate/quality_gate.go`
 - **`tests/e2e/` -> `tests/<journey>/`** (15+ items): Test directory restructuring
 - **`record-task` -> `submit-task`** (4 items): Skill rename
@@ -1032,9 +1032,9 @@ L2 identified `qualitygate/` subpackage as undocumented and surface-specific tes
 |----------|-------|---------------|
 | P0 (Immediate) | 1 | 1 fix-type |
 | P1 (First Batch) | 11 | 11 fix-type |
-| P2 (Second Batch) | 13 | 11 fix-type, 6 review-type, 7 cross-layer-verification-type |
+| P2 (Second Batch) | 13 | 11 fix-type, 7 review-type, 7 cross-layer-verification-type |
 | P3 (Third Batch) | 5 | 3 fix-type, 1 review-type, 1 fix-type (batch) |
-| **Total** | **37** | **27 fix-type**, **7 review-type**, **7 cross-layer-verification-type** |
+| **Total** | **37** | **26 fix-type**, **7 review-type**, **7 cross-layer-verification-type** |
 
 ### Review-Type Tasks Requiring Human Confirmation
 
@@ -1045,6 +1045,6 @@ L2 identified `qualitygate/` subpackage as undocumented and surface-specific tes
 | RT-003 | Delete wrong-project lesson | 1 |
 | RT-004 | Merge duplicate entries | 3 pairs |
 | RT-005 | Decide empty decision stubs | 5 |
-| RT-006 | Archive additional outdated items | 9 |
-| RT-007 | Archive outdated decisions | 6 |
-| **Total** | | **~45 items** |
+| RT-006 | Archive additional outdated items from batches 5-6 | 6 |
+| RT-007 | Archive outdated decisions | 1 |
+| **Total** | | **~37 items** |

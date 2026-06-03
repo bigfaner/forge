@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The audit examined 143 knowledge base entries (133 lessons + 10 decisions), 18 convention documents, 4 business rule documents, CLAUDE.md, and 12 user-facing documents against the current v3.0.0 codebase. The findings reveal **1 release-blocking P0 issue** in CLAUDE.md, **28 P1 issues** across L1/L2 layers, and significant knowledge base decay with 37 outdated entries (26% of knowledge base) and 5 empty decision stubs.
+The audit examined 143 knowledge base files (133 lessons + 10 decision files), 18 convention documents, 4 business rule documents, CLAUDE.md, and 12 user-facing documents against the current v3.0.0 codebase. The findings reveal **1 release-blocking P0 issue** in CLAUDE.md, **18 P1 issues** across L1/L2 layers, and significant knowledge base decay with 29 outdated entries (20% of knowledge base) and 5 empty decision stubs.
 
 ### Severity Counts
 
@@ -23,16 +23,17 @@ The audit examined 143 knowledge base entries (133 lessons + 10 decisions), 18 c
 
 ### L3 Knowledge Base Validity Counts
 
-| Status | Lessons | Decisions | Total | Percentage |
+| Status | Lessons | Decisions (files) | Total | Percentage |
 |--------|---------|-----------|-------|------------|
-| **valid** | 27 | 4 | **31** | 22% |
-| **needs-update** | 58 | 3 | **61** | 43% |
-| **outdated** | 31 | 6 | **37** | 26% |
-| **duplicate** | 15 | 1 | **16** | 11% |
+| **valid** | 41 | 1 | **42** | 30% |
+| **needs-update** | 64 | 3 | **67** | 47% |
+| **outdated** | 28 | 1 | **29** | 20% |
 | **empty-stub** | 0 | 5 | **5** | 3% |
-| **Total assessed** | **131** | **19** | **150** | — |
+| **Total assessed** | **133** | **10** | **143** | — |
 
-Note: 150 total = 131 lessons (assessed from 133, 2 counted across batch boundaries) + 10 decision files containing 19 individual decisions. The 5 empty decision stubs contain zero decisions each.
+Note: 143 total = 133 lessons + 10 decision files. Decision counts are at file level. Individual valid decisions within mixed-status files: architecture.md has 3 valid + 1 needs-update decisions, testing.md has 1 valid + 1 needs-update decisions. The 5 empty decision stubs (data-model, dependencies, error-handling, local-dev-deployment, security) contain no decisions.
+
+Note on duplicate counting: Duplicate detection sections in batch reports identified topic clusters. Only 3 formal duplicate pairs are recommended for merge/deletion (see Duplicate Items section). Duplicates are NOT counted as a separate status category -- items retain their item-level status (valid, needs-update, or outdated) while being additionally flagged for potential merge.
 
 ---
 
@@ -189,7 +190,7 @@ The following L3 findings should be appended to relevant L2 convention report se
 
 ## L3 Knowledge Base Detailed Findings
 
-### Outdated Items Recommended for Deletion/Archive (37 items)
+### Outdated Items Recommended for Deletion/Archive (29 items)
 
 The following items describe code paths, tools, or test structures that no longer exist in the codebase:
 
@@ -219,15 +220,20 @@ The following items describe code paths, tools, or test structures that no longe
 19. `gotcha-task-type-documentation-vs-doc.md` — Template bug fixed
 20. `gotcha-test-pipeline-no-languages.md` — `interfaces` config replaced by `surfaces`
 21. `gotcha-test-script-staging-vs-graduation.md` — Staging/graduation system removed
-22. `gotcha-journey-hallucination-revision-death-spiral.md` — References `tests/e2e/` and `docs/reference/`
+22. `gotcha-journey-hallucination-revision-death-spiral.md` — References `docs/reference/test-type-model.md` (non-existent path); marked needs-update (not outdated) in batch 3 report
 
-#### Outdated Decisions (6 items)
-23-28. 6 individual decisions across architecture.md, manifest.md, testing.md, and other decision files contain stale references or counts
+#### Outdated Decisions (1 item)
+23. `e2e-server-lifecycle-hardening.md` — Multiple stale file paths, references to non-existent `run-e2e-tests` skill
 
-#### Additional Outdated Items from Batches 5-6 (9 items)
-29-37. Additional lessons with all code references stale or describing removed subsystems
+#### Additional Outdated Items from Batches 5-6 (6 items)
+24. `gotcha-run-tasks-no-auto-test.md` — Proposed solution was implemented via different mechanism
+25. `gotcha-shared-interface-mock-cascade.md` — References `backend/` directory from different project
+26. `gotcha-split-task-missing-shared-setup.md` — References non-existent `tests/e2e/` paths
+27. `gotcha-task-cli-path-duplication.md` — Path duplication bug has been fixed
+28. `gotcha-test-chain-not-linked-to-last-business-gate.md` — PipelineRegistry redesign resolved the issue
+29. `gotcha-test-pipeline-no-languages.md` — `interfaces` config entirely replaced by `surfaces`
 
-### Duplicate Items (16 items)
+### Duplicate Items (3 formal pairs)
 
 The following items overlap with more complete entries. The recommended action is to keep the more complete version and archive the duplicate:
 
@@ -236,13 +242,12 @@ The following items overlap with more complete entries. The recommended action i
 | `arch-prototype-navigation-contract.md` | `arch-forge-skill-gap-analysis.md` | Gap analysis contains all navigation contract info plus additional proposals |
 | `gotcha-eval-subagent-type.md` | `gotcha-eval-prd-use-zcode-agents.md` | PRD version has full architectural analysis |
 | `gotcha-graduation-dual-module-drift.md` | `gotcha-go-test-staging-graduation-friction.md` | Staging friction is more comprehensive |
-| + 13 topic-clustered items | (various) | Identified in batch duplicate detection sections; most are NOT duplicates after review — only 3 formally marked as duplicates |
 
-Note: The duplicate detection process identified 16 items as duplicate across all batches. After cross-batch review, most topic clusters contain complementary items rather than true duplicates. Only 3 pairs are formally recommended for merge/deletion.
+Note: Duplicate detection sections in batch reports identified additional topic clusters, but after cross-batch review, most clusters contain complementary items rather than true duplicates. Only the 3 pairs above are formally recommended for merge/deletion.
 
-### Needs-Update Items (61 items)
+### Needs-Update Items (67 items)
 
-61 items contain valid core insights but have outdated file paths, moved code references, or stale examples. These require path updates and verification against current code but the lessons themselves remain valuable.
+67 items (64 lessons + 3 decision files) contain valid core insights but have outdated file paths, moved code references, or stale examples. These require path updates and verification against current code but the lessons themselves remain valuable.
 
 Common patterns among needs-update items:
 - **File path moves to subdirectories** (25+ items): `cmd/submit.go` -> `cmd/task/submit.go`, `cmd/claim.go` -> `cmd/task/claim.go`, `cmd/quality_gate.go` -> `cmd/qualitygate/quality_gate.go`
@@ -250,9 +255,9 @@ Common patterns among needs-update items:
 - **`record-task` -> `submit-task`** (4 items): Skill rename
 - **`skills/run-tasks/SKILL.md` -> `commands/run-tasks.md`** (5 items): Command/skill classification fix
 
-### Valid Items (31 items)
+### Valid Items (42 items)
 
-31 items require no action — their content is current and code paths exist as described. These include process standards, generalizable patterns, and items where referenced code has been verified to still exist.
+42 items (41 lessons + 1 decision file) require no action -- their content is current and code paths exist as described. These include process standards, generalizable patterns, and items where referenced code has been verified to still exist.
 
 ### Empty Decision Stubs (5 items)
 
@@ -340,13 +345,13 @@ README.md and ARCHITECTURE.md both state 18 commands, but the actual count is 16
 ### Second Fix Batch (Week 2 Post-Audit)
 
 5. P2-1 through P2-24: Fix L1/L2 medium-severity issues
-6. L3 outdated items: Archive or delete the 37 outdated entries (requires human confirmation)
+6. L3 outdated items: Archive or delete the 29 outdated entries (requires human confirmation)
 7. L3 duplicate items: Merge the 3 confirmed duplicate pairs (requires human confirmation)
 
 ### Third Fix Batch (Deferred)
 
 8. P3-1 through P3-19: Fix L1/L2 low-severity issues
-9. L3 needs-update items: Update the 61 items with current file paths (batch operation)
+9. L3 needs-update items: Update the 67 items with current file paths (batch operation)
 10. L3 empty stubs: Decide fate of 5 empty decision files
 
 ---
