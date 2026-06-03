@@ -19,7 +19,7 @@
       "title": "Reduce shared content in breakdown-tasks",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "10-reduce-breakdown-tasks.md",
       "record": "records/10-reduce-breakdown-tasks.md",
       "type": "doc",
