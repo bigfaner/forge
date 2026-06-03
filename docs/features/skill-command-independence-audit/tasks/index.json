@@ -30,7 +30,7 @@
       "title": "Reduce proposal-only features in eval",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "11-reduce-eval.md",
       "record": "records/11-reduce-eval.md",
       "type": "doc",
