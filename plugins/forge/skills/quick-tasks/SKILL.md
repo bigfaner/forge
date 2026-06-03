@@ -115,7 +115,7 @@ If `forge surfaces --json` fails or returns no surfaces configured, set both fie
    Header in `(ref: ...)` MUST match an extracted header.
 3. **Maximum 5 entries** (excluding the mandatory proposal first entry). Each entry 1-2 lines.
 4. **Coverage**: Every coding task must have ≥1 inline reference (excluding the proposal entry). Doc tasks follow the same standard.
-5. **External documents**: Include files under `docs/lessons/`, `docs/conventions/`, `docs/reference/` as additional inline entries when relevant.
+5. **External documents**: Include files under `docs/lessons/`, `docs/conventions/`, `docs/decisions/` as additional inline entries when relevant.
 
 **Example** — given a task "Add complexity field to prompt.go renderTemplate":
 ```markdown

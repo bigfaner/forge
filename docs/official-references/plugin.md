@@ -69,6 +69,11 @@ disallowedTools: Write, Edit
 
 Plugin agents 支持 `name`、`description`、`model`、`effort`、`maxTurns`、`tools`、`disallowedTools`、`skills`、`memory`、`background` 和 `isolation` frontmatter 字段。唯一有效的 `isolation` 值是 `"worktree"`。出于安全原因，plugin 提供的 agents 不支持 `hooks`、`mcpServers` 和 `permissionMode`。
 
+**Forge-specific 扩展字段**：Forge plugin 的 task-executor agent 额外使用以下 frontmatter 字段：
+- `color`（string）：Agent 在 UI 中的显示颜色（如 `green`）
+- `memory`（string）：Agent 的内存作用域（如 `project`）
+- `inputs`（string[]）：Agent 接受的输入参数列表（如 `[task-id]`）
+
 **集成点**：
 
 * Agents 出现在 `/agents` 界面中
@@ -112,11 +117,13 @@ Plugin hooks 响应与[用户定义的 hooks](/zh-CN/hooks)相同的生命周期
 | :------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SessionStart`       | When a session begins or resumes                                                                                                                       |
 | `UserPromptSubmit`   | When you submit a prompt, before Claude processes it                                                                                                   |
+| `UserPromptExpansion` | When a user-typed command expands into a prompt, before it reaches Claude. Can block the expansion                                                   |
 | `PreToolUse`         | Before a tool call executes. Can block it                                                                                                              |
 | `PermissionRequest`  | When a permission dialog appears                                                                                                                       |
 | `PermissionDenied`   | When a tool call is denied by the auto mode classifier. Return `{retry: true}` to tell the model it may retry the denied tool call                     |
 | `PostToolUse`        | After a tool call succeeds                                                                                                                             |
 | `PostToolUseFailure` | After a tool call fails                                                                                                                                |
+| `PostToolBatch`      | After a full batch of parallel tool calls resolves, before the next model call                                                                         |
 | `Notification`       | When Claude Code sends a notification                                                                                                                  |
 | `SubagentStart`      | When a subagent is spawned                                                                                                                             |
 | `SubagentStop`       | When a subagent finishes                                                                                                                               |
@@ -141,6 +148,7 @@ Plugin hooks 响应与[用户定义的 hooks](/zh-CN/hooks)相同的生命周期
 
 * `command`：执行 shell 命令或脚本
 * `http`：将事件 JSON 作为 POST 请求发送到 URL
+* `mcp_tool`：在已连接的 MCP server 上调用工具
 * `prompt`：使用 LLM 评估提示（使用 `$ARGUMENTS` 占位符表示上下文）
 * `agent`：运行具有工具的 agentic 验证器以完成复杂验证任务
 
@@ -524,7 +532,7 @@ ln -s /path/to/shared-utils ./shared-utils
 ```text  theme={null}
 enterprise-plugin/
 ├── .claude-plugin/           # 元数据目录（可选）
-│   └── plugin.json             # plugin 清单
+│   └── plugin.json             # plugin 清单（含 userConfig、channels 等字段）
 ├── commands/                 # 默认命令位置
 │   ├── status.md
 │   └── logs.md

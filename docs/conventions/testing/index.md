@@ -9,4 +9,8 @@ domains: [testing]
 
 | Surface | 测试类型 | 文件位置 | 断言重点 | 详细策略 |
 |---------|---------|---------|---------|---------|
-| cli | CLI 功能测试 | tests/cli/ | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
+| cli | CLI 功能测试 | tests/<journey>/ | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
+| web | Web E2E 测试 | tests/<journey>/ | page state + network + visual | [web/core.md](web/core.md) |
+| api | API 功能测试 | tests/<journey>/ | status code + response body + schema | [api/core.md](api/core.md) |
+| tui | Terminal 功能测试 | tests/<journey>/ | output snapshot + exit code | [tui/core.md](tui/core.md) |
+| mobile | Mobile E2E 测试 | tests/<journey>/ | UI state + navigation + network | [mobile/core.md](mobile/core.md) |

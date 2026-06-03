@@ -16,7 +16,7 @@ _Source: feature/surface-aware-justfile_
 - **Query mode** (with path): `[{"key": "admin-panel", "type": "web"}]`; no match returns `[]` with exit 0
 - **Types mode** (--types flag): `{"types": ["api", "web"]}`
 
-When surfaces config is missing (all modes): stderr `{"error": "no surface configured; run 'forge init' to configure surfaces"}`, exit 1.
+When surfaces config is missing (all modes): stderr `{"error": "no surface configured; run \`forge init\` to configure surfaces"}`, exit 1.
 **Scope**: [CROSS]
 **Source**: feature/surface-aware-justfile TECH-001
 

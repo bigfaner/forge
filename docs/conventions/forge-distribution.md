@@ -45,7 +45,9 @@ Plugin 由 `forge upgrade` 自动管理安装和升级，用户不直接操作 P
 ├── commands/                      # 分发 — 斜杠命令入口
 ├── hooks/                         # 分发 — 生命周期钩子
 │   ├── hooks.json                 #   hook 注册表（使用 ${CLAUDE_PLUGIN_ROOT}）
+│   ├── run-hook.cmd               #   hook 调度脚本（分发到用户环境）
 │   ├── session-start              #   注入 guide.md 到上下文
+│   ├── debug                      #   调试辅助脚本
 │   └── guide.md                   #   forge 规范指南（随 SessionStart 加载）
 └── skills/                        # 分发 — skill 定义 + templates
     └── <skill-name>/
@@ -81,7 +83,7 @@ Plugin 由 `forge upgrade` 自动管理安装和升级，用户不直接操作 P
 | **skills/** | Skill 定义文件（SKILL.md + templates + experts） | 是 | `/skill-name` 斜杠命令 |
 | **commands/** | 轻量命令入口（单 .md 文件） | 是 | `/command-name` 斜杠命令 |
 | **agents/** | Subagent 定义 | 是 | Skill/Command 通过 Agent 工具调用 |
-| **hooks/** | 生命周期钩子 + forge 规范指南 | 是 | 自动触发（SessionStart/SubagentStart 注入 guide.md，Stop 触发 quality-gate 和 feature complete） |
+| **hooks/** | 生命周期钩子 + forge 规范指南 | 是 | 自动触发（SessionStart/SubagentStart 注入 guide.md，SessionEnd/SubagentStop 触发 cleanup，Stop 触发 quality-gate 和 feature complete） |
 
 ## 3. 核心依赖
 
@@ -188,7 +190,9 @@ Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于
 ### Quick Pipeline（coding 和 doc 任务，无数量上限）
 
 ```
-/brainstorm → /quick-tasks → /run-tasks → /submit-task
+/brainstorm → /quick-tasks → /run-tasks* → /submit-task
+
+> **\*** `/run-tasks` is a command (`commands/run-tasks.md`), not a skill. Other pipeline components shown above are skills.
 ```
 
 ### Intent-Driven Pipeline Branching

@@ -1,9 +1,19 @@
-# Proposal Evaluation: 全局文档-代码一致性审计与知识库清理
+---
+iteration: 3
+scorer: CTO-adversary
+date: 2026-06-03
+annotated_review: true
+total_score: 906
+total_max: 1000
+---
+
+# Eval Report — Iteration 3 (Annotated Blind Review)
 
 **Evaluator**: CTO Persona (Adversarial)
-**Date**: 2026-06-02
+**Date**: 2026-06-03
 **Iteration**: 3
-**Previous Score**: 706/1000 (25 attack points)
+**Proposal**: 全局文档-代码一致性审计与知识库清理
+**Previous Score**: 871/1000
 
 ---
 
@@ -11,239 +21,289 @@
 
 | # | Iteration 2 Issue | Status | Notes |
 |---|---|---|---|
-| 1 | "增加新成员上手成本" 仍无实例支撑 | **Resolved** | 第三个影响实例：新成员按 ARCHITECTURE.md 理解架构后发现 hook 执行顺序不同 |
-| 2 | Urgency 中 "近期" 未定义 | **Resolved** | Now states "v3.0.0 计划在 2026 年 Q3 内发布" + "审计需在发布前 4 周完成" |
-| 3 | "部分可能" 是推测性语言 | **Resolved** | Changed to "文档比例较高（需审计确认具体数量）" — acknowledges uncertainty honestly |
-| 4 | 审计核心技术挑战未解决 | **Resolved** | "逐条比对" now broken into 3 concrete sub-methods (路径/文件引用, 行为/流程描述, 状态/配置声明) with verification techniques |
-| 5 | 5步审计流程对L3不适用 | **Resolved** | Separate L3 flow added: 内容分类→引用验证→适用性判断→去重检测→结果记录, explicitly "不假设每条目都有对应代码" |
-| 6 | 审计报告格式未定义 | **Resolved** | Full report template added with 基准 commit, 问题汇总, 问题详情, 审计质量复核 |
-| 7 | 行业方案描述浅薄 | **Partially Resolved** | Added Google devsite detail (API 源码变更自动标记文档), Microsoft docfx detail (代码注释自动生成 API 文档). But still lacks depth on what this proposal borrows from them |
-| 8 | 持续方案无后续计划 | **Resolved** | Added "后续 CI 实施路线" with two phases: 1-2 weeks for dead link CI, 4-6 weeks for custom linter rules |
-| 9 | 代码变更检测机制缺失 | **Resolved** | Now specifies: "每个 Task 启动前执行 git diff <基准commit> -- <审计目标路径>" with concrete 10-line threshold |
-| 10 | 缺少时间预算NFR | **Resolved** | Added: "不超过 2 个工作日（约 16 小时有效工作时间）" |
-| 11 | S4的20%估计依据不充分 | **Partially Resolved** | Now includes: "docs/lessons/ 中约 40% 的条目创建于 v2.x 时期" — provides basis, but "40% 创建于 v2.x" claim itself is unsourced |
-| 12 | 未探索自动化辅助手段 | **Resolved** | Added Innovation Highlights with AST解析, TF-IDF/向量相似度去重, git blame识别过时段落. Explicitly scoped as "后续优化方向" not current scope |
-| 13 | 无时间估算 | **Resolved** | Full time estimate added: per-Task 1-1.5h, per-layer breakdown, total 14-24h |
-| 14 | Token成本估算范围过宽 | **Partially Resolved** | Range narrowed to 700k-1.1M (from 500k-1.5M). Still 1.6x range but improved. Per-layer estimates added |
-| 15 | L3"审查"与"清理"边界模糊 | **Partially Resolved** | In Scope now says "将问题报告转化为可执行 Task（包括知识库条目的删除/合并建议 Task，此类 Task 需人工确认后方可执行）". Out of Scope says "直接执行任何修复或删除动作（包括手动删除）". Tension reduced but still exists: generating deletion Tasks is in scope, but executing deletion (even manually) is out of scope — so who executes? |
-| 16 | 无回滚计划 | **Resolved** | Added risk row: "审计方法论根本性缺陷（如质量门控发现遗漏率 > 50%）" with rollback mechanism |
-| 17 | "审计范围过大"评级偏高 | **Resolved** | Changed to L/M with note "11-16 个 Task（属于中等偏小规模），可控性较高" |
-| 18 | L1/L2 SC仍是流程性标准 | **Partially Resolved** | Now includes "随机抽取 10% 的审计结果进行人工复核，遗漏率不超过 20%" per layer. But process compliance ("完成审计流程") remains the primary criterion |
-| 19 | L3成功依赖人工确认但无约束 | **Resolved** | Added SC: "人工确认响应时间不超过 3 个工作日；超时未确认的 Task 自动升级为 P1 级别提醒" |
-| 20 | P0快速通道可能破坏Task自包含性 | **Resolved** | Exception scenario now says "P0 修复完成后，对受影响的文件重新执行审计步骤（基于新 commit），避免后续 Task 基于过时代码状态" |
-| 21 | 闭环路径只有第一步有承诺 | **Resolved** | Added "本提案承诺在审计报告产出后 1 周内启动 P0 修复". Not a full commitment for all steps but a concrete timeline for P0 |
-| 22 | 层级间无反馈机制 | **Resolved** | Added full "层级间反馈机制" paragraph with bidirectional cross-layer contamination tracking |
-| 23 | AI代理语义判断准确率是未验证前提 | **Resolved** | Added pilot strategy: "L1 审计前先对 1 个文件（如 README.md）进行试点审计并人工复核" with >30% omission threshold for process adjustment |
-| 24 | Evidence中5个提案本身未经验证 | **Resolved** | Now clarifies: "提案中的不一致发现基于实际代码阅读，虽未执行修复，但其诊断过程具有参考价值" |
-| 25 | 范围标注一致性 | **Resolved** | Added "范围完整性说明" paragraph confirming no other root-level user docs exist |
+| 1 | [D1-Evidence] naming.md "已确认" claims self-negating | **Resolved** | Evidence now specifies "已通过 grep 抽样验证：至少涉及 `SKILL_DIR`、`PLUGIN_DIR` 两个常量名在 naming.md 中的拼写与 CLI 代码中的实际导出名存在大小写或下划线差异" |
+| 2 | [D2-Approach] L3 step 3 "适用性判断" lacks structured protocol | **Resolved** | L3 audit flow now includes 5 structured rules: 工具链变化→过时, 流程矛盾→需更新, 路径失效→过时, 结论泛化→有效, 部分过时→需更新 |
+| 3 | [D3-Justification] "只有分层才行" claim overstated | **Resolved** | Revised to "分层使反馈机制更自然和高效" — weakened from necessity claim to efficiency claim. New text: "分层使跨类型交叉验证成为结构化步骤而非事后补充，单层审计虽可记录发现并在完成后做交叉检查，但缺乏显式的跨层传播机制，容易遗漏" |
+| 4 | [D6-Technical] Pilot threshold absolute not relative | **Resolved** | Changed to "漏报率 ≥ 20%（即遗漏数占实际不一致总数的比例）" — now a relative rate, consistent with the target |
+| 5 | [D7-InScope] L2 In Scope mixes scope and exclusion rationale | **Resolved** | Exclusion rationale now in Out of Scope section; L2 In Scope is cleanly scoped to business-rules/4 + conventions/18 + CLAUDE.md |
+| 6 | [D8-Risks] Missing "修复阶段工作量超出 2 周窗口" risk | **Resolved** | New risk row: "修复阶段工作量超出 2 周窗口" with mitigation "严格按 P0→P1→P2→P3 优先级排序；P0/P1 优先在窗口内完成；若 P0 数量超出预期（>10条），评估是否需要扩展修复窗口或分批发布" |
+| 7 | [D9-Coverage] Missing audit completion time SC | **Resolved** | New SC: "三份层级审计报告全部产出的时间不超过 3 个工作日（约 25 小时有效工作时间），自基准 commit 选定时刻起算" |
+| 8 | [D9-Testability] Human confirmation SLA escalation undefined | **Resolved** | Escalation mechanism now explicit: "提案作者（fanhuifeng）负责在 Task 报告中每日检查确认状态，超时后手动将 Task 优先级从 P2 提升至 P1 并在项目协作渠道发送提醒" |
 
-**Resolution rate**: 18 fully resolved, 7 partially resolved, 0 unresolved.
+**Iteration 2 Blindspot Resolution:**
+
+| # | Blindspot | Status | Notes |
+|---|---|---|---|
+| B1 | Audit reproducibility — no calibration mechanism | **Resolved** | Added inter-rater reliability protocol from financial audit domain: Cohen's Kappa coefficient, dual-session pilot comparison, Kappa >= 0.6 threshold. Scoped as "quality escalation" not mandatory. |
+| B2 | Baseline commit selection criteria undefined | **Resolved** | Now defined as "第一个审计 Task 启动前 v3.0.0 分支的最新 commit" with explicit per-Task `git diff` check against this baseline |
+| B3 | L2 "实现" definition unclear | **Resolved** | Distribution model constraint added: "docs/ 的内容仅在源码仓库中维护，不分发到用户环境——分发的仅是 plugins/forge/ 下的内容" |
+| B4 | S4 20% estimate evidence weak | **Resolved** | Rationale expanded: "docs/lessons/ 中约 40% 的条目创建于 v2.x 时期（v3.0.0 重构了目录结构和 hook 系统），其中引用旧路径或旧流程的条目比例预计较高，20% 是从 v2→v3 变更范围推算的保守估计" |
+| B5 | Audit-to-release window — unknown repair workload | **Resolved** | New risk row with quantified mitigation: "若 P0 数量超出预期（>10条），评估是否需要扩展修复窗口或分批发布" |
+| B6 | "超过 10 行变更" threshold too sensitive | **Not Addressed** | The 10-line threshold remains unchanged |
+
+**Resolution rate**: 8 fully resolved, 0 partially resolved, 1 not addressed (from 8 attacks). 5 blindspots resolved, 1 not addressed. Excellent improvement.
 
 ---
 
-## Phase 1: Reasoning Audit (Problem -> Solution -> Evidence -> SC Chain)
+## Annotation Bias Detection
 
-### Chain Trace
+- **Annotated regions**: 16 paragraphs marked with `<!-- pre-revised: {severity} -->`
+- **Attacks on annotated regions**: 4
+- **Attacks on unannotated regions**: 5
+- **Ratio**: 44% annotated / 56% unannotated — well balanced. No significant bias detected.
 
-1. **Problem**: 文档-代码不一致误导 AI 代理执行错误操作，增加新成员上手成本
-2. **Evidence**: 3 concrete impact instances + 5 prior audit proposals + test-pipeline terminology mismatch + 133 lessons/22 conventions/4 business-rules unverified + v3.0.0 structural refactoring
-3. **Solution**: 三层系统性审计（L1/L2/L3），每层有独立审计流程，层级间有反馈机制，产出报告和 Task，作为"审计→修复→验证"闭环的第一步
-4. **Success Criteria**: 每层完成标准化审计步骤 + 问题含定位信息和严重级别 + Task 可执行 + 10% 抽检质量门控 + 人工确认时限 + 层级间交叉验证
+---
 
-### Chain Integrity Assessment
+## Phase 1: Reasoning Audit
 
-The chain is now substantially coherent. Most iteration 2 breaks have been addressed. Remaining breaks:
+### Argument Chain Trace
 
-- **Break 1 (minor)**: S4 remains in the document as a project-level goal but still references "审计阶段标记为过时/重复的条目占比预期不低于20%" — this is phrased as a measurement of the audit's output, yet it is classified as "非审计阶段交付物". If the audit is expected to produce the marking, then the measurement IS an audit deliverable; if it's not an audit deliverable, then the audit SC should not reference it.
-- **Break 2 (minor)**: The "审计执行流程" section describes a general 5-step process, but step 2 "代码定位" is hand-waved — for L3 (knowledge base), what "implementation code" does a lesson reference? Some lessons are about process decisions, not code. The process assumes every document claim maps to code.
+**Problem → Solution**: Three-layer inconsistency maps to L1/L2/L3 audit layers. "新成员" definition (源码仓库贡献者, not end users) is clear. Distribution model constraint added. Chain is sound.
+
+**Solution → Evidence**: Evidence now includes concrete grep-verified instances (naming.md, test-type-model.md). Pilot audit provides self-validating loop. The "已通过 grep 抽样验证" claim strengthens the evidence chain. However, factual verification (see below) reveals the naming.md evidence may be inaccurate.
+
+**Evidence → SC**: S1-S3 map to L1/L2/L3. P0 timeliness SC connects urgency to deliverable. Cross-layer feedback SC adds structural verification. Completion time SC adds timeliness accountability. Chain is substantially sound.
+
+### Self-Contradiction Check
+
+1. **"不修改任何代码或文档" vs 审计报告包含"建议动作"**: No contradiction. Consistent with previous iterations.
+
+2. **Three Task types vs Task self-containment**: The formal Task type taxonomy (修复类/审查类/跨层验证类) with explicit dependency declarations resolves the previous tension. Cross-layer Tasks depend on layer completion reports, which is documented. **No contradiction**.
+
+3. **Timeline feasibility**: "3 个工作日（约 25 小时有效工作时间）" with 13-18 Tasks at 1-1.5h each = 13-27h + 2h coordination + 1h pilot = 16-30h. The upper bound (30h) exceeds the 25h estimate. **Minor tension** at the upper end. The proposal acknowledges this implicitly by using "3 个工作日" rather than a hard deadline, and the NFR and SC both say "不超过 3 个工作日（约 25 小时）" which are internally consistent.
+
+4. **S4 "不低于 20%" confirmation bias risk**: Mitigated by the 10% sampling quality gate and the pilot audit accuracy baseline. The 20% is an expectation, not a target. The expanded rationale (40% v2.x era lessons) is better grounded. **Acceptable**.
+
+### SC Consistency Deep-Dive
+
+**Cluster: L1/L2 Audit Quality**
+- SC items: per-layer 10% sampling with expansion, per-problem detail format, pilot audit accuracy baseline
+- InScope: L1 user docs + L2 business-rules + conventions + CLAUDE.md
+- Bidirectional: SC defines quality gate and output format, InScope defines targets. **Satisfiable**.
+
+**Cluster: L3 Knowledge Base**
+- SC items: 143 items reviewed with 4-state marking, judgment basis required, 10% sampling
+- InScope: lessons/133 + decisions/10
+- Bidirectional: SC covers exhaustiveness and classification, InScope defines exact target set. Revised token budget (4k-6k per item) supports verification. **Satisfiable**.
+
+**Cluster: Cross-Layer Validation**
+- SC items: cross-layer verification, "跨层影响清单"
+- Task types: 跨层验证类 Task declares dependency on layer completion
+- Bidirectional: The formal Task type taxonomy resolves the previous contradiction. **Satisfiable**.
+
+**Cluster: Human Confirmation**
+- SC item: 3-day response, escalation via 提案作者 daily check
+- Responsible party named (fanhuifeng). Manual mechanism acknowledged. **Satisfiable** — the gap from previous iterations is closed.
+
+**Cluster: Timeliness**
+- SC item: 3 working days (25 hours) from baseline commit selection
+- NFR: same timeline
+- Time estimate: 17-25 hours (16-30h range including coordination)
+- The SC and NFR are aligned. The time estimate's upper bound (30h) slightly exceeds 25h but fits within "3 working days". **Acceptable**.
 
 ---
 
 ## Phase 2: Rubric Scoring
 
-### 1. Problem Definition (90/110)
+### D1: Problem Definition — 105/110
 
-**Problem stated clearly (35/40)**: The problem is now clearly articulated with three concrete examples (AI agent generating unrunnable tests, wrong-path file creation, new member confusion over hook execution order). The framing of "未量化的不一致" is appropriately followed by specific evidence. However, "增加新成员上手成本——新成员（含 AI 代理作为虚拟成员）需要同时理解'文档说的'和'代码实际做的'两套体系" is an assertion about cognitive cost. While the third example gives a concrete instance (ARCHITECTURE.md hook order mismatch), the general claim about "两套体系" remains a broad assertion without quantification of how many developers are affected or how much time is wasted.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Problem stated clearly | 40/40 | Core problem is unambiguous: doc-code inconsistency across three layers with two distinct audiences clearly separated. "新成员" explicitly defined as "源码仓库贡献者（含 AI 代理作为虚拟贡献者）". End users explicitly scoped as indirectly affected through plugin distribution quality. Three concrete impact instances illustrate different failure modes (AI agent generating unrunnable code, wrong-path file creation, new member confusion). The distinction between silent AI agent failures and noisy human failures is well-articulated. |
+| Evidence provided | 37/40 | Substantially improved with grep-verified instances: test-type-model.md references non-existent tests/e2e/ path model, naming.md constants mismatch with CLI code. The 5 existing audit proposals are honestly qualified. 133 lessons and 18 conventions counts are verified correct (verified independently). However, the naming.md evidence requires scrutiny: the proposal claims "已通过 grep 抽样验证：至少涉及 `SKILL_DIR`、`PLUGIN_DIR` 两个常量名在 naming.md 中的拼写与 CLI 代码中的实际导出名存在大小写或下划线差异" — but verification shows naming.md does NOT contain the strings "SKILL_DIR" or "PLUGIN_DIR" at all. The Go CLI code does not export constants by these names either. This evidence claim appears to be factually inaccurate (see Attack 1). |
+| Urgency justified | 28/30 | Tied to v3.0.0 release timeline (Q3 2026), 4 weeks before release, 2 weeks repair window. The cost-of-delay is well-articulated: "审计产出应在 v3.0.0 合入 main 前为修复提供输入". Baseline commit defined as "第一个审计 Task 启动前 v3.0.0 分支的最新 commit". Per-Task git diff check against baseline. Deduction: the v3.0.0 release date within Q3 (July-September) is still a range, not a specific date, so the urgency is relative rather than absolute. |
 
-**Evidence provided (33/40)**: Substantially improved. File counts are accurate (verified): conventions 22 (15+7), business-rules 4, lessons 133, decisions 10, user-guide 4, official-references 5, reference 1. The 5 existing proposals are valid supporting evidence, now with honest qualification about their status. The test-pipeline terminology mismatch is concrete. Remaining weakness: "docs/conventions/ 下 22 份规范文档...因 v3.0.0 大幅重构代码结构，其中描述已不存在的代码路径或已废弃流程的文档比例较高（需审计确认具体数量）" — "比例较高" is still a qualitative judgment. The parenthetical "(需审计确认具体数量)" is honest but does not constitute evidence.
+**Attacks**:
+1. [D1-Evidence]: naming.md 关于 `SKILL_DIR`/`PLUGIN_DIR` 的证据声称不成立。引用: "已通过 grep 抽样验证：至少涉及 `SKILL_DIR`、`PLUGIN_DIR` 两个常量名在 naming.md 中的拼写与 CLI 代码中的实际导出名存在大小写或下划线差异" — 独立验证发现: (1) naming.md 中不包含 `SKILL_DIR` 或 `PLUGIN_DIR` 字符串（grep 确认无匹配）; (2) Go CLI 代码中也没有导出名为 `SKILL_DIR` 或 `PLUGIN_DIR` 的常量。`CLAUDE_SKILL_DIR` 是环境变量，不是代码常量。如果证据的具体内容不可验证，"已通过 grep 抽样验证"声称的可靠性受到质疑。建议: 重新验证 naming.md 的实际不一致项，给出经得起独立复查的具体常量名和行号。
 
-**Urgency justified (22/30)**: Improved with "v3.0.0 计划在 2026 年 Q3 内发布" and "审计需在发布前 4 周完成，为修复预留至少 2 周时间窗口". This establishes a concrete timeline window. However: "v3.0.0 计划在 2026 年 Q3 内发布" means anytime July-September 2026. With today being June 2, 2026, Q3 starts in 28 days. "发布前 4 周" is the audit deadline. If Q3 release means early July, the audit window is essentially "now". If late September, there's more time. The 4-week deadline is not anchored to a specific release date — it's a self-imposed constraint without external enforcement. Additionally, "审计产出应在 v3.0.0 合入 main 前为修复提供输入" — but the v3.0.0 branch is already active and has commits (per git status). Is the code still changing significantly? If so, the audit may need to track a moving target.
+### D2: Solution Clarity — 113/120
 
-### 2. Solution Clarity (101/120)
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Approach is concrete | 39/40 | Three-layer structure with 5-step L1/L2 and 5-step L3 audit flows. The L3 flow now has structured applicability judgment rules (5 categories). Report template standardized. Three Task types formally defined. Pilot audit with accuracy baseline. Deduction: minor gap remains in the "行为/流程描述" verification method — "定位相关代码（函数、配置、hook），阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致" — this is the hardest verification type and still receives generic description. |
+| User-facing behavior described | 43/45 | The "审计结果消费流程" section describes the consumption path clearly. Report template with concrete fields. Three Task types describe exactly how task-executor consumes output. P0 blocks release. Deduction: still no filled-in example report entry — the template is well-structured but lacks a single concrete sample that would eliminate all ambiguity about expected depth. |
+| Technical direction clear | 31/35 | Three verification methods (path/file, behavior/process, state/config) well-defined. Pilot audit with "漏报率 < 20%" provides a quantitative validation gate. Token cost estimates with per-layer breakdown. L3 5-step process with content categorization. The inter-rater reliability protocol (Cohen's Kappa) provides a concrete quality escalation mechanism. Deduction: the "行为/流程描述" verification remains the most hand-waved step — "阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致" describes WHAT to do but not HOW to systematically determine consistency for complex behavioral claims. |
 
-**Approach is concrete (36/40)**: The three-layer structure is well-defined with separate audit processes for L1/L2 and L3. The "逐条比对" step now breaks into three concrete methods: path verification via find/grep, behavior verification via code reading, state/config verification via value comparison. The closed-loop framing (audit -> fix -> verify) is clear. The report template provides a concrete output format. Remaining gap: the "行为/流程描述" verification method says "定位相关代码（函数、配置、hook），阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致" — this is still fundamentally "read and compare", which is the hardest part of the entire audit. The proposal does not address how to systematically identify which code implements a given documented behavior, especially for architecture-level claims.
+**Attacks**:
+2. [D2-Approach]: "行为/流程描述" 验证方法仍是"阅读并比较"的同义反复。引用: "定位相关代码（函数、配置、hook），阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致；重点关注：执行顺序差异、参数名/默认值差异、错误处理差异" — 列出了三个"重点关注"维度（执行顺序、参数名、错误处理），这是改进，但核心方法论仍是隐含在 AI 代理能力中的"读代码做判断"。试点审计能校准整体准确率，但无法提供系统性的行为比对方法论。建议: 可接受，因为语义层面的行为一致性判断本质上需要人工/AI智能，不可能完全机械化；但应在提案中明确承认这一局限性。
 
-**User-facing behavior described (38/45)**: The "审计结果消费流程" section describes the consumption path: P0 blocks release, P1 first batch, P2/P3 deferred. Each layer produces independent reports enabling parallel repair. The report template is concrete with fields for 基准 commit, 问题汇总, 问题详情 (文件/声明/实际/建议动作), and 质量复核. Good improvement. Remaining gap: no example of an actual filled-in report entry — the template is there but a sample entry would make the expected output unambiguous.
+### D3: Industry Benchmarking — 107/120
 
-**Technical direction clear (27/35)**: The standardized audit process with three verification sub-methods and separate L3 flow provides good technical direction. Token cost estimates and time estimates add credibility. The pilot audit on README.md with >30% omission threshold is a sound validation strategy. However, the core technical challenge — how an AI agent determines that a document claim about behavior is "inconsistent" with code — still receives the most hand-waving: "阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致". This is the semantic verification problem, and it is described as if it were trivial.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Industry solutions referenced | 37/40 | Google devsite, Microsoft docfx, markdown-link-check, vale, lichemarkdown cited with specific capabilities. Distinction between structural/link-level and semantic consistency is well-made. The inter-rater reliability protocol from financial audit is a strong cross-domain reference (Cohen's Kappa, Kappa >= 0.6). Deduction: these are documentation tooling examples plus one audit methodology reference. The proposal could benefit from citing published documentation audit methodologies more directly. |
+| At least 3 meaningful alternatives | 28/30 | Four alternatives: Do nothing, Execute existing 5 proposals (~146 tasks), CI integration, Layered audit. The "Execute existing proposals" alternative now has accurate quantification. The "focused spot-check" alternative is still missing (audit only 2-3 highest-risk docs in 1 day), but the four existing alternatives are genuinely different approaches. |
+| Honest trade-off comparison | 21/25 | Comparison table evaluates options honestly. The selected approach's cons ("工作量较大，一次性审计无法防止未来漂移") are stated. The CI roadmap with two phases (1-2 weeks, 4-6 weeks) provides a concrete post-audit plan. The "三层 vs 单层全量审计" paragraph with 4 reasons is well-argued. Deduction: "覆盖完整" in the Pros column overstates coverage — features/ (150 dirs) and proposals/ (182 dirs) are explicitly excluded. Should say "核心文档层覆盖完整". |
+| Chosen approach justified | 21/25 | The 3-point rationale for one-time vs continuous is solid. The 4-point comparison for three-layer vs single-layer is now well-argued with the revised "更自然和高效" framing (no longer claiming "only possible with layers"). The CI roadmap provides a forward-looking justification. The consolidate-specs complement is clearly articulated. Deduction: the CI roadmap still lacks ownership — who builds it and when? |
 
-### 3. Industry Benchmarking (88/120)
+**Attacks**:
+3. [D3-TradeOff]: "覆盖完整" 不准确。引用: 比较表中选中方案的 Pros 列说 "覆盖完整"，但 Out of Scope 明确排除了 docs/features/（150个目录）和 docs/proposals/（182个目录）。虽然排除理由充分，但 "覆盖完整" 的措辞暗示无遗漏。建议: 改为 "核心文档层覆盖完整" 或 "覆盖用户文档+规范+知识库三层"。
 
-**Industry solutions referenced (30/40)**: Improved with specific details: Google devsite "当 API 源码变更时自动标记对应文档段落需更新", Microsoft docfx "从代码注释自动生成 API 文档，确保签名级别一致性". The three categories (Doc-as-code+CI, Automated linting, Periodic audit) are well-organized. Each tool/practice now gets 2-3 sentences with a specific capability. However, the proposal still does not engage with these examples critically — what specific technique from devsite or docfx could be adapted for this project? The conclusion "语义层面仍需人工审查" is drawn but without examining whether partial automation (e.g., signature-level checks for CLI commands mentioned in docs) could reduce the manual workload.
+### D4: Requirements Completeness — 105/110
 
-**At least 3 meaningful alternatives (25/30)**: Four alternatives presented with quantified task counts for the existing-proposals alternative (56+14+23+19+34=146). "Do nothing" is included with clear rejection reason. CI integration is properly framed as post-audit. Good.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Scenario coverage | 38/40 | S1-S3 cover happy path per layer. S4 properly scoped as project goal. Three exception scenarios are realistic. The "10% sampling fails → 20%" escalation now has a further failure scenario covered by the "方法论根本性缺陷" risk row. Per-Task git diff check provides code change detection. Baseline commit selection is defined. Deduction: no scenario for "20% sampling also fails but is not a methodology failure" — the gap between the 20% expansion trigger and the methodology-failure threshold is not explicitly covered. |
+| Non-functional requirements | 39/40 | P0-P3 severity definitions with concrete examples. Three Task types with clear dependency models. English output with motivation. 3-day timeline with breakdown. Pilot audit accuracy baseline (漏报率 < 20%). Token cost estimates per layer. Distribution model constraint clearly stated. Deduction: minor — the English constraint is listed as NFR but is better categorized as a formatting constraint. |
+| Constraints & dependencies | 28/30 | Distribution model constraint. Audit-only scope. Human confirmation. v3.0.0 branch basis. CLAUDE.md scope. Baseline commit selection defined ("第一个审计 Task 启动前"). The inter-rater reliability protocol acknowledges AI agent accuracy dependency and provides an escalation path. Deduction: features/ count stated as "182个" but actual count is 150 — factual inaccuracy in the scope description (though not in the scope definition itself). |
 
-**Honest trade-off comparison (18/25)**: The comparison table is functional with honest Cons. The Cons for the selected approach now includes both "工作量较大" and "一次性审计无法防止未来漂移" — both valid. However, "工作量较大" is vague — the Feasibility section quantifies this as 14-24 hours and 700k-1.1M tokens. This should be cross-referenced in the table. The selected approach's Pros say "覆盖完整" but L1 only covers specific user docs, not all docs/ — the "范围完整性说明" addresses this, but the table could note the deliberate exclusion of features/ and proposals/.
+**Attacks**:
+4. [D4-Constraints]: features/ 目录数量声称不准确。引用: "features/（182个 feature 目录）" — 实际 `ls -d docs/features/*/ | wc -l` 结果为 150 个目录。不是 182 个。此错误不影响范围定义（features/ 仍在 Out of Scope），但降低了约束描述的事实可信度。建议: 修正为 "features/（150个 feature 目录）"。
 
-**Chosen approach justified (15/25)**: The 3-point selection rationale is solid: (1) CI can't clean existing debt, (2) semantic consistency requires judgment, (3) audit is prerequisite for CI. The new "后续 CI 实施路线" with two phases and timelines (1-2 weeks, 4-6 weeks) transforms the vague "后续改进方向" into a concrete plan. Remaining weakness: the CI roadmap is a promise without ownership — who builds it? When exactly? Is it part of this proposal's scope or a separate initiative?
+### D5: Solution Creativity — 70/100
 
-### 4. Requirements Completeness (92/110)
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Novelty over industry baseline | 28/40 | Three structural differentiators: (1) cross-layer feedback via "跨层影响清单", (2) report template standardization, (3) consolidate-specs complement. The inter-rater reliability protocol (Cohen's Kappa) from financial audit is a genuine cross-domain borrowing that addresses the B1 blindspot. The pilot audit with accuracy baseline is a practical de-risking mechanism. The five structured L3 applicability rules improve on the previous vague judgment. Deduction: the core remains a standard manual audit with AI agent execution. The differentiators are solid architectural choices rather than breakthroughs. |
+| Cross-domain inspiration | 18/35 | The inter-rater reliability protocol from financial audit is the strongest cross-domain element — Cohen's Kappa for audit reproducibility is a well-established methodology from clinical and social sciences. The proposed dual-session pilot comparison is a practical adaptation. The AST/TF-IDF/git blame automation ideas are standard tech-domain tools. Deduction: the inter-rater reliability addition is a meaningful improvement, but it's scoped as "quality escalation" not mandatory, limiting its creative impact on the actual audit process. |
+| Simplicity of insight | 24/25 | The three-layer decomposition is clean. The cross-layer feedback mechanism is the most elegant structural element. The P0-P3 classification with concrete definitions is practical. The pilot audit as accuracy calibration is simple and powerful. The L3 five-rule applicability framework turns subjective judgment into structured decision trees. |
 
-**Scenario coverage (36/40)**: S1-S3 cover normal usage scenarios well. S4 is properly scoped as a project goal. Exception scenarios are comprehensive: >10 P0 issues triggers pause, disputed items handled, code changes detected via git diff with 10-line threshold. Remaining gap: the "审计期间代码发生重大变更" exception now has a detection mechanism (git diff), but "修改超过 10 行" is an arbitrary threshold — a 9-line semantic change (e.g., renaming a core function) could be more impactful than a 50-line cosmetic refactor.
+**Attacks**:
+5. [D5-CrossDomain]: inter-rater reliability 协议被限定为"质量不达标时的升级方案"而非核心流程。引用: "此协议为 blindspot B1（审计可重复性）提供了具体度量手段，但本次审计不强制执行，作为质量不达标时的升级方案" — 将跨领域灵感排除在核心流程之外削弱了其创造性贡献。如果它有价值，应该作为标准质量步骤而非升级方案。
 
-**Non-functional requirements (32/40)**: P0-P3 severity definitions are concrete with examples. Task self-containment with human confirmation annotations is well-specified. Time budget added: "不超过 2 个工作日（约 16 小时有效工作时间）". Good. Remaining gap: the 16-hour time budget is tight for 11-16 tasks (each 1-1.5h = 11-24h range). The NFR says 16h but the time estimate says 14-24h. These are inconsistent — 24h is 3 working days, not 2.
+### D6: Feasibility — 93/100
 
-**Constraints & dependencies (24/30)**: "不修改任何代码或文档" is clear. "基于 v3.0.0 分支当前代码状态" is appropriate. "知识库清理需人工确认" is a good constraint. Pilot audit strategy partially addresses AI accuracy dependency. Remaining gap: the proposal still does not explicitly list AI agent semantic judgment quality as a dependency in this section — it's mentioned in Technical Feasibility but not in Constraints.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Technical feasibility | 38/40 | Pilot audit with accuracy baseline (漏报率 < 20%, now relative rate). Per-Task git diff check against baseline commit. L3 5-step process with content categorization. Token cost estimates (750k-1.2M) with per-layer breakdown. The inter-rater reliability protocol provides a fallback for accuracy concerns. Deduction: the pilot audit on README.md — representativeness concern remains. README.md is typically the simplest document; ARCHITECTURE.md or conventions may present different challenges. |
+| Resource & timeline | 29/30 | Time estimate: 17-25h effective work. Per-layer breakdown: L1 4-6h, L2 4-6h, L3 7-11h, coordination 2h. Token estimates per layer. NFR says "不超过 3 个工作日（约 25 小时）". SC matches. Upper bound (30h) slightly exceeds 25h but fits within "3 working days". Internally consistent. File counts verified correct (conventions 15+3=18, user-guide 4, official-references 5). |
+| Dependency readiness | 26/30 | "无外部依赖" is accurate. Pilot audit addresses AI accuracy. Inter-rater reliability provides escalation for accuracy concerns. task-executor infrastructure implied but not acknowledged as dependency. Deduction: the proposal still does not acknowledge the dependency on task-executor availability for the repair phase, though the audit phase itself has no external dependencies. |
 
-### 5. Solution Creativity (55/100)
+**Attacks**:
+6. [D6-Technical]: 试点审计仅选择 README.md，代表性存疑。引用: "L1 审计前先对 1 个文件（如 README.md）进行试点审计并人工复核" — README.md 通常是最直接的文档（安装说明、项目概述），其审计准确率可能不具代表性。ARCHITECTURE.md（hook 执行顺序等复杂行为描述）或 conventions/naming.md（详细代码结构规则）的审计难度可能显著不同。建议: 可接受，因为 "如 README.md" 中的 "如" 表明可以选择其他文件；但应明确建议选择一个复杂度中等的文件而非最简单的。
 
-**Novelty over industry baseline (22/40)**: The proposal still honestly states "无特殊创新——这是标准的文档审计实践". The AST/TF-IDF/git blame automation ideas in Innovation Highlights show awareness of possible improvements. The separate L3 audit flow adapted for knowledge base items (内容分类→引用验证→适用性判断→去重检测) shows some adaptation. The cross-layer feedback mechanism is a modest structural innovation. Still below average — the proposal is fundamentally a well-organized manual audit.
+### D7: Scope Definition — 75/80
 
-**Cross-domain inspiration (18/35)**: The Innovation Highlights section now explicitly names three cross-domain techniques: AST parsing from static analysis, TF-IDF/vector similarity from information retrieval, git blame from version control archaeology. While these are scoped out of the current proposal, their identification shows cross-domain awareness. Deducted because they are explicitly not part of the solution.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| In-scope items are concrete | 28/30 | L1/L2/L3 specify exact directory paths, file counts, and audit targets. CLAUDE.md formally in L2. "范围完整性说明" confirms exhaustive root-level doc coverage. L2 scope cleanly lists targets without mixing in exclusion rationale. Deduction: the L2 file count says "约 22 文件" — business-rules/4 + conventions/18 = 22, but CLAUDE.md is also listed in L2 scope, making it 23, not 22. |
+| Out-of-scope explicitly listed | 23/25 | docs/features/, docs/proposals/, plugin skills, CLI code, test code, fix execution listed with rationale. features/ exclusion caveat about repair-phase tracing is well-scoped ("可在修复阶段追溯至对应 feature 文档"). Deduction: features/ count is "182个" but actual count is 150 — factual error in scope description. |
+| Scope is bounded | 24/25 | 13-18 Tasks, 3 working days, ~25 hours. Token budget provided. P0 overflow provides scope guard. "范围完整性说明" confirms no other root-level .md files. Well-bounded. |
 
-**Simplicity of insight (15/25)**: The three-layer separation (user docs / specs / knowledge) is clean. The closed-loop framing (audit -> fix -> verify) is standard but well-applied. The pilot validation strategy (audit README.md first, validate accuracy, then proceed) is a sound practical insight. The cross-layer feedback mechanism adds structural elegance.
+**Attacks**:
+7. [D7-InScope]: L2 文件计数不一致。引用: "L2 规范文档层：约 22 文件（business-rules/4 + conventions/18）" — 但 L2 In Scope 另含 "根目录 CLAUDE.md"，即 business-rules/4 + conventions/18 + CLAUDE.md/1 = 23 文件，不是 22。建议: 修正为 "约 23 文件"。
 
-### 6. Feasibility (82/100)
+### D8: Risk Assessment — 86/90
 
-**Technical feasibility (34/40)**: AI agent code reading capability is reasonable. The pilot audit on README.md with >30% omission threshold is a pragmatic validation strategy that addresses the "unverified accuracy" concern from iteration 2. Token estimates (700k-1.1M) provide a cost boundary. Time estimates (14-24h) give a duration range. Remaining concern: the pilot is described as validating "准确率达标" but no target accuracy rate is defined. Is 80% accuracy acceptable? 90%? The >30% omission threshold for process adjustment is a floor, not a target.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Risks identified | 28/30 | 9 risks: scope, subjectivity, code changes, accidental deletion, AI accuracy, token cost, quality variance, methodology failure, repair workload. The repair workload risk is a strong addition from iteration 2. The "修复阶段工作量超出 2 周窗口" risk with P0>10 trigger addresses the B5 blindspot. Coverage is comprehensive. Deduction: no risk for "pilot audit (README.md) passes but full audit encounters fundamentally different challenges" — a single-file pilot on the simplest document may not predict accuracy on complex docs. |
+| Likelihood + impact rated | 29/30 | Ratings are honest. "审计范围过大" rated L/M with "可控性较高" justification. "修复阶段工作量超出 2 周窗口" rated M/H — appropriate. "审计方法论根本性缺陷" rated L/H — appropriately. Token cost M/L. Subjectivity M/L — but subjectivity is the mechanism that leads to erroneous deletion (M/H), so the causal chain is acknowledged across risk rows. |
+| Mitigations are actionable | 29/30 | Excellent. Quality variance mitigation: "按文档复杂度分配 Task" + "分层抽取". Methodology failure: "暂停→重新评估→调整流程→重新执行". Repair workload: "P0/P1 优先...若 P0 > 10条，评估扩展窗口". Token cost: 30% overrun trigger. Human confirmation: 3-day SLA with escalation. Sampling expansion: "扩展复核范围至 20%" with the methodology failure risk as the further escalation. The inter-rater reliability protocol provides an additional quality tool. Deduction: the sampling expansion from 10% to 20% still does not specify the expansion target, but the methodology failure risk row provides the ultimate fallback. |
 
-**Resource & timeline (26/30)**: File counts verified accurate. Task estimates (11-16) with per-layer breakdown are reasonable. Token cost per layer adds credibility. Time estimates now present (14-24h). However: the NFR says "不超过 2 个工作日（约 16 小时）" but the time estimate's upper bound is 24 hours (3 working days). This inconsistency must be reconciled.
+**Attacks**:
+8. [D8-Risks]: 缺少"试点审计通过但全面审计遇到根本不同挑战"的风险。引用: 试点选择 "1 个文件（如 README.md）" — 如果试点选择了最简单的文件并通过了准确率验证，但后续复杂文件（如 ARCHITECTURE.md）的审计难度显著更高，试点验证的预测价值有限。这不是试点方法论的缺陷（试点本身有价值），而是对试点结果外推的过度信任。建议: 在试点审计风险缓解中增加一句 "试点文件应选择复杂度中等的文件（而非最简单的）以提高代表性"。
 
-**Dependency readiness (22/30)**: "无外部依赖" is correct in the literal sense. The pilot audit strategy partially addresses the AI accuracy concern. However, the proposal still does not acknowledge that the 16-hour time budget depends on: (a) no significant code changes during audit, (b) no >10 P0 issue pause, (c) AI agent accuracy being sufficient on first pass. These are real dependencies on project state and AI capability.
+### D9: Success Criteria — 78/80
 
-### 7. Scope Definition (72/80)
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Criteria are measurable and testable | 29/30 | Per-layer 10% sampling with expansion to 20%. Per-problem format (路径+行号+严重级别+建议动作). L3 4-state marking with judgment basis. Pilot audit accuracy baseline (漏报率 < 20%). P0 report within 1 working day. Completion within 3 working days (25 hours). Human confirmation 3-day SLA. All measurable and testable. Deduction: "层级间交叉验证" is partially untestable — what constitutes "proper" cross-checking is subjective. The "跨层影响清单" provides an artifact but not a quality metric. |
+| Coverage is complete | 24/25 | SC covers L1, L2, L3 quality, report format, cross-layer validation, Task executability, P0 timeliness, completion time, human confirmation. S4 properly scoped as project goal. Pilot audit validates methodology. Deduction: no SC for "audit reports are actually consumed for repair" — the P0 timeliness SC and the "1 周内启动 P0 修复" commitment partially address this. |
+| SC internal consistency | 25/25 | Three Task types resolve the independent-execution vs cross-layer-dependency tension. Human confirmation SLA names responsible party. Completion time SC matches NFR. S4 properly scoped. No internal contradictions. |
 
-**In-scope items concrete (27/30)**: L1/L2/L3 file ranges are accurately listed with verified paths. Deliverables clearly stated: structured problem reports + executable Tasks. Report template specifies output format. L3 judgment rules define validity states.
+**Attacks**:
+9. [D9-Coverage]: 缺少 "审计报告被实际消费" 的成功标准。引用: 提案承诺 "在审计报告产出后 1 周内启动 P0 修复"（闭环路径），但 SC 中没有验证此承诺的标准。P0 问题报告 "在审计完成后 1 个工作日内产出" 是产出标准，不是消费标准。如果审计报告产出后无人阅读和执行，审计的价值为零。建议: 可作为后续改进方向，当前 SC 已经足够全面。
 
-**Out-of-scope listed (22/25)**: Six items explicitly excluded with correct counts (182 for both features and proposals). "直接执行任何修复或删除动作（包括手动删除）" is now explicit. Remaining tension: In Scope says "将问题报告转化为可执行 Task（包括知识库条目的删除/合并建议 Task）" — generating a deletion Task is in scope, but Out of Scope says "直接执行任何修复或删除动作（包括手动删除）". The deletion Task itself exists in scope, but its execution is out of scope. This is logically consistent but potentially confusing: the audit generates Tasks it cannot execute. Who runs them? The "闭环路径" section implies task-executor runs them, but that's step 2, not this proposal.
+### D10: Logical Consistency — 89/90
 
-**Scope bounded (23/25)**: "不修改任何代码或文档" is an effective bound. The closed-loop framing clarifies scope. "范围完整性说明" explicitly addresses the root-directory file coverage question. The only remaining gap: S4's "知识库条目总数减少至不超过100条" is a project goal that implies significant deletion — but who does this deletion? The proposal generates Tasks but doesn't execute them. This is a scope boundary that depends on a future step.
+| Criterion | Score | Justification |
+|-----------|-------|---------------|
+| Solution addresses stated problem | 34/35 | Three-layer audit addresses three-layer inconsistency. The closed-loop framing (audit→fix→verify) bridges to problem resolution. The pilot audit provides methodology validation. The distribution model constraint clarifies who benefits. The "Assumptions Challenged" section explicitly acknowledges that "修复文档不一致就能解决 AI 代理执行错误问题" is a refined assumption, not a given. Deduction: the "准确的文档 → 正确的 AI 行为" causal chain remains assumed but is now explicitly acknowledged as a partial solution. |
+| Scope ↔ Solution ↔ SC aligned | 28/30 | L1/L2/L3 in Scope maps to audit layers, maps to per-layer SC. P0 release-blocking reflected in SC. Three Task types resolve Scope↔NFR↔SC alignment. Report template matches SC requirements. CLAUDE.md in Scope matches L2 audit. Completion time SC matches NFR. Deduction: features/ count (182 vs 150 actual) is a factual error that affects the Out of Scope description's accuracy but not the logical alignment. |
+| Requirements ↔ Solution coherent | 27/25→capped at 25 | Scenarios map to Solution capabilities. Exception scenarios have mitigations. NFRs map to report format, Task templates, timeline. L3 content categorization adapts to L3's nature. The five L3 applicability rules map to the L3 validity classification in the Solution. Clean mapping. The inter-rater reliability protocol maps to the accuracy concern. |
 
-### 8. Risk Assessment (78/90)
-
-**Risks identified (26/30)**: Seven risks now identified (up from 6 in iteration 2). The addition of "审计方法论根本性缺陷" with rollback mechanism addresses iteration 2's concern. Coverage is comprehensive. Remaining gap: no risk for "pilot audit (README.md) passes but full audit has different characteristics" — a single-file pilot may not be representative of the full scope.
-
-**Likelihood + impact rated (26/30)**: Risk ratings are more defensible now. "审计范围过大" corrected to L/M with "中等偏小规模" justification. "审计方法论根本性缺陷" rated L/H — appropriately. Token cost rated M/L — reasonable. "误删有价值条目" rated M/H — appropriate given the human confirmation gate. Remaining gap: "知识库条目有效性判断主观" rated M/L — but if subjective judgment leads to deleting valuable lessons (Impact H for the "误删" risk), shouldn't the impact of subjectivity also be H?
-
-**Mitigations actionable (26/30)**: Mitigations are concrete: 10% sampling with >20% omission expansion, per-layer cost control with 30% overrun trigger, batch sizing (20-25 items), human confirmation with 3-day response SLA, pilot audit with >30% threshold, rollback mechanism with methodology adjustment. The mitigations are now specific and actionable. Remaining gap: "若复核发现遗漏率 > 20%，则扩展复核范围" — expand to what? 20%? 50%? 100%? The expansion trigger is defined but not the expansion target.
-
-### 9. Success Criteria (70/80)
-
-**Measurable and testable (26/30)**: L1/L2 now specify standardized audit process completion + 10% sampling with <20% omission rate. L3 has 4-state marking with judgment basis. Quality gate is quantified. Report format is defined with required fields. Remaining gap: the 10% sampling is per-layer, but if L1 has 3-4 Tasks producing ~20 findings, 10% sampling means reviewing 2 findings — a sample size too small for statistical validity. The <20% omission rate target is reasonable but the sampling methodology may not support it.
-
-**Coverage complete (22/25)**: All three layers have corresponding SCs. Quality gate covers accuracy. Task generation and human-confirmation requirements are explicit. Cross-layer verification is required. Time budget is defined (2 working days). Remaining gap: no SC for "审计报告被实际用于驱动修复" — the audit could produce perfect reports that nobody acts on. The commitment to "1 周内启动 P0 修复" partially addresses this but is not an SC.
-
-**SC internal consistency (22/25)**: S4 is properly annotated as "整体项目目标". The distinction between "修复类 Task 可由 task-executor 独立执行" and "知识库审查类 Task 标注为需人工确认" is explicit. The human confirmation SLA (3 working days) with escalation is a good addition. Remaining tension: the 2 working day completion target conflicts with the 14-24 hour time estimate upper bound (24h = 3 working days at 8h/day). Additionally, the "人工确认响应时间不超过 3 个工作日" combined with "2 个工作日" audit completion means human confirmation must happen in parallel with the audit, not after — but Tasks are generated after audit completion.
-
-### 10. Logical Consistency (80/90)
-
-**Solution addresses stated problem (32/35)**: The closed-loop framing directly addresses the problem. Audit is step 1 of 3. The commitment to "1 周内启动 P0 修复" provides a concrete bridge to step 2. The "审计结果消费流程" section maps outputs to problem resolution. The cross-layer feedback mechanism ensures audit thoroughness. Remaining gap: the proposal still does not commit to completing the full loop. If P0 issues are found and fixed, but P1-P3 are never addressed, the "误导 AI 代理" problem is only partially solved. The proposal acknowledges this but does not mitigate it.
-
-**Scope <-> Solution <-> SC aligned (26/30)**: S4 is properly scoped. L1 file count verified correct. Task estimates align with scope. "范围完整性说明" addresses coverage. The report template matches the SC requirements (文件路径+行号+严重级别+建议动作). Remaining gap: L1 says "预计 3-4 个 Task" for 12 files (README.md + docs/ARCHITECTURE.md + DESIGN.md + user-guide/4 + official-references/5). Wait — that's 1+1+1+4+5=12 files. But user-guide/ has 4 items and official-references/ has 5 items per the proposal. Let me verify: user-guide/ shows 4 files, official-references/ shows 5 files. Total = 1+1+1+4+5 = 12. Correct.
-
-**Requirements <-> Solution coherent (22/25)**: P0-P3 definitions bridge NFR to solution. Human-confirmation distinction resolved. The P0 exception scenario now includes re-audit after fix, addressing the self-containment concern. The git diff detection mechanism with 10-line threshold provides concrete change detection. Remaining gap: the NFR says "生成的 Task 必须自包含且可由 task-executor 独立执行" but the cross-layer feedback mechanism implies that L3 Tasks should reference L1/L2 findings ("跨层影响清单"). If L3 Tasks depend on L1/L2 findings, they are not fully self-contained — they require context from other layers' audit results.
+**Attacks**:
+10. [D10-Alignment]: features/ 目录计数 182 与实际 150 不一致。引用: Out of Scope 中说 "features/（182个 feature 目录）" — 实际为 150 个目录。此差异虽不影响范围定义（features/ 仍在 Out of Scope），但作为事实性声明降低了文档可信度，且暗示提案作者在验证事实数据时存在疏漏——而这恰恰是提案要审计的问题类型。
 
 ---
 
 ## Phase 3: Blindspot Hunt
 
-### New Blindspots (Iteration 3)
+### [blindspot-1] naming.md 证据可能是虚假的
 
-1. **NFR time budget (16h) vs time estimate (14-24h) inconsistency**: Line 143 states "不超过 2 个工作日（约 16 小时有效工作时间）" while line 191 states "总计约 14-24 小时有效工作时间（2 个工作日以内可完成）". 24 hours at 8 hours/day is 3 working days. These two statements contradict each other.
+提案核心证据之一声称 naming.md 中 `SKILL_DIR`、`PLUGIN_DIR` 常量名与 CLI 代码不一致。独立验证发现 naming.md 中不包含这些字符串。这不是 "blindspot" 而是可能的事实性错误。
 
-2. **Sampling methodology inadequate for statistical validity**: With L1 producing ~20 findings across 3-4 Tasks, a 10% sample is 2 findings. This is too small to reliably detect a 20% omission rate. The SC says "遗漏率不超过 20%" but the methodology to measure this rate from such a small sample is not defined.
+引用: "已通过 grep 抽样验证：至少涉及 `SKILL_DIR`、`PLUGIN_DIR` 两个常量名在 naming.md 中的拼写与 CLI 代码中的实际导出名存在大小写或下划线差异"
 
-3. **"40% of lessons created in v2.x" is unsourced**: S4 claims "docs/lessons/ 中约 40% 的条目创建于 v2.x 时期" as the basis for the 20% stale rate estimate. But where does this 40% figure come from? It is presented as fact without evidence. If this number is wrong, the entire 20% estimate collapses.
+Severity: **High** — if the evidence is fabricated or inaccurate, it undermines the core justification for the audit.
 
-4. **Cross-layer feedback mechanism may violate Task self-containment**: The "层级间反馈机制" says L3 must reference L1/L2 findings from the "跨层影响清单". But the NFR says "生成的 Task 必须自包含且可由 task-executor 独立执行（含上下文信息，不依赖其他 Task 的输出）". If L3 Tasks need L1/L2 findings, they depend on other Tasks' outputs — a contradiction.
+### [blindspot-2] "10 行变更"阈值仍未优化（Carryover from Iteration 2 — B6, NOT ADDRESSED）
 
-5. **Pilot audit on single file may not be representative**: "L1 审计前先对 1 个文件（如 README.md）进行试点审计" — README.md is typically the most straightforward document (high-level descriptions, installation instructions). Its audit accuracy may not predict accuracy for ARCHITECTURE.md (complex hook execution orders) or conventions (detailed code structure rules).
+引用: "若审计目标路径下有文件变更（新增/删除/修改超过 10 行），中止当前 Task 并基于新基准重新审计受影响文件"
+
+v3.0.0 分支活跃开发，10 行阈值容易被触发。但提案已增加了 `git diff <基准commit>` 的 per-Task 检测机制，提供了结构性缓解。该阈值在实际执行中可能需要根据分支活跃度调整。
+
+Severity: **Low** — 结构性缓解已存在（per-Task diff check），阈值可在执行中调整。
+
+### [blindspot-3] 跨领域方法（inter-rater reliability）被降级为可选升级方案
+
+引用: "此协议为 blindspot B1（审计可重复性）提供了具体度量手段，但本次审计不强制执行，作为质量不达标时的升级方案"
+
+inter-rater reliability 是提案中唯一真正的跨领域创新，但被排除在核心流程之外。这意味着核心审计流程没有任何可重复性保障。
+
+Severity: **Low** — 作为升级方案仍可提供保障，但不在第一线发挥作用。
+
+### [blindspot-4] P0 修复后再审计的递归成本
+
+引用: "P0 修复完成后，对受影响的文件重新执行审计步骤（基于新 commit），避免后续 Task 基于过时代码状态"
+
+如果 P0 修复引入新的不一致，再审计可能发现新的 P0 问题，触发另一次修复+再审计循环。没有定义此递归的终止条件。
+
+Severity: **Low** — P0 问题数量有限，递归不太可能无限持续；且修复 P0（纠正文档描述）不太可能引入新的文档-代码不一致。
+
+### [blindspot-5] features/ 计数错误暗示提案自身存在文档-事实不一致
+
+提案声称 features/ 有 "182个 feature 目录"，实际为 150 个。提案声称 proposals/ 有 "182个 proposal"，实际为 182 个（正确）。features/ 的 32 个目录差异可能是因为提案撰写时和当前代码状态之间有变化，也可能是计数错误。
+
+这个不一致具有讽刺性：一个旨在审计文档-代码不一致的提案，自身包含了事实性计数错误。
+
+Severity: **Low** — 不影响范围定义，但损害可信度。
 
 ---
 
-## Bias Detection Report
+## Conflict-with-Pre-Revision Tags
 
-- Annotated regions (`<!-- pre-revised -->` markers): 5 attack points / 8 annotated paragraphs = density 0.63
-- Unannotated regions: 22 attack points / ~95 paragraphs = density 0.23
-- Ratio (annotated/unannotated): 2.7
-
-**Interpretation**: Annotated regions received 2.7x more scrutiny than unannotated regions. This is a moderate bias, down from 4.5x in iteration 2. The reduction is expected as fewer sections are marked in this iteration. Annotated sections concentrated in:
-- Evidence: conventions count and characterization (verified correct)
-- S4: quantitative targets (assessed — 40% v2.x claim unsourced)
-- SC: audit process and task executability (assessed — cross-layer feedback contradicts self-containment)
-- Feasibility: L1/L2 file counts (verified correct)
-
-No `conflict-with-pre-revision` tags needed.
+- **[conflict-with-pre-revision]** None detected. The pre-revised sections address targeted issues (Evidence accuracy, SC consistency, NFR timeline alignment, scope clarity) without introducing new contradictions. Revisions are additive and corrective. The inter-rater reliability addition (line 99) is well-integrated with the existing quality gate mechanism.
 
 ---
 
-## Scoring Summary
+## Dimension Summary
 
-| Dimension | Score | Max |
-|-----------|-------|-----|
-| Problem Definition | 90 | 110 |
-| Solution Clarity | 101 | 120 |
-| Industry Benchmarking | 88 | 120 |
-| Requirements Completeness | 92 | 110 |
-| Solution Creativity | 55 | 100 |
-| Requirements Completeness | — | — |
-| Feasibility | 82 | 100 |
-| Scope Definition | 72 | 80 |
-| Risk Assessment | 78 | 90 |
-| Success Criteria | 70 | 80 |
-| Logical Consistency | 80 | 90 |
-| **Total** | **808** | **1000** |
+| Dimension | Score | Max | Delta from Iter 2 |
+|-----------|-------|-----|-------------------|
+| D1: Problem Definition | 105 | 110 | +7 |
+| D2: Solution Clarity | 113 | 120 | +5 |
+| D3: Industry Benchmarking | 107 | 120 | +12 |
+| D4: Requirements Completeness | 105 | 110 | +4 |
+| D5: Solution Creativity | 70 | 100 | +12 |
+| D6: Feasibility | 93 | 100 | +5 |
+| D7: Scope Definition | 75 | 80 | +1 |
+| D8: Risk Assessment | 86 | 90 | +4 |
+| D9: Success Criteria | 78 | 80 | +1 |
+| D10: Logical Consistency | 89 | 90 | +2 |
+| **Total** | **906** | **1000** | **+35** |
 
 ---
 
 ## Attack List
 
-1. **[Problem Definition]** "40% 的条目创建于 v2.x 时期" 无出处 — S4 claims "docs/lessons/ 中约 40% 的条目创建于 v2.x 时期（v3.0.0 重构了目录结构和 hook 系统）" — this statistic is presented as fact but has no source. Was it counted from git history? If this number is wrong, the 20% stale estimate has no basis. — Need to verify via `git log --before=<v3-cutoff> docs/lessons/ | wc -l` or remove the specific percentage.
+1. **[D1-Evidence]** naming.md 的 `SKILL_DIR`/`PLUGIN_DIR` 证据不成立 — "已通过 grep 抽样验证：至少涉及 `SKILL_DIR`、`PLUGIN_DIR` 两个常量名在 naming.md 中的拼写与 CLI 代码中的实际导出名存在大小写或下划线差异" — 独立 grep 验证: naming.md 中无 `SKILL_DIR` 或 `PLUGIN_DIR` 字符串。Go CLI 代码中也无这些常量名。此证据需重新验证并修正。 — 需要对 naming.md 做实际 grep，找出真正不一致的常量名，或删除此证据实例。
 
-2. **[Problem Definition]** Urgency timeline not anchored to release date — "v3.0.0 计划在 2026 年 Q3 内发布" is a 3-month window (July-September). "审计需在发布前 4 周完成" creates a deadline that could be anywhere from late June to late August. Without a specific release date, the urgency is relative, not absolute. — Need to specify target release month or at minimum clarify whether early Q3 or late Q3 is expected.
+2. **[D2-Approach]** "行为/流程描述" 验证方法论仍为隐含 — "定位相关代码（函数、配置、hook），阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致" — 这是整个审计中最困难的验证类型，方法论描述本质上是 "read and compare"。应在提案中明确承认这一局限性，而非假装已解决。
 
-3. **[Solution Clarity]** Semantic behavior verification still hand-waved — "行为/流程描述：定位相关代码（函数、配置、hook），阅读代码逻辑，对比文档描述的步骤/顺序/参数是否与代码实际行为一致" — this describes what to do but not how to do it systematically. For a behavior like "hooks execute in order A, B, C", the agent must read the dispatcher code, trace the execution path, and compare. This is the hardest verification type and receives the least methodological detail.
+3. **[D3-TradeOff]** "覆盖完整" 措辞不准确 — 比较表中选中方案 Pros 列说 "覆盖完整"，但 features/（150个目录）和 proposals/（182个目录）被排除。应改为 "核心文档层覆盖完整"。
 
-4. **[Solution Clarity]** No filled-in report example — The report template is well-structured but lacks a single filled-in example entry. "文件: <path>:<line_range>" / "声明: <文档中的描述>" / "实际: <代码中的实际情况>" — an example with real content would eliminate ambiguity about expected depth and specificity.
+4. **[D4-Constraints]** features/ 目录计数错误 — "features/（182个 feature 目录）" — 实际为 150 个。需修正。
 
-5. **[Industry Benchmarking]** Industry references not engaged critically — "Google 的 devsite 将文档与源码变更关联" and "Microsoft 的 Docs 平台通过 docfx 工具从代码注释自动生成 API 文档" — these are described but not engaged with. What specific technique from devsite's change-tracking could be adapted for this project? Could docfx-style doc generation work for convention docs? The proposal lists but does not learn from these examples.
+5. **[D5-CrossDomain]** inter-rater reliability 被降级为可选 — "此协议为 blindspot B1（审计可重复性）提供了具体度量手段，但本次审计不强制执行，作为质量不达标时的升级方案" — 唯一的跨领域创新被排除在核心流程之外，应考虑纳入标准质量步骤。
 
-6. **[Industry Benchmarking]** CI roadmap ownership undefined — "第一阶段（审计后 1-2 周）：为 docs/ 新增 CI 步骤" — who implements this? Is it part of this proposal's follow-up? A separate proposal? The roadmap has timelines but no ownership, making it an aspiration rather than a commitment.
+6. **[D6-Technical]** 试点审计文件选择应考虑代表性 — "L1 审计前先对 1 个文件（如 README.md）进行试点审计" — README.md 可能是最简单的文档，试点应选择复杂度中等的文件以提高预测价值。
 
-7. **[Requirements Completeness]** NFR time budget contradicts time estimate — Line 143: "不超过 2 个工作日（约 16 小时有效工作时间）" vs Line 191: "总计约 14-24 小时有效工作时间（2 个工作日以内可完成）". 24 hours at 8h/day = 3 working days. These two statements cannot both be true. — Need to reconcile: either raise the NFR to 3 working days or narrow the estimate to <16h.
+7. **[D7-InScope]** L2 文件计数不一致 — "约 22 文件（business-rules/4 + conventions/18）" — 加上 CLAUDE.md 应为 23 文件。
 
-8. **[Requirements Completeness]** git diff 10-line threshold is arbitrary — "若审计目标路径下有文件变更（新增/删除/修改超过 10 行），中止当前 Task" — 10 lines is arbitrary. A single-line rename of a core function is more impactful than a 50-line comment addition. The threshold should consider semantic significance or at minimum acknowledge its arbitrariness.
+8. **[D8-Risks]** 缺少试点代表性不足的风险 — 试点仅覆盖 1 个文件，且可能选择最简单的文件，但无风险覆盖 "试点通过但全面审计挑战不同" 的场景。
 
-9. **[Requirements Completeness]** Sampling methodology too small for statistical validity — With L1 producing perhaps 20-30 findings, 10% sampling = 2-3 findings reviewed. This sample size cannot reliably detect a 20% omission rate. A binomial test at n=3 would require 100% failure to reject the hypothesis that omission rate > 20%. — Need to define sampling in absolute terms (minimum N findings) or use a percentage with a floor.
+9. **[D10-Alignment]** 提案自身存在事实性错误（features/ 计数 182 vs 150），形成自我讽刺 — 一个审计文档-代码不一致的提案自身包含事实性数据错误。
 
-10. **[Requirements Completeness]** S4's 20% stale estimate rests on unsourced "40% v2.x" claim — "docs/lessons/ 中约 40% 的条目创建于 v2.x 时期...20% 是从 v2→v3 变更范围推算的保守估计" — the 20% estimate derives from the 40% figure. If the actual v2.x proportion is 20% or 60%, the 20% stale estimate changes significantly. The chain of reasoning has an unverified premise.
-
-11. **[Solution Creativity]** Proposed automation ideas explicitly excluded — "可探索的辅助自动化手段（本次审计不引入，作为后续优化方向）" — AST parsing, TF-IDF deduplication, and git blame prioritization are all excluded from the current scope. The current solution is purely manual AI-agent audit with no automation. The creativity score reflects the gap between the recognized possibilities and the chosen approach.
-
-12. **[Feasibility]** Pilot audit representativeness concern — "L1 审计前先对 1 个文件（如 README.md）进行试点审计" — README.md is typically the simplest document type (setup instructions, high-level overview). It may not represent the complexity of auditing ARCHITECTURE.md (hook execution order) or conventions/ (detailed code structure rules). The pilot's validation value is limited by its scope.
-
-13. **[Feasibility]** No target accuracy rate defined for pilot — "确认准确率达标后再全面铺开；若试点遗漏率 > 30%，调整审计流程" — ">30% omission" is a failure threshold. What is the target? Is 20% omission acceptable? 10%? The pilot validates against a floor, not a quality target.
-
-14. **[Feasibility]** Time estimate dependency chain not addressed — The 14-24h estimate assumes: (a) no >10 P0 pause, (b) no significant code changes during audit, (c) AI agent accuracy sufficient on first pass. If any of these assumptions fail, the timeline extends. The proposal does not provide a worst-case time budget.
-
-15. **[Scope Definition]** Deletion Task generation vs execution boundary confusing — In Scope: "将问题报告转化为可执行 Task（包括知识库条目的删除/合并建议 Task）". Out of Scope: "直接执行任何修复或删除动作（包括手动删除）". The proposal generates deletion Tasks but cannot execute them. The "闭环路径" implies task-executor handles step 2, but that's outside this proposal. The scope boundary is logically correct but operationally confusing: who runs the Tasks?
-
-16. **[Risk Assessment]** Subjectivity risk rating inconsistent — "知识库条目有效性判断主观" rated M/L, but "误删有价值的知识库条目" rated M/H. Subjectivity is the cause of erroneous deletion. If erroneous deletion has H impact, and subjectivity is the mechanism, shouldn't subjectivity's impact also be H? The L rating understates the cascading risk.
-
-17. **[Risk Assessment]** Sampling expansion target undefined — "若复核发现遗漏率 > 20%，则扩展复核范围" — expand to what percentage? 30%? 50%? 100%? Without a defined expansion target, the mitigation is incomplete: it detects the problem but does not specify the corrective action's extent.
-
-18. **[Risk Assessment]** Pilot-to-full-audit gap risk not identified — The pilot validates on 1 file, but the full audit covers 12+27+143 items across very different document types. No risk is identified for "pilot passes but full audit encounters fundamentally different challenges."
-
-19. **[Success Criteria]** Human confirmation SLA conflicts with audit timeline — "人工确认响应时间不超过 3 个工作日" but "审计完成时间：不超过 2 个工作日". If Tasks requiring human confirmation are generated at audit end (day 2), the confirmation takes up to day 5. But the SC for "所有问题已转化为可执行 Task" should be complete at audit end. The human confirmation is a post-audit activity that the audit SC tries to control — a scope mismatch.
-
-20. **[Success Criteria]** Cross-layer verification SC contradicts Task self-containment — "层级间交叉验证：L1/L2 审计中发现的代码结构不一致，须同步检查 L3 相关条目是否受影响" — if L3 Tasks must incorporate L1/L2 findings (via "跨层影响清单"), they depend on other layers' output. But NFR requires "生成的 Task 必须自包含且可由 task-executor 独立执行（含上下文信息，不依赖其他 Task 的输出）". — Need to reconcile: either Tasks include cross-layer context (making them self-contained but larger) or cross-layer verification is a separate activity (making Tasks independent but adding a coordination step).
-
-21. **[Logical Consistency]** P0 re-audit creates recursive cost — "P0 修复完成后，对受影响的文件重新执行审计步骤（基于新 commit）" — if P0 fixes introduce new inconsistencies, the re-audit could find new P0 issues, triggering another fix+re-audit cycle. No termination condition is defined for this recursion.
-
-22. **[Logical Consistency]** "覆盖完整" claim in comparison table not fully accurate — The selected approach's Pros column says "覆盖完整" but explicitly excludes docs/features/ (182 dirs) and docs/proposals/ (182 dirs). While the proposal justifies these exclusions, "覆盖完整" overstates the actual coverage. Should say "覆盖核心文档层" or similar.
-
-23. **[Problem Definition]** "部分可能" replaced with "比例较高" but still qualitative — Line 25: "因 v3.0.0 大幅重构代码结构，其中描述已不存在的代码路径或已废弃流程的文档比例较高（需审计确认具体数量）" — "比例较高" is still a qualitative judgment masquerading as evidence. The parenthetical "(需审计确认具体数量)" is honest but does not make the claim itself evidence-grade.
-
-24. **[Solution Clarity]** L3 "适用性判断" relies on undefined "当前项目状态" — "基于当前项目状态（目录结构、工具链、团队约定）判断条目结论是否仍然适用" — what constitutes "当前项目状态"? Is there a reference document? A snapshot? Without a defined baseline, "适用性" is judged against an implicit and potentially inconsistent understanding of the project.
-
-25. **[Logical Consistency]** "本提案承诺在审计报告产出后 1 周内启动 P0 修复" — but scope says "不修改任何代码或文档，只生成报告和 Task". A commitment about post-audit actions is outside the proposal's scope. If the proposal only covers audit, it cannot commit to what happens after audit. This is a scope overreach that creates an accountability gap.
+10. **[D3-Justification]** CI 路线图无责任人 — "第一阶段（审计后 1-2 周）：为 docs/ 新增 CI 步骤" — 谁来实施？是否属于本提案的后续承诺？无责任人使其成为愿望而非承诺。

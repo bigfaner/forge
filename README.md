@@ -2,7 +2,7 @@
 
 > Claude Code 工作流增强工具集：让 AI 编程从"聊天"变成"工程"
 
-[![Version](https://img.shields.io/badge/Version-5.6.0-blue.svg)](https://github.com/bigfaner/forge)
+[![Version](https://img.shields.io/badge/Version-3.0.0--rc.41-blue.svg)](https://github.com/bigfaner/forge)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -156,7 +156,7 @@ cd my-project; forge init
 | `forge task check-deps` | 校验任务依赖关系 |
 | `forge task reopen` | 重新激活 rejected/skipped 任务 |
 | `forge task transition` | 手动切换任务状态 |
-| `forge task validate-index` | 校验 index.json 结构 |
+| `forge task validate` | 校验 index.json 结构 |
 
 ### Flags 参考
 
@@ -261,6 +261,7 @@ cd my-project; forge init
 | Flag | 用途 |
 |------|------|
 | `--types` | 输出去重的 surface 类型列表 |
+| `--json` | 以 JSON 格式输出结果 |
 | `--project-root` | 项目根目录（默认自动检测） |
 
 #### surfaces detect
@@ -352,7 +353,7 @@ cd my-project; forge init
 
 ---
 
-## 任务类型表（21 种 dot-notation 类型）
+## 任务类型表（20 种 dot-notation 类型）
 
 > 与 `forge task list-types` 一一对应
 
@@ -376,7 +377,7 @@ cd my-project; forge init
 | `doc.consolidate` | 合并文档文件 |
 | `doc.drift` | 检测并修复规范漂移 |
 
-### test（5 种）
+### test（4 种）
 
 | 类型 | 用途 |
 |------|------|
@@ -384,7 +385,6 @@ cd my-project; forge init
 | `test.gen-contracts` | 从旅程生成测试契约 |
 | `test.gen-scripts` | 生成可执行测试脚本 |
 | `test.run` | 运行测试脚本并收集结果 |
-| `test.verify-regression` | 晋升后验证回归套件 |
 
 ### eval（2 种）
 
@@ -415,7 +415,7 @@ cd my-project; forge init
 forge/
 +-- plugins/forge/           # Forge plugin
 |   +-- skills/              # 21 个 Skills
-|   +-- commands/            # 18 个 Slash Commands
+|   +-- commands/            # 16 个 Slash Commands
 |   +-- agents/              # 1 个 Subagent (task-executor)
 |   +-- hooks/               # Hooks + guide.md
 +-- forge-cli/               # Go CLI 源码 (forge binary)

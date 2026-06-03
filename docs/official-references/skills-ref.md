@@ -109,8 +109,15 @@ my-skill/
 ├── template.md        # Claude 要填写的模板
 ├── examples/
 │   └── sample.md      # 显示预期格式的示例输出
-└── scripts/
-    └── validate.sh    # Claude 可以执行的脚本
+├── scripts/
+│   └── validate.sh    # Claude 可以执行的脚本
+├── rules/             # 业务规则文件（Forge 扩展）
+├── rubrics/           # 评估标准文件（Forge 扩展）
+├── experts/           # 专家定义文件（Forge 扩展）
+├── types/             # 类型定义文件（Forge 扩展）
+├── data/              # 静态数据文件（Forge 扩展）
+├── references/        # 参考文档（Forge 扩展）
+└── templates/         # 模板文件（Forge 扩展）
 ```
 
 `SKILL.md` 包含主要说明，是必需的。其他文件是可选的，让你构建更强大的 skills：Claude 要填写的模板、显示预期格式的示例输出、Claude 可以执行的脚本或详细的参考文档。从你的 `SKILL.md` 中引用这些文件，以便 Claude 知道它们包含什么以及何时加载它们。有关更多详细信息，请参阅[添加支持文件](#add-supporting-files)。

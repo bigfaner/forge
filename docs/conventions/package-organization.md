@@ -34,10 +34,17 @@ cmd/ → internal/ → pkg/
 | 层级 | 内容 | 示例 |
 |------|------|------|
 | `internal/cmd/*.go` | 顶层命令入口（简单命令） | `root.go`, `version.go`, `cleanup.go` |
-| `internal/cmd/<command-group>/` | 复杂命令的子包（多文件拆分） | `task/`, `worktree/`, `feature/`, `fact/`, `prompt/`, `forensic/` |
+| `internal/cmd/<command-group>/` | 复杂命令的子包（多文件拆分） | `task/`, `worktree/`, `feature/`, `fact/`, `prompt/`, `forensic/`, `qualitygate/` |
 | `internal/cmd/base/` | 命令共享的基础设施 | `output.go`, `errors.go`, `claude.go` |
 
-当前状态：15 个顶层命令文件 + 8 个子包（`base`, `docs`, `fact`, `feature`, `forensic`, `prompt`, `task`, `worktree`）。
+**非命令顶层文件**：以下 `internal/cmd/` 顶层文件不是命令入口，承担共享支持角色：
+
+| 文件 | 用途 |
+|------|------|
+| `styles.go` | CLI 颜色常量集中定义（hex codes、ANSI styles） |
+| `output.go` | 包声明保留文件（output 函数已迁移到 `base/output.go`） |
+
+当前状态：18 个顶层命令文件 + 8 个子包（`base`, `fact`, `feature`, `forensic`, `prompt`, `qualitygate`, `task`, `worktree`）。
 
 ### 2.2 何时创建子包
 
@@ -118,7 +125,7 @@ leaf（叶子层）
 | D4 | `pkg/task` 高耦合 | 导入 4 个内部 pkg/ 包（`forgeconfig`, `index`, `infocmd`, `types`） | 减少直接依赖数量 | 最宽的依赖面；考虑通过依赖注入或接口抽象降低直接导入 |
 | D5 | `pkg/prompt` 深链 | 依赖深度 3 层（`prompt→task→forgeconfig→types`） | 依赖深度不超过 2 层 | 最深的依赖链增加了理解和测试的难度 |
 | D6 | 孤立包未验证归属 | `pkg/facttable`, `pkg/project`, `pkg/version` 零内部导入 | 确认 pkg/ 层级归属是否合理 | 无内部消费者，需评估是否应保留在 pkg/ 或降级为 internal |
-| D7 | `internal/cmd/docs` 空子包 | `cmd/docs/features/` 目录树存在但无文件 | 不创建空包目录 | 空目录违反最小化原则；应在有实际代码时再创建 |
+| D7 | `internal/cmd/docs` 空子包 | 已清理（空目录已移除） | 不创建空包目录 | ~~空目录违反最小化原则；应在有实际代码时再创建~~ 已解决 |
 
 ## 5. 开发者工作流
 

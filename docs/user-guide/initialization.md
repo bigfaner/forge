@@ -150,10 +150,10 @@ auto:
     full: true
   cleanCode:
     quick: false
-    full: true
+    full: false
   validation:
     quick: false
-    full: true
+    full: false
   runTasks:
     quick: true
     full: false
@@ -302,8 +302,8 @@ Surface 检测是 Forge v3.0.0 的核心能力，用于自动识别项目的测�
 | 1（最高） | web |
 | 2 | mobile |
 | 3 | api |
-| 4 | cli |
-| 5（最低） | tui |
+| 4 | tui |
+| 5（最低） | cli |
 
 ### Workspace 模式
 
