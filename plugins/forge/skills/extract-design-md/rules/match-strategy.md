@@ -9,14 +9,4 @@ Use `AskUserQuestion` to let the user choose a generation strategy:
 
 **If "match built-in" is chosen:**
 
-Based on visual analysis, match against these characteristics to identify the closest built-in style:
-
-| Built-in Style | Identifying Characteristics |
-|---------------|----------------------------|
-| Vercel | Black background, Geist font, no shadows, border depth |
-| Shadcn | Zinc neutrals, CSS variables, dark mode support, Tailwind spacing |
-| Tailwind UI | Indigo primary, white background, shadow-sm system, Inter font |
-| Stripe | Purple gradient buttons, light gray background (#f6f9fc), weight-300 display |
-| Apple | Pure white background, generous whitespace, SF Pro, rounded capsule buttons |
-
-Read the corresponding built-in style file from the ui-design skill: `ui-design/templates/styles/<name>.md` (resolve relative to the skills parent directory)
+Based on visual analysis, match against built-in style characteristics defined in `rules/style-matching.md` to identify the closest built-in style, then read the corresponding style file from the ui-design skill: `ui-design/templates/styles/<name>.md` (resolve relative to the skills parent directory)
