@@ -84,6 +84,19 @@ build() {
     log_info "Build complete: ${OUTPUT}"
 }
 
+# Verify the built binary has the correct version injected
+verify_version() {
+    BINARY="${PROJECT_ROOT}/${BIN_DIR}/${APP_NAME}"
+    OUTPUT=$("$BINARY" version 2>&1)
+    if echo "$OUTPUT" | grep -q "$VERSION"; then
+        log_info "Version verified: ${VERSION}"
+    else
+        log_error "Version verification failed: expected '${VERSION}', got: ${OUTPUT}"
+        log_error "This usually means ldflags -X target path is wrong (symbol not found, linker silently skips)."
+        exit 1
+    fi
+}
+
 # Install to user directory
 install() {
     log_info "Installing to ${INSTALL_DIR}..."
@@ -138,6 +151,7 @@ main() {
     get_version
     detect_platform
     build
+    verify_version
     install
     add_to_path
     log_info "Done! Run 'forge --help' to verify installation."

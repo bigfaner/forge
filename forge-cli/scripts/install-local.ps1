@@ -89,7 +89,7 @@ function Build-App {
         $env:GOOS = "windows"
         $env:GOARCH = $Arch
 
-        $LdFlags = "-s -w -X forge-cli/pkg/version.Version=$script:Version"
+        $LdFlags = "-s -w -X forge-cli/pkg/types.Version=$script:Version"
         go build -ldflags="$LdFlags" -o $Output ./cmd/forge
 
         Write-Info "Build complete: $Output"
@@ -97,6 +97,24 @@ function Build-App {
     finally {
         Pop-Location
     }
+}
+
+# Verify the built binary has the correct version injected
+function Verify-Version {
+    $ScriptDir = Split-Path -Parent $MyInvocation.ScriptName
+    if (-not $ScriptDir) {
+        $ScriptDir = $PSScriptRoot
+    }
+    $ProjectRoot = Split-Path -Parent $ScriptDir
+    $BinaryPath = Join-Path $ProjectRoot (Join-Path $BinDir $AppName)
+
+    $Output = (& $BinaryPath version 2>&1) -join "`n"
+    if ($Output -notmatch [regex]::Escape($script:Version)) {
+        Write-ErrorMsg "Version verification failed: expected '$($script:Version)', got: $Output"
+        Write-ErrorMsg "This usually means ldflags -X target path is wrong (symbol not found, linker silently skips)."
+        exit 1
+    }
+    Write-Info "Version verified: $script:Version"
 }
 
 # Install to user directory
@@ -176,6 +194,7 @@ function Main {
     Get-Version
     $Arch = Get-Platform
     Build-App -Arch $Arch
+    Verify-Version
     Install-App
     Add-ToPath
 
