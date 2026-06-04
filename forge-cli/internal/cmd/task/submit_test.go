@@ -1043,6 +1043,26 @@ func TestAutoRestoreSourceTask_SlugKeyedFullChain(t *testing.T) {
 		}
 	})
 
+	// bug: autoRestoreSourceTask should skip unknown deps (consistent with claim.go checkDependenciesMet).
+	// When a dep doesn't exist in the index, claim treats it as vacuously satisfied,
+	// but autoRestoreSourceTask treated it as unmet — causing source tasks to stay blocked
+	// even though claim would unblock them on the next cycle.
+	t.Run("bug: restores blocked source when dep is unknown (not in index)", func(t *testing.T) {
+		index := &task.TaskIndex{
+			Feature: "test",
+		}
+		index.SetTasks(map[string]task.Task{
+			"src":   {ID: "2.1", Status: "blocked", Dependencies: []string{"fix-1", "nonexistent-dep"}},
+			"fix-1": {ID: "fix-1", Status: "completed", SourceTaskID: "2.1"},
+		})
+
+		autoRestoreSourceTask(index, "2.1")
+
+		if index.TasksMap()["src"].Status != "pending" {
+			t.Errorf("bug: source should be restored when only unknown deps remain (consistent with claim behavior), got %s", index.TasksMap()["src"].Status)
+		}
+	})
+
 	t.Run("nested chain: both source and fix-A are slug-keyed", func(t *testing.T) {
 		index := &task.TaskIndex{
 			Feature: "test",

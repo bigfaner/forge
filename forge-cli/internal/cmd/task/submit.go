@@ -7,6 +7,7 @@ import (
 	"forge-cli/internal/cmd/base"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"forge-cli/pkg/feature"
@@ -168,14 +169,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	}
 
 	// Validate status against index statusEnum
-	validStatus := false
-	for _, s := range idx.StatusEnum {
-		if s == rd.Status {
-			validStatus = true
-			break
-		}
-	}
-	if !validStatus {
+	if !slices.Contains(idx.StatusEnum, rd.Status) {
 		return base.ErrInvalidStatus(rd.Status, idx.StatusEnum)
 	}
 
@@ -260,14 +254,32 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, id
 // autoRestoreSourceTask checks if a blocked source task can be unblocked.
 // If the source is blocked and ALL its dependencies are completed or skipped, restores it to pending.
 // Root cause: must lookup by ID (iterate), not by direct map key, because map keys are slugs.
+// Unknown deps (not in index) are skipped — consistent with claim.go checkDependenciesMet.
 func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	srcKey, srcTask, err := task.FindTask(index, sourceTaskID)
-	if err != nil || srcTask.Status != types.StatusBlocked {
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "AUTO-RESTORE-SKIP: source task %s not found in index\n", sourceTaskID)
+		return
+	}
+	if srcTask.Status != types.StatusBlocked {
+		fmt.Fprintf(os.Stderr, "AUTO-RESTORE-SKIP: source task %s is %s (not blocked)\n", sourceTaskID, srcTask.Status)
 		return
 	}
 
 	unmet := checkUnmetDeps(index, srcTask)
-	if len(unmet) > 0 {
+	// Filter out unknown deps — consistent with claim.go checkDependenciesMet which
+	// treats unknown deps as vacuously satisfied.
+	var knownUnmet []string
+	var unknownDeps []string
+	for _, id := range unmet {
+		if _, found := index.ByID(id); !found {
+			unknownDeps = append(unknownDeps, id)
+			continue
+		}
+		knownUnmet = append(knownUnmet, id)
+	}
+	if len(knownUnmet) > 0 {
+		fmt.Fprintf(os.Stderr, "AUTO-RESTORE-SKIP: source task %s has unmet deps: %v\n", sourceTaskID, knownUnmet)
 		return
 	}
 
