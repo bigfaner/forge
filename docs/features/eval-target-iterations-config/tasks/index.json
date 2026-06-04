@@ -54,7 +54,7 @@
         "1",
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-add-eval-settings-tests.md",
       "record": "records/4-add-eval-settings-tests.md",
       "surface-type": "cli",
