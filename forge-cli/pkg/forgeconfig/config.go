@@ -274,12 +274,57 @@ func (s SurfacesMap) MarshalYAML() (interface{}, error) {
 	return map[string]string(s), nil
 }
 
+// LogsConfig controls file-based diagnostic logging.
+// When the logs section is absent from config.yaml, this struct is nil
+// and forgelog applies defaults (level=info, retentionDays=7, enabled=true).
+type LogsConfig struct {
+	// Enabled controls file logging. Nil (absent from YAML) means true.
+	// Set to explicit false to disable. Uses *bool to distinguish
+	// "key absent" (nil → true) from "enabled: false" (non-nil → false).
+	Enabled       *bool  `yaml:"enabled"`
+	Level         string `yaml:"level"`         // default: "info"; one of debug|info|warn|error
+	RetentionDays int    `yaml:"retentionDays"` // default: 7; minimum 1
+}
+
+// ResolveLogsConfig applies safe defaults to a LogsConfig.
+// Nil input returns defaults. Invalid values are normalized:
+//   - empty level falls back to "info"
+//   - retentionDays < 1 falls back to 7
+//   - enabled (nil *bool) defaults to true
+func ResolveLogsConfig(cfg *LogsConfig) LogsConfig {
+	resolved := LogsConfig{
+		Enabled:       ptrBool(true),
+		Level:         "info",
+		RetentionDays: 7,
+	}
+	if cfg == nil {
+		return resolved
+	}
+	resolved.Enabled = cfg.Enabled
+	if resolved.Enabled == nil {
+		resolved.Enabled = ptrBool(true)
+	}
+	if cfg.Level != "" {
+		resolved.Level = cfg.Level
+	}
+	if cfg.RetentionDays >= 1 {
+		resolved.RetentionDays = cfg.RetentionDays
+	}
+	return resolved
+}
+
+// ptrBool returns a pointer to the given bool value.
+func ptrBool(v bool) *bool {
+	return &v
+}
+
 // Config represents the .forge/config.yaml structure.
 type Config struct {
 	Version        string          `yaml:"version,omitempty"`
 	ProjectType    string          `yaml:"project-type,omitempty"`
 	Auto           *AutoConfig     `yaml:"auto"`
 	Worktree       *WorktreeConfig `yaml:"worktree,omitempty"`
+	Logs           *LogsConfig     `yaml:"logs,omitempty"`
 	Coverage       *CoverageConfig `yaml:"coverage,omitempty"`
 	TestFramework  string          `yaml:"test-framework,omitempty"`
 	Languages      []string        `yaml:"languages,omitempty"`

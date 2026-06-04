@@ -9,7 +9,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"forge-cli/pkg/forgeconfig"
 )
+
+// ptrBool is a test helper that returns a pointer to the given bool value.
+func ptrBool(v bool) *bool { return &v }
 
 // --- LogLevel tests ---
 
@@ -525,4 +530,210 @@ func TestMultipleClose(t *testing.T) {
 	_ = Init(nil, logsDir)
 	Close()
 	Close() // Should not panic
+}
+
+// --- Auto-cleanup tests (AC-1) ---
+
+func TestCleanupOldLogs(t *testing.T) {
+	// Create old and new log files; verify only old ones are deleted
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create an old log file (10 days ago)
+	oldFile := filepath.Join(logsDir, "old.log")
+	if err := os.WriteFile(oldFile, []byte("old"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	// Set modification time to 10 days ago
+	oldTime := time.Now().AddDate(0, 0, -10)
+	if err := os.Chtimes(oldFile, oldTime, oldTime); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a recent log file (1 day ago)
+	recentFile := filepath.Join(logsDir, "recent.log")
+	if err := os.WriteFile(recentFile, []byte("recent"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	recentTime := time.Now().AddDate(0, 0, -1)
+	if err := os.Chtimes(recentFile, recentTime, recentTime); err != nil {
+		t.Fatal(err)
+	}
+
+	// Init with 7-day retention should delete old but keep recent
+	err := Init(nil, logsDir)
+	defer Close()
+	if err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+
+	if _, err := os.Stat(oldFile); !os.IsNotExist(err) {
+		t.Error("old log file should have been deleted")
+	}
+	if _, err := os.Stat(recentFile); os.IsNotExist(err) {
+		t.Error("recent log file should NOT have been deleted")
+	}
+}
+
+func TestCleanupNeverDeletesActiveLog(t *testing.T) {
+	// SC-4: active log file is never deleted by its own cleanup pass
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a file that would be "old" if deleted
+	// But the active log (created by Init) has current timestamp, so it's safe
+	err := Init(nil, logsDir)
+	defer Close()
+	if err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+
+	// Write to create the log file
+	Info("test\n")
+
+	// Verify log file exists
+	entries, err := os.ReadDir(logsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("expected at least one log file")
+	}
+
+	// The newly created log file should still exist
+	found := false
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".log") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("active log file was deleted by cleanup")
+	}
+}
+
+// --- Config disable tests (AC-3) ---
+
+func TestInitWithConfigDisabled(t *testing.T) {
+	// logs.enabled: false in config skips FileBackend
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+
+	err := Init(&forgeconfig.LogsConfig{Enabled: ptrBool(false)}, logsDir)
+	defer Close()
+
+	if err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+
+	// No .forge/logs directory should be created
+	if _, err := os.Stat(logsDir); !os.IsNotExist(err) {
+		t.Error("logsDir should not be created when logs.enabled=false")
+	}
+}
+
+func TestInitWithEnvDisableOverridesConfig(t *testing.T) {
+	// FORGE_NO_LOG=1 takes precedence over config
+	t.Setenv("FORGE_NO_LOG", "1")
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+
+	// Config says enabled=true, but env says disable
+	err := Init(&forgeconfig.LogsConfig{Enabled: ptrBool(true)}, logsDir)
+	defer Close()
+
+	if err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+
+	// No .forge/logs directory should be created (env takes precedence)
+	if _, err := os.Stat(logsDir); !os.IsNotExist(err) {
+		t.Error("logsDir should not be created when FORGE_NO_LOG=1 overrides config")
+	}
+}
+
+func TestInitWithConfigLevelAndRetention(t *testing.T) {
+	// Config with custom level and retention
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+
+	cfg := &forgeconfig.LogsConfig{
+		Enabled:       ptrBool(true),
+		Level:         "warn",
+		RetentionDays: 3,
+	}
+	err := Init(cfg, logsDir)
+	defer Close()
+
+	if err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+
+	// Write info and warn messages
+	Info("info msg\n")
+	Warn("warn msg\n")
+	Close()
+
+	// Read log file and check filtering
+	entries, err := os.ReadDir(logsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Fatal("expected at least one log file")
+	}
+
+	data, err := os.ReadFile(filepath.Join(logsDir, entries[0].Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(data)
+	if strings.Contains(content, "info msg") {
+		t.Error("INFO message should be suppressed when level is warn")
+	}
+	if !strings.Contains(content, "warn msg") {
+		t.Error("WARN message should be present when level is warn")
+	}
+}
+
+func TestInitWithInvalidRetentionDays(t *testing.T) {
+	// AC-2: retentionDays < 1 falls back to 7
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+
+	// Create an old file (5 days old, within default 7-day retention but outside 0-day)
+	oldFile := filepath.Join(logsDir, "old.log")
+	if err := os.MkdirAll(logsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(oldFile, []byte("old"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	oldTime := time.Now().AddDate(0, 0, -5)
+	if err := os.Chtimes(oldFile, oldTime, oldTime); err != nil {
+		t.Fatal(err)
+	}
+
+	// Config with retentionDays=0 should fall back to 7, so the 5-day-old file survives
+	cfg := &forgeconfig.LogsConfig{
+		Enabled:       ptrBool(true),
+		RetentionDays: 0,
+	}
+	err := Init(cfg, logsDir)
+	defer Close()
+	if err != nil {
+		t.Fatalf("Init() failed: %v", err)
+	}
+
+	// 5-day-old file should still exist (within 7-day default retention)
+	if _, err := os.Stat(oldFile); os.IsNotExist(err) {
+		t.Error("5-day-old file should survive when retentionDays=0 falls back to 7")
+	}
 }

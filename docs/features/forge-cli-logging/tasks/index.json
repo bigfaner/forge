@@ -8,7 +8,7 @@
       "title": "Implement core forgelog package",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-core-forgelog-package.md",
       "record": "records/1-core-forgelog-package.md",
       "surface-type": "cli",
@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-config-and-cleanup.md",
       "record": "records/2-config-and-cleanup.md",
       "surface-type": "cli",

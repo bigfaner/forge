@@ -2244,3 +2244,263 @@ func TestEvalConfig_OldModeToggleCompat(t *testing.T) {
 		}
 	})
 }
+
+// --- LogsConfig tests ---
+
+// boolPtr is a test helper that returns a pointer to the given bool value.
+func boolPtr(v bool) *bool { return &v }
+
+func TestResolveLogsConfig(t *testing.T) {
+	t.Run("nil config returns defaults", func(t *testing.T) {
+		resolved := ResolveLogsConfig(nil)
+		if !*resolved.Enabled {
+			t.Error("Enabled should default to true")
+		}
+		if resolved.Level != "info" {
+			t.Errorf("Level = %q, want %q", resolved.Level, "info")
+		}
+		if resolved.RetentionDays != 7 {
+			t.Errorf("RetentionDays = %d, want 7", resolved.RetentionDays)
+		}
+	})
+
+	t.Run("empty config returns defaults", func(t *testing.T) {
+		resolved := ResolveLogsConfig(&LogsConfig{})
+		if !*resolved.Enabled {
+			t.Error("Enabled should default to true (nil *bool -> true)")
+		}
+		if resolved.Level != "info" {
+			t.Errorf("Level = %q, want %q (empty falls back to default)", resolved.Level, "info")
+		}
+		if resolved.RetentionDays != 7 {
+			t.Errorf("RetentionDays = %d, want 7 (zero falls back to default)", resolved.RetentionDays)
+		}
+	})
+
+	t.Run("valid config preserved", func(t *testing.T) {
+		cfg := &LogsConfig{
+			Enabled:       boolPtr(false),
+			Level:         "warn",
+			RetentionDays: 14,
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if *resolved.Enabled {
+			t.Error("Enabled should be false (explicitly set)")
+		}
+		if resolved.Level != "warn" {
+			t.Errorf("Level = %q, want %q", resolved.Level, "warn")
+		}
+		if resolved.RetentionDays != 14 {
+			t.Errorf("RetentionDays = %d, want 14", resolved.RetentionDays)
+		}
+	})
+
+	t.Run("invalid retentionDays falls back to 7", func(t *testing.T) {
+		cfg := &LogsConfig{
+			RetentionDays: 0,
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if resolved.RetentionDays != 7 {
+			t.Errorf("RetentionDays = %d, want 7 (0 falls back)", resolved.RetentionDays)
+		}
+	})
+
+	t.Run("negative retentionDays falls back to 7", func(t *testing.T) {
+		cfg := &LogsConfig{
+			RetentionDays: -5,
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if resolved.RetentionDays != 7 {
+			t.Errorf("RetentionDays = %d, want 7 (negative falls back)", resolved.RetentionDays)
+		}
+	})
+
+	t.Run("retentionDays 1 is minimum valid value", func(t *testing.T) {
+		cfg := &LogsConfig{
+			RetentionDays: 1,
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if resolved.RetentionDays != 1 {
+			t.Errorf("RetentionDays = %d, want 1", resolved.RetentionDays)
+		}
+	})
+
+	t.Run("empty level falls back to info", func(t *testing.T) {
+		cfg := &LogsConfig{
+			Level: "",
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if resolved.Level != "info" {
+			t.Errorf("Level = %q, want %q (empty falls back)", resolved.Level, "info")
+		}
+	})
+
+	t.Run("bogus level preserved for parseLogLevel to handle", func(t *testing.T) {
+		// ResolveLogsConfig does not validate level values -- forgelog.parseLogLevel handles that
+		cfg := &LogsConfig{
+			Level: "bogus",
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if resolved.Level != "bogus" {
+			t.Errorf("Level = %q, want %q (ResolveLogsConfig preserves for downstream)", resolved.Level, "bogus")
+		}
+	})
+
+	t.Run("explicit enabled true preserved", func(t *testing.T) {
+		cfg := &LogsConfig{
+			Enabled: boolPtr(true),
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if !*resolved.Enabled {
+			t.Error("Enabled should be true (explicitly set)")
+		}
+	})
+
+	t.Run("explicit enabled false preserved", func(t *testing.T) {
+		cfg := &LogsConfig{
+			Enabled: boolPtr(false),
+		}
+		resolved := ResolveLogsConfig(cfg)
+		if *resolved.Enabled {
+			t.Error("Enabled should be false (explicitly set)")
+		}
+	})
+}
+
+func TestReadConfig_LogsBlock(t *testing.T) {
+	t.Run("logs block parsed correctly", func(t *testing.T) {
+		dir := setupConfig(t, "logs:\n  enabled: false\n  level: warn\n  retentionDays: 14\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Logs == nil {
+			t.Fatal("expected Logs non-nil")
+		}
+		if cfg.Logs.Enabled == nil || *cfg.Logs.Enabled {
+			t.Error("Logs.Enabled should be false")
+		}
+		if cfg.Logs.Level != "warn" {
+			t.Errorf("Logs.Level = %q, want %q", cfg.Logs.Level, "warn")
+		}
+		if cfg.Logs.RetentionDays != 14 {
+			t.Errorf("Logs.RetentionDays = %d, want 14", cfg.Logs.RetentionDays)
+		}
+	})
+
+	t.Run("logs block with defaults", func(t *testing.T) {
+		dir := setupConfig(t, "logs:\n  enabled: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Logs == nil {
+			t.Fatal("expected Logs non-nil")
+		}
+		if cfg.Logs.Enabled == nil || !*cfg.Logs.Enabled {
+			t.Error("Logs.Enabled should be true")
+		}
+		if cfg.Logs.Level != "" {
+			t.Errorf("Logs.Level should be empty (default applied by ResolveLogsConfig), got %q", cfg.Logs.Level)
+		}
+		if cfg.Logs.RetentionDays != 0 {
+			t.Errorf("Logs.RetentionDays should be 0 (default applied by ResolveLogsConfig), got %d", cfg.Logs.RetentionDays)
+		}
+	})
+
+	t.Run("logs absent is nil", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Logs != nil {
+			t.Error("expected Logs nil when not configured")
+		}
+	})
+
+	t.Run("existing config without logs deserializes cleanly", func(t *testing.T) {
+		// Hard rule: omitempty on Logs field -- existing configs deserialize cleanly
+		dir := setupConfig(t, "auto:\n  gitPush: true\nworktree:\n  source-branch: main\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Logs != nil {
+			t.Error("expected Logs nil for config without logs section")
+		}
+		if cfg.Auto == nil || !cfg.Auto.GitPush {
+			t.Error("existing fields should still parse correctly")
+		}
+	})
+
+	t.Run("logs section without enabled key gets nil *bool", func(t *testing.T) {
+		dir := setupConfig(t, "logs:\n  level: warn\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Logs == nil {
+			t.Fatal("expected Logs non-nil")
+		}
+		if cfg.Logs.Enabled != nil {
+			t.Errorf("Logs.Enabled should be nil (absent from YAML), got %v", *cfg.Logs.Enabled)
+		}
+		if cfg.Logs.Level != "warn" {
+			t.Errorf("Logs.Level = %q, want %q", cfg.Logs.Level, "warn")
+		}
+	})
+}
+
+func TestWriteConfig_LogsBlock(t *testing.T) {
+	t.Run("write and read logs block roundtrip", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			Logs: &LogsConfig{
+				Enabled:       boolPtr(false),
+				Level:         "debug",
+				RetentionDays: 3,
+			},
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.Logs == nil {
+			t.Fatal("expected Logs non-nil")
+		}
+		if readback.Logs.Enabled == nil || *readback.Logs.Enabled {
+			t.Error("Logs.Enabled should be false")
+		}
+		if readback.Logs.Level != "debug" {
+			t.Errorf("Logs.Level = %q, want %q", readback.Logs.Level, "debug")
+		}
+		if readback.Logs.RetentionDays != 3 {
+			t.Errorf("Logs.RetentionDays = %d, want 3", readback.Logs.RetentionDays)
+		}
+	})
+
+	t.Run("write config without logs omits logs key", func(t *testing.T) {
+		dir := t.TempDir()
+		cfg := &Config{
+			Auto: &AutoConfig{GitPush: true},
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Read raw file and check no "logs:" key present
+		data, err := os.ReadFile(filepath.Join(dir, ".forge", "config.yaml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		content := string(data)
+		if strings.Contains(content, "logs:") {
+			t.Errorf("logs key should be omitted when nil, got:\n%s", content)
+		}
+	})
+}

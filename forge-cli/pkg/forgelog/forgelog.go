@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"forge-cli/pkg/forgeconfig"
 )
 
 // LogLevel represents the severity level of a log message.
@@ -145,16 +147,6 @@ func (fb *FileBackend) Close() error {
 	return nil
 }
 
-// LogsConfig holds the logging configuration.
-// When integrated with forgeconfig, this struct will be added to Config as:
-//
-//	Logs *LogsConfig `yaml:"logs,omitempty"`
-type LogsConfig struct {
-	Enabled       bool   `yaml:"enabled"`       // default: true; set false to disable file logging
-	Level         string `yaml:"level"`         // default: "info"
-	RetentionDays int    `yaml:"retentionDays"` // default: 7
-}
-
 // Global state managed by Init/Close.
 var (
 	globalMu sync.Mutex
@@ -166,7 +158,7 @@ var (
 //   - Falls back to console-only if directory creation fails.
 //   - Checks FORGE_NO_LOG=1 -- if set, skips FileBackend.
 //   - config may be nil (defaults: level=info, retentionDays=7).
-func Init(config *LogsConfig, logsDir string) error {
+func Init(config *forgeconfig.LogsConfig, logsDir string) error {
 	globalMu.Lock()
 	defer globalMu.Unlock()
 
@@ -178,23 +170,15 @@ func Init(config *LogsConfig, logsDir string) error {
 		return nil
 	}
 
+	// Resolve config with safe defaults
+	resolved := forgeconfig.ResolveLogsConfig(config)
+
 	// Check config disable
-	if config != nil && !config.Enabled {
+	if !*resolved.Enabled {
 		return nil
 	}
 
-	// Resolve level
-	levelStr := "info"
-	retentionDays := 7
-	if config != nil {
-		if config.Level != "" {
-			levelStr = config.Level
-		}
-		if config.RetentionDays >= 1 {
-			retentionDays = config.RetentionDays
-		}
-	}
-	minLevel := parseLogLevel(levelStr)
+	minLevel := parseLogLevel(resolved.Level)
 
 	// Try to create log directory; fall back to console-only on failure
 	if err := os.MkdirAll(logsDir, 0o700); err != nil {
@@ -217,7 +201,7 @@ func Init(config *LogsConfig, logsDir string) error {
 	backends = append(backends, fb)
 
 	// Auto-cleanup old log files
-	cleanupOldLogs(logsDir, retentionDays)
+	cleanupOldLogs(logsDir, resolved.RetentionDays)
 
 	return nil
 }
