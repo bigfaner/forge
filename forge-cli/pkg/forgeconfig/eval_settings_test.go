@@ -1,6 +1,7 @@
 package forgeconfig
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -272,4 +273,207 @@ func TestSetConfigValue_EvalSettings(t *testing.T) {
 			t.Errorf("expected 'cannot set non-leaf key' in error, got %v", err)
 		}
 	})
+
+	t.Run("set eval.consistency.target overwrites existing value", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "eval.consistency.target", "900"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if err := SetConfigValue(dir, "eval.consistency.target", "850"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval.consistency.target")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "850" {
+			t.Errorf("expected '850' after overwrite, got %q", val)
+		}
+	})
+
+	t.Run("set eval.prd.target and eval.prd.iterations independently", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "eval.prd.target", "800"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if err := SetConfigValue(dir, "eval.prd.iterations", "7"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		target, err := GetConfigValue(dir, "eval.prd.target")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if target != "800" {
+			t.Errorf("expected '800', got %q", target)
+		}
+		iter, err := GetConfigValue(dir, "eval.prd.iterations")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if iter != "7" {
+			t.Errorf("expected '7', got %q", iter)
+		}
+	})
+
+	t.Run("set writes valid YAML readable by ReadConfig", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := SetConfigValue(dir, "eval.proposal.target", "850"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if err := SetConfigValue(dir, "eval.proposal.iterations", "5"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Eval == nil {
+			t.Fatal("expected Eval non-nil")
+		}
+		if cfg.Eval.Proposal.Target == nil || *cfg.Eval.Proposal.Target != 850 {
+			t.Errorf("Proposal.Target = %v, want 850", cfg.Eval.Proposal.Target)
+		}
+		if cfg.Eval.Proposal.Iterations == nil || *cfg.Eval.Proposal.Iterations != 5 {
+			t.Errorf("Proposal.Iterations = %v, want 5", cfg.Eval.Proposal.Iterations)
+		}
+	})
+}
+
+// TestGetConfigValue_EvalSettings_PartialConfig tests nil *int pointer fallback behavior.
+func TestGetConfigValue_EvalSettings_PartialConfig(t *testing.T) {
+	t.Run("only target set, iterations nil returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		target := 850
+		cfg := &Config{
+			Eval: &EvalSettings{
+				Proposal: EvalTypeSettings{Target: &target},
+			},
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval.proposal.target")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "850" {
+			t.Errorf("expected '850', got %q", val)
+		}
+		_, err = GetConfigValue(dir, "eval.proposal.iterations")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for nil *int iterations, got %v", err)
+		}
+	})
+
+	t.Run("only iterations set, target nil returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		iter := 5
+		cfg := &Config{
+			Eval: &EvalSettings{
+				Journey: EvalTypeSettings{Iterations: &iter},
+			},
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval.journey.iterations")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "5" {
+			t.Errorf("expected '5', got %q", val)
+		}
+		_, err = GetConfigValue(dir, "eval.journey.target")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for nil *int target, got %v", err)
+		}
+	})
+
+	t.Run("full config both target and iterations set", func(t *testing.T) {
+		dir := t.TempDir()
+		target := 900
+		iter := 3
+		cfg := &Config{
+			Eval: &EvalSettings{
+				Contract: EvalTypeSettings{Target: &target, Iterations: &iter},
+			},
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		tVal, err := GetConfigValue(dir, "eval.contract.target")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if tVal != "900" {
+			t.Errorf("expected '900', got %q", tVal)
+		}
+		iVal, err := GetConfigValue(dir, "eval.contract.iterations")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if iVal != "3" {
+			t.Errorf("expected '3', got %q", iVal)
+		}
+	})
+
+	t.Run("eval not configured at all returns errKeyNotFound for all paths", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		for _, key := range []string{
+			"eval.proposal.target",
+			"eval.proposal.iterations",
+			"eval.ui.target",
+			"eval.consistency.iterations",
+		} {
+			_, err := GetConfigValue(dir, key)
+			if err != errKeyNotFound {
+				t.Errorf("expected errKeyNotFound for %q, got %v", key, err)
+			}
+		}
+	})
+}
+
+// TestGetConfigValue_EvalSettings_AllTypes verifies all 7 eval types via GetConfigValue with defaults.
+func TestGetConfigValue_EvalSettings_AllTypes(t *testing.T) {
+	evalTypes := []struct {
+		name       string
+		target     int
+		iterations int
+	}{
+		{"proposal", 900, 3},
+		{"prd", 900, 3},
+		{"design", 900, 3},
+		{"ui", 950, 3},
+		{"journey", 850, 3},
+		{"contract", 850, 3},
+		{"consistency", 900, 3},
+	}
+
+	dir := t.TempDir()
+	defaults := EvalSettingsDefaults()
+	cfg := &Config{Eval: &defaults}
+	if err := writeConfig(dir, cfg); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, tt := range evalTypes {
+		t.Run(fmt.Sprintf("eval.%s.target=%d", tt.name, tt.target), func(t *testing.T) {
+			val, err := GetConfigValue(dir, fmt.Sprintf("eval.%s.target", tt.name))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if val != fmt.Sprintf("%d", tt.target) {
+				t.Errorf("expected '%d', got %q", tt.target, val)
+			}
+		})
+		t.Run(fmt.Sprintf("eval.%s.iterations=%d", tt.name, tt.iterations), func(t *testing.T) {
+			val, err := GetConfigValue(dir, fmt.Sprintf("eval.%s.iterations", tt.name))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if val != fmt.Sprintf("%d", tt.iterations) {
+				t.Errorf("expected '%d', got %q", tt.iterations, val)
+			}
+		})
+	}
 }
