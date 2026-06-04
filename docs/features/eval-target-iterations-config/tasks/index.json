@@ -1,0 +1,93 @@
+{
+  "feature": "eval-target-iterations-config",
+  "proposal": "docs/proposals/eval-target-iterations-config/proposal.md",
+  "created": "2026-06-04",
+  "tasks": {
+    "1-add-eval-settings-struct": {
+      "id": "1",
+      "title": "Add EvalSettings Go struct and Config integration",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "1-add-eval-settings-struct.md",
+      "record": "records/1-add-eval-settings-struct.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2-add-eval-block-to-init": {
+      "id": "2",
+      "title": "Add eval block to forge config init output",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-add-eval-block-to-init.md",
+      "record": "records/2-add-eval-block-to-init.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "3-update-eval-commands": {
+      "id": "3",
+      "title": "Update 7 eval-* commands to read config and pass to skill",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-eval-commands.md",
+      "record": "records/3-update-eval-commands.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "4-add-eval-settings-tests": {
+      "id": "4",
+      "title": "Add EvalSettings unit tests",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "4-add-eval-settings-tests.md",
+      "record": "records/4-add-eval-settings-tests.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
