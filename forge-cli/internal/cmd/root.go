@@ -3,6 +3,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	factpkg "forge-cli/internal/cmd/fact"
 	featurepkg "forge-cli/internal/cmd/feature"
@@ -11,6 +12,11 @@ import (
 	qualitygatepkg "forge-cli/internal/cmd/qualitygate"
 	taskpkg "forge-cli/internal/cmd/task"
 	worktreepkg "forge-cli/internal/cmd/worktree"
+
+	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
+	"forge-cli/pkg/project"
 
 	"github.com/spf13/cobra"
 )
@@ -21,12 +27,41 @@ var rootCmd = &cobra.Command{
 	Long: `A unified CLI tool for managing tasks in Claude Code projects.
 
 Supports the docs/features/<slug>/ directory structure for task management.`,
-	Args: cobra.NoArgs,
+	Args:              cobra.NoArgs,
+	PersistentPreRunE: persistentPreRun,
+}
+
+// persistentPreRun initializes logging for all commands.
+// It attempts to find the project root and load config. If either is
+// unavailable (e.g., forge init before project exists, forge version),
+// logging falls back to console-only mode silently.
+func persistentPreRun(_ *cobra.Command, _ []string) error {
+	projectRoot, err := project.FindProjectRoot()
+	if err != nil {
+		// No project context — console-only mode (Init with empty logsDir)
+		_ = forgelog.Init(nil, "")
+		return nil
+	}
+
+	logsDir := filepath.Join(projectRoot, feature.ForgeLogsDir)
+
+	var logsCfg *forgeconfig.LogsConfig
+	cfg, cfgErr := forgeconfig.ReadConfig(projectRoot)
+	if cfgErr == nil && cfg != nil {
+		logsCfg = cfg.Logs
+	}
+
+	// Hard rule: Init after config loading, before command logic
+	_ = forgelog.Init(logsCfg, logsDir)
+	return nil
 }
 
 // Execute runs the root command.
+// forgelog.Close() is called after command completion regardless of success or failure.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	err := rootCmd.Execute()
+	forgelog.Close()
+	if err != nil {
 		os.Exit(1)
 	}
 }

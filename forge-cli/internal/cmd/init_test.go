@@ -145,6 +145,7 @@ func TestInitCommand(t *testing.T) {
 			".forge/state.json",
 			".forge/test-state.json",
 			".forge/worktrees/",
+			".forge/logs/",
 			"docs/features/*/tasks/process/",
 			"docs/features/*/tasks/index.json.lock",
 			"docs/features/*/testing/results/",
@@ -177,6 +178,30 @@ func TestInitCommand(t *testing.T) {
 		count := strings.Count(content, ".forge/state.json")
 		if count != 1 {
 			t.Errorf("expected 1 occurrence of '.forge/state.json', got %d", count)
+		}
+	})
+
+	t.Run("does not create .forge/logs/ directory", func(t *testing.T) {
+		// AC-1: forge init adds .forge/logs/ to gitignore but does NOT create the directory
+		env := newInitTestEnv(t)
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		logsDir := env.path(".forge", "logs")
+		if _, err := os.Stat(logsDir); !os.IsNotExist(err) {
+			t.Error(".forge/logs/ should NOT be created by forge init")
+		}
+
+		// But gitignore should contain the entry
+		data, err := os.ReadFile(env.path(".gitignore"))
+		if err != nil {
+			t.Fatalf(".gitignore not created: %v", err)
+		}
+		if !strings.Contains(string(data), ".forge/logs/") {
+			t.Error(".gitignore should contain .forge/logs/")
 		}
 	})
 

@@ -38,7 +38,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-init-integration-gitignore.md",
       "record": "records/3-init-integration-gitignore.md",
       "surface-type": "cli",

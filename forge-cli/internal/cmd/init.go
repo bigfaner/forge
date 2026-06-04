@@ -37,6 +37,7 @@ var gitignoreEntries = []string{
 	".forge/state.json",
 	".forge/test-state.json",
 	".forge/worktrees/",
+	".forge/logs/",
 	"docs/features/*/tasks/process/",
 	"docs/features/*/tasks/index.json.lock",
 	"docs/features/*/testing/results/",

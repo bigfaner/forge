@@ -158,9 +158,15 @@ var (
 //   - Falls back to console-only if directory creation fails.
 //   - Checks FORGE_NO_LOG=1 -- if set, skips FileBackend.
 //   - config may be nil (defaults: level=info, retentionDays=7).
+//   - Re-initialization is safe: prior backends are closed first.
 func Init(config *forgeconfig.LogsConfig, logsDir string) error {
 	globalMu.Lock()
 	defer globalMu.Unlock()
+
+	// Close any existing backends before re-initializing
+	for _, b := range backends {
+		_ = b.Close()
+	}
 
 	// Always register ConsoleBackend
 	backends = []Backend{&ConsoleBackend{}}
@@ -179,6 +185,11 @@ func Init(config *forgeconfig.LogsConfig, logsDir string) error {
 	}
 
 	minLevel := parseLogLevel(resolved.Level)
+
+	// Skip file backend when logsDir is empty (no project context)
+	if logsDir == "" {
+		return nil
+	}
 
 	// Try to create log directory; fall back to console-only on failure
 	if err := os.MkdirAll(logsDir, 0o700); err != nil {
