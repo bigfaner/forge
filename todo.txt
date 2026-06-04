@@ -285,3 +285,5 @@ ID                 TYPE        TITLE                                            
 7                  doc         Fix ambiguity and logic issues in remaining ski...  completed    false     false     
 T-quick-doc-drift  doc.drift   Detect Spec Drift                                   pending      false     false    
 T-review-doc       doc.review  Review Documentation Quality                        pending      false     false
+
+203、通过配置项控制评估次数与分数。
