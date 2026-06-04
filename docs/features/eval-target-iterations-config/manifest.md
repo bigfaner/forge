@@ -1,7 +1,7 @@
 ---
 feature: "eval-target-iterations-config"
 created: "2026-06-04"
-status: tasks
+status: completed
 mode: quick
 ---
 
