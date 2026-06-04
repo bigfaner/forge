@@ -66,7 +66,7 @@
       "title": "Fix: Task 1 compilation errors - EvalSettings struct missing from config.go",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "completed",
       "file": "fix-1.md",
       "record": "records/fix-1.md",
       "breaking": true,
