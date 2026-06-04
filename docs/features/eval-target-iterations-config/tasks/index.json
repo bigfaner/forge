@@ -8,7 +8,7 @@
       "title": "Add EvalSettings Go struct and Config integration",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-eval-settings-struct.md",
       "record": "records/1-add-eval-settings-struct.md",
       "surface-type": "cli",
@@ -61,13 +61,37 @@
       "type": "coding.feature",
       "complexity": "medium"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: Task 1 compilation errors - EvalSettings struct missing from config.go",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: Pre-existing test failures in qualitygate and scripts packages",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "fix-1",
+      "type": "coding.fix"
+    },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "2"
+        "3"
       ],
       "status": "pending",
       "file": "quick-drift-detection.md",
