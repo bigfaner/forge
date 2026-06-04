@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-add-eval-block-to-init.md",
       "record": "records/2-add-eval-block-to-init.md",
       "surface-type": "cli",
@@ -38,7 +38,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-update-eval-commands.md",
       "record": "records/3-update-eval-commands.md",
       "surface-type": "cli",
