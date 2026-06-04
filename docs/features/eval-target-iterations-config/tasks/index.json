@@ -54,7 +54,7 @@
         "1",
         "2"
       ],
-      "status": "completed",
+      "status": "pending",
       "file": "4-add-eval-settings-tests.md",
       "record": "records/4-add-eval-settings-tests.md",
       "surface-type": "cli",
@@ -109,13 +109,25 @@
       "sourceTaskID": "2",
       "type": "coding.fix"
     },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: duplicate TestSetConfigValue_EvalSettings across evalsettings_test.go and eval_settings_test.go",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "4",
+      "type": "coding.fix"
+    },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "fix-4"
+        "2"
       ],
       "status": "completed",
       "file": "quick-drift-detection.md",
