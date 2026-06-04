@@ -785,7 +785,7 @@ func TestUpgradePlugin_UpdateFails(t *testing.T) {
 
 	pluginInstalledCheck = func() bool { return true }
 
-	runClaudeCommand = func(args []string) error {
+	runClaudeCommand = func(_ []string) error {
 		return fmt.Errorf("some error")
 	}
 
