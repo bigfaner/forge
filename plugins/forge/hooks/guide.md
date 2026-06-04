@@ -41,6 +41,7 @@ Use these for ad-hoc lookups when a user mentions a slug:
 ### Task Management
 
 - `forge task claim` — claim the next pending task (sets status to in_progress)
+- `forge task list [slug]` — list tasks in table format (current feature if slug omitted; `--sort id|topo`)
 - `forge task status <id>` — query current task status and record info
 - `forge task add --type <type> --title "..." [--source-task-id <id>] [--block-source] [--var KEY=VALUE] --description "..."` — create a new task (fix-tasks use `--source-task-id --block-source`)
 - `forge task transition <id> <status> --reason "..."` — manually transition (unblock, skip, reject)
@@ -60,6 +61,20 @@ Use these for ad-hoc lookups when a user mentions a slug:
 - `forge task index --feature <slug>` — regenerate task index from task files
 - `forge task validate-index <path>` — validate index.json structure
 - `forge cleanup` — clean stale artifacts
+
+## Surfaces
+
+A **Surface** is a testable system entry point (e.g. a web app, API server, CLI binary), identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`. Each surface has a **Surface Type** — one of `web`, `api`, `cli`, `tui`, `mobile` — which determines build/dev/test orchestration and maps to a specific **Test Type**:
+
+| Surface Type | Test Type | Orchestration | Execution |
+|--------------|-----------|---------------|-----------|
+| `cli` | CLI Functional Test | build → dev → test | subprocess (exit code + stdout) |
+| `tui` | Terminal Functional Test | build → dev → test | subprocess + stdin pipe |
+| `api` | API Functional Test | dev → probe → test → teardown | HTTP client |
+| `web` | Web E2E Test | dev → probe → test → teardown | browser automation |
+| `mobile` | Mobile E2E Test | test-setup → dev → probe → test → teardown | Maestro YAML / manual |
+
+> **"e2e" is reserved for Web and Mobile only.** CLI/TUI/API tests use "Functional Test" — their validation is protocol-level, not device-level automation. Test files go to `tests/<journey>/` regardless of surface type. Run `/test-guide` for full per-surface strategy.
 
 ### Surface Output Parsing
 
@@ -82,23 +97,3 @@ Per line of forge surfaces output:
 | Scalar: `surfaces: tui` | `tui` | empty | `tui` |
 | Named: `surfaces: [{key: app, type: tui}]` | `app=tui` | `app` | `tui` |
 | Multi: two named surfaces | `backend=api` then `frontend=web` | per-line | per-line |
-
-## Testing
-
-| Surface | Test Type | Execution |
-|---------|-----------|-----------|
-| `cli` | CLI Functional Test | subprocess (exit code + stdout) |
-| `tui` | Terminal Functional Test | subprocess + stdin pipe |
-| `api` | API Functional Test | HTTP client |
-| `web` | Web E2E Test | browser automation |
-| `mobile` | Mobile E2E Test | Maestro YAML / manual |
-
-> **"e2e" is reserved for Web and Mobile only.** CLI/TUI/API tests use "Functional Test" — their validation is protocol-level, not device-level automation.
-
-Test file locations: all tests go to `tests/<journey>/` regardless of surface type. Journey names come from gen-journeys. Run `/test-guide` for full per-surface strategy.
-
-## Terminology
-
-- **Surface**: a testable system entry point managed by Forge (e.g. a web app, an API server, a CLI binary). Each Surface is identified by a user-defined **Surface Key** (alphanumeric + `-_`) configured in `.forge/config.yaml`.
-- **Surface Type**: the kind of surface — one of `web`, `api`, `cli`, `tui`, `mobile`. Determines the orchestration strategy for build/dev/test. `web`/`api` require probe + teardown; `mobile` adds test-setup before the same lifecycle (test-setup → dev → probe → test → teardown); `cli`/`tui` use build → dev → test. Auto-detected via `forge surfaces detect`.
-- **Test Type**: the test classification derived from Surface Type. Each surface maps to a specific test type: `cli` → CLI Functional Test, `tui` → Terminal Functional Test, `api` → API Functional Test, `web` → Web E2E Test, `mobile` → Mobile E2E Test. "e2e" is used exclusively for Web/Mobile surfaces.
