@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "completed",
+      "status": "pending",
       "file": "2-add-eval-block-to-init.md",
       "record": "records/2-add-eval-block-to-init.md",
       "surface-type": "cli",
@@ -97,13 +97,25 @@
       "sourceTaskID": "2",
       "type": "coding.fix"
     },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: syntax error in init_test.go line 608",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "type": "coding.fix"
+    },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
       "title": "Detect Spec Drift",
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "1"
+        "fix-4"
       ],
       "status": "pending",
       "file": "quick-drift-detection.md",
