@@ -296,6 +296,28 @@ type EvalSettings struct {
 	Consistency EvalTypeSettings `yaml:"consistency"`
 }
 
+// EvalSettingsDefaults returns EvalSettings populated with default values from
+// rubric frontmatter. Returns a fresh instance each time to prevent mutation issues.
+//
+// Default values: proposal 900/3, prd 900/3, design 900/3, ui 950/3,
+// journey 850/3, contract 850/3, consistency 900/3.
+func EvalSettingsDefaults() EvalSettings {
+	return EvalSettings{
+		Proposal:    EvalTypeSettings{Target: intPtr(900), Iterations: intPtr(3)},
+		Prd:         EvalTypeSettings{Target: intPtr(900), Iterations: intPtr(3)},
+		Design:      EvalTypeSettings{Target: intPtr(900), Iterations: intPtr(3)},
+		Ui:          EvalTypeSettings{Target: intPtr(950), Iterations: intPtr(3)},
+		Journey:     EvalTypeSettings{Target: intPtr(850), Iterations: intPtr(3)},
+		Contract:    EvalTypeSettings{Target: intPtr(850), Iterations: intPtr(3)},
+		Consistency: EvalTypeSettings{Target: intPtr(900), Iterations: intPtr(3)},
+	}
+}
+
+// intPtr returns a pointer to the given int value.
+func intPtr(v int) *int {
+	return &v
+}
+
 // Config represents the .forge/config.yaml structure.
 type Config struct {
 	Version        string          `yaml:"version,omitempty"`
