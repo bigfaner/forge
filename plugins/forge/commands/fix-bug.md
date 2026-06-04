@@ -236,151 +236,127 @@ Focus on non-obvious root causes and debugging patterns.
 
 The extraction routine identifies four knowledge types:
 
-| Type | Target | Format reference |
-|------|--------|-----------------|
-| Decision | `docs/decisions/<type>.md` | `learn/templates/decision-entry.md` Section 6 (row format), Section 7 (manifest update) |
-| Lesson | `docs/lessons/<slug>.md` | `learn/templates/lesson-entry.md` |
-| Convention | `docs/conventions/<topic>.md` | `/consolidate-specs` tech-specs entry format, with project-global ID |
-| Business Rule | `docs/business-rules/<domain>.md` | `/consolidate-specs` biz-specs entry format, with project-global ID |
+| Type | Target |
+|------|--------|
+| Decision | `docs/decisions/<type>.md` |
+| Lesson | `docs/lessons/<slug>.md` |
+| Convention | `docs/conventions/<topic>.md` |
+| Business Rule | `docs/business-rules/<domain>.md` |
+
+<!-- INLINE:origin=learn/templates/ -->
+### Write Formats (per knowledge type)
+
+**Decision** — append one table row to `docs/decisions/<type>.md`:
+```
+| {{DATE}} | {{FEATURE_SLUG}} | {{DECISION}} | {{RATIONALE}} | {{SOURCE}} |
+```
+Field constraints: Date=ISO 8601, Feature=slug or `-`, Decision/Rationale=max 80 chars each, Source=file path or `manual`. If type file missing, create with standard header (`# {{TYPE_NAME}} Decisions` + column headers). After append, update `docs/decisions/manifest.md` categories count and insert into Recent Decisions (newest first, max 10 rows).
+
+**Lesson** — create `docs/lessons/<prefix>-<slug>.md` with sections: Problem, Root Cause, Solution, Reusable Pattern, Example (optional), Related Files (optional), References (optional). Tags: select 1-4 from fixed vocabulary (architecture, interface, data-model, dependencies, error-handling, testing, security, local-dev-deployment). File prefix by category: `debug-`, `arch-`, `tool-`, `pattern-`, `gotcha-`.
+
+**Convention** — append to `docs/conventions/<topic>.md` using project-global ID `TECH-{{TOPIC}}-{{NNN}}`:
+```markdown
+### TECH-{{TOPIC}}-{{NNN}}: {{SPEC_TITLE}}
+**Requirement**: {{CONCISE_REQUIREMENT}}
+**Scope**: [CROSS]
+**Source**: /learn entry {{DATE}}
+```
+Sequence: max existing NNN in target file + 1.
+
+**Business Rule** — append to `docs/business-rules/<domain>.md` using project-global ID `BIZ-{{DOMAIN}}-{{NNN}}`:
+```markdown
+### BIZ-{{DOMAIN}}-{{NNN}}: {{RULE_TITLE}}
+**Rule**: {{CONCISE_RULE_STATEMENT}}
+**Context**: {{WHY_THIS_RULE_EXISTS}}
+**Scope**: [CROSS]
+**Source**: /learn entry {{DATE}}
+```
+For new convention/business-rule files, include YAML frontmatter with `title` and `domains` (3-7 specific keywords derived from entry content).
+
+<!-- INLINE:origin=consolidate-specs/rules/ -->
+### Classification & ID Rules
+
+- **CROSS**: referenced by 2+ features, expresses domain invariant, or establishes naming/error-handling convention
+- **LOCAL**: only meaningful within this feature's scope
+- **Project-global ID**: `BIZ-<domain>-<NNN>` or `TECH-<topic>-<NNN>` — prefix from target filename, sequence = max existing NNN + 1
+
+### Domain-to-Decision Mapping (for vocabulary-assisted classification)
+
+| Spec domain keywords | Decision file |
+|---------------------|---------------|
+| system structure, layering, modules, architecture | `architecture.md` |
+| API contracts, data shapes, serialization, interface | `interface.md` |
+| schema, indexing, soft-delete, data model | `data-model.md` |
+| libraries, versions, packages, dependencies | `dependencies.md` |
+| error types, status codes, error propagation | `error-handling.md` |
+| test patterns, coverage, mocking | `testing.md` |
+| auth, permissions, data protection, security | `security.md` |
+| dev environment, tooling, deployment | `local-dev-deployment.md` |
+| naming, conventions, coding standards | `architecture.md` |
+| validation, state transitions, calculation | closest match or `architecture.md` |
 
 ### Extraction Flow
 
-#### Step 1: Scan artifacts
+1. **Scan artifacts** — read all artifacts specified in Parameters above.
+2. **Identify notable knowledge** — apply heuristics below. Classify by type. Filter out trivial fixes.
+3. **Vocabulary-assisted classification** — use existing `docs/conventions/` and `docs/business-rules/` domains frontmatter to suggest target files; if none exist, use the Domain-to-Decision Mapping table above.
+4. **Silent exit if no notable knowledge** — produce no output, return silently.
 
-Read all artifacts specified above.
+5. **Auto-save configuration check** — run `forge config get auto.knowledgeSave`:
 
-#### Step 2: Identify notable knowledge
+   | Exit Code | Mode value | Action |
+   |-----------|-----------|--------|
+   | 0 | `true` | Skip step 6. Treat all candidates as confirmed, proceed directly to step 7. |
+   | 0 | `false` | Present step 6 confirmation. |
+   | Non-zero | — | Fallback: present step 6 confirmation. |
 
-Apply the "notable knowledge" heuristics below to determine if any notable knowledge exists in the scanned artifacts. Classify each candidate by knowledge type (Decision, Lesson, Convention, Business Rule). Filter out trivial fixes (typos, simple config changes, obvious mistakes).
+   Mode context: `quick` via `/quick` pipeline, `full` via full pipeline. Output format: plain text key:value pairs (e.g., `quick:true full:false`).
 
-#### Step 3: Vocabulary-assisted classification
+6. **Present for user confirmation** (skipped when auto-save enabled) — use AskUserQuestion:
 
-If `/consolidate-specs` has previously generated vocabulary (from drift-detection runs), use the domain keywords from existing `docs/conventions/` and `docs/business-rules/` files to suggest which target file each extracted item belongs to. This is a suggestion — the agent makes the final classification decision based on content.
+   ```
+   Knowledge extracted from fix-bug:
 
-If no vocabulary exists (no prior `/consolidate-specs` run), classify unassisted using the domain-to-decision-file mapping from `/consolidate-specs` rules/overlap-detection.md.
+     [1] <Decision> → docs/decisions/<type>.md
+     [2] <Lesson> → docs/lessons/<slug>.md
+     [3] <Convention> → docs/conventions/<topic>.md
+     [4] <Business Rule> → docs/business-rules/<domain>.md
 
-#### Step 4: Silent exit if no notable knowledge
+   Enter numbers to save (comma-separated), or all / none:
+   ```
 
-If no candidates pass the "notable" heuristics (below), **produce no output**. Do not ask the user anything. Return silently.
+   User input: `none` → discard; `all` → save all; comma-separated numbers → save selected only.
 
-#### Step 4.5: Auto-save configuration check
-
-Before presenting candidates, check the auto-save configuration:
-
-```bash
-forge config get auto.knowledgeSave
-```
-
-Capture stdout (trimmed) and exit code. Then:
-
-| Exit Code | Mode match | Action |
-|-----------|-----------|--------|
-| 0 | Mode value is `true` | **Skip Step 5 entirely.** Treat all candidates as confirmed, proceed directly to Step 6. |
-| 0 | Mode value is `false` | Present Step 5 confirmation (full flow below). |
-| Non-zero (config missing/read error) | — | **Fallback: present Step 5 confirmation** (same as `false`). |
-
-Mode context: `quick` when invoked via `/quick` pipeline, `full` when invoked via full pipeline. Output format is plain text key:value pairs (e.g., `quick:true full:false`). Parse and select the value matching the current mode.
-
-#### Step 5: Present for user confirmation (skipped when auto-save is enabled)
-
-This step is **only executed** when the auto-save configuration check (Step 4.5) returns `false` for the current mode.
-
-Use AskUserQuestion to present extracted candidates:
-
-```
-Knowledge extracted from fix-bug:
-
-  [1] <Decision> → docs/decisions/<type>.md
-  [2] <Lesson> → docs/lessons/<slug>.md
-  [3] <Convention> → docs/conventions/<topic>.md
-  [4] <Business Rule> → docs/business-rules/<domain>.md
-
-Enter numbers to save (comma-separated), or all / none:
-```
-
-User input handling:
-- `none` → discard all candidates, no output
-- `all` → save all candidates
-- comma-separated numbers → save only selected candidates
-
-#### Step 6: Write confirmed knowledge
-
-For each confirmed candidate, write to the target file using the format defined by the knowledge type. Create target files if they do not exist. When creating new convention/business-rule files, include YAML frontmatter with `title` and `domains` per `/consolidate-specs` Domain Derivation Rules.
-
-Do NOT write to knowledge directories without explicit user confirmation from Step 5.
+7. **Write confirmed knowledge** — write each candidate to its target file using the Write Formats above. Create files if needed. For new convention/business-rule files, include YAML frontmatter with `title` and `domains`. Do NOT write without explicit user confirmation from step 6.
 
 ### Notable Knowledge Heuristics
 
-The heuristics determine whether a piece of knowledge is "notable" (worth extracting) vs "routine" (skip silently). The goal is a false-positive rate below 30%.
+Goal: false-positive rate below 30%. Only extract genuinely non-obvious knowledge.
 
-**Decisions — NOT notable when:**
-
-- The choice is the standard/default option in the ecosystem (e.g., "used standard library", "used ORM for database access")
-- No meaningful alternatives existed (e.g., "used the only available API")
-- The decision is purely cosmetic or stylistic with no architectural impact
-- The decision replicates an existing entry in `docs/decisions/`
-
-**Decisions — NOTABLE when:**
-
-- Multiple viable alternatives existed and the choice has lasting impact (e.g., "chose event-driven over polling for state sync")
-- The decision involves a non-obvious tradeoff (e.g., "sacrificed consistency for availability in the cache layer")
-- A constraint forced an unconventional approach (e.g., "used file-based locking because the Redis dependency was disallowed")
-
-**Lessons — NOT notable when:**
-
-- The root cause is a trivial mistake (e.g., typo, missing import, wrong variable name)
-- The issue is standard to the framework/language (e.g., "null pointer from uninitialized field")
-- The fix was obvious from the error message
-- The lesson replicates an existing entry in `docs/lessons/`
-
-**Lessons — NOTABLE when:**
-
-- The root cause was non-obvious (e.g., race condition from hidden shared state, ordering dependency across services)
-- The debugging path was indirect (e.g., "symptom appeared in module A but root cause was in module B")
-- The issue would recur in similar contexts and the pattern is worth documenting (e.g., "non-thread-safe map in concurrent handler")
-
-**Conventions — NOT notable when:**
-
-- The pattern is already documented in `docs/conventions/`
-- The pattern is a one-off choice specific to this feature
-- The pattern is standard practice in the ecosystem (e.g., "used REST for HTTP API")
-
-**Conventions — NOTABLE when:**
-
-- The pattern should be repeated across the project (e.g., "all CLI commands use cobra with this flag structure")
-- A project-specific standard was established (e.g., "config files use YAML with this schema structure")
-- The pattern emerged from implementation and was not pre-designed
-
-**Business Rules — NOT notable when:**
-
-- The rule is feature-specific logic (e.g., "this feature's form validates email format")
-- The rule is a standard CRUD constraint (e.g., "required fields must be non-empty")
-- The rule replicates an existing entry in `docs/business-rules/`
-
-**Business Rules — NOTABLE when:**
-
-- The rule applies across features (e.g., "all monetary values use integer cents, never float")
-- The rule expresses a domain invariant (e.g., "order status can only advance, never regress")
-- The rule constrains user-facing behavior across the system (e.g., "all user actions require authentication except health-check endpoints")
+| Type | Skip (routine) | Extract (notable) |
+|------|---------------|-------------------|
+| **Decision** | Standard/default option, no alternatives, cosmetic, or duplicate | Multiple viable alternatives with lasting impact, non-obvious tradeoff, constraint-forced unconventional approach |
+| **Lesson** | Trivial mistake, framework-standard issue, obvious from error message, or duplicate | Non-obvious root cause (race condition, cross-module), indirect debugging path, recurring pattern worth documenting |
+| **Convention** | Already documented, one-off choice, ecosystem-standard, or feature-specific | Should be repeated across project, project-specific standard established, emerged from implementation |
+| **Business Rule** | Feature-specific logic, standard CRUD constraint, or duplicate | Applies across features, expresses domain invariant, constrains user-facing behavior system-wide |
 
 ### Deduplication
 
-Before presenting candidates in Step 5, check for duplicates:
-
-1. **Decisions**: grep `docs/decisions/<type>.md` for similar Decision text
-2. **Lessons**: grep `docs/lessons/*.md` for similar Root Cause content
-3. **Conventions**: grep `docs/conventions/*.md` for similar rule descriptions
-4. **Business Rules**: grep `docs/business-rules/*.md` for similar rule statements
-
-If a duplicate is found, exclude the candidate and do not present it. The heuristic goal is: if it is already documented, do not re-extract it.
+Before presenting candidates in Step 5, grep target directories for similar existing entries. Exclude any candidate that duplicates already-documented knowledge:
+- **Decisions**: grep `docs/decisions/<type>.md` for similar Decision text
+- **Lessons**: grep `docs/lessons/*.md` for similar Root Cause content
+- **Conventions**: grep `docs/conventions/*.md` for similar rule descriptions
+- **Business Rules**: grep `docs/business-rules/*.md` for similar rule statements
 
 ### Rules
 
 - Extraction logic must be **conservative**: only extract genuinely non-obvious knowledge
 - Must not write to knowledge directories without explicit user confirmation
 - Silent when no notable knowledge is detected — no output, no prompts
-- All output formats must be compatible with `/learn` skill and `/consolidate-specs` overlap detection
+- All output formats must follow the Write Formats and Classification & ID Rules sections above
 - Deduplication runs before presentation — never present a duplicate of existing knowledge
+
+<!-- END INLINE:origin=consolidate-specs/rules/ -->
 
 ---
 

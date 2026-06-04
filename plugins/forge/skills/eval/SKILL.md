@@ -46,34 +46,9 @@ flowchart TD
     A([Start]) --> B["1.1 Resolve Type & Load Rubric"]
     B --> PRE["1.4 Pre-Processing"]
     PRE --> P0{"type == proposal?"}
+    P0 -->|"yes"| P0_PHASE["Phase 0: Freeform Pipeline (see rules/freeform-pipeline.md)"]
+    P0_PHASE --> DISPATCH
     P0 -->|"no"| DISPATCH["Expert Dispatch + Iteration Init"]
-    P0 -->|"yes"| P0A["Phase 0: Expert Inference"]
-    P0A --> P0B{"Expert confirmed?"}
-    P0B -->|"skip / failed"| DISPATCH
-    P0B -->|"yes"| P0C["Phase 0: Freeform Review (subagent)"]
-    P0C --> P0D{"Review completed?"}
-    P0D -->|"failed"| DISPATCH
-    P0D -->|"yes"| P0E["Phase 0: Extract Findings (subagent)"]
-    P0E --> P0F{"Valid findings ≥ 1?"}
-    P0F -->|"no"| P0G["Degraded: standard rubric"]
-    P0G --> DISPATCH
-    P0F -->|"yes"| BASELINE["P0.5a: BASELINE_SCORE"]
-    BASELINE --> SAVE_SNAP["P0.5b: Save baseline snapshot"]
-    SAVE_SNAP --> FORMAT["P0.5c: Format findings → ATTACK_POINTS"]
-    FORMAT --> FORMAT_OK{"Formatting OK?"}
-    FORMAT_OK -->|"no"| SKIP_PREREV["Skip pre-revision"]
-    SKIP_PREREV --> DISPATCH
-    FORMAT_OK -->|"yes"| SYNTH["P0.5d: Construct synthetic eval report"]
-    SYNTH --> PREREV["P0.5e: Invoke Reviser (iteration 0)"]
-    PREREV --> PREREV_OK{"Reviser OK?"}
-    PREREV_OK -->|"error"| SKIP_PREREV
-    PREREV_OK -->|"empty report"| LOG_EMPTY["Log iteration 0: no changes, degrade"]
-    LOG_EMPTY --> DISPATCH
-    PREREV_OK -->|"valid"| TAG["P0.5f: Insert <!-- pre-revised: {severity} --> tags"]
-    PREREV_OK -->|"format anomaly"| DISCARD["Discard pre-revision, restore from baseline"]
-    DISCARD --> DISPATCH
-    TAG --> INCR["P0.5g: ITERATION = 1"]
-    INCR --> DISPATCH
     DISPATCH --> C{"MAX_ITERATIONS ≤ 1?"}
     C -->|"yes"| D["2a. Score (subagent)"]
     D --> PARSE_A{"Parse valid?"}
@@ -85,12 +60,9 @@ flowchart TD
     PARSE -->|"no"| ERR
     G -->|"score >= target"| E
     G -->|"score < target, no iterations left"| E
-    G -->|"proposal + pre-revised, score < INITIAL_SCORE, rollback unused"| RESTORE["Restore pre-revised checkpoint (proposal only, max 1)"]
-    RESTORE --> F
     G -->|"score < target, iterations remaining"| H["4. Revise (subagent)"]
     H --> F
-    E --> CLEANUP["5.5 Cleanup: strip <!-- pre-revised --> tags"]
-    CLEANUP --> NEXT["6. Ask next step"]
+    E --> NEXT["6. Ask next step"]
 ```
 
 ## Orchestrator Iron Laws
@@ -144,21 +116,9 @@ Apply type-specific pre-processing per `rules/pre-processing.md` before scoring.
 
 ## Phase 0: Freeform Expert Review (proposal only)
 
-Load: `rules/freeform-pipeline.md`
+Execute only when `type == proposal`. Loads `rules/freeform-pipeline.md` which orchestrates: expert inference (reuse or generate per `rules/freeform-expert-persistence.md`) → freeform review (subagent) → findings extraction → pre-revision (reviser subagent as iteration 0). On degradation, falls through to standard rubric flow.
 
-**Additional freeform rules** (loaded by freeform-pipeline.md at runtime):
-- `rules/freeform-expert-persistence.md` — expert reuse matching, quality tracking, auto-deprecation (referenced by freeform-pipeline.md P0.1 and P0.5g)
-- `rules/_deprecated/freeform-injection.md` — **DEPRECATED**: legacy injection logic inlined into `rules/scorer-composition.md` (kept for historical reference only)
-
-Execute when the resolved type is `proposal`. For all other types, skip directly to the Expert Dispatch Table.
-
-Phase 0 sets these variables consumed by later steps:
-- `EXPERT_PROFILE` — from P0.1 reuse or P0.2 generation
-- `FREEFORM_FINDINGS` — validated JSON array from P0.4
-- `HIT_RATE` — extraction hit rate from P0.4
-- `BASELINE_SCORE` — informational metric from P0.5a
-- `PRE_REVISION_EXECUTED` — set to `true` after P0.5g
-- `ITERATION` — set to `1` by P0.5g (pre-revision ran as iteration 0)
+Sets these variables for later steps: `EXPERT_PROFILE`, `FREEFORM_FINDINGS`, `HIT_RATE`, `BASELINE_SCORE`, `PRE_REVISION_EXECUTED`, `ITERATION` (starts at 1 if pre-revision ran as iteration 0).
 
 ## Expert Dispatch Table
 
@@ -166,12 +126,7 @@ Resolve eval type to scorer expert(s) per `rules/scorer-composition.md`.
 
 ## Iteration Initialization
 
-`MAX_ITERATIONS = resolved value from rubric or CLI`. `ITERATION` depends on execution path:
-
-| Condition | ITERATION | Scorer loop range |
-|-----------|-----------|-------------------|
-| `type == proposal`, freeform review succeeded, pre-revision completed (P0.5g) | 1 (set by P0.5g, pre-revision ran as iteration 0) | 1..MAX_ITERATIONS |
-| All other paths (Phase 0 degraded, P0.5 degraded/empty, non-proposal) | 1 | 1..MAX_ITERATIONS |
+`MAX_ITERATIONS = resolved value from rubric or CLI`. `ITERATION` starts at 1. Loop range: `1..MAX_ITERATIONS`.
 
 ## Loop Variables
 
@@ -203,7 +158,7 @@ Score extraction and multi-expert merging per `rules/scorer-composition.md`.
 
 On `ITERATION == 1`: store the merged score as `INITIAL_SCORE` (used in Step 5 report Score Progression table to compute delta from first iteration).
 
-**Baseline drift detection** (proposal only): If `BASELINE_SCORE` is not null and `INITIAL_SCORE < BASELINE_SCORE - 50` (on 1000-point scale), annotate the eval report with "基线漂移告警" for manual review. This does not auto-trigger rollback — rollback is governed by the final score vs. INITIAL_SCORE comparison.
+**Proposal-only**: baseline drift detection (`BASELINE_SCORE` available and `INITIAL_SCORE < BASELINE_SCORE - 50`) → annotate report with "基线漂移告警". Rollback is governed by Step 3b gate, not this alert.
 
 ## Step 3a: Single-Pass (MAX_ITERATIONS ≤ 1)
 
@@ -218,7 +173,7 @@ Iterations remaining = `MAX_ITERATIONS - ITERATION` (current iteration consumed)
 | Condition | Action |
 |-----------|--------|
 | Score >= target | Go to Step 5 |
-| `type == proposal` AND `PRE_REVISION_EXECUTED == true` AND `Score < INITIAL_SCORE` AND `ROLLBACK_USED == false` | Restore pre-revised checkpoint, set `ROLLBACK_USED = true`, retry from Step 2 |
+| `type == proposal` AND `PRE_REVISION_EXECUTED` AND `Score < INITIAL_SCORE` AND `ROLLBACK_USED == false` | Restore pre-revised checkpoint, set `ROLLBACK_USED = true`, retry from Step 2 |
 | Score < target, ITERATION < MAX_ITERATIONS | Go to Step 4 |
 | Score < target, ITERATION >= MAX_ITERATIONS | Go to Step 5 (report failure) |
 
@@ -244,72 +199,16 @@ After reviser completes: increment iteration counter, return to Step 2.
 
 Generate report per `rules/report-format.md`: include final score, iteration summary, score progression table, dimension breakdown, and outcome. Apply type-specific additions as defined in the rules file.
 
-### 5.1 Pre-Revision Section (proposal only, when pre-revision executed)
+### 5.1 Proposal-only Post-Processing (when pre-revision executed)
 
-When pre-revision was executed (iteration 0), add an independent "Pre-Revision" section to the final eval report:
+When Phase 0 pre-revision ran (iteration 0), the final report includes additional sections and post-processing. All details are in `rules/freeform-pipeline.md` and `rules/report-format.md`:
 
-```
-### Pre-Revision (Freeform Findings)
-**Findings Triage Summary**: N findings triaged (M accepted, P partially-accepted, D deferred, K skipped)
-
-| Finding | Severity | Status | Edit Summary |
-|---------|----------|--------|-------------|
-| (finding summary) | (severity) | accepted/partially-accepted/deferred/skipped | (brief edit description or classification rationale) |
-
-**Skipped Findings Detail**:
-(For each skipped finding: classification rationale + original finding summary)
-
-**Borderline Findings**:
-(For each borderline finding: original finding summary + defer rationale)
-
-**Classification Audit**:
-(Total findings by triage layer: factual correction / structural suggestion / subjective preference)
-```
-
-High-severity findings triage metrics:
-- Triage rate (accepted + partially-accepted + deferred) >= 80%
-- Accepted + partially-accepted >= 60%
-- When partially-accepted > accepted, annotate for manual spot-check
-
-### 5.2 Baseline Score Comparison (proposal only, when BASELINE_SCORE available)
-
-If `BASELINE_SCORE` was recorded, add to the Score Progression table:
-
-```
-| Baseline (pre-revision) | BASELINE_SCORE | — |
-```
-
-Note: baseline and INITIAL_SCORE are not strict A/B comparison (different document states). Mark as informational.
-
-### 5.3 Baseline Drift Alert (proposal only)
-
-If baseline drift was detected (INITIAL_SCORE < BASELINE_SCORE - 50), include: `"⚠ 基线漂移告警: INITIAL_SCORE (X) 低于 BASELINE_SCORE (Y) 超过 50 分。建议检查 iteration-0 报告中 edits 的具体内容。"`
-
-### 5.4 Iteration-0 Report (proposal only, when pre-revision executed)
-
-The iteration-0 report at `<DOC_DIR>/eval/iteration-0-report.md` (generated in P0.5d) is updated with the Reviser's actual edit results. Report title: "Pre-Revision (Freeform Findings)".
-
-### 5.5 Tag Cleanup
-
-After the final report and rollback decision are complete, strip all `<!-- pre-revised: ... -->` HTML comments from the proposal document(s). This is a one-pass cleanup: search `DOC_DIR` for the pattern and remove all matches. This ensures the final artifact has no residual eval annotations.
-
-### Two-Level Rollback (conceptual overview)
-
-Pre-revision introduces two rollback levels. Operational details are defined inline:
-1. **Inner level** (Scorer loop): see Step 3b rollback row. Restores to post-P0.5 state (pre-revised checkpoint). Max 1 per eval run.
-2. **Outer level** (post-report): see Step 5.6. Restores to pre-P0.5 baseline snapshot. User decides.
-
-No rollback for non-proposal types or when pre-revision was skipped.
-
-### 5.6 Overall Rollback Decision (proposal only, when pre-revision executed)
-
-After the final report is generated (Step 5), if the final score is below `BASELINE_SCORE` (pre-revision did not improve the document), ask the user via `AskUserQuestion`:
-
-> Pre-revision 未能提升文档质量（最终分数 X 低于基线 Y）。是否恢复到 Pre-Revision 前的原始版本？
-
-Options: **Restore baseline** (restore from baseline snapshot, discard all pre-revision edits) or **Keep current** (accept the eval result as-is).
-
-If `BASELINE_SCORE = null`, skip this decision — no baseline to compare against.
+- **Pre-Revision Section**: findings triage summary table (accepted/partially-accepted/deferred/skipped) with triage rate metrics (>= 80% triage, >= 60% accepted+partially-accepted)
+- **Baseline Comparison**: add `BASELINE_SCORE` row to Score Progression table (informational, not strict A/B)
+- **Baseline Drift Alert**: if `INITIAL_SCORE < BASELINE_SCORE - 50`, annotate with "基线漂移告警"
+- **Iteration-0 Report**: update `<DOC_DIR>/eval/iteration-0-report.md` with Reviser's edit results
+- **Tag Cleanup**: strip all `<!-- pre-revised: ... -->` HTML comments from document(s)
+- **Rollback**: two levels — inner (Step 3b gate, restores pre-revised checkpoint, max 1) and outer (post-report, user decides to restore baseline snapshot if final score < BASELINE_SCORE). Only for proposal type when pre-revision was executed.
 
 ## Step 6: Next Step
 

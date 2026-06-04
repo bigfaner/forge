@@ -15,9 +15,109 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 - `/gen-test-scripts` -- generates executable test code from Contracts
 </HARD-GATE>
 
-## Surface Detection
+## Core Concepts
 
-Load: `gen-contracts/rules/journey-contract-model.md` (resolve relative to the skills parent directory) — core concepts (Journey, Step, Contract, Outcome), directory conventions, and tag-based promotion model used by downstream skills.
+<!-- INLINE:origin=gen-contracts/rules/journey-contract-model.md -->
+
+The Forge test pipeline organizes around user workflows (Journeys), defines expected behavior through six-dimension Contract declarations, and manages test lifecycles via Tag-Based Promotion.
+
+### Journey
+
+A Journey describes a real user workflow for achieving a goal. It is the primary organizational unit for testing.
+
+| Property | Description |
+|----------|-------------|
+| Name | kebab-case identifier (e.g., `task-lifecycle`) |
+| Risk | `High` (state changes / data loss risk), `Medium` (multi-step interactions without irreversible side effects), `Low` (read-only operations) |
+| Steps | Ordered sequence of user actions, each with expected outcomes |
+| Invariants | Cross-step constraints that must hold throughout the entire Journey |
+
+Each Journey executes in its own temporary working directory to prevent cross-contamination during parallel execution.
+
+### Step
+
+A Step is a single user action within a Journey. Each Step maps to a Contract containing one or more Outcomes.
+
+| Property | Description |
+|----------|-------------|
+| Sequence number | 1-based index within the Journey |
+| User action | The operation the user performs (running a command, clicking a button, sending a request, etc.) |
+| Expected outcomes | One or more Outcome declarations, each with independent Preconditions |
+
+### Contract
+
+A Contract is the verification mechanism for a Step, defining expected system behavior through six-dimension declarations. All dimensions are declared at the Outcome level; Invariants are additionally declared at the Journey level.
+
+### Outcome
+
+An Outcome is a complete set of Contract dimension declarations for a specific scenario (success, error variant, edge case). Outcomes within the same Step are distinguished by Preconditions and must be mutually exclusive — at most one Outcome's Preconditions can be satisfied for any given system state.
+
+| Property | Required | Description |
+|----------|----------|-------------|
+| Name | Yes | Descriptive label (e.g., `success`, `not-in-progress`) |
+| Preconditions | Yes | System state required for this Outcome to become active |
+| Input | Yes | Input provided by the user to the system |
+| Output | Yes | Output produced by the system (semantic descriptors) |
+| State | Yes | System state changes |
+| Side-effect | No | External side effects (default: `none`) |
+| Invariants | No | Step-level invariants (default: no constraints) |
+
+### Semantic Descriptors
+
+All dimension values use semantic descriptors -- natural language descriptions of expected behavior that express business intent rather than precise matching patterns. Regex is prohibited in descriptors.
+
+### Contract File Format
+
+Each Contract is stored as a structured Markdown file:
+
+```markdown
+# Contract: <journey-name> / Step <N>: <step-description>
+
+## Outcome "<outcome-name>"
+- Preconditions: "<semantic description>"
+- Input: <semantic description>
+- Output: <semantic description>
+- State: <semantic description>
+- Side-effect: <semantic description or "none">
+- Invariants: <step-level invariants or omit>
+
+## Journey Invariants
+- <invariant description 1>
+```
+
+**Parseable Structure Rules**:
+1. Journey name extracted from file path: `docs/features/<slug>/testing/<journey>/contracts/step-N-*.md`
+2. Step sequence extracted from filename: `step-<N>-<slug>.md`
+3. Outcome sections: `## Outcome "<name>"` headings declare new Outcome blocks
+4. Dimension format: `- <DimensionName>: <value>`
+5. `## Journey Invariants` section MUST appear exactly once in each Contract file
+
+### Directory Convention
+
+```
+docs/features/<slug>/testing/
+  <journey-name>/                     # Journey directory (kebab-case)
+    journey.md                        # Journey narrative document
+    contracts/                        # Contract specification directory
+      step-1-<action-slug>.md         # Contract for Step 1
+      step-N-<action-slug>.md
+
+tests/
+  <journey-name>/                     # Generated test files
+```
+
+### Tag-Based Promotion
+
+Tests manage their lifecycle via tags rather than file movement:
+
+| Stage | Tag | Action |
+|-------|-----|--------|
+| New | `@feature` | Automatically injected into newly generated tests |
+| Promoted | `@regression` | Automatically upgraded by `/run-tests` |
+
+<!-- END INLINE -->
+
+## Surface Detection
 
 Before processing PRD sources, determine the project's configured surface types via the `forge surfaces` CLI command. Surface determines testing strategy, required Outcomes, and test level emphasis.
 
@@ -73,35 +173,15 @@ When the project has multiple configured surface types (e.g., `web` + `api`), lo
 
 When generating Journeys, apply the following per-surface guidance:
 
-#### API Surface
+#### API — HTTP status boundaries (4xx/5xx), auth failures, rate limiting, payload validation. Emphasis: 50/50 Contract/Journey.
 
-- Mandatory error outcomes: HTTP status code boundaries (4xx client errors, 5xx server errors)
-- Test level emphasis: Balanced 50/50 (Contract 50% / Journey smoke 50%, from `rules/surface-api.md`)
-- Edge case focus: authentication failures, rate limiting, payload validation
+#### Web — Page load states, navigation transitions, form validation. Emphasis: 50/50 Contract/Journey.
 
-#### Web Surface
+#### CLI — Exit codes, stdout/stderr, signal handling. Emphasis: unit-heavy.
 
-- Mandatory outcomes: page load states, navigation transitions, form validation feedback
-- Test level emphasis: Balanced 50/50 (Contract 50% / Journey smoke 50%, from `rules/surface-web.md`)
-- Edge case focus: browser compatibility, responsive layout breaks, client-side validation
+#### TUI — Rendering states, keyboard navigation, screen transitions. Emphasis: 80/20 Contract/Journey.
 
-#### CLI Surface
-
-- Mandatory outcomes: exit codes, stdout/stderr output, signal handling
-- Test level emphasis: unit-heavy ratio (test strategy guidance from `rules/surface-cli.md`)
-- Edge case focus: invalid flags, missing arguments, pipe failures
-
-#### TUI Surface
-
-- Mandatory outcomes: rendering states, keyboard navigation, screen transitions
-- Test level emphasis: Contract 80% / Journey smoke 20% (from `rules/surface-tui.md`)
-- Edge case focus: terminal resize, key binding conflicts, rendering artifacts
-
-#### Mobile Surface
-
-- Mandatory outcomes: screen transitions, gesture responses, offline/online state
-- Test level emphasis: e2e-heavy ratio (test strategy guidance from `rules/surface-mobile.md`)
-- Edge case focus: network interruptions, app lifecycle events, permission denials
+#### Mobile — Screen transitions, gestures, offline/online state. Emphasis: e2e-heavy.
 
 ### Journey Surface Coverage
 
@@ -302,7 +382,7 @@ gen-journeys output must be in a format that gen-contracts can directly consume.
 - Edge cases referencing happy path steps with divergent preconditions
 - Journey Invariants (cross-step properties)
 
-This structure directly maps to gen-contracts' input expectations (defined in gen-contracts/rules/journey-contract-model.md).
+This structure directly maps to gen-contracts' input expectations (see Core Concepts above).
 </HARD-RULE>
 
 ### Batch Processing
@@ -372,21 +452,3 @@ git commit -m "docs: generate journey <journey-name> for <feature-slug>"
 ```
 
 AUTO_COMMIT mode is intended for automated pipeline execution where human review is deferred to downstream eval stages (e.g., `eval-journey`).
-
-## Related Skills
-
-| Skill | Usage |
-|-------|-------|
-| `/write-prd` | Create PRD with user stories (input source) |
-| `/gen-contracts` | Consume Journey documents to generate Contract specifications |
-| `/gen-test-scripts` | Generate executable test code from Contracts |
-
-## Reference
-
-The authoritative model definition is at `gen-contracts/rules/journey-contract-model.md` (core concepts: Journey, Step, Contract, Outcome, directory conventions, tag-based promotion). Key concepts used by this skill:
-
-- **Journey**: User's real workflow to accomplish a goal
-- **Step**: Single user action within a Journey
-- **Risk Classification**: High/Medium/Low severity guiding test density
-- **Journey Invariants**: Cross-step properties that must hold throughout
-- **Semantic Descriptors**: Natural-language descriptions used in Contracts

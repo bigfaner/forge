@@ -262,11 +262,3 @@ Skill(skill="submit-task")
 
 See `rules/constraints.md` for the complete list of constraints and rules governing this skill.
 
-## Related Skills
-
-| Skill | Relationship |
-|-------|-------------|
-| `/write-prd` | Upstream: source of business rules |
-| `/tech-design` | Upstream: source of technical specs |
-| `/run-tests` | Predecessor: T-test-4 before this T-specs-1 |
-| `/submit-task` | Downstream: records task completion |

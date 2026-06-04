@@ -224,7 +224,19 @@ For each Contract step, generate test code following the resolved framework's co
 
 Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, Web, API, Mobile).
 
-**Test isolation**: Generated tests must follow isolation conventions per `rules/test-isolation.md` (located in the run-tests skill directory, resolve relative to the skills parent directory) — every test must own its environment, no dependency on real project state.
+**Test isolation**: Every test — unit or surface — must own its environment. No test may depend on the real project's filesystem state, git state, or `.forge/` state.
+
+<!-- INLINE:origin=run-tests/rules/test-isolation.md -->
+
+| Rule ID | Scope | Requirement | Pattern |
+|---------|-------|-------------|---------|
+| TEST-isolation-000 | All tests | Every test MUST create its own world via `t.TempDir()` (unit) or isolated fixture setup (e2e). Tests MUST NOT read, write, or depend on files outside their own sandbox. | Use `t.TempDir()` / `t.Setenv()` for all stateful tests |
+| TEST-isolation-001 | Unit tests (project root) | Tests calling `FindProjectRoot()`, `runFeature()`, `executeClaim()`, or any function relying on project root detection MUST set `CLAUDE_PROJECT_DIR` via `t.Setenv()` to isolate from real `.forge/state.json` and workspace markers. | `t.Setenv("CLAUDE_PROJECT_DIR", dir)` + `os.Chdir(dir)` |
+| TEST-isolation-002 | CLI functional tests | Tests invoking `forge` CLI commands MUST pass `CLAUDE_PROJECT_DIR=<fixture-dir>` via `cmd.Env` to prevent CLI from detecting real project root. | `cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+dir)` |
+| TEST-isolation-003 | CLI functional test fixtures | Helpers creating project directories MUST create all files required by code under test — including `tasks/index.json`, `.forge/config.yaml`, and any other files the production code checks for. | Include `index.json` in `ensureFeatureDir` |
+| TEST-isolation-004 | CLI functional tests (binary) | Test files invoking forge CLI commands SHOULD compile a dedicated forge binary from current source tree via `go build` and use it for all `exec.Command` invocations, rather than relying on system-installed `forge` via `$PATH`. | `TestMain` builds binary; tests use `exec.Command(forgeBinary, ...)` |
+
+<!-- END INLINE:origin=run-tests/rules/test-isolation.md -->
 
 ### Output Directory
 
@@ -359,12 +371,3 @@ If all compile attempts fail:
 ## Error Handling
 
 See `rules/quality-gates.md` for the complete error handling table covering Convention, Contract, Fact Table, compile gate, and template resolution failures.
-
-## Related Skills
-
-| Skill | Usage |
-|-------|-------|
-| `/gen-journeys` | Generate Journey narratives from PRD |
-| `/gen-contracts` | Generate Contract specifications from Journeys |
-| `/run-tests` | Execute test scripts and report results |
-| `/forge:test-guide` | Generate a Convention file for test framework configuration |
