@@ -1,0 +1,123 @@
+{
+  "feature": "forge-cli-logging",
+  "proposal": "docs/proposals/forge-cli-logging/proposal.md",
+  "created": "2026-06-04",
+  "tasks": {
+    "1-core-forgelog-package": {
+      "id": "1",
+      "title": "Implement core forgelog package",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "pending",
+      "file": "1-core-forgelog-package.md",
+      "record": "records/1-core-forgelog-package.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "2-config-and-cleanup": {
+      "id": "2",
+      "title": "Add config extension, validation, and auto-cleanup",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-config-and-cleanup.md",
+      "record": "records/2-config-and-cleanup.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "3-init-integration-gitignore": {
+      "id": "3",
+      "title": "Integrate forgelog into commands and update gitignore",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-init-integration-gitignore.md",
+      "record": "records/3-init-integration-gitignore.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "4-migrate-base-init-upgrade": {
+      "id": "4",
+      "title": "Migrate base, init, and upgrade stderr calls",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-migrate-base-init-upgrade.md",
+      "record": "records/4-migrate-base-init-upgrade.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "5-migrate-qualitygate-calls": {
+      "id": "5",
+      "title": "Migrate qualitygate stderr calls",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "5-migrate-qualitygate-calls.md",
+      "record": "records/5-migrate-qualitygate-calls.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "6-migrate-task-pkg-calls": {
+      "id": "6",
+      "title": "Migrate task, feature_complete, and pkg stderr calls",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4",
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-migrate-task-pkg-calls.md",
+      "record": "records/6-migrate-task-pkg-calls.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
