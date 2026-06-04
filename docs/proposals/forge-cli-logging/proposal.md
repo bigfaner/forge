@@ -9,171 +9,284 @@ domains: [cli, logging, diagnostics, developer-experience]
 
 # Problem
 
-Forge CLI outputs diagnostic messages (AUTO-RESTORE-SKIP, WARNING, ERROR) exclusively to stderr. These messages are ephemeral — lost once the process exits. When the run-tasks dispatcher runs autonomous loops, diagnostic output scrolls away in subagent sessions and becomes impossible to trace after the fact. While the motivating incident occurred in run-tasks, all forge commands produce diagnostic stderr — logging all commands provides consistent debuggability and avoids the complexity of selective per-command logging. A targeted dispatcher-only approach would require a separate logging configuration surface for each command category, adding more complexity than logging uniformly.
+Forge CLI outputs diagnostic messages exclusively to stderr. These messages are ephemeral — lost once the process exits. When the run-tasks dispatcher runs autonomous loops, diagnostic output scrolls away in subagent sessions and becomes impossible to trace after the fact.
 
-Recent example: `autoRestoreSourceTask` silently returned without restoring a blocked source task. No log existed to diagnose why (not found? not blocked? unmet deps?). We had to speculate about the root cause from a lesson document instead of reading actual logs.
+Recent example: `autoRestoreSourceTask` silently returned without restoring a blocked source task. No log existed to diagnose why. We had to speculate about the root cause from a lesson document instead of reading actual logs.
 
-**Evidence**: 72 `fmt.Fprintf(os.Stderr, ...)` call sites in `internal/` + 8 call sites in `pkg/` = 80 total across the CLI, zero persisted diagnostics.
+### Evidence
 
-**Cost of inaction**: Every future incident requires code-level speculation instead of log-based diagnosis. The AUTO-RESTORE debugging session that prompted this proposal took hours of code archaeography that a single log line would have resolved.
+~100 stderr write call sites across the CLI (`fmt.Fprintf` + `fmt.Fprintln` patterns in `internal/` and `pkg/`), plus 1 `slog.Warn` and 1 `log.Printf`. Zero persisted diagnostics. Exact counts:
+
+| Pattern | internal/ | pkg/ | forensic/ (excluded) | Migratable |
+|---------|-----------|------|---------------------|------------|
+| `fmt.Fprintf(os.Stderr, ...)` | ~55 | 8 | 5 | ~63 |
+| `fmt.Fprintln(os.Stderr, ...)` | ~32 | 5 | 5 | ~37 |
+| `slog.Warn(...)` | 0 | 1 | 0 | 1 |
+| `log.Printf(...)` | 0 | 1 | 0 | 1 |
+| **Total** | ~87 | ~15 | 10 | **~102** |
+
+Counts are approximate; exact verification at implementation time via:
+```bash
+grep -r 'fmt.Fprintf(os.Stderr\|fmt.Fprintln(os.Stderr' forge-cli/internal/ forge-cli/pkg/ --include='*.go' | grep -v testdata | grep -v 'forensic/'
+```
+
+### Urgency
+
+Every future incident requires code archaeography instead of log-based diagnosis. The AUTO-RESTORE debugging session that prompted this proposal took hours of code archaeography that a single log line would have resolved.
 
 # Proposed Solution
 
-Add a lightweight file-based logging layer to forge-cli:
+Add a lightweight file-based logging layer to forge-cli with a three-layer elegant architecture:
 
-1. **Log file per command execution**: Each `forge` invocation writes to `.forge/logs/<ISO-8601-datetime>-<pid>.log` (e.g., `2026-06-04T17-30-00-45231.log`). The PID suffix prevents filename collisions when multiple forge commands are invoked within the same second (e.g., concurrent subagent sessions under `run-tasks`).
-2. **Level-filtered**: Four levels (DEBUG, INFO, WARN, ERROR). Only messages at or above the configured level are written. Configured via `.forge/config.yaml`
-3. **Dual output**: Messages write to both log file and stderr (current behavior preserved). Write ordering is **stderr-first-then-file**: the message is always written to stderr first, then to the log file. If file write fails (disk full, permission error, etc.), the stderr output has already occurred — no diagnostic information is lost. File write errors are silently ignored to avoid recursive logging. Each forgelog call performs a direct write to the file (opened with `O_APPEND`), ensuring messages are persisted immediately — no data is lost on unclean exit (`os.Exit`, panic, signal kill). `O_APPEND` provides atomic appends on most operating systems for writes under `PIPE_BUF` (typically 4KB or more), making per-write calls efficient without a bufio layer.
-4. **Auto-cleanup**: On each command startup, **after** the new log file has been successfully opened and is being written to, delete log files older than `retentionDays` (default 7). Cleanup errors are best-effort and silently ignored (e.g., if a file is locked by another process). Running cleanup after opening the new log file ensures the active log is never deleted by its own cleanup pass.
-5. **Per-line log format**: Each log line follows the format `2006-01-02T15:04:05.000 [LEVEL] message\n`. Timestamp is local time with millisecond precision. Level is one of `DEBUG`, `INFO`, `WARN`, `ERROR`. Message is the original stderr text with its prefix preserved (e.g., `WARNING: task not found` remains as-is in the message field — the `[LEVEL]` tag provides the structured level).
-6. **Categorized output**: Existing stderr messages are classified into levels based on their prefix. Prefix parsing is **only for migrating existing call sites** — new code calls `forgelog.Warn()` etc. directly and needs no prefix convention.
-7. **Emergency disable**: Set `FORGE_NO_LOG=1` environment variable to disable all file logging. When set, `forgelog` functions write to stderr only (identical to pre-migration behavior). This provides an escape hatch if the logging layer causes regressions.
+## 1. Architecture Layer — Backend Abstraction
+
+`forgelog` acts as a unified output gateway. All diagnostic writes flow through it, with console and file as independent backends:
+
+```go
+// Backend is a log output target.
+type Backend interface {
+    Write(level LogLevel, timestamp time.Time, msg string)
+    Close() error
+}
+
+// ConsoleBackend writes to stderr with original format.
+// Output: just the message as-is (preserves current behavior exactly).
+// No level filtering — always outputs all messages.
+type ConsoleBackend struct{}
+
+// FileBackend writes to log file with structured format.
+// Output: 2026-06-04T17:30:00.123 [WARN] message
+type FileBackend struct {
+    mu   sync.Mutex
+    file *os.File
+}
+```
+
+Each `forgelog` call dispatches to all registered backends. ConsoleBackend outputs the raw message; FileBackend adds timestamp+level prefix. The two are decoupled — changing file format never affects console output, and vice versa.
+
+## 2. Format Layer — Dual Format Design
+
+| Output Target | Format | Level Filtering | Rationale |
+|--------------|--------|----------------|-----------|
+| **Console (stderr)** | Original message, unchanged | None — all messages always output | Zero behavioral change. Existing scripts, pipes, and user expectations are preserved exactly |
+| **Log file** | `2006-01-02T15:04:05.000 [LEVEL] message` | Yes — only messages at or above configured level | Structured prefix enables grep/filter/trace. Local time with millisecond precision |
+
+Console output is byte-identical to pre-migration behavior. A test can diff stderr output before and after migration and expect zero changes.
+
+## 3. API Layer — Printf-Style One-Liners
+
+```go
+package forgelog
+
+// Init initializes the logging layer.
+// - Creates .forge/logs/ on demand via os.MkdirAll(logDir, 0700).
+// - Falls back to console-only if directory creation fails.
+// - Checks FORGE_NO_LOG=1 — if set, skips FileBackend.
+func Init(config *forgeconfig.LogsConfig, logsDir string) error
+
+// Printf-style: Warn("WARNING: task %s not found", id)
+// One call dispatches to all backends.
+func Debug(format string, args ...interface{})
+func Info(format string, args ...interface{})
+func Warn(format string, args ...interface{})
+func Error(format string, args ...interface{})
+
+// Close closes all backends. Call via defer in each command's runE.
+func Close()
+```
+
+Migration at each call site is a one-line mechanical change:
+```go
+// Before:
+fmt.Fprintf(os.Stderr, "WARNING: task %s not found\n", id)
+// After:
+forgelog.Warn("WARNING: task %s not found\n", id)
+```
+
+## Core Behaviors
+
+1. **Log file per command execution**: Each `forge` invocation writes to `.forge/logs/<ISO-8601-datetime>-<pid>.log`. PID suffix prevents collisions when multiple commands run within the same second (e.g., concurrent subagent sessions).
+
+2. **Level-filtered (file only)**: Four levels (DEBUG, INFO, WARN, ERROR). Only messages at or above the configured level are written to the **file backend**. The **console backend always outputs all messages** — this preserves current behavior exactly. Configured via `.forge/config.yaml` `logs.level` (default: `info`). Console has no level filter; the level config controls only what persists to disk.
+
+3. **Auto-cleanup**: On each command startup, **after** the new log file is opened, delete log files older than `retentionDays` (default 7). Cleanup errors are silently ignored.
+
+4. **Emergency disable**: `FORGE_NO_LOG=1` env var skips FileBackend initialization. ConsoleBackend continues unchanged — identical to pre-migration behavior.
+
+5. **Directory auto-creation**: `forgelog.Init()` creates `.forge/logs/` on demand via `os.MkdirAll(logDir, 0700)`. `forge init` does NOT create this directory — it only exists when logging actually happens.
+
+### Innovation Highlights
+
+This is a straightforward adoption of a standard backend-pattern logging architecture. The creative insight is the **zero-change console contract**: by treating console as a first-class backend that preserves original format byte-for-byte, the migration is safe by construction. No integration test suite is needed to verify console output — if the console backend's Write method outputs the raw message unchanged, behavioral equivalence is guaranteed.
+
+The per-invocation log file (timestamp+PID naming) borrows from web server access log patterns (nginx, apache) where each process writes to its own file, avoiding contention without lock files.
 
 ### Call-Site Categorization Table
 
-All 80 `fmt.Fprintf(os.Stderr, ...)` call sites are classified below (72 in `internal/`, 8 in `pkg/`). This table covers all known prefixes found by `grep -r 'fmt.Fprintf(os.Stderr' forge-cli/internal/ forge-cli/pkg/ --include='*.go' | grep -v testdata`. Any future message that does not match a listed prefix defaults to INFO level.
+All ~102 stderr write call sites are classified below. Prefix parsing is **only for migrating existing call sites** — new code calls `forgelog.Warn()` directly and needs no prefix convention.
 
-| Prefix Pattern | Level | Count | Source Files | Notes |
-|---|---|---|---|---|
-| `ERROR: ...` (no indent) | ERROR | 10 | init.go, init_config.go, quality_gate.go, errors.go, etc. | Uppercase `ERROR:` prefix |
-| `  ERROR: ...` (2-space indent) | ERROR | 2 | quality_gate_lifecycle.go | Indented context messages; prefix stripping removes leading whitespace |
-| `error: ...` (lowercase) | ERROR | 5 | upgrade.go | Matched case-insensitively; normalized to ERROR level |
-| `ERROR_CODE: ...` | ERROR | 1 | errors.go | Part of `printAIError` structured error block |
-| `CAUSE: ...` | ERROR | 1 | errors.go | Part of `printAIError` structured error block |
-| `HINT: ...` | ERROR | 2 | errors.go, errors.go | Part of structured error/warning output blocks |
-| `ACTION: ...` | ERROR | 1 | errors.go | Part of `printAIError` structured error block |
-| `WARNING: ...` (no indent) | WARN | 22 | task/*.go, init.go, qualitygate/*.go, errors.go, submit.go | Standard warning prefix |
-| `  WARNING: ...` (2-space indent) | WARN | 1 | quality_gate_lifecycle.go | Indented context message |
-| `WARNING: ...` (compound, multi-line) | WARN | 1 | submit.go | Multi-line message starting with `---\nWARNING:` and containing embedded `HINT:`; classified by leading prefix |
-| `AUTO-RESTORE-SKIP: ...` | WARN | 3 | submit.go | Skip conditions for auto-restore |
-| `AUTO-RESTORE: ...` | INFO | 1 | submit.go | Successful restore notification |
-| `SOURCE-RESOLVE: ...` | INFO | 1 | task/add.go (pkg/) | Source resolution trace |
-| `NOTE: ...` | INFO | 1 | index.go | Informational notes |
-| `[debug] ...` | DEBUG | 1 | base/output.go | Debug trace messages |
-| `[feature:complete] Error: ...` | ERROR | 1 | feature_complete.go | Compound prefix; longest-prefix matching |
-| `[feature:complete] Status ...` | INFO | 1 | feature_complete.go | Status update |
-| `[feature:complete] Warning: ...` | WARN | 1 | feature_complete.go | Warning within feature completion |
-| `[feature:complete] Push failed: ...` | ERROR | 1 | feature_complete.go | Push failure |
-| Prefixless (progress/status) | INFO | 11 | qualitygate/*.go: quality_gate.go (3 — orchestration status messages "Running quality gate...", "Quality gate passed"), quality_gate_lifecycle.go (4 — lifecycle step progress "Checking X...", step completion messages), quality_gate_report.go (2 — report formatting status), output.go (1 — probe status message), base/output.go (1 — general progress indicator) | Progress bars, orchestration status, probe messages |
-| Forensic (all prefixes) | EXCLUDED | 5 | forensic/extract.go | Forensic command's stderr is its primary output channel; excluded from migration |
-| `Warning: ...` (mixed case) | WARN | 1 | pkg/task/state.go | Mixed-case prefix; caught by case-insensitive matching |
-| `FAIL: ...` / `OK: ...` | WARN / INFO | 2 | pkg/serverprobe/serverprobe.go | Probe result messages |
-| `ERROR: ...` (pkg/) | ERROR | 1 | pkg/just/just.go | Just execution error |
-| `WARNING: ...` (pkg/) | WARN | 3 | pkg/just/just.go, pkg/testrunner/testrunner.go, pkg/serverprobe/serverprobe.go | Package-layer warnings (includes 1 with 2-space indent in serverprobe) |
+| Prefix Pattern | Level | Source Areas | Notes |
+|---|---|---|---|
+| `ERROR: ...` (no indent) | ERROR | init.go, init_config.go, quality_gate.go, errors.go, etc. | Uppercase `ERROR:` prefix |
+| `  ERROR: ...` (2-space indent) | ERROR | quality_gate_lifecycle.go | Indented context messages |
+| `error: ...` (lowercase) | ERROR | upgrade.go | Case-insensitive match |
+| `ERROR_CODE: ...` / `CAUSE: ...` / `ACTION: ...` | ERROR | errors.go | Structured error block parts |
+| `HINT: ...` | ERROR | errors.go | Part of structured error/warning blocks |
+| `WARNING: ...` (no indent) | WARN | task/*.go, init.go, qualitygate/*.go, errors.go, submit.go | Standard warning prefix |
+| `  WARNING: ...` (2-space indent) | WARN | quality_gate_lifecycle.go, serverprobe.go | Indented context messages |
+| `AUTO-RESTORE-SKIP: ...` | WARN | submit.go | Skip conditions for auto-restore |
+| `AUTO-RESTORE: ...` | INFO | submit.go | Successful restore notification |
+| `SOURCE-RESOLVE: ...` | INFO | pkg/task/add.go | Source resolution trace |
+| `NOTE: ...` | INFO | index.go | Informational notes |
+| `[debug] ...` | DEBUG | base/output.go | Debug trace messages |
+| `[feature:complete] Error: ...` | ERROR | feature_complete.go | Compound prefix; longest-prefix matching |
+| `[feature:complete] Status ...` | INFO | feature_complete.go | Status update |
+| `[feature:complete] Warning: ...` | WARN | feature_complete.go | Warning within feature completion |
+| `[feature:complete] Push failed: ...` | ERROR | feature_complete.go | Push failure |
+| `FAIL: ...` / `OK: ...` | WARN / INFO | pkg/serverprobe/serverprobe.go | Probe result messages |
+| `Warning: ...` (mixed case) | WARN | pkg/task/state.go | Case-insensitive matching |
+| Prefixless (progress/status) | INFO | qualitygate/*.go, output.go, base/output.go | Progress bars, orchestration status, probe messages |
+| Forensic (all patterns) | EXCLUDED | forensic/extract.go | stderr is primary output channel; excluded |
 
-**Matching priority**: Prefix matching uses **longest-prefix-first** ordering. When a message has a compound prefix (e.g., `[feature:complete] Error:`), the entire compound prefix is matched first. The matching order is: (1) `[feature:complete] Error:` / `[feature:complete] Warning:` / `[feature:complete] Push failed:` → (2) `AUTO-RESTORE-SKIP:` → (3) `AUTO-RESTORE:` → (4) `SOURCE-RESOLVE:` → (5) `ERROR:` / `ERROR_CODE:` / `CAUSE:` / `ACTION:` / `HINT:` → (6) `WARNING:` → (7) `NOTE:` → (8) `[debug]` → (9) `FAIL:` / `OK:` → (10) default INFO.
+**Matching priority**: Longest-prefix-first. Compound prefixes (`[feature:complete] Error:`) match before simple prefixes (`ERROR:`).
 
-**Fallback rule for uncategorized messages**: Any stderr call site that (a) does not belong to the `forensic` command, and (b) lacks a matching prefix from the table above, is assigned INFO level. This ensures forward compatibility — new messages that do not match any prefix are still logged rather than silently dropped.
+**Fallback**: Any message without a matching prefix defaults to INFO level.
 
-**Forensic exclusion**: The `forensic` command writes structured diagnostic output to stderr by design. All 5 call sites in `forensic/extract.go` are explicitly excluded from the migration scope. Migrating them would produce duplicate output and break the command's output contract with consuming tools.
+**Case-insensitive**: `strings.HasPrefix(strings.ToUpper(strings.TrimSpace(msg)), prefix)`. Leading whitespace stripped before matching.
 
-**Case-insensitive prefix matching**: Prefix matching uses `strings.HasPrefix(strings.ToUpper(strings.TrimSpace(msg)), prefix)` to handle both `ERROR:` and `error:`, as well as mixed-case `Warning:`, uniformly. Leading whitespace is stripped before matching to handle indented messages (`  ERROR:`, `  WARNING:`). No source-code normalization is required.
+**Fprintln handling**: `fmt.Fprintln(os.Stderr, msg)` is equivalent to `fmt.Fprintf(os.Stderr, msg + "\n")`. Migration treats them identically — `forgelog.Warn(msg)` handles the trailing newline.
 
-**Note on prefix parsing scope**: The prefix-based classification scheme is a migration tool only. After migration, all existing call sites use explicit level-based `forgelog` API calls. New code calls `forgelog.Warn()`, `forgelog.Error()`, etc. directly — no prefix convention needed. The prefix matching logic exists solely in the migration layer and does not impose an ongoing maintenance burden.
+### .forge/config.yaml Extension
 
-# Alternatives
+```yaml
+logs:
+  level: info           # debug | info | warn | error (default: info)
+  retentionDays: 7      # minimum 1 (default: 7)
+```
 
-## A. Do nothing
+Config struct:
+```go
+type LogsConfig struct {
+    Level         string `yaml:"level"`          // default: "info"
+    RetentionDays int    `yaml:"retentionDays"`  // default: 7
+}
+// Added to existing Config struct:
+// Logs *LogsConfig `yaml:"logs,omitempty"`
+```
 
-Keep stderr-only output. Zero implementation cost but zero improvement in debuggability. Every future incident remains a code archaeography exercise.
+The `omitempty` tag ensures existing configs without `logs` section deserialize cleanly — `Logs` is `nil`, defaults applied in `forgelog.Init()`.
 
-## B. Environment variable toggle (FORGE_LOG_FILE)
+# Requirements Analysis
 
-Use `FORGE_LOG_FILE=1 forge task claim` to opt into file logging. Simpler config but requires users to remember the env var. Doesn't integrate with the existing `.forge/config.yaml` system. No auto-cleanup.
+### Key Scenarios
 
-## C. Structured JSON logging
+- **Happy path**: User runs `forge task submit`; diagnostic messages appear on console (unchanged) and are persisted to `.forge/logs/` for later review
+- **Concurrent invocations**: Multiple subagent sessions under `run-tasks` each write to separate log files; no contention
+- **Config missing**: User has no `logs` section in config; logging works with defaults (info level, 7-day retention)
+- **Disk failure**: `.forge/logs/` creation fails (read-only filesystem, permission denied); falls back to console-only mode silently
+- **Emergency disable**: User sets `FORGE_NO_LOG=1`; file logging disabled, console output unchanged
+- **Log cleanup**: On startup, files older than `retentionDays` are deleted; current invocation's log is never deleted
 
-Write JSON-formatted logs for machine parseability. Over-engineered for the current need (human diagnosis). Can be added later as a format option if needed.
+### Non-Functional Requirements
 
-**Recommendation**: Proceed with the proposed solution. It balances debuggability with minimal complexity, integrates with existing config, and provides auto-cleanup.
+- **Performance**: Per-write `O_APPEND` direct to file. No bufio layer. Acceptable for typical volumes (~50-200 lines per invocation). `O_APPEND` provides atomic appends under `PIPE_BUF` on most OS.
+- **Security**: Log files created with mode `0600` (owner-only). Directories with `0700`. `.forge/logs/` added to `.gitignore` by `forge init`.
+- **Concurrency**: FileBackend uses `sync.Mutex` to serialize writes. ConsoleBackend writes to stderr (already thread-safe in Go's `fmt.Fprintf`).
+- **Data safety**: No buffering — each write is persisted before function returns. `os.Exit`, panic, and signal kills cannot lose data.
 
-## D. Use Go standard library `log/slog`
+### Constraints & Dependencies
 
-Go 1.21+ provides `log/slog` with structured logging, leveled output, and handler customization. However, slog is designed for structured key-value logging (e.g., `slog.Info("task restored", "id", taskID, "status", "pending")`). This proposal needs simpler human-readable diagnostic logs with a fixed timestamp+level+message format, dual output to both stderr and a per-invocation file, and auto-cleanup of old log files. slog's `Handler` interface could theoretically be implemented for this, but the overhead is unjustified: the `forgelog` package is ~150 lines of straightforward Go that handles file creation, per-write `O_APPEND` output, and cleanup in one place. Using slog would require a custom `slog.Handler` implementation for the dual-output pattern (stderr + file with different formatting for each), plus the same file-management code, adding complexity without benefit. The specific dual-output requirement — stderr-first-then-file with prefix-preserved messages on stderr and timestamp+level+message in the file — does not map cleanly to slog's `Handler.Handle()` method, which produces a single formatted record. Implementing this would require either two handler instances (one for stderr, one for file) with careful coordination, or a single handler that internally manages two writers — either way, more code and more complexity than the direct `forgelog` approach. **TCO acknowledgment**: slog is maintained by the Go team indefinitely, while forgelog is maintained by the forge team. This is a deliberate trade-off: forgelog's narrow scope (~150 lines, no dependencies, printf-style API) minimizes the maintenance surface. If structured/machine-parseable logging is needed in the future, slog can be adopted then — the `forgelog` API is intentionally narrow and can be replaced without affecting call sites.
+- No external dependencies — `forgelog` uses only stdlib (`fmt`, `os`, `sync`, `time`, `strings`)
+- No changes to plugin layer (agents/commands/skills) — this is CLI-only
+- Go 1.21+ compatibility required
+
+# Alternatives & Industry Benchmarking
+
+### Industry Solutions
+
+Most CLI tools use one of: (1) stderr-only output (current forge approach), (2) `log/slog` with structured handlers, (3) per-invocation log files (web server pattern). The proposed solution uses pattern (3) with a backend abstraction inspired by slog's Handler interface but simplified for human-readable diagnostic logs.
+
+### Comparison Table
+
+| Approach | Source | Pros | Cons | Verdict |
+|----------|--------|------|------|---------|
+| Do nothing | — | Zero cost | Zero improvement. Every incident = code archaeography | Rejected: cost of inaction too high |
+| `log/slog` structured logging | Go stdlib (1.21+) | Stdlib, structured key-value, maintained by Go team | Over-engineered for human-readable diagnostics. Dual-output (stderr original + file structured) doesn't map to slog's single-format Handler | Rejected: complexity mismatch |
+| Env var toggle (`FORGE_LOG_FILE=1`) | Common CLI pattern | Simpler opt-in | Doesn't integrate with existing config. No auto-cleanup | Rejected: poor UX |
+| **Backend-pattern forgelog** | Web server access log pattern | Minimal, zero-change console, pluggable, auto-cleanup | Team-maintained (~150 lines) | **Selected: matches problem scope precisely** |
+
+# Feasibility Assessment
+
+### Technical Feasibility
+
+Straightforward Go implementation. No external dependencies. The Backend interface is 2 methods. Each call site migration is a one-line mechanical change.
+
+### Resource & Timeline
+
+Single PR, mechanically verifiable. Implementation order: (1) `pkg/forgelog` package + tests, (2) config extension, (3) gitignore entry, (4) migrate all ~102 call sites.
+
+### Dependency Readiness
+
+No upstream dependencies. Config struct extension is additive (omitempty).
+
+# Assumptions Challenged
+
+| Assumption | Challenge Tool | Finding |
+|------------|---------------|---------|
+| "Need `forge init` to create logs dir" | Occam's Razor | Overturned: forgelog.Init() auto-creates on demand. No need to involve forge init in directory creation. forge init only adds `.forge/logs/` to .gitignore. |
+| "Need 80 call sites migrated" | Stress Test | Refined: actual scope is ~102 sites (Fprintf + Fprintln + slog + log). Proposal's 80 count was Fprintf-only, missing Fprintln patterns. |
+| "stderr-first-then-file ordering matters" | Assumption Flip | Overturned: with Backend abstraction, ordering is backend registration order. ConsoleBackend first, FileBackend second. If file write fails, console has already written. Same safety, cleaner abstraction. |
+| "forgelog needs prefix parsing at runtime" | Occam's Razor | Confirmed but scope-limited: prefix parsing exists only in the migration layer to classify existing call sites. New code uses explicit level calls. No ongoing maintenance burden. |
 
 # Scope
 
-## In Scope
+### In Scope
 
-- `pkg/forgelog` package: log level enum, file writer with auto-cleanup, dual-output (file + stderr)
-- **`forgelog` public API**:
-  ```go
-  package forgelog
-
-  // Init initializes the logging layer. Creates .forge/logs/ on demand.
-  // Falls back to stderr-only mode if directory creation fails.
-  // Checks FORGE_NO_LOG=1 env var — if set, skips file logging entirely.
-  func Init(config *forgeconfig.LogsConfig, logsDir string) error
-
-  // Debug/Info/Warn/Error write to both stderr and the log file (if active).
-  // Format: 2006-01-02T15:04:05.000 [LEVEL] message\n
-  // These are printf-style: Warn("task %s not found", id)
-  // All functions are safe for concurrent use. The underlying file handle
-  // uses a sync.Mutex to serialize writes.
-  func Debug(msg string, args ...interface{})
-  func Info(msg string, args ...interface{})
-  func Warn(msg string, args ...interface{})
-  func Error(msg string, args ...interface{})
-
-  // Close closes the log file handle.
-  // Call via defer in each command's runE function.
-  // Not strictly necessary with O_APPEND per-write writes (no buffer to flush),
-  // but ensures clean file handle release.
-  func Close()
-  ```
+- `pkg/forgelog` package: LogLevel enum, Backend interface, ConsoleBackend, FileBackend, Init/Close, printf-style API
 - `.forge/config.yaml` `logs` section: `level` (debug/info/warn/error), `retentionDays` (default 7)
-- **Config struct extension**: Add a `Logs` field to `forgeconfig.Config`:
-  ```go
-  type LogsConfig struct {
-      Level          string `yaml:"level"`           // default: "info"
-      RetentionDays  int    `yaml:"retentionDays"`   // default: 7
-  }
-  // Added to existing Config struct:
-  // Logs *LogsConfig `yaml:"logs,omitempty"`
-  ```
-  The `omitempty` YAML tag ensures existing config files without a `logs` section deserialize cleanly — `Logs` will be `nil`, and defaults are applied in `forgelog.Init()`. No config migration script is needed.
-- **Config validation**: `forgelog.Init()` validates the config and applies safe defaults for invalid values. Level must be one of `debug`, `info`, `warn`, `error` (case-insensitive); any unrecognized value falls back to `info`. `retentionDays` must be >= 1; values of 0 or negative fall back to the default of 7. This prevents edge cases like `retentionDays: 0` from deleting the active log file.
-- Add `ForgeLogsDir` constant to `pkg/feature/constants.go`
-- Migrate existing stderr calls in `internal/` to use `forgelog.Warn()`, `forgelog.Error()`, etc.
-- **Migrate existing stderr calls in `pkg/`** (8 call sites in serverprobe, just, task, testrunner) to use `forgelog` API. The `pkg/` layer is included in scope because these packages are internal to the CLI (not a public library) and their stderr output is equally ephemeral.
+- `LogsConfig` struct added to `forgeconfig.Config` with `omitempty`
+- Config validation in `forgelog.Init()`: unrecognized level → default `info`; `retentionDays < 1` → default 7
+- `ForgeLogsDir` constant in `pkg/feature/constants.go`
 - `.forge/logs/` entry in `gitignoreEntries` (init.go)
-- `forge init` ensures `.forge/logs/` directory exists
-- `forgelog.Init()` called early in each command's `runE` function
-- **Bootstrap safety**: `forgelog.Init()` creates `.forge/logs/` on demand via `os.MkdirAll(logDir, 0700)` (owner-only directory). Log files are created with mode `0600` (owner-only read/write) to prevent exposing potentially sensitive diagnostic content (file paths, task content, config values) on shared systems. If directory creation fails (e.g., read-only filesystem, permission denied), `Init()` falls back to stderr-only mode — logging functions become no-ops for the file writer but stderr output continues unchanged. This resolves the paradox where `forgelog.Init()` is called before `forge init` has run.
-- **Migration strategy**: Migrate all 80 call sites in a single PR to avoid partial-migration state. The PR is mechanically verifiable: `grep -r 'fmt.Fprintf(os.Stderr' forge-cli/internal/ forge-cli/pkg/ --include='*.go' | grep -v testdata | grep -v 'forensic/'` must return 5 results (the excluded forensic call sites) after migration. Each migrated call site is a one-line change (`fmt.Fprintf(os.Stderr, "WARNING: ...")` → `forgelog.Warn("WARNING: ...")`) with no behavioral change to stderr output. **Note on alternative stderr patterns**: The 80-count is based on `fmt.Fprintf(os.Stderr, ...)` which is the dominant pattern in the codebase. A secondary sweep will check for `fmt.Fprintln(os.Stderr, ...)`, `os.Stderr.WriteString(...)`, and `log` package usage (`log.Printf`, `log.Println` with default stderr output). If any such call sites are found, they are included in the same migration PR using the same classification rules.
+- `forgelog.Init()` called early in each command's `runE` function; `defer forgelog.Close()` follows
+- Migrate all ~102 stderr write call sites in `internal/` and `pkg/` to `forgelog` API (single PR)
+- Exclude all forensic command call sites from migration
+- **Emergency disable**: `FORGE_NO_LOG=1` env var skips FileBackend
+- **Directory auto-creation**: `forgelog.Init()` creates `.forge/logs/` via `os.MkdirAll(logDir, 0700)`
+- **Log file permissions**: `0600` for files, `0700` for directory
 
-## Out of Scope
+### Out of Scope
 
 - Structured/JSON log format
 - Log rotation (one file per invocation is sufficient)
 - Log aggregation or remote shipping
+- CLI log viewer command (`forge log` / `forge logs`)
 - Migrating test code (tests continue using stderr directly)
-- Changes to the plugin (agents/commands/skills) — this is CLI-only
-- **Migrating the `forensic` command**: `forensic` uses stderr as its primary structured output channel for session analysis. Its 5 call sites in `forensic/extract.go` are excluded from migration to preserve output contract with consuming tools. Migrating them would produce duplicate output and break existing pipelines.
-- **CLI log viewer command** (`forge log` / `forge logs`): A dedicated command to list, search, and filter log files from `.forge/logs/` is not included. Users can read logs directly with standard tools (`cat .forge/logs/2026-06-04T*`, `grep`, etc.). A log viewer command is a natural follow-up enhancement once the logging infrastructure is in place and usage patterns are better understood.
+- Changes to the plugin (agents/commands/skills)
+- `forge init` creating `.forge/logs/` directory
+- Migrating the `forensic` command (stderr is its primary output channel)
 
-# Risks
+# Key Risks
 
-| Risk | Likelihood | Mitigation |
-|------|-----------|------------|
-| Log file contention under concurrent commands | Low — each invocation creates a unique timestamped file | Use per-invocation filename; no shared file |
-| Disk accumulation if retention too long | Low — default 7 days, configurable | Auto-cleanup on each command startup. **Disk budget**: typical invocation ~5-10KB, `run-tasks` ~50-100KB. 7-day retention at 100 invocations/day ≈ 7-70MB worst case. |
-| Config parsing failure blocks logging | Low — defaults applied when config missing | Hardcoded defaults: level=info, retention=7 days. Invalid values (unrecognized level, retentionDays < 1) fall back to defaults. |
-| Performance impact of file I/O on every log call | Low — per-write `O_APPEND` is efficient | Each `forgelog` call writes directly to the file via `O_APPEND` (no bufio layer). `O_APPEND` provides atomic appends under `PIPE_BUF` on most OS, so no data is lost on unclean exit. Per-write syscall overhead is acceptable for typical volumes (~50-200 log lines per invocation). `run-tasks` auto-loops produce ~10-50KB per invocation — well within performance budget. |
-| Sensitive information in log files | Medium — ERROR/WARNING messages may include file paths, task content, config values | Log files are created with mode `0600` (owner-only), directories with `0700`. `.forge/logs/` is added to `.gitignore` by `forge init`. Document that `.forge/` directory must not be committed. Do not redact at log time — the diagnostic value of full messages outweighs the risk for local-only files. |
-| Logging layer regression causes command failures | Low — one-line mechanical changes per call site | **Emergency disable**: `FORGE_NO_LOG=1` env var skips all file logging, reverting to stderr-only behavior. **Rollback**: revert the migration PR; no schema or config changes require cleanup. |
-| Data loss on unclean exit | None — resolved by design | Each `forgelog` call writes directly via `O_APPEND` with no buffering. Messages are persisted to disk before the function returns. `os.Exit`, panic, and signal kills cannot lose log data because there is no buffer to flush. |
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Log file contention under concurrent commands | Low | Low | Per-invocation filename (timestamp+PID). No shared file |
+| Disk accumulation | Low | Low | Auto-cleanup on each startup. Budget: ~5-10KB/invocation, 7-day default ≈ 7-70MB worst case |
+| Config parsing failure blocks logging | Low | Low | Hardcoded defaults applied when config missing or invalid |
+| Sensitive info in log files | Medium | Medium | File mode `0600`, dir `0700`, `.gitignore` entry. No redaction at log time — diagnostic value > risk for local files |
+| Logging layer regression | Low | High | `FORGE_NO_LOG=1` emergency disable. Migration is one-line mechanical changes |
+| Migration count inaccuracy | Medium | Low | Exact verification at implementation time. Grep-based CI check in PR |
+| `fmt.Fprintln` edge cases | Low | Low | Fprintln adds `\n` automatically; forgelog API expects caller to include `\n`. Migration strips trailing newline from Fprintln calls |
 
 # Success Criteria
 
-| ID | Criterion | Verification |
-|----|-----------|-------------|
-| SC-1 | `forge task submit` writes AUTO-RESTORE diagnostic to `.forge/logs/<datetime>-<pid>.log` | Run submit with fix-task scenario; verify log file exists with expected content |
-| SC-2 | Log level filtering works: setting `level: warn` suppresses INFO messages | Set config to warn; run command; verify only WARN/ERROR in log |
-| SC-3 | Auto-cleanup deletes files older than `retentionDays` | Create log file with old timestamp; run any forge command; verify deletion |
-| SC-4 | `forge init` creates `.forge/logs/` directory and adds `.forge/logs/` to `.gitignore` | Fresh project; run `forge init`; verify directory and gitignore entry |
-| SC-5 | Dual output: same message appears in both stderr and log file | Run command; compare stderr output with log file content |
-| SC-6 | Config missing or malformed falls back to defaults (info level, 7 days) | Delete config section; run command; verify logging still works with defaults |
-| SC-7 | Migration completeness: all non-excluded call sites use forgelog API | `grep -r 'fmt.Fprintf(os.Stderr' forge-cli/internal/ forge-cli/pkg/ --include='*.go' \| grep -v testdata \| grep -v 'forensic/'` returns 0 results |
-| SC-8 | Concurrent commands produce separate log files | Run two `forge task claim` commands simultaneously; verify two distinct `.log` files with different PIDs |
-| SC-9 | Emergency disable: `FORGE_NO_LOG=1` suppresses file logging without affecting stderr | Set env var; run command; verify no `.forge/logs/` file created; stderr output unchanged |
+- [ ] SC-1: `forge task submit` writes AUTO-RESTORE diagnostic to `.forge/logs/<datetime>-<pid>.log` with structured format (`timestamp [LEVEL] message`)
+- [ ] SC-2: Console output is byte-identical before and after migration — diff of stderr shows zero changes (console backend has no level filter, always outputs all messages)
+- [ ] SC-3: Level filtering works on file backend: `level: warn` suppresses DEBUG and INFO messages in log file only; console still shows all messages
+- [ ] SC-4: Auto-cleanup deletes files older than `retentionDays`; active log file is never deleted by its own cleanup pass
+- [ ] SC-5: `forge init` adds `.forge/logs/` to `.gitignore` but does NOT create the directory
+- [ ] SC-6: `.forge/logs/` is auto-created by `forgelog.Init()` on first log write; falls back to console-only if creation fails
+- [ ] SC-7: Config missing or malformed falls back to defaults (info level, 7 days retention) without error
+- [ ] SC-8: Migration completeness: `grep -r 'fmt.Fprintf(os.Stderr\|fmt.Fprintln(os.Stderr' forge-cli/internal/ forge-cli/pkg/ --include='*.go' | grep -v testdata | grep -v 'forensic/'` returns 0 results
+- [ ] SC-9: Concurrent commands produce separate log files with distinct PIDs
+- [ ] SC-10: `FORGE_NO_LOG=1` suppresses file logging; stderr output unchanged; no `.forge/logs/` directory created
