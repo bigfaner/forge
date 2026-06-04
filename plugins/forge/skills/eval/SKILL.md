@@ -106,7 +106,7 @@ Parse rubric frontmatter: `scale`, `target`, `iterations`, `context`. CLI `--tar
 2. If absent, infer: ASCII mockups/terminal keybindings → `tui`; touch targets/safe areas → `mobile`; else → `web`
 3. Load rubric `ui-<platform>.md`
 
-Multi-platform: run independent score→gate→revise loops per platform.
+Multi-platform: run independent score→gate→revise loops per platform, sequentially (one platform at a time). Do NOT launch multiple platform evals in parallel — each eval already spawns scorer+reviser subagents; parallelizing across platforms risks API rate limits (529 errors).
 
 ### 1.4 Pre-Processing by Type
 
@@ -146,7 +146,9 @@ Compose scorer prompts per `rules/scorer-composition.md`: read scorer protocol, 
 Spawn scorer agent (model: "sonnet").
 
 - **Single-expert types**: spawn one agent.
-- **Multi-expert types** (e.g., `prd` → `[pm, qa]`): spawn multiple agents **in parallel** (multiple Agent tool calls in a single message). Each agent receives its own composed prompt and writes to its own report path.
+- **Multi-expert types** (e.g., `prd` → `[pm, qa]`): spawn agents with **batched parallelism** — max 3 concurrent scorer agents per batch. If expert count > 3, split into sequential batches: launch batch 1, wait for all to complete, then launch batch 2. Each agent receives its own composed prompt and writes to its own report path.
+
+**Why batch**: Launching many scorer subagents simultaneously triggers API rate limits (529 errors). Each scorer makes multiple tool calls (reads, writes), so the actual API load multiplies. Batch size 3 provides good throughput without hitting rate limits.
 
 Report paths, type-specific inputs, and type-specific report path overrides per `rules/scorer-composition.md`.
 

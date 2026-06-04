@@ -106,6 +106,8 @@ Do NOT pass reviser change summaries to the scorer.
 
 # Multi-Expert Result Merging
 
+**Max concurrent scorer agents: 3**. If expert count exceeds 3, launch in sequential batches (batch 1 → wait → batch 2 → wait → ...). This prevents API rate limit (529) errors from simultaneous heavy subagent launches.
+
 **For single-expert types**: extract using robust score extraction:
 1. Extract score using regex `/SCORE:\s*(\d+)\/(\d+)/`. If pattern not found, scan the scorer agent's output for the last line matching a `number/number` pattern. If still not found, report error and stop.
 2. Per-dimension scores from `DIMENSIONS:` section
