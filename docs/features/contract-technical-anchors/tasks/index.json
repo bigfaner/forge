@@ -8,7 +8,7 @@
       "title": "Contract 模板增加技术锚点字段",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-contract-anchor-fields.md",
       "record": "records/1-add-contract-anchor-fields.md",
       "type": "doc"
