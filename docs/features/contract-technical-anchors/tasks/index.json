@@ -18,7 +18,7 @@
       "title": "tech-design 增加全 surface handbook 自动生成",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-add-handbook-generation.md",
       "record": "records/2-add-handbook-generation.md",
       "type": "doc"

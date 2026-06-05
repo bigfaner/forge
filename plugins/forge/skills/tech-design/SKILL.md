@@ -48,14 +48,14 @@ Read the `intent` field from `docs/features/<slug>/proposal.md` (or `docs/propos
 
 ### Pipeline Configuration
 
-| Intent | Design Focus | API Handbook | ER Diagram | User Stories | Security Review |
-|--------|-------------|-------------|------------|-------------|----------------|
-| `new-feature` | Full design | Generated | Conditional on `db-schema` | Read and used | If signal |
-| `enhancement` | Internal architecture (improvement to existing behavior) | If signal | If signal | **Skipped** | If signal |
-| `refactor` | Internal architecture | If signal | **Skipped** | **Skipped** | If signal |
-| `cleanup` | Minimal (typically skipped — cleanup uses Quick mode) | **Skipped** | **Skipped** | **Skipped** | No |
-| `fix` | Targeted fix design | If signal | **Skipped** | **Skipped** | No |
-| `doc` | Minimal (title + goals + scope) | **Skipped** | **Skipped** | **Skipped** | No |
+| Intent | Design Focus | API Handbook | CLI Handbook | Page Map | Screen Map | ER Diagram | User Stories | Security Review |
+|--------|-------------|-------------|-------------|----------|------------|------------|-------------|----------------|
+| `new-feature` | Full design | Generated | If CLI/TUI surface | If Web surface | If Mobile surface | Conditional on `db-schema` | Read and used | If signal |
+| `enhancement` | Internal architecture (improvement to existing behavior) | If signal | If signal | If signal | If signal | If signal | **Skipped** | If signal |
+| `refactor` | Internal architecture | If signal | If signal | If signal | If signal | **Skipped** | **Skipped** | If signal |
+| `cleanup` | Minimal (typically skipped — cleanup uses Quick mode) | **Skipped** | **Skipped** | **Skipped** | **Skipped** | **Skipped** | **Skipped** | No |
+| `fix` | Targeted fix design | If signal | If signal | If signal | If signal | **Skipped** | **Skipped** | No |
+| `doc` | Minimal (title + goals + scope) | **Skipped** | **Skipped** | **Skipped** | **Skipped** | **Skipped** | **Skipped** | No |
 
 **Default**: If `intent` is missing or empty, treat as `new-feature` — full design pipeline unchanged.
 
@@ -274,17 +274,48 @@ Additional artifacts by intent:
 | Artifact | `new-feature` | `enhancement` | `refactor` / `cleanup` / `fix` | `doc` |
 |----------|--------------|---------------|-------------------------------|-------|
 | `api-handbook.md` | If API surface | If override signal | If override signal | — |
+| `cli-handbook.md` | If CLI/TUI surface | If override signal | If override signal | — |
+| `page-map.md` | If Web surface | If override signal | If override signal | — |
+| `screen-map.md` | If Mobile surface | If override signal | If override signal | — |
 | `er-diagram.md` | If `db-schema: "yes"` | If override signal | — | — |
 | `schema.sql` | If `db-schema: "yes"` | If override signal | — | — |
+
+### Surface Detection for Handbook Generation
+
+Handbook template selection is based on the project's surface configuration:
+
+```bash
+# Detect surfaces from project configuration
+forge surfaces
+```
+
+Surface-to-template mapping:
+
+| Surface | Template | Output File |
+|---------|----------|-------------|
+| `api` | `templates/api-handbook.md` | `design/api-handbook.md` |
+| `cli` | `templates/cli-handbook.md` | `design/cli-handbook.md` |
+| `tui` | `templates/cli-handbook.md` | `design/cli-handbook.md` |
+| `web` | `templates/page-map.md` | `design/page-map.md` |
+| `mobile` | `templates/screen-map.md` | `design/screen-map.md` |
+
+Each generated handbook includes a `created` frontmatter timestamp for freshness checks by downstream skills (gen-contracts, gen-test-scripts).
 
 ## Step 9: Update Manifest
 
 Update `manifest.md` using `templates/manifest-update-design.md`:
 - Add Tech Design row to Documents table
 - **`new-feature` intent only**: Add API Handbook row to Documents table (if feature has API surface)
+- **`new-feature` intent only**: Add CLI Handbook row to Documents table (if feature has CLI/TUI surface)
+- **`new-feature` intent only**: Add Page Map row to Documents table (if feature has Web surface)
+- **`new-feature` intent only**: Add Screen Map row to Documents table (if feature has Mobile surface)
 - **`new-feature` intent only**: Add ER Diagram and Schema rows (if `db-schema: "yes"`)
 - **`enhancement` intent**: Add API Handbook row only if override signal triggers it
+- **`enhancement` intent**: Add CLI Handbook row only if override signal triggers it
+- **`enhancement` intent**: Add Page Map row only if override signal triggers it
+- **`enhancement` intent**: Add Screen Map row only if override signal triggers it
 - **`refactor` / `cleanup` / `fix` intent**: Add API Handbook row only if override signal triggers it
+- **`refactor` / `cleanup` / `fix` intent**: Add CLI Handbook / Page Map / Screen Map rows only if override signal triggers them
 - **`doc` intent**: Only Tech Design row (no API Handbook, ER Diagram, or Schema)
 - Add traceability links from PRD sections to design sections
 - Advance status to `design` if `/ui-design` already completed or if UI is not applicable
