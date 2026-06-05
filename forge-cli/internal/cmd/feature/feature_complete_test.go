@@ -226,12 +226,94 @@ func TestCheckFeatureCompletion_MixedCompletedSkipped(t *testing.T) {
 func TestCheckFeatureCompletion_RejectedTasks(t *testing.T) {
 	setupFeatureCompleteTest(t, map[string]task.Task{
 		"t1": {ID: "1", Status: "completed"},
-		"t2": {ID: "2", Status: "rejected"},
+		"t2": {ID: "2", Status: "rejected", Title: "Fix: broken test"},
 	}, false)
 
+	r, w, _ := os.Pipe()
+	oldStderr := os.Stderr
+	os.Stderr = w
+
 	result := checkFeatureCompletion()
+
+	_ = w.Close()
+	os.Stderr = oldStderr
+
 	if result != nil {
 		t.Errorf("expected nil with rejected tasks, got %+v", result)
+	}
+
+	var buf strings.Builder
+	_, _ = io.Copy(&buf, r)
+	stderr := buf.String()
+
+	if !strings.Contains(stderr, "feature not complete") {
+		t.Errorf("expected diagnostic header in stderr, got:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "2 (rejected): Fix: broken test") {
+		t.Errorf("expected rejected task in stderr, got:\n%s", stderr)
+	}
+}
+
+func TestCheckFeatureCompletion_MixedBlockingDiagnostic(t *testing.T) {
+	setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed"},
+		"t2": {ID: "2", Status: "rejected", Title: "Out of scope task"},
+		"t3": {ID: "3", Status: "suspended", Title: "Waiting on external"},
+	}, false)
+
+	r, w, _ := os.Pipe()
+	oldStderr := os.Stderr
+	os.Stderr = w
+
+	result := checkFeatureCompletion()
+
+	_ = w.Close()
+	os.Stderr = oldStderr
+
+	if result != nil {
+		t.Errorf("expected nil with mixed blocking tasks, got %+v", result)
+	}
+
+	var buf strings.Builder
+	_, _ = io.Copy(&buf, r)
+	stderr := buf.String()
+
+	if !strings.Contains(stderr, "2 task(s) not done") {
+		t.Errorf("expected blocking count in stderr, got:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "2 (rejected): Out of scope task") {
+		t.Errorf("expected rejected task in stderr, got:\n%s", stderr)
+	}
+	if !strings.Contains(stderr, "3 (suspended): Waiting on external") {
+		t.Errorf("expected suspended task in stderr, got:\n%s", stderr)
+	}
+}
+
+func TestCheckFeatureCompletion_AllCompleted_NoDiagnostic(t *testing.T) {
+	setupFeatureCompleteTest(t, map[string]task.Task{
+		"t1": {ID: "1", Status: "completed", Title: "Done task"},
+		"t2": {ID: "2", Status: "skipped", Title: "Skipped task"},
+	}, false)
+
+	r, w, _ := os.Pipe()
+	oldStderr := os.Stderr
+	os.Stderr = w
+
+	result := checkFeatureCompletion()
+
+	_ = w.Close()
+	os.Stderr = oldStderr
+
+	if result == nil {
+		t.Fatal("expected non-nil result for completed/skipped tasks")
+	}
+
+	var buf strings.Builder
+	_, _ = io.Copy(&buf, r)
+	stderr := buf.String()
+
+	if strings.Contains(stderr, "feature not complete") {
+		t.Errorf("expected no diagnostic when all tasks done, got:\n%s", stderr)
 	}
 }
 

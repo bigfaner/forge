@@ -99,10 +99,16 @@ func checkFeatureCompletion() *completionResult {
 	}
 
 	// All tasks must be completed or skipped (rejected does not count as done).
+	var blocking []string
 	for _, t := range index.TasksMap() {
 		if t.Status != types.StatusCompleted && t.Status != types.StatusSkipped {
-			return nil
+			blocking = append(blocking, fmt.Sprintf("  %s (%s): %s", t.ID, t.Status, t.Title))
 		}
+	}
+	if len(blocking) > 0 {
+		fmt.Fprintf(os.Stderr, "feature not complete — %d task(s) not done:\n%s\n",
+			len(blocking), strings.Join(blocking, "\n"))
+		return nil
 	}
 
 	// Detect pipeline mode: proposal.md in feature directory = quick mode.
