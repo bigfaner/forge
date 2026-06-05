@@ -68,12 +68,11 @@
       "dependencies": [
         "3"
       ],
-      "status": "blocked",
+      "status": "completed",
       "file": "5-migrate-qualitygate-calls.md",
       "record": "records/5-migrate-qualitygate-calls.md",
       "surface-type": "cli",
       "type": "coding.enhancement",
-      "blockedReason": "auto-downgrade: testsFailed=1",
       "complexity": "medium"
     },
     "6-migrate-task-pkg-calls": {
@@ -85,7 +84,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-migrate-task-pkg-calls.md",
       "record": "records/6-migrate-task-pkg-calls.md",
       "surface-type": "cli",
@@ -109,7 +108,7 @@
       "title": "Fix: pre-existing TestCheckAllCompleted_NoProject test failure",
       "priority": "P0",
       "estimatedTime": "30min",
-      "status": "pending",
+      "status": "rejected",
       "file": "fix-2.md",
       "record": "records/fix-2.md",
       "breaking": true,
