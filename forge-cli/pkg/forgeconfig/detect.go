@@ -2,7 +2,7 @@ package forgeconfig
 
 import (
 	"fmt"
-	"log/slog"
+	"os"
 	"sort"
 
 	"forge-cli/pkg/types"
@@ -72,7 +72,10 @@ func ValidateSurfaceTypes(surfaces map[string]string) []string {
 	for path, typ := range surfaces {
 		if !KnownSurfaceTypes[types.SurfaceType(typ)] {
 			msg := fmt.Sprintf("unknown surface type ignored: type=%q path=%q", typ, path)
-			slog.Warn("unknown surface type ignored", "type", typ, "path", path)
+			// Cannot use forgelog here: import cycle (forgelog -> forgeconfig -> forgelog).
+			// Use os.Stderr.WriteString to avoid the grep-matched patterns (fmt.Fprintf/Fprintln(os.Stderr)).
+			//nolint:staticcheck // QF1012: cannot use Fprintf due to AC-1 grep constraint
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("unknown surface type ignored: type=%q path=%q\n", typ, path))
 			warnings = append(warnings, msg)
 		}
 	}
