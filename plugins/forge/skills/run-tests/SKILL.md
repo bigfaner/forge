@@ -60,11 +60,7 @@ Read the current task file (from `forge task status` or known task path). Extrac
 
 **Source 2 (fallback): `forge surfaces` CLI**
 
-```bash
-forge surfaces <source-directory-path>
-```
-
-Use the task's source file directory path (not the task file path). If the task specifies source files, use their parent directory. If no source files are known, use the project root (`.`).
+Run `forge surfaces` to list all configured surfaces. Parse output using the unified text parsing rule (see Forge Guide → Surface Output Parsing). Do NOT pass `.` or arbitrary paths — `forge surfaces <path>` requires a surface key prefix.
 
 **Parsing rule**: Use the unified `forge surfaces` text output parsing rule (see Forge Guide → Surface Output Parsing).
 
