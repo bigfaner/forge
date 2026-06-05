@@ -10,6 +10,7 @@ import (
 	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -140,11 +141,11 @@ func RunQualityGate(_ *cobra.Command, _ []string) error {
 		return nil // not all done is normal, exit silently
 	}
 
-	fmt.Fprintf(os.Stderr, "=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
+	forgelog.Info("=== All tasks completed for feature: %s ===\n", result.FeatureSlug)
 
 	// Docs-only features have no code changes — skip compile/test gates.
 	if result.DocsOnly {
-		fmt.Fprintln(os.Stderr, "Feature is docs-only — skipping quality gate (no implementation or fix tasks)")
+		forgelog.Info("Feature is docs-only — skipping quality gate (no implementation or fix tasks)\n")
 		os.Exit(0)
 	}
 
@@ -159,16 +160,16 @@ func RunQualityGate(_ *cobra.Command, _ []string) error {
 	gateSteps := just.NonBreakingGateSequence()
 	var gateBlockErr error
 	just.RunGate(result.ProjectRoot, "", gateSteps, func(step, output string) {
-		fmt.Fprintf(os.Stderr, "ERROR: %s check failed\n", step)
+		forgelog.Error("ERROR: %s check failed\n", step)
 		errorDocPath := feature.TestResultsDir + "/" + feature.UnitTestOutputFileName
 		if output != "" {
 			if err := testrunner.WriteUnitTestRawOutput(result.ProjectRoot, "=== "+step+" failure ===\n"+output); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: failed to write %s output: %v\n", step, err)
+				forgelog.Warn("WARNING: failed to write %s output: %v\n", step, err)
 			}
 		}
 		fixID, fixErr := AddFixTask(result.ProjectRoot, result.FeatureSlug, step, output, errorDocPath)
 		if fixErr != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+			forgelog.Warn("WARNING: %v\n", fixErr)
 		}
 		gateBlockErr = HandleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, conciseErrorMaxLines), fixTypeFromStep(step) == task.TypeCodingFix)
 	})
@@ -177,13 +178,13 @@ func RunQualityGate(_ *cobra.Command, _ []string) error {
 	}
 
 	// Step 2: Project-wide unit tests (with retry-once policy)
-	fmt.Fprintln(os.Stderr, "--- Running project-wide tests ---")
+	forgelog.Info("--- Running project-wide tests ---\n")
 	unitPassed, unitFixID, unitErr := runUnitTestStep(
 		result.ProjectRoot, result.FeatureSlug,
 		testrunner.RunProjectTests,
 	)
 	if unitErr != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: %v\n", unitErr)
+		forgelog.Warn("WARNING: %v\n", unitErr)
 	}
 	if !unitPassed {
 		unitOutput := "" // output already written by runUnitTestStep
@@ -261,15 +262,15 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 	}
 
 	// First attempt failed — retry once.
-	fmt.Fprintln(os.Stderr, "WARNING: unit tests failed on first attempt, retrying once...")
+	forgelog.Warn("WARNING: unit tests failed on first attempt, retrying once...\n")
 	retryOutput, retrySuccess := runTest(projectRoot)
 	if retrySuccess {
-		fmt.Fprintln(os.Stderr, "WARNING: unit tests passed on retry (transient failure)")
+		forgelog.Warn("WARNING: unit tests passed on retry (transient failure)\n")
 		return true, "", nil
 	}
 
 	// Both attempts failed — write combined output and create fix task.
-	fmt.Fprintln(os.Stderr, "ERROR: unit tests failed (retried once, both attempts failed)")
+	forgelog.Error("ERROR: unit tests failed (retried once, both attempts failed)\n")
 	errorDocPath := feature.TestResultsDir + "/" + feature.UnitTestOutputFileName
 	combinedOutput := fmt.Sprintf(
 		"retried once, both attempts failed\n\n=== First attempt ===\n%s\n\n=== Retry attempt ===\n%s",
@@ -277,7 +278,7 @@ func runUnitTestStep(projectRoot, featureSlug string, runTest testRunFunc) (bool
 	)
 	if combinedOutput != "" {
 		if err := testrunner.WriteUnitTestRawOutput(projectRoot, combinedOutput); err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: failed to write unit test output: %v\n", err)
+			forgelog.Warn("WARNING: failed to write unit test output: %v\n", err)
 		}
 	}
 

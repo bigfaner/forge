@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/index"
 	"forge-cli/pkg/types"
 )
@@ -57,7 +58,7 @@ func DeleteState(path string) error {
 func CheckExistingTaskState(_ string, index *TaskIndex, statePath string) (bool, bool, []string) {
 	state, err := LoadState(statePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: failed to load task state: %v\n", err)
+		forgelog.Warn("Warning: failed to load task state: %v\n", err)
 		return false, false, nil
 	}
 	if state == nil {

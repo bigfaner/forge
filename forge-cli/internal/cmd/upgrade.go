@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"forge-cli/internal/cmd/base"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/types"
 
 	"github.com/spf13/cobra"
@@ -118,20 +119,20 @@ func upgradeCLIBinary(out io.Writer) upgradeAction {
 	// Fetch latest release info
 	body, err := fetchLatestRelease("https://api.github.com/repos/bigfaner/forge/releases/latest")
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to fetch latest release: %v\n", err)
+		forgelog.Error("error: failed to fetch latest release: %v\n", err)
 		return upgradeAction{status: "FAILED", target: "CLI binary", detail: err.Error()}
 	}
 
 	var release githubRelease
 	if err := json.Unmarshal(body, &release); err != nil {
-		fmt.Fprintf(os.Stderr, "error: failed to parse release info: %v\n", err)
+		forgelog.Error("error: failed to parse release info: %v\n", err)
 		return upgradeAction{status: "FAILED", target: "CLI binary", detail: err.Error()}
 	}
 
 	// Extract version from tag: "forge-cli/v5.17.0" -> "5.17.0"
 	latestVersion, err := parseVersionFromTag(release.TagName)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		forgelog.Error("error: %v\n", err)
 		return upgradeAction{status: "FAILED", target: "CLI binary", detail: err.Error()}
 	}
 
@@ -147,7 +148,7 @@ func upgradeCLIBinary(out io.Writer) upgradeAction {
 
 	// Download and replace binary
 	if err := downloadAndReplace(out, latestVersion); err != nil {
-		fmt.Fprintf(os.Stderr, "error: CLI upgrade failed: %v\n", err)
+		forgelog.Error("error: CLI upgrade failed: %v\n", err)
 		return upgradeAction{status: "FAILED", target: "CLI binary", detail: err.Error()}
 	}
 
@@ -162,7 +163,7 @@ func upgradeCLIBinary(out io.Writer) upgradeAction {
 func upgradePlugin(out io.Writer) upgradeAction {
 	// Step 1: Ensure marketplace is added
 	if err := ensureMarketplaceAdded(out); err != nil {
-		fmt.Fprintf(os.Stderr, "error: marketplace setup failed: %v\n", err)
+		forgelog.Error("error: marketplace setup failed: %v\n", err)
 		return upgradeAction{status: "FAILED", target: "Plugin", detail: err.Error()}
 	}
 

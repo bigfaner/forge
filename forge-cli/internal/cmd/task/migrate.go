@@ -8,6 +8,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -107,7 +108,7 @@ func migrateScopeToSurface(index *task.TaskIndex, tasksDir string, projectRoot s
 		match, err := forgeconfig.MatchSurface(surfaces, t.File)
 		if err != nil {
 			// If no surfaces configured, log warning and skip
-			fmt.Fprintf(os.Stderr, "WARNING: task %s: could not resolve surface for scope %q: %v\n", t.ID, t.Scope, err)
+			forgelog.Warn("WARNING: task %s: could not resolve surface for scope %q: %v\n", t.ID, t.Scope, err)
 			continue
 		}
 
@@ -121,7 +122,7 @@ func migrateScopeToSurface(index *task.TaskIndex, tasksDir string, projectRoot s
 		if t.File != "" {
 			mdPath := filepath.Join(tasksDir, t.File)
 			if err := updateFrontmatterSurface(mdPath, match.Key, match.Type); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: task %s: failed to update frontmatter: %v\n", t.ID, err)
+				forgelog.Warn("WARNING: task %s: failed to update frontmatter: %v\n", t.ID, err)
 			}
 		}
 	}

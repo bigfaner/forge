@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"forge-cli/pkg/forgelog"
 )
 
 // ErrorCode represents a structured error code for AI-friendly error messages.
@@ -82,25 +84,25 @@ func Exit(err error) {
 		printAIError(aiErr)
 		os.Exit(aiErr.ExitCode())
 	}
-	fmt.Fprintf(os.Stderr, "ERROR: %v\n", err)
+	forgelog.Error("ERROR: %v\n", err)
 	os.Exit(1)
 }
 
 // printAIError prints the error in AI-friendly format.
 func printAIError(err *AIError) {
-	fmt.Fprintln(os.Stderr, "---")
-	fmt.Fprintf(os.Stderr, "ERROR_CODE: %s\n", err.Code)
-	fmt.Fprintf(os.Stderr, "ERROR: %s\n", err.Message)
+	forgelog.Info("---\n")
+	forgelog.Error("ERROR_CODE: %s\n", err.Code)
+	forgelog.Error("ERROR: %s\n", err.Message)
 	if err.Cause != "" {
-		fmt.Fprintf(os.Stderr, "CAUSE: %s\n", err.Cause)
+		forgelog.Error("CAUSE: %s\n", err.Cause)
 	}
 	if err.Hint != "" {
-		fmt.Fprintf(os.Stderr, "HINT: %s\n", err.Hint)
+		forgelog.Info("HINT: %s\n", err.Hint)
 	}
 	if err.Action != "" {
-		fmt.Fprintf(os.Stderr, "ACTION: %s\n", err.Action)
+		forgelog.Error("ACTION: %s\n", err.Action)
 	}
-	fmt.Fprintln(os.Stderr, "---")
+	forgelog.Info("---\n")
 }
 
 // --- Helper functions for common errors ---
@@ -236,10 +238,10 @@ func ErrMissingFields(missing []string) *AIError {
 
 // WarnMissingFields prints a warning for recommended but non-required fields.
 func WarnMissingFields(missing []string) {
-	fmt.Fprintln(os.Stderr, "---")
-	fmt.Fprintf(os.Stderr, "WARNING: Missing recommended fields: %s\n", strings.Join(missing, ", "))
-	fmt.Fprintf(os.Stderr, "HINT: Include these fields for complete records. Record will still be saved.\n")
-	fmt.Fprintln(os.Stderr, "---")
+	forgelog.Info("---\n")
+	forgelog.Warn("WARNING: Missing recommended fields: %s\n", strings.Join(missing, ", "))
+	forgelog.Info("HINT: Include these fields for complete records. Record will still be saved.\n")
+	forgelog.Info("---\n")
 }
 
 // ErrFeatureNotFound creates a feature not found error.

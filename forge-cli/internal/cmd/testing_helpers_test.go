@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"io"
 	"os"
+
+	"forge-cli/pkg/forgelog"
 )
 
 // captureOutput captures stdout and stderr during a function execution.
+// Also closes forgelog file handles to prevent Windows "file in use" errors
+// during test temp directory cleanup.
 func captureOutput(f func() error) (string, error) {
 	oldStdout := os.Stdout
 	oldStderr := os.Stderr
@@ -39,6 +43,10 @@ func captureOutput(f func() error) (string, error) {
 	}()
 
 	runErr := f()
+
+	// Close forgelog file handles before restoring stderr,
+	// so temp directory cleanup can delete log files on Windows.
+	forgelog.Close()
 
 	_ = wOut.Close()
 	_ = wErr.Close()

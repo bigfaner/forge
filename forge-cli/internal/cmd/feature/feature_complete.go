@@ -14,6 +14,8 @@ import (
 	"forge-cli/pkg/testrunner"
 	"forge-cli/pkg/types"
 
+	"forge-cli/pkg/forgelog"
+
 	"github.com/spf13/cobra"
 )
 
@@ -67,7 +69,7 @@ func runFeatureCompleteCmd(_ *cobra.Command, _ []string) error {
 	}
 
 	if err := completeFeature(result); err != nil {
-		fmt.Fprintf(os.Stderr, "[feature:complete] Error: %v\n", err)
+		forgelog.Error("[feature:complete] Error: %v\n", err)
 	}
 	return nil
 }
@@ -160,11 +162,11 @@ func completeFeature(result *completionResult) error {
 	if result.QuickMode {
 		commaFiles = "manifest.md, proposal.md"
 	}
-	fmt.Fprintf(os.Stderr, "[feature:complete] Status committed: %s\n", commaFiles)
+	forgelog.Info("[feature:complete] Status committed: %s\n", commaFiles)
 
 	// 5. Mark state.json so future hook runs skip this feature
 	if err := featurepkg.MarkFeatureCompleted(result.ProjectRoot); err != nil {
-		fmt.Fprintf(os.Stderr, "[feature:complete] Warning: failed to mark state: %v\n", err)
+		forgelog.Warn("[feature:complete] Warning: failed to mark state: %v\n", err)
 	}
 
 	// 6. Optional push (before artifact detection — if artifacts block the hook,
@@ -173,7 +175,7 @@ func completeFeature(result *completionResult) error {
 		if err := gitPush(result.ProjectRoot); err != nil {
 			_ = err
 		} else {
-			fmt.Fprintln(os.Stderr, "[feature:complete] Pushed to remote")
+			forgelog.Info("[feature:complete] Pushed to remote\n")
 		}
 	}
 
@@ -274,7 +276,7 @@ func gitPush(projectRoot string) error {
 	cmd.Dir = projectRoot
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[feature:complete] Push failed: %v\n%s\n", err, string(output))
+		forgelog.Error("[feature:complete] Push failed: %v\n%s\n", err, string(output))
 		return err
 	}
 	return nil
