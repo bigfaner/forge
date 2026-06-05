@@ -1,7 +1,7 @@
 ---
 feature: "contract-technical-anchors"
 created: "2026-06-05"
-status: tasks
+status: completed
 mode: quick
 ---
 
