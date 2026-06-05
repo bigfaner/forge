@@ -45,7 +45,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-eval-contract-anchor-checks.md",
       "record": "records/4-eval-contract-anchor-checks.md",
       "type": "doc"
