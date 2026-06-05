@@ -2,8 +2,9 @@ package base
 
 import (
 	"fmt"
-	"os"
 	"strings"
+
+	"forge-cli/pkg/forgelog"
 )
 
 // OutputBlockSeparator is the separator for structured output blocks.
@@ -84,7 +85,7 @@ func PrintListItem(item string) {
 // Debugf prints a debug line to stderr if verbose is true.
 func Debugf(verbose bool, format string, args ...any) {
 	if verbose {
-		fmt.Fprintf(os.Stderr, "[debug] "+format+"\n", args...)
+		forgelog.Debug("[debug] "+format+"\n", args...)
 	}
 }
 

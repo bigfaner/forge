@@ -255,6 +255,9 @@ func Close() {
 }
 
 // dispatch sends a formatted message to all backends.
+// If no backends are registered (Init not yet called), falls back to
+// writing directly to os.Stderr. This ensures output is never silently
+// lost when forgelog is used before Init (e.g., in base.Exit).
 func dispatch(level LogLevel, format string, args ...any) {
 	msg := fmt.Sprintf(format, args...)
 	ts := time.Now()
@@ -262,6 +265,14 @@ func dispatch(level LogLevel, format string, args ...any) {
 	globalMu.Lock()
 	bs := backends
 	globalMu.Unlock()
+
+	if len(bs) == 0 {
+		// No backends registered — write directly to stderr as fallback.
+		// This preserves the pre-migration behavior for code paths that
+		// run before forgelog.Init() is called (e.g., base.Exit).
+		fmt.Fprint(os.Stderr, msg)
+		return
+	}
 
 	for _, b := range bs {
 		b.Write(level, ts, msg)

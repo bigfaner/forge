@@ -9,6 +9,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/just"
 
 	"github.com/spf13/cobra"
@@ -94,7 +95,7 @@ func createForgeDir(projectRoot string) initAction {
 		return initAction{status: "SKIPPED", target: feature.ForgeDir, detail: "already exists"}
 	}
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to create %s: %v\n", forgeDir, err)
+		forgelog.Error("ERROR: failed to create %s: %v\n", forgeDir, err)
 		return initAction{status: "FAILED", target: feature.ForgeDir, detail: err.Error()}
 	}
 	return initAction{status: "CREATED", target: feature.ForgeDir}
@@ -125,13 +126,13 @@ func updateGitignore(projectRoot string) initAction {
 
 	f, err := os.OpenFile(gitignorePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to update .gitignore: %v\n", err)
+		forgelog.Error("ERROR: failed to update .gitignore: %v\n", err)
 		return initAction{status: "FAILED", target: ".gitignore", detail: err.Error()}
 	}
 	defer func() { _ = f.Close() }()
 
 	if _, err := f.WriteString(buf.String()); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to write .gitignore: %v\n", err)
+		forgelog.Error("ERROR: failed to write .gitignore: %v\n", err)
 		return initAction{status: "FAILED", target: ".gitignore", detail: err.Error()}
 	}
 
@@ -191,7 +192,7 @@ func ensureJustStep(skipJust bool, in io.Reader, out io.Writer) initAction {
 	result := ensureJustFunc(in, out)
 
 	if result.Status == just.StatusFailed {
-		fmt.Fprintf(os.Stderr, "WARNING: just installation failed: %s\n", result.Detail)
+		forgelog.Warn("WARNING: just installation failed: %s\n", result.Detail)
 	}
 
 	return ensureResultToAction(result)
@@ -268,7 +269,7 @@ func handleRerunSurfaceConfig(projectRoot, configFile string, existingCfg *forge
 		}
 		existingCfg.Surfaces = surfaces
 		if err := writeConfigFile(configFile, existingCfg); err != nil {
-			fmt.Fprintf(os.Stderr, "ERROR: failed to write surfaces: %v\n", err)
+			forgelog.Error("ERROR: failed to write surfaces: %v\n", err)
 			return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
 		}
 		return initAction{status: "CREATED", target: "surfaces", detail: formatSurfacesSummary(surfaces, nil)}
@@ -310,7 +311,7 @@ func writeSurfacesToConfig(configFile string, surfaces forgeconfig.SurfacesMap, 
 
 	cfg.Surfaces = surfaces
 	if err := writeConfigFile(configFile, cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to write surfaces: %v\n", err)
+		forgelog.Error("ERROR: failed to write surfaces: %v\n", err)
 		return initAction{status: "FAILED", target: "surfaces", detail: err.Error()}
 	}
 
