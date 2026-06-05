@@ -136,7 +136,7 @@ print_verify_instructions() {
     echo "To verify the installation:"
     echo ""
     echo "  source ~/.bashrc  # or ~/.zshrc / ~/.profile"
-    echo "  forge version"
+    echo "  forge --version"
     echo ""
     echo "Next steps:"
     echo ""

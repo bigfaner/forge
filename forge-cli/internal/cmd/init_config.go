@@ -272,9 +272,11 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 		return initAction{status: "CANCELLED", target: ".forge/config.yaml", detail: "Ctrl+C"}
 	}
 
+	evalDefaults := forgeconfig.EvalSettingsDefaults()
 	cfg := forgeconfig.Config{
 		Auto:     auto,
 		Worktree: worktree,
+		Eval:     &evalDefaults,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {

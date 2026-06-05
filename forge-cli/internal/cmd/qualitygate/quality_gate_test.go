@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 	"testing"
 
@@ -148,29 +147,18 @@ func TestCheckAllCompleted_NoFeature(t *testing.T) {
 }
 
 func TestCheckAllCompleted_NoProject(t *testing.T) {
-	if os.Getenv("TEST_CHECK_ALL_COMPLETED_NO_PROJECT") == "1" {
-		_, err := CheckAllCompleted(false)
-		if err == nil {
-			t.Error("expected error when no project root, got nil")
-		}
-		return
+	// Override findProjectRoot to simulate a missing project root.
+	// This avoids subprocess isolation which is fragile on systems where
+	// ancestor directories of temp dirs contain project markers (e.g. ~/package.json).
+	orig := findProjectRoot
+	findProjectRoot = func() (string, error) {
+		return "", fmt.Errorf("no project root found")
 	}
-	tmpDir := t.TempDir()
-	cmd := exec.Command(os.Args[0], "-test.run=TestCheckAllCompleted_NoProject")
-	// Build clean env: clear CLAUDE_PROJECT_DIR and PROJECT_ROOT so FindProjectRoot
-	// cannot walk up from cwd and find ancestor project markers.
-	env := []string{}
-	for _, e := range os.Environ() {
-		if strings.HasPrefix(e, "CLAUDE_PROJECT_DIR=") || strings.HasPrefix(e, "PROJECT_ROOT=") {
-			continue
-		}
-		env = append(env, e)
-	}
-	cmd.Env = append(slices.Clone(env), "TEST_CHECK_ALL_COMPLETED_NO_PROJECT=1", "CLAUDE_PROJECT_DIR=")
-	cmd.Dir = tmpDir
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("test subprocess failed: %v\n%s", err, string(output))
+	defer func() { findProjectRoot = orig }()
+
+	_, err := CheckAllCompleted(false)
+	if err == nil {
+		t.Error("expected error when no project root, got nil")
 	}
 }
 

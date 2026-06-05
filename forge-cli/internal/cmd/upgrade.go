@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/forgelog"
@@ -33,6 +34,9 @@ type githubRelease struct {
 // Plugin marketplace URL.
 const pluginMarketplaceURL = "https://github.com/bigfaner/forge.git"
 
+// downloadTimeout is the maximum time allowed for downloading the CLI binary.
+const downloadTimeout = 5 * time.Minute
+
 // Variables for testability — overridden in tests.
 var (
 	// lookPathForUpgrade resolves a binary name to its full path.
@@ -52,7 +56,11 @@ var (
 	forgeBinaryDir = defaultForgeBinaryDir
 
 	// httpGet performs an HTTP GET request.
-	httpGet = http.Get
+	// Uses a client with timeout to avoid hanging on weak networks.
+	httpGet = (&http.Client{Timeout: downloadTimeout}).Get
+
+	// osRename renames (moves) oldpath to newpath.
+	osRename = os.Rename
 )
 
 func defaultForgeBinaryDir() string {
@@ -294,8 +302,6 @@ func buildDownloadURL(version string) string {
 }
 
 // downloadAndReplace downloads the new binary and performs atomic replacement.
-// On Windows, the running binary cannot be replaced, so we use the rename dance:
-// forge -> forge.old, write new forge, delete forge.old.
 func downloadAndReplace(out io.Writer, version string) error {
 	binDir := forgeBinaryDir()
 	if binDir == "" {
@@ -326,33 +332,55 @@ func downloadAndReplace(out io.Writer, version string) error {
 		return fmt.Errorf("download failed: HTTP %d", resp.StatusCode)
 	}
 
-	if runtime.GOOS == "windows" {
-		return replaceWindowsBinary(out, forgePath, resp.Body)
+	// Read body into memory and verify completeness against Content-Length
+	// to catch incomplete downloads on weak networks.
+	content, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("download incomplete: %w", err)
+	}
+	if resp.ContentLength > 0 && int64(len(content)) != resp.ContentLength {
+		return fmt.Errorf("download incomplete: got %d bytes, expected %d", len(content), resp.ContentLength)
 	}
 
-	return replaceUnixBinary(out, forgePath, resp.Body)
+	if runtime.GOOS == "windows" {
+		return replaceWindowsBinary(out, forgePath, content)
+	}
+
+	return replaceUnixBinary(out, forgePath, content)
 }
 
 // replaceUnixBinary atomically replaces the forge binary on Unix systems.
-func replaceUnixBinary(out io.Writer, forgePath string, body io.Reader) error {
+// content is the complete binary data already verified by the caller.
+// If atomic rename fails, falls back to removing the target then retrying,
+// then to a direct write as a last resort.
+func replaceUnixBinary(out io.Writer, forgePath string, content []byte) error {
 	newPath := forgePath + ".new"
 
-	// Write new binary
-	f, err := os.OpenFile(newPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create new binary: %w", err)
-	}
-	if _, err := io.Copy(f, body); err != nil {
-		_ = f.Close()
+	// Clean up stale .new file from a previous failed attempt
+	_ = os.Remove(newPath)
+
+	// Write new binary to temp file
+	if err := os.WriteFile(newPath, content, 0o755); err != nil {
 		return fmt.Errorf("failed to write new binary: %w", err)
 	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("failed to close new binary: %w", err)
+
+	// Step 1: Atomic rename
+	if err := osRename(newPath, forgePath); err == nil {
+		_, _ = fmt.Fprintf(out, "Binary replaced successfully.\n")
+		return nil
 	}
 
-	// Atomic replace
-	if err := os.Rename(newPath, forgePath); err != nil {
-		return fmt.Errorf("failed to replace binary: %w", err)
+	// Step 2: Remove target and retry (handles locked-running-binary edge case)
+	_ = os.Remove(forgePath)
+	if err := osRename(newPath, forgePath); err == nil {
+		_, _ = fmt.Fprintf(out, "Binary replaced successfully.\n")
+		return nil
+	}
+
+	// Step 3: Direct write as last resort
+	_ = os.Remove(newPath)
+	if err := os.WriteFile(forgePath, content, 0o755); err != nil {
+		return fmt.Errorf("failed to replace binary: direct write failed: %w", err)
 	}
 
 	_, _ = fmt.Fprintf(out, "Binary replaced successfully.\n")
@@ -361,7 +389,7 @@ func replaceUnixBinary(out io.Writer, forgePath string, body io.Reader) error {
 
 // replaceWindowsBinary handles the Windows rename dance:
 // forge.exe -> forge.old, write new forge.exe, delete forge.old.
-func replaceWindowsBinary(out io.Writer, forgePath string, body io.Reader) error {
+func replaceWindowsBinary(out io.Writer, forgePath string, content []byte) error {
 	oldPath := forgePath + ".old"
 
 	// Step 1: Rename current binary to .old (best effort — may not exist on fresh install)
@@ -374,16 +402,8 @@ func replaceWindowsBinary(out io.Writer, forgePath string, body io.Reader) error
 	}
 
 	// Step 2: Write new binary
-	f, err := os.OpenFile(forgePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o755)
-	if err != nil {
-		return fmt.Errorf("failed to create new binary: %w", err)
-	}
-	if _, err := io.Copy(f, body); err != nil {
-		_ = f.Close()
+	if err := os.WriteFile(forgePath, content, 0o755); err != nil {
 		return fmt.Errorf("failed to write new binary: %w", err)
-	}
-	if err := f.Close(); err != nil {
-		return fmt.Errorf("failed to close new binary: %w", err)
 	}
 
 	// Step 3: Delete .old (best effort — file may be locked)

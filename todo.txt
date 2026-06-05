@@ -286,4 +286,5 @@ ID                 TYPE        TITLE                                            
 T-quick-doc-drift  doc.drift   Detect Spec Drift                                   pending      false     false    
 T-review-doc       doc.review  Review Documentation Quality                        pending      false     false
 
-203、通过配置项控制评估次数与分数。
+203、通过配置项控制评估次数与分数。done
+204、guide.md补充核心coding原则：agent在未显式调用forge相关的skill时，也能遵循TDD？
