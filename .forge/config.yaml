@@ -1,7 +1,7 @@
-version: '1'
+version: "1"
 auto:
   test:
-    quick: false
+    quick: true
     full: true
   consolidateSpecs:
     quick: true
@@ -19,7 +19,34 @@ auto:
   knowledgeSave:
     quick: true
     full: true
+  eval:
+    proposal: true
+    prd: true
+    uiDesign: true
+    techDesign: true
 worktree:
   source-branch: v3.0.0
   copy-files: []
+eval:
+  proposal:
+    target: 859
+    iterations: 1
+  prd:
+    target: 900
+    iterations: 2
+  design:
+    target: 900
+    iterations: 2
+  ui:
+    target: 950
+    iterations: 3
+  journey:
+    target: 850
+    iterations: 2
+  contract:
+    target: 850
+    iterations: 2
+  consistency:
+    target: 900
+    iterations: 2
 surfaces: cli
