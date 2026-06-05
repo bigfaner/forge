@@ -58,7 +58,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-gen-test-scripts-cross-validation.md",
       "record": "records/5-gen-test-scripts-cross-validation.md",
       "type": "doc"
