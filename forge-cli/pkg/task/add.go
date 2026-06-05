@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/forgelog"
+	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/types"
 )
 

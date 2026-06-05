@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 
 	"forge-cli/pkg/feature"
-	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
