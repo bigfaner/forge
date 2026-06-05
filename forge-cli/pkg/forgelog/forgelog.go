@@ -94,23 +94,34 @@ func (c *ConsoleBackend) Close() error {
 // FileBackend writes to a log file with structured format.
 // Output: 2006-01-02T15:04:05.000 [LEVEL] message
 // Level filtering suppresses messages below the configured level.
+// File is created lazily on first Write — Init does not create empty files.
 type FileBackend struct {
 	mu       sync.Mutex
 	file     *os.File
+	path     string
 	minLevel LogLevel
 }
 
-// NewFileBackend creates a FileBackend that writes to the given file path.
+// NewFileBackend creates a FileBackend that will write to the given file path.
+// The file is NOT created until the first Write call (lazy creation).
 // Messages below minLevel are suppressed.
-func NewFileBackend(path string, minLevel LogLevel) (*FileBackend, error) {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
-	if err != nil {
-		return nil, err
-	}
+func NewFileBackend(path string, minLevel LogLevel) *FileBackend {
 	return &FileBackend{
-		file:     f,
+		path:     path,
 		minLevel: minLevel,
-	}, nil
+	}
+}
+
+// ensureOpen opens the file on first write. Errors are silently ignored (hard rule).
+func (fb *FileBackend) ensureOpen() {
+	if fb.file != nil {
+		return
+	}
+	f, err := os.OpenFile(fb.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return
+	}
+	fb.file = f
 }
 
 // Write writes a log message to the file with timestamp+level prefix.
@@ -129,6 +140,7 @@ func (fb *FileBackend) Write(level LogLevel, timestamp time.Time, msg string) {
 
 	fb.mu.Lock()
 	defer fb.mu.Unlock()
+	fb.ensureOpen()
 	if fb.file != nil {
 		// Silently ignore write errors (hard rule)
 		_, _ = fb.file.WriteString(line)
@@ -197,18 +209,11 @@ func Init(config *forgeconfig.LogsConfig, logsDir string) error {
 		return nil
 	}
 
-	// Create log file: <ISO-8601-datetime>-<pid>.log
-	filename := fmt.Sprintf("%s-%d.log",
-		time.Now().Format("2006-01-02T15-04-05"),
-		os.Getpid(),
-	)
+	// Log file named by date: 2006-01-02.log (one file per day, appended across invocations)
+	filename := fmt.Sprintf("%s.log", time.Now().Format("2006-01-02"))
 	logPath := filepath.Join(logsDir, filename)
 
-	fb, err := NewFileBackend(logPath, minLevel)
-	if err != nil {
-		// Fallback: console-only mode
-		return nil
-	}
+	fb := NewFileBackend(logPath, minLevel)
 	backends = append(backends, fb)
 
 	// Auto-cleanup old log files

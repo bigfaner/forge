@@ -126,10 +126,7 @@ func TestFileBackendWriteFormat(t *testing.T) {
 	// AC-2: FileBackend writes format: 2006-01-02T15:04:05.000 [LEVEL] message
 	dir := t.TempDir()
 	logFile := filepath.Join(dir, "test.log")
-	backend, err := NewFileBackend(logFile, INFO)
-	if err != nil {
-		t.Fatal(err)
-	}
+	backend := NewFileBackend(logFile, INFO)
 
 	ts := time.Date(2026, 6, 4, 17, 30, 0, 123000000, time.Local)
 	backend.Write(WARN, ts, "WARNING: task x not found\n")
@@ -160,10 +157,7 @@ func TestFileBackendLevelFiltering(t *testing.T) {
 	// AC-2: Level filtering suppresses below configured level in file only
 	dir := t.TempDir()
 	logFile := filepath.Join(dir, "test.log")
-	backend, err := NewFileBackend(logFile, WARN)
-	if err != nil {
-		t.Fatal(err)
-	}
+	backend := NewFileBackend(logFile, WARN)
 
 	ts := time.Now()
 	backend.Write(DEBUG, ts, "debug msg\n")
@@ -193,19 +187,12 @@ func TestFileBackendLevelFiltering(t *testing.T) {
 	}
 }
 
-func TestFileBackendWriteErrorSilenced(t *testing.T) {
+func TestFileBackendWriteErrorSilenced(_ *testing.T) {
 	// Hard rule: FileBackend write errors are silently ignored
-	dir := t.TempDir()
-	logFile := filepath.Join(dir, "test.log")
-	backend, err := NewFileBackend(logFile, INFO)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// Use an invalid path that cannot be opened
+	backend := NewFileBackend("/nonexistent/dir/test.log", INFO)
 
-	// Close the underlying file to cause write errors
-	_ = backend.Close()
-
-	// This should not panic or return error
+	// This should not panic — ensureOpen fails silently
 	ts := time.Now()
 	backend.Write(INFO, ts, "should not panic\n")
 }
@@ -213,10 +200,7 @@ func TestFileBackendWriteErrorSilenced(t *testing.T) {
 func TestFileBackendConcurrentWrites(t *testing.T) {
 	dir := t.TempDir()
 	logFile := filepath.Join(dir, "test.log")
-	backend, err := NewFileBackend(logFile, INFO)
-	if err != nil {
-		t.Fatal(err)
-	}
+	backend := NewFileBackend(logFile, INFO)
 
 	var wg sync.WaitGroup
 	for i := range 100 {
@@ -372,7 +356,7 @@ func TestInitFilePermissions(t *testing.T) {
 }
 
 func TestInitLogFileNaming(t *testing.T) {
-	// File naming: ISO-8601 datetime + PID
+	// File naming: date-based (2006-01-02.log), one file per day
 	dir := t.TempDir()
 	logsDir := filepath.Join(dir, ".forge", "logs")
 
@@ -395,21 +379,14 @@ func TestInitLogFileNaming(t *testing.T) {
 	}
 
 	name := entries[0].Name()
-	pid := os.Getpid()
-	expectedSuffix := fmt.Sprintf("-%d.log", pid)
-	if !strings.HasSuffix(name, expectedSuffix) {
-		t.Errorf("log file name %q should end with %q", name, expectedSuffix)
-	}
-	// Should match pattern: 2006-01-02T15-04-05-<pid>.log
-	if !strings.Contains(name, "T") {
-		t.Errorf("log file name %q should contain ISO date separator T", name)
+	expected := time.Now().Format("2006-01-02") + ".log"
+	if name != expected {
+		t.Errorf("log file name = %q, want %q", name, expected)
 	}
 }
 
-func TestConcurrentInitProducesSeparateFiles(t *testing.T) {
-	// AC-4: Two concurrent Init() calls produce separate log files with distinct PIDs
-	// Since we can't fork in tests, simulate by calling Init twice sequentially
-	// which creates two log files (different timestamps)
+func TestConcurrentInitAppendsSameDay(t *testing.T) {
+	// Same-day inits append to the same date-based file
 	dir := t.TempDir()
 	logsDir := filepath.Join(dir, ".forge", "logs")
 
@@ -421,10 +398,7 @@ func TestConcurrentInitProducesSeparateFiles(t *testing.T) {
 	Info("first\n")
 	Close()
 
-	// Small delay to ensure different timestamp
-	time.Sleep(1100 * time.Millisecond)
-
-	// Second init
+	// Second init on same day appends to same file
 	err = Init(nil, logsDir)
 	if err != nil {
 		t.Fatal(err)
@@ -436,8 +410,18 @@ func TestConcurrentInitProducesSeparateFiles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) < 2 {
-		t.Errorf("expected at least 2 log files, got %d", len(entries))
+	// Same day → 1 file, not 2
+	if len(entries) != 1 {
+		t.Errorf("expected 1 log file (same day), got %d", len(entries))
+	}
+
+	// Verify both messages are in the file
+	content, err := os.ReadFile(filepath.Join(logsDir, entries[0].Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), "first\n") || !strings.Contains(string(content), "second\n") {
+		t.Errorf("expected both messages in log file, got:\n%s", string(content))
 	}
 }
 
@@ -515,6 +499,52 @@ func TestAPIByteIdenticalToFmtFprintf(t *testing.T) {
 
 	if forgelogOutput != fmtOutput {
 		t.Errorf("forgelog output %q != fmt.Fprintf output %q", forgelogOutput, fmtOutput)
+	}
+}
+
+func TestFileBackendLazyCreation(t *testing.T) {
+	// NewFileBackend does NOT create the file; it's created on first Write
+	dir := t.TempDir()
+	logFile := filepath.Join(dir, "lazy.log")
+
+	backend := NewFileBackend(logFile, INFO)
+	defer func() { _ = backend.Close() }()
+
+	// File should NOT exist yet
+	if _, err := os.Stat(logFile); !os.IsNotExist(err) {
+		t.Fatal("lazy log file should not exist after NewFileBackend")
+	}
+
+	// Write creates the file
+	backend.Write(INFO, time.Now(), "hello\n")
+
+	if _, err := os.Stat(logFile); err != nil {
+		t.Fatalf("log file should exist after Write: %v", err)
+	}
+}
+
+func TestInitDoesNotCreateEmptyFile(t *testing.T) {
+	// Init should not create an empty log file if no messages are dispatched
+	dir := t.TempDir()
+	logsDir := filepath.Join(dir, ".forge", "logs")
+
+	err := Init(nil, logsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Close without writing any messages
+	Close()
+
+	entries, err := os.ReadDir(logsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// logsDir may exist (MkdirAll), but no .log files should be present
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), ".log") {
+			t.Errorf("no log file should exist without writes, found %s", e.Name())
+		}
 	}
 }
 
