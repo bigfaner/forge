@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/forgeconfig"
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
@@ -55,7 +56,7 @@ func runIndex(_ *cobra.Command, _ []string) error {
 	// Read auto-behavior config (returns defaults when missing)
 	auto, err := forgeconfig.ReadAutoConfig(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to read auto config: %v\n", err)
+		forgelog.Warn("WARNING: failed to read auto config: %v\n", err)
 	}
 
 	// Resolve intent from proposal (defaults to "new-feature" when proposal missing)
@@ -104,7 +105,7 @@ func runIndex(_ *cobra.Command, _ []string) error {
 	// Run validation on the generated index
 	v := &validator{filePath: indexPath}
 	if err := v.run(); err != nil {
-		fmt.Fprintf(os.Stderr, "NOTE: fix validation errors above and re-run 'forge task index --feature %s'\n", indexFeatureSlug)
+		forgelog.Info("NOTE: fix validation errors above and re-run 'forge task index --feature %s'\n", indexFeatureSlug)
 	}
 	return nil
 }

@@ -3,13 +3,13 @@ package task
 import (
 	"fmt"
 	"forge-cli/internal/cmd/base"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"time"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgelog"
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
@@ -133,7 +133,7 @@ func executeClaim() (*ClaimResult, error) {
 	// (e.g., backend/) can find the project root via FindProjectRoot().
 	// Placed after all validation to avoid creating artifacts in error paths.
 	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to write .forge/state.json: %v\n", err)
+		forgelog.Warn("WARNING: failed to write .forge/state.json: %v\n", err)
 	}
 
 	// Save state

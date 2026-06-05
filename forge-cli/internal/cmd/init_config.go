@@ -8,6 +8,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -277,7 +278,7 @@ func runConfigInitIfNeeded(projectRoot string) initAction {
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to write config: %v\n", err)
+		forgelog.Error("ERROR: failed to write config: %v\n", err)
 		return initAction{status: "FAILED", target: ".forge/config.yaml", detail: err.Error()}
 	}
 

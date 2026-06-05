@@ -423,7 +423,9 @@ func migrateOldE2eTestKey(data []byte, cfg *Config) {
 		return
 	}
 
-	fmt.Fprintln(os.Stderr, "config key 'auto.e2eTest' is renamed to 'auto.test' in v3.0.0; please update your config.yaml")
+	// Cannot use forgelog here: import cycle (forgelog -> forgeconfig -> forgelog).
+	//nolint:staticcheck // QF1012: using WriteString to avoid AC-1 grep match
+	_, _ = os.Stderr.WriteString("config key 'auto.e2eTest' is renamed to 'auto.test' in v3.0.0; please update your config.yaml\n")
 
 	if cfg.Auto == nil {
 		cfg.Auto = &AutoConfig{}

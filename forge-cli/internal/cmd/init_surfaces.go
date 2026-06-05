@@ -3,11 +3,11 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sort"
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -32,7 +32,7 @@ var askSurfaceConfirmation = askSurfaceConfirmationImpl
 func askSurfaceConfirmationImpl(projectRoot string) (forgeconfig.SurfacesMap, forgeconfig.SourcesMap, bool) {
 	result, err := forgeconfig.DetectSurfacesWithConflicts(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: surface detection failed: %v\n", err)
+		forgelog.Warn("WARNING: surface detection failed: %v\n", err)
 		surfaces, cancelled := manualSurfaceEntry()
 		return surfaces, nil, cancelled
 	}

@@ -2,12 +2,12 @@ package qualitygate
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/types"
@@ -159,7 +159,7 @@ func createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDoc
 	// proceeds with empty surface key/type.
 	surfaceKey, surfaceType := inferSurface(projectRoot, sourceFiles)
 	if surfaceKey == "" && surfaceType == "" {
-		fmt.Fprintln(os.Stderr, "WARNING: surface inference failed: no surfaces configured or no match for source files. Run 'forge surfaces detect' to configure surfaces")
+		forgelog.Warn("WARNING: surface inference failed: no surfaces configured or no match for source files. Run 'forge surfaces detect' to configure surfaces\n")
 	}
 
 	testScript := "just " + step
@@ -242,10 +242,10 @@ func createFixTask(projectRoot, featureSlug, step, sourceFiles, output, errorDoc
 	}
 
 	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to update .forge/state.json: %v\n", err)
+		forgelog.Warn("WARNING: failed to update .forge/state.json: %v\n", err)
 	}
 
-	fmt.Fprintf(os.Stderr, "Fix task %s added (P0, breaking=%v)\n", id, breaking)
+	forgelog.Info("Fix task %s added (P0, breaking=%v)\n", id, breaking)
 	return id, nil
 }
 
@@ -268,7 +268,7 @@ func addRegressionFixTasks(projectRoot, featureSlug, output, errorDocPath string
 
 	// Fallback: no test files identified — use directory-grouped fix task.
 	if len(fileLineMap) == 0 {
-		fmt.Fprintln(os.Stderr, "WARNING: isTestFile returned zero matches for output, falling back to directory-grouped fix task")
+		forgelog.Warn("WARNING: isTestFile returned zero matches for output, falling back to directory-grouped fix task\n")
 		return AddFixTask(projectRoot, featureSlug, "test", output, errorDocPath)
 	}
 
@@ -368,12 +368,12 @@ func addSingleFixTask(projectRoot, featureSlug, step, sourceFiles, output, error
 	// Check cap before creating a new fix-task.
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to load index for cap check: %v\n", err)
+		forgelog.Warn("WARNING: failed to load index for cap check: %v\n", err)
 		// Proceed without cap check if index can't be loaded.
 	} else {
 		active := CountFixTasks(index, step)
 		if active >= maxFixTasksPerStep {
-			fmt.Fprintf(os.Stderr, "max fix-tasks reached for %s, manual intervention required\n", step)
+			forgelog.Warn("max fix-tasks reached for %s, manual intervention required\n", step)
 			return "", ErrMaxFixTasks
 		}
 	}

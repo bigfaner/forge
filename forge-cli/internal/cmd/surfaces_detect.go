@@ -9,6 +9,7 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 
 	"github.com/spf13/cobra"
 )
@@ -57,7 +58,7 @@ func runDetect(cmd *cobra.Command, _ []string) error {
 	// Run detection + inference pipeline
 	result, err := forgeconfig.DetectSurfacesWithConflicts(projectRoot)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: surface detection failed: %v\n", err)
+		forgelog.Warn("WARNING: surface detection failed: %v\n", err)
 		return err
 	}
 
@@ -113,7 +114,7 @@ func runDetectApply(projectRoot string, _ *forgeconfig.DetectResult, cmd *cobra.
 	// Write surfaces to config
 	action := writeSurfacesToConfig(configFile, surfaces, sources)
 	if action.status == "FAILED" {
-		fmt.Fprintf(os.Stderr, "ERROR: failed to write surfaces: %s\n", action.detail)
+		forgelog.Error("ERROR: failed to write surfaces: %s\n", action.detail)
 		return fmt.Errorf("failed to write surfaces: %s", action.detail)
 	}
 
