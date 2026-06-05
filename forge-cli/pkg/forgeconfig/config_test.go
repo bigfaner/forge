@@ -2184,6 +2184,215 @@ func TestGetConfigValue_EvalFullRoundtrip(t *testing.T) {
 	}
 }
 
+// TestEvalSettingsDefaults tests the default eval settings matching rubric frontmatter.
+func TestEvalSettingsDefaults(t *testing.T) {
+	t.Run("defaults match rubric frontmatter", func(t *testing.T) {
+		defaults := EvalSettingsDefaults()
+
+		tests := []struct {
+			name       string
+			target     int
+			iterations int
+		}{
+			{"proposal", 900, 3},
+			{"prd", 900, 3},
+			{"design", 900, 3},
+			{"ui", 950, 3},
+			{"journey", 850, 3},
+			{"contract", 850, 3},
+			{"consistency", 900, 3},
+		}
+
+		fields := map[string]EvalTypeSettings{
+			"proposal":    defaults.Proposal,
+			"prd":         defaults.Prd,
+			"design":      defaults.Design,
+			"ui":          defaults.Ui,
+			"journey":     defaults.Journey,
+			"contract":    defaults.Contract,
+			"consistency": defaults.Consistency,
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				field, ok := fields[tt.name]
+				if !ok {
+					t.Fatalf("field %q not found in EvalSettings", tt.name)
+				}
+				if field.Target == nil {
+					t.Fatalf("Target is nil for %q", tt.name)
+				}
+				if *field.Target != tt.target {
+					t.Errorf("%s.Target = %d, want %d", tt.name, *field.Target, tt.target)
+				}
+				if field.Iterations == nil {
+					t.Fatalf("Iterations is nil for %q", tt.name)
+				}
+				if *field.Iterations != tt.iterations {
+					t.Errorf("%s.Iterations = %d, want %d", tt.name, *field.Iterations, tt.iterations)
+				}
+			})
+		}
+	})
+
+	t.Run("returns fresh instances (immutable)", func(t *testing.T) {
+		d1 := EvalSettingsDefaults()
+		d2 := EvalSettingsDefaults()
+		*d1.Proposal.Target = 0
+		if *d2.Proposal.Target != 900 {
+			t.Error("mutating one default affected the other")
+		}
+	})
+}
+
+// TestEvalSettingsWriteReadRoundtrip tests that EvalSettings round-trips through YAML.
+func TestEvalSettingsWriteReadRoundtrip(t *testing.T) {
+	t.Run("write and read eval block", func(t *testing.T) {
+		dir := t.TempDir()
+		proposalTarget := 900
+		proposalIter := 3
+		uiTarget := 950
+		uiIter := 3
+		cfg := &Config{
+			Eval: &EvalSettings{
+				Proposal: EvalTypeSettings{Target: &proposalTarget, Iterations: &proposalIter},
+				Ui:       EvalTypeSettings{Target: &uiTarget, Iterations: &uiIter},
+			},
+		}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.Eval == nil {
+			t.Fatal("expected Eval non-nil")
+		}
+		if readback.Eval.Proposal.Target == nil || *readback.Eval.Proposal.Target != 900 {
+			t.Errorf("Proposal.Target = %v, want 900", readback.Eval.Proposal.Target)
+		}
+		if readback.Eval.Proposal.Iterations == nil || *readback.Eval.Proposal.Iterations != 3 {
+			t.Errorf("Proposal.Iterations = %v, want 3", readback.Eval.Proposal.Iterations)
+		}
+		if readback.Eval.Ui.Target == nil || *readback.Eval.Ui.Target != 950 {
+			t.Errorf("Ui.Target = %v, want 950", readback.Eval.Ui.Target)
+		}
+	})
+
+	t.Run("eval block absent is nil", func(t *testing.T) {
+		dir := setupConfig(t, "auto:\n  gitPush: true\n")
+		cfg, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.Eval != nil {
+			t.Error("expected Eval nil when not configured")
+		}
+	})
+
+	t.Run("full defaults roundtrip", func(t *testing.T) {
+		dir := t.TempDir()
+		defaults := EvalSettingsDefaults()
+		cfg := &Config{Eval: &defaults}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		readback, err := ReadConfig(dir)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if readback.Eval == nil {
+			t.Fatal("expected Eval non-nil")
+		}
+		if readback.Eval.Proposal.Target == nil || *readback.Eval.Proposal.Target != 900 {
+			t.Errorf("Proposal.Target = %v, want 900", readback.Eval.Proposal.Target)
+		}
+		if readback.Eval.Consistency.Target == nil || *readback.Eval.Consistency.Target != 900 {
+			t.Errorf("Consistency.Target = %v, want 900", readback.Eval.Consistency.Target)
+		}
+	})
+}
+
+// TestGetConfigValue_EvalSettingsKeys tests config get for eval type settings.
+func TestGetConfigValue_EvalSettingsKeys(t *testing.T) {
+	t.Run("eval.proposal.target returns value", func(t *testing.T) {
+		dir := t.TempDir()
+		defaults := EvalSettingsDefaults()
+		cfg := &Config{Eval: &defaults}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval.proposal.target")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "900" {
+			t.Errorf("expected '900', got %q", val)
+		}
+	})
+
+	t.Run("eval.ui.target returns 950", func(t *testing.T) {
+		dir := t.TempDir()
+		defaults := EvalSettingsDefaults()
+		cfg := &Config{Eval: &defaults}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval.ui.target")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "950" {
+			t.Errorf("expected '950', got %q", val)
+		}
+	})
+
+	t.Run("eval.proposal.iterations returns 3", func(t *testing.T) {
+		dir := t.TempDir()
+		defaults := EvalSettingsDefaults()
+		cfg := &Config{Eval: &defaults}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval.proposal.iterations")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if val != "3" {
+			t.Errorf("expected '3', got %q", val)
+		}
+	})
+
+	t.Run("eval not configured returns errKeyNotFound", func(t *testing.T) {
+		dir := t.TempDir()
+		_, err := GetConfigValue(dir, "eval.proposal.target")
+		if err != errKeyNotFound {
+			t.Errorf("expected errKeyNotFound for unconfigured eval, got %v", err)
+		}
+	})
+
+	t.Run("eval returns summary of all types", func(t *testing.T) {
+		dir := t.TempDir()
+		defaults := EvalSettingsDefaults()
+		cfg := &Config{Eval: &defaults}
+		if err := writeConfig(dir, cfg); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		val, err := GetConfigValue(dir, "eval")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		for _, field := range []string{"proposal:", "prd:", "design:", "ui:", "journey:", "contract:", "consistency:"} {
+			if !strings.Contains(val, field) {
+				t.Errorf("expected field %q in eval summary, got:\n%s", field, val)
+			}
+		}
+	})
+}
+
 // TestEvalConfig_OldModeToggleCompat tests backward compatibility with old ModeToggle format.
 func TestEvalConfig_OldModeToggleCompat(t *testing.T) {
 	t.Run("old ModeToggle map format reads 'full' sub-key", func(t *testing.T) {

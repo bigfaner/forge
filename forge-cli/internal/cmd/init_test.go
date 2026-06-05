@@ -60,6 +60,7 @@ func (e *initTestEnv) path(parts ...string) string {
 
 // testConfigInit replaces configInitFunc for testing.
 // Simulates the interactive config flow without requiring a real TTY.
+// Mirrors the real runConfigInitIfNeeded construction including eval block.
 func testConfigInit(projectRoot string) initAction {
 	configFile := filepath.Join(projectRoot, feature.ForgeDir, feature.ForgeConfigFileName)
 
@@ -67,8 +68,10 @@ func testConfigInit(projectRoot string) initAction {
 	auto := autoConfigDefaults()
 	auto.GitPush = true // Explicitly set to true to differentiate from empty/zero configs
 	auto.Validation = forgeconfig.ModeToggle{Quick: true, Full: true}
+	evalDefaults := forgeconfig.EvalSettingsDefaults()
 	cfg := forgeconfig.Config{
 		Auto: auto,
+		Eval: &evalDefaults,
 	}
 
 	if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -499,6 +502,109 @@ func TestEnsureResultToAction(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInitConfigWithEvalBlock(t *testing.T) {
+	t.Run("config includes complete eval block with all 7 types", func(t *testing.T) {
+		env := newInitTestEnv(t)
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := env.path(feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config.yaml not created: %v", err)
+		}
+
+		content := string(data)
+
+		// Verify eval block header
+		if !strings.Contains(content, "eval:") {
+			t.Errorf("expected 'eval:' in config, got %q", content)
+		}
+
+		// Verify all 7 eval types are present
+		evalTypes := []string{"proposal:", "prd:", "design:", "ui:", "journey:", "contract:", "consistency:"}
+		for _, et := range evalTypes {
+			if !strings.Contains(content, et) {
+				t.Errorf("expected eval type %q in config, got %q", et, content)
+			}
+		}
+	})
+
+	t.Run("eval block default values match rubric frontmatter", func(t *testing.T) {
+		env := newInitTestEnv(t)
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		configFile := env.path(feature.ForgeDir, feature.ForgeConfigFileName)
+		data, err := os.ReadFile(configFile)
+		if err != nil {
+			t.Fatalf("config.yaml not created: %v", err)
+		}
+
+		content := string(data)
+
+		// Check specific default values from rubric frontmatter
+		expectedDefaults := []struct {
+			typeName   string
+			target     string
+			iterations string
+		}{
+			{"proposal", "900", "3"},
+			{"prd", "900", "3"},
+			{"design", "900", "3"},
+			{"ui", "950", "3"},
+			{"journey", "850", "3"},
+			{"contract", "850", "3"},
+			{"consistency", "900", "3"},
+		}
+
+		for _, ed := range expectedDefaults {
+			if !strings.Contains(content, "target: "+ed.target) {
+				t.Errorf("expected 'target: %s' in config for %s, got %q", ed.target, ed.typeName, content)
+			}
+			if !strings.Contains(content, "iterations: "+ed.iterations) {
+				t.Errorf("expected 'iterations: %s' in config for %s, got %q", ed.iterations, ed.typeName, content)
+			}
+		}
+	})
+
+	t.Run("generated config is valid YAML parseable by Config struct", func(t *testing.T) {
+		env := newInitTestEnv(t)
+
+		err := env.run()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		// Read the generated config back using forgeconfig.ReadConfig
+		read, err := forgeconfig.ReadConfig(env.dir)
+		if err != nil {
+			t.Fatalf("failed to parse generated config: %v", err)
+		}
+
+		if read.Eval == nil {
+			t.Fatal("expected Eval block to be non-nil in parsed config")
+		}
+
+		// Verify key values through the parsed struct
+		if read.Eval.Proposal.Target == nil || *read.Eval.Proposal.Target != 900 {
+			t.Errorf("Proposal.Target = %v, want 900", read.Eval.Proposal.Target)
+		}
+		if read.Eval.Ui.Target == nil || *read.Eval.Ui.Target != 950 {
+			t.Errorf("Ui.Target = %v, want 950", read.Eval.Ui.Target)
+		}
+		if read.Eval.Journey.Target == nil || *read.Eval.Journey.Target != 850 {
+			t.Errorf("Journey.Target = %v, want 850", read.Eval.Journey.Target)
+		}
+	})
 }
 
 func TestInitConfigWithValidation(t *testing.T) {

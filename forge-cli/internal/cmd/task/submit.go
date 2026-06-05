@@ -270,10 +270,8 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	// Filter out unknown deps — consistent with claim.go checkDependenciesMet which
 	// treats unknown deps as vacuously satisfied.
 	var knownUnmet []string
-	var unknownDeps []string
 	for _, id := range unmet {
 		if _, found := index.ByID(id); !found {
-			unknownDeps = append(unknownDeps, id)
 			continue
 		}
 		knownUnmet = append(knownUnmet, id)

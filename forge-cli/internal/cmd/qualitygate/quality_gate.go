@@ -61,11 +61,15 @@ type AllCompletedResult struct {
 	DocsOnly    bool // true if no implementation or fix tasks exist
 }
 
+// findProjectRoot is the function used to locate the project root.
+// Defaults to project.FindProjectRoot; replaced in tests for reliable isolation.
+var findProjectRoot = project.FindProjectRoot
+
 // CheckAllCompleted verifies all tasks are done and returns test context.
 // Returns (nil, nil) when tasks are not all done or no feature is set — caller should exit silently.
 // Returns (nil, error) for infrastructure failures (no project).
 func CheckAllCompleted(verbose bool) (*AllCompletedResult, error) {
-	projectRoot, err := project.FindProjectRoot()
+	projectRoot, err := findProjectRoot()
 	if err != nil {
 		base.Debugf(verbose, "project root not found: %v", err)
 		return nil, base.ErrProjectNotFound()
