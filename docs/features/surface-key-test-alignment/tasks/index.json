@@ -104,7 +104,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-update-init-justfile-templates.md",
       "record": "records/6-update-init-justfile-templates.md",
       "type": "doc"

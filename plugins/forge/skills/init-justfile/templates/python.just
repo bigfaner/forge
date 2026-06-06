@@ -17,6 +17,10 @@ unit-test:
     pytest
 
 # test: surface-level advanced tests (functional, integration, e2e, etc.)
+# Test directory path convention:
+#   Single surface: tests/<journey>/  →  pytest tests/{{journey}}/
+#   Multi surface:  tests/<surfaceKey>/<journey>/  (use surface key, not type)
+#   →  pytest tests/<surfaceKey>/{{journey}}/
 test journey='':
     #!/usr/bin/env bash
     set -euo pipefail

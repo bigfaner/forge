@@ -17,6 +17,10 @@ unit-test:
     go test ./...
 
 # test: surface-level advanced tests (functional, integration, e2e, etc.)
+# Test directory path convention:
+#   Single surface: tests/<journey>/  →  go test -v -run "{{journey}}" ./tests/...
+#   Multi surface:  tests/<surfaceKey>/<journey>/  (use surface key, not type)
+#   →  go test -v -run "{{journey}}" ./tests/<surfaceKey>/...
 test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
