@@ -736,11 +736,11 @@ var PipelineRegistry = []PipelineNode{
 		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", MainSession: true,
 		DependsOn: []DepRef{{Ref: "T-test-gen-contracts"}},
 	},
-	// --- Gen Scripts (per surface type) ---
+	// --- Gen Scripts (per surface key) ---
 	{
-		Type: TypeTestGenScripts, Key: "gen-test-scripts-{surface-type}", ID: "T-test-gen-scripts-{surface-type}",
+		Type: TypeTestGenScripts, Key: "gen-test-scripts-{surface-key}", ID: "T-test-gen-scripts-{surface-key}",
 		Title: "Generate {test-type-title} Scripts", Priority: string(types.PriorityP1), EstimatedTime: estTimeMedium,
-		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", Expansion: "per-surface-type",
+		ConfigGate: GateTest, GenerateCondition: CondHasTestableTasks, Mode: "breakdown", Expansion: "per-surface-key",
 		DependsOn:    []DepRef{{Ref: "T-eval-contract"}},
 		StrategyKind: "generate",
 	},

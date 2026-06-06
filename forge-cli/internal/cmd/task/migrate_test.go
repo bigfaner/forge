@@ -20,7 +20,7 @@ func TestRunMigrate_HappyPath(t *testing.T) {
 			"t-gate":  {ID: "1.gate", Title: "Gate", Status: "pending", File: "1-gate.md", Record: "records/1-gate.md"},
 			"t-sum":   {ID: "1.summary", Title: "Summary", Status: "pending", File: "1-summary.md", Record: "records/1-summary.md"},
 			"t-fix":   {ID: "fix-1", Title: "Fix", Status: "pending", File: "fix-1.md", Record: "records/fix-1.md"},
-			"t-test1": {ID: "T-test-gen-scripts-cli", Title: "Gen scripts", Status: "pending", File: "T-test-gen-scripts-cli.md", Record: "records/T-test-gen-scripts-cli.md"},
+			"t-test1": {ID: "T-test-gen-scripts", Title: "Gen scripts", Status: "pending", File: "T-test-gen-scripts.md", Record: "records/T-test-gen-scripts.md"},
 		},
 	})
 

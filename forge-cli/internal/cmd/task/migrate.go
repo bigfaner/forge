@@ -64,8 +64,9 @@ func runMigrate(_ *cobra.Command, _ []string) error {
 		// Phase 1: Infer and set type for every task.
 		tasks := index.TasksMap()
 		taskCount = len(tasks)
+		surfaces, _ := forgeconfig.ReadSurfaces(projectRoot)
 		for key, t := range tasks {
-			inferred := inferTypeForTask(t)
+			inferred := inferTypeForTask(t, surfaces)
 			t.Type = inferred
 			index.SetTask(key, t)
 		}
@@ -84,8 +85,8 @@ func runMigrate(_ *cobra.Command, _ []string) error {
 
 // inferTypeForTask returns the inferred type for a task, using the task's
 // existing type if already set and non-empty, otherwise using InferType.
-func inferTypeForTask(t task.Task) string {
-	inferred := task.InferType(t.ID, nil)
+func inferTypeForTask(t task.Task, surfaces map[string]string) string {
+	inferred := task.InferType(t.ID, surfaces)
 	if inferred == "" {
 		inferred = task.TypeCodingFeature
 	}

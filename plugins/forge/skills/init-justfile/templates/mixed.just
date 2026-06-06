@@ -32,6 +32,10 @@ unit-test:
     (cd "{{frontend_dir}}" && npm test) && (cd "{{backend_dir}}" && BACKEND_TEST)
 
 # test: surface-level advanced tests (functional, integration, e2e, etc.)
+# Test directory path convention:
+#   Single surface: tests/<journey>/  →  cd tests && npx playwright test features/{{journey}}/
+#   Multi surface:  tests/<surfaceKey>/<journey>/  (use surface key, not type)
+#   →  cd tests/<surfaceKey> && npx playwright test features/{{journey}}/
 test journey='':
     #!/usr/bin/env bash
     set -euo pipefail

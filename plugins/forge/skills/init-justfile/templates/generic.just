@@ -17,6 +17,9 @@ unit-test:
     @echo "Error: unit-test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 
 # test: surface-level advanced tests (functional, integration, e2e, etc.)
+# Test directory path convention:
+#   Single surface: tests/<journey>/
+#   Multi surface:  tests/<surfaceKey>/<journey>/  (use surface key, not type)
 test journey='':
     @echo "Error: test recipe not implemented — edit justfile to add test command" >&2 && exit 1
 

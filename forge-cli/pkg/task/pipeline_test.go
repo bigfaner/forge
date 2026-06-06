@@ -810,16 +810,18 @@ func TestMatchRegistryID_ExactMatch(t *testing.T) {
 	}
 }
 
-func TestMatchRegistryID_SurfaceTypeSuffix(t *testing.T) {
+func TestMatchRegistryID_SurfaceKeySuffix_GenScripts(t *testing.T) {
+	surfaces := map[string]string{"backend": "api", "frontend": "web"}
+
 	tests := []struct {
 		id       string
 		surfaces map[string]string
 		want     string
 	}{
-		{"T-test-gen-scripts-api", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-cli", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-web", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts", nil, TypeTestGenScripts}, // degenerate form
+		{"T-test-gen-scripts-backend", surfaces, TypeTestGenScripts},
+		{"T-test-gen-scripts-frontend", surfaces, TypeTestGenScripts},
+		{"T-test-gen-scripts", nil, TypeTestGenScripts}, // degenerate form (single surface)
+		{"T-test-gen-scripts-backend", nil, ""},         // no surfaces map -> no key match
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
@@ -925,6 +927,9 @@ func TestSortedSurfaceKeys(t *testing.T) {
 }
 
 func TestMatchTypeSuffixedID(t *testing.T) {
+	// matchTypeSuffixedID is a generic helper for per-surface-type pattern matching.
+	// Note: gen-test-scripts now uses per-surface-key, so the {surface-type} template
+	// below is hypothetical — no current registry node uses per-surface-type.
 	tests := []struct {
 		id       string
 		template string

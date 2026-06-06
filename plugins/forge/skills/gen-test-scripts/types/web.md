@@ -194,4 +194,4 @@ Web surface targets a **balanced 50/50** ratio between Contract tests and Journe
 
 ## Output
 
-Web test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.
+Web test scripts are written to the adaptive output directory: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects use `tests/<journey>/`. Each test file includes a traceability comment linking back to the source Contract step.

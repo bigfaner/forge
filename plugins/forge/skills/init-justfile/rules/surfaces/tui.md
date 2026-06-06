@@ -36,6 +36,14 @@ Implementation constraints:
 
 ## Recipe Template (Dual Platform)
 
+<Test-Dir-Path>
+The `tui-test` recipe must resolve test scripts from the correct directory:
+- **Single surface** (project has 1 surface): `tests/<journey>/`
+- **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
+
+When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `terminal=tui`, the path is `tests/terminal/<journey>/`.
+</Test-Dir-Path>
+
 ```just
 # Run terminal functional tests (optionally filter by journey)
 # user-customized

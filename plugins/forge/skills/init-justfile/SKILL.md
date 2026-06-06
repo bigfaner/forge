@@ -69,6 +69,17 @@ If version < 1.50.0: `cargo install just`
 
 Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variants.
 
+#### Test Directory Path in Recipes
+
+The `<prefix>test` recipe must resolve test scripts from the correct directory, which depends on the project's surface count:
+
+- **Single surface** (1 surface, scalar or named): `tests/<journey>/` -- no surface-key directory layer.
+- **Multi surface** (2+ surfaces): `tests/<surfaceKey>/<journey>/` -- each surface's tests live under its key.
+
+When generating the `<prefix>test` recipe body, the LLM must include the correct base path. For multi-surface projects, the `<surfaceKey>` segment uses the surface's **key** (e.g., `backend`, `frontend`), NOT its type (e.g., `api`, `web`).
+
+Example: In a project with `backend=api` + `frontend=web` surfaces, the `backend-test` recipe runs tests from `tests/backend/<journey>/`, and `frontend-test` from `tests/frontend/<journey>/`.
+
 ### Recipe Parameter Signatures
 
 | Recipe | Signature | Description |
@@ -282,6 +293,10 @@ Every surface recipe MUST include `# user-customized` comment above the `[linux]
 
 Aggregate pattern: `just <prefix>dev && just <prefix>probe && just <prefix>test; rc=$?; just <prefix>teardown; exit $rc`
 
+**Test directory path**: The `<prefix>test` recipe body must resolve test scripts from the correct path (see "Test Directory Path in Recipes" above). When customizing the test recipe from the language template, replace any hardcoded `tests/` path with the adaptive path:
+- Single surface: `tests/<journey>/` (template default, no change needed)
+- Multi surface: `tests/<surfaceKey>/<journey>/` (inject the surfaceKey layer)
+
 **Recipe content generation**: The LLM fills in recipe bodies based on:
 1. **Language template** (from Step 3a): provides the underlying command patterns (e.g., `go run`, `npm run dev`, `cargo run`) loaded from `templates/<lang>.just`.
 2. **Convention knowledge** (from Step 0): provides framework-specific test runners and patterns to override template defaults.
@@ -289,7 +304,7 @@ Aggregate pattern: `just <prefix>dev && just <prefix>probe && just <prefix>test;
 
 The LLM synthesizes these three sources to produce concrete recipe bodies. The surface rule files provide TODO-stub templates as the structural skeleton; the LLM replaces stubs with actual commands derived from the language template and Convention knowledge.
 
-Example (web surface, Go project): `web-dev` uses `go run`, `web-probe` uses `curl`, `web-test` uses `go test -tags=web-e2e`, `web-teardown` kills the server PID.
+Example (web surface, Go project): `web-dev` uses `go run`, `web-probe` uses `curl`, `web-test` uses `go test -tags=web-e2e ./tests/<surfaceKey>/{{journey}}/...`, `web-teardown` kills the server PID.
 
 #### 3c. Boundary marker merge
 
@@ -323,7 +338,7 @@ lint:
 fmt:
 check:
 
-[group: <surface-key-or-type>]
+[group: <surface-key>]
 <prefix>test-setup:   (mobile only)
 <prefix>dev:          (if applicable)
 <prefix>probe:        (if applicable)
@@ -335,6 +350,8 @@ check:
 
 # --- end forge standard recipes ---
 ```
+
+Use the surface **key** for the group name. For named surfaces, use the key (e.g., `[group: backend]`). For scalar surfaces (no key), use the type (e.g., `[group: tui]`).
 
 ### Step 4: Verify and Self-Correct
 
@@ -421,6 +438,7 @@ Edit justfile to customize commands. Recipes marked `# user-customized` will be 
 - **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
 - **Zero regression**: Projects without surface configuration receive exactly the same justfile as before this feature. No new recipes, no changed behavior.
 - **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<prefix>test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <prefix>test` based on task surface-key. Test type terminology follows the inline model below.
+- **Test directory path**: Single-surface projects use `tests/<journey>/` (no surface-key layer). Multi-surface projects use `tests/<surfaceKey>/<journey>/` (key-based directory layer). The `<prefix>test` recipe body must resolve scripts from the correct path.
 
 <!-- INLINE:origin=test-guide/references/test-type-model.md -->
 **Surface -> Test Type mapping**:

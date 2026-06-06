@@ -206,7 +206,7 @@ Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcod
 
 ## Output
 
-Mobile test scripts are written to `tests/<journey>/` following the active Convention's file naming and structure. Each test file includes a traceability comment linking back to the source Contract step.
+Mobile test scripts are written to the adaptive output directory: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects use `tests/<journey>/`. Each test file includes a traceability comment linking back to the source Contract step.
 
 ## Test Ratio Constraint (Best-Effort)
 
@@ -223,7 +223,7 @@ Mobile surface follows a **best-effort** strategy — not measured by Contract t
   1. Opens the app via URL scheme (e.g., `myapp://screen/detail`)
   2. Asserts the target screen is visible
   3. Verifies expected content on the target screen
-- **File naming**: `tests/<journey>/step<N>_<action>.yaml` for step tests, `tests/<journey>/step<N>_<action>_deeplink.yaml` for deep link variants
+- **File naming**: `tests/<surfaceKey>/<journey>/step<N>_<action>.yaml` (multi-surface) or `tests/<journey>/step<N>_<action>.yaml` (single-surface) for step tests; deep link variants append `_deeplink` suffix
 
 ### Manual-Only Marking
 

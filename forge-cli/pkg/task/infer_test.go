@@ -46,11 +46,14 @@ func TestInferType(t *testing.T) {
 		{"T-validate-code", nil, TypeValidationCode},
 		{"T-validate-ux", nil, TypeValidationUx},
 
-		// Type-suffixed test tasks (per-type split, no profile letter)
-		{"T-test-gen-scripts-api", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-tui", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-cli", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-web-ui", nil, TypeTestGenScripts},
+		// Type-suffixed test tasks (now per-surface-key, require surfaces map for suffix matching)
+		{"T-test-gen-scripts-api", map[string]string{"api": "api"}, TypeTestGenScripts},
+		{"T-test-gen-scripts-tui", map[string]string{"tui": "tui"}, TypeTestGenScripts},
+		{"T-test-gen-scripts-cli", map[string]string{"cli": "cli"}, TypeTestGenScripts},
+		{"T-test-gen-scripts-web-ui", map[string]string{"web-ui": "web"}, TypeTestGenScripts},
+		// Without surfaces map, per-surface-key suffixes don't match
+		{"T-test-gen-scripts-api", nil, ""},
+		{"T-test-gen-scripts-tui", nil, ""},
 		// T-test-gen-journeys suffixed IDs no longer match (gen-journeys is not expanded per-surface-type in registry)
 		{"T-test-gen-journeys-api", nil, ""},
 		{"T-test-gen-journeys-tui", nil, ""},

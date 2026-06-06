@@ -17,6 +17,10 @@ unit-test:
     cargo test
 
 # test: surface-level advanced tests (functional, integration, e2e, etc.)
+# Test directory path convention:
+#   Single surface: tests/<journey>/  →  cargo test --test {{journey}}
+#   Multi surface:  tests/<surfaceKey>/<journey>/  (use surface key, not type)
+#   →  cargo test --test {{journey}} (test binary names map to journey, not directory)
 test journey='':
     #!/usr/bin/env bash
     set -euo pipefail
