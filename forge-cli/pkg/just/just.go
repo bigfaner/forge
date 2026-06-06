@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"forge-cli/pkg/forgelog"
 )
 
 // GateRecipe defines one step in the quality gate sequence.
@@ -123,7 +125,7 @@ func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, ou
 			}
 			// Required recipe missing — no fallback, report error with init-justfile hint.
 			output := fmt.Sprintf("required recipe %q not found in justfile. Run `just init-justfile` to generate standard recipes.", step.Name)
-			fmt.Fprintf(os.Stderr, "ERROR: %s\n", output)
+			forgelog.Error("ERROR: %s\n", output)
 			if step.Blocking && onFail != nil {
 				onFail(step.Name, output)
 			}
@@ -143,7 +145,7 @@ func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, ou
 				}
 				return false
 			}
-			fmt.Fprintf(os.Stderr, "WARNING: non-blocking gate step %q failed\n", step.Name)
+			forgelog.Warn("WARNING: non-blocking gate step %q failed\n", step.Name)
 		}
 	}
 	return true

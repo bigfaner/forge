@@ -1927,8 +1927,8 @@ func TestBuildIndex_EmptySurfaces_GeneratesNonSurfaceTasks(t *testing.T) {
 	}
 }
 
-func TestBuildIndex_WithSurfaces_ProducesPerTypeTasks(t *testing.T) {
-	// With surfaces configured, BuildIndex generates per-type test tasks.
+func TestBuildIndex_WithSurfaces_ProducesPerKeyTasks(t *testing.T) {
+	// With surfaces configured, BuildIndex generates per-surface-key test tasks.
 	projectRoot, tasksDir, indexPath := setupBuildEnv(t, "quick")
 	writeForgeConfig(t, projectRoot)
 
@@ -1948,7 +1948,7 @@ func TestBuildIndex_WithSurfaces_ProducesPerTypeTasks(t *testing.T) {
 	}
 
 	// 1 business task + test pipeline tasks (gen-journeys, gen-contracts,
-	// gen-test-scripts-api, run-test, quick-drift-detection)
+	// gen-test-scripts (per-surface-key), run-test, quick-drift-detection)
 	total := result.NewCount + result.UpdatedCount
 	if total < 2 {
 		t.Errorf("total = %d (new=%d, updated=%d), want at least 2 (1 biz + test tasks)", total, result.NewCount, result.UpdatedCount)

@@ -65,6 +65,7 @@ const (
 	ForgeDir            = ".forge"
 	ForgeStateFileName  = "state.json"
 	ForgeConfigFileName = "config.yaml"
+	ForgeLogsDir        = ".forge/logs"
 
 	// Template file
 	TemplateFileName = "template.md"

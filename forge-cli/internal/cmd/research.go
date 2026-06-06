@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"forge-cli/internal/cmd/base"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/infocmd"
 	"forge-cli/pkg/project"
 
@@ -42,7 +42,7 @@ func runResearchList(projectRoot string) error {
 	}
 
 	if len(reports) == 0 {
-		fmt.Fprintln(os.Stderr, "no research found")
+		forgelog.Info("no research found\n")
 		return nil
 	}
 

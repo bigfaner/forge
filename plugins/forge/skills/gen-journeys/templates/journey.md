@@ -3,6 +3,7 @@ feature: "{{FEATURE_SLUG}}"
 journey: "{{JOURNEY_NAME}}"
 risk_level: "{{RISK_LEVEL}}"
 surface_types: ["{{SURFACE_TYPE_1}}", "{{SURFACE_TYPE_2}}"]
+surface_keys: ["{{SURFACE_KEY_1}}", "{{SURFACE_KEY_2}}"]
 sources:
   - docs/features/{{FEATURE_SLUG}}/prd/prd-user-stories.md
   - docs/features/{{FEATURE_SLUG}}/prd/prd-spec.md

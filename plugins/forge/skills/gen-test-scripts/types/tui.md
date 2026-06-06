@@ -183,7 +183,7 @@ TUI surface targets **Contract test ratio ≥ 80%**.
 
 ## Output
 
-TUI test scripts are written to `tests/<journey>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.
+TUI test scripts are written to the adaptive output directory: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects use `tests/<journey>/`. Each test function includes a traceability comment linking back to the source test case ID.
 
 ## Reconnaissance Hints
 

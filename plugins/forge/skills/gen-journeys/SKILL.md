@@ -102,9 +102,14 @@ docs/features/<slug>/testing/
       step-1-<action-slug>.md         # Contract for Step 1
       step-N-<action-slug>.md
 
-tests/
-  <journey-name>/                     # Generated test files
+tests/                                # Generated test files (by gen-test-scripts)
+  <journey-name>/                     # Single surface: flat structure
+  <surfaceKey>/<journey-name>/        # Multi surface: partitioned by surface key
 ```
+
+**Test output path rules** (applied by gen-test-scripts, not gen-journeys):
+- **Single surface**: `tests/<journey-name>/` — no surface-key directory layer
+- **Multi surface**: `tests/<surfaceKey>/<journey-name>/` — surface-key partitions test files
 
 ### Tag-Based Promotion
 
@@ -159,12 +164,13 @@ When generating Journeys, apply the following per-surface guidance:
 
 ### Journey Surface Coverage
 
-Each Journey must declare which surface types it covers in its frontmatter `surface_types` field. This enables downstream skills (gen-contracts, gen-test-scripts) to generate surface-appropriate Contracts and test scripts.
+Each Journey must declare which surfaces it covers in its frontmatter, using both `surface_types` (technical classification) and `surface_keys` (user-defined identifiers). This enables downstream skills (gen-contracts, gen-test-scripts) to generate surface-appropriate Contracts and test scripts, and to correctly partition test output directories by surface key.
 
 **Coverage rules**:
-- A Journey covering a cross-surface user workflow (e.g., "user submits form via web, backend API processes it") must list all involved surface types
-- A Journey limited to a single surface's interaction lists only that surface type
+- A Journey covering a cross-surface user workflow (e.g., "user submits form via web, backend API processes it") must list all involved surface types and keys
+- A Journey limited to a single surface's interaction lists only that surface's type and key
 - The union of all Journeys' `surface_types` must cover every configured surface type — no surface may be left uncovered
+- The union of all Journeys' `surface_keys` must cover every configured surface key — no surface key may be left uncovered
 
 ### Extensibility
 
@@ -331,6 +337,7 @@ feature: "{{FEATURE_SLUG}}"
 journey: "{{JOURNEY_NAME}}"
 risk_level: "{{RISK_LEVEL}}"
 surface_types: ["web", "api"]
+surface_keys: ["frontend", "backend"]
 sources:
   - docs/features/{{FEATURE_SLUG}}/prd/prd-user-stories.md
   - docs/features/{{FEATURE_SLUG}}/prd/prd-spec.md
@@ -338,10 +345,11 @@ generated: "{{DATE}}"
 ---
 ```
 
-**Determining surface_types per Journey**:
-- If the Journey covers a cross-surface workflow (e.g., user interacts via web frontend and backend API processes the request), list all involved surface types
-- If the Journey is scoped to a single surface's interaction, list only that surface type
+**Determining surface_types and surface_keys per Journey**:
+- If the Journey covers a cross-surface workflow (e.g., user interacts via web frontend and backend API processes the request), list all involved surface types and their corresponding keys
+- If the Journey is scoped to a single surface's interaction, list only that surface's type and key
 - When uncertain, err on the side of listing more surface types rather than fewer — downstream skills will generate surface-specific Contracts regardless
+- `surface_keys` values come directly from `forge surfaces` output (the key portion of `key=type` pairs)
 
 **One Journey = one directory**. Output is organized by Journey (user workflow), NOT by interface type (CLI, API, TUI, etc.).
 
@@ -350,6 +358,7 @@ gen-journeys output must be in a format that gen-contracts can directly consume.
 - Journey name (in heading and frontmatter)
 - Risk level (in frontmatter and body)
 - Surface types (in frontmatter `surface_types` field) — list of covered surface types
+- Surface keys (in frontmatter `surface_keys` field) — list of covered surface keys (user-defined identifiers from `forge surfaces`)
 - Step sequence with numbered steps, each containing:
   - User action (what the user does)
   - Expected result (what the system produces)
@@ -378,6 +387,7 @@ After generating all Journey files, validate each one:
 | Name present | Journey has a non-empty name in heading and frontmatter |
 | Risk level valid | Risk is one of: High, Medium, Low |
 | Surface types present | Journey has a non-empty `surface_types` array in frontmatter, listing valid surface type strings |
+| Surface keys present | Journey has a non-empty `surface_keys` array in frontmatter, listing valid surface key strings matching `forge surfaces` output |
 | Happy path steps | At least 1 happy path step exists |
 | Edge case steps | At least 1 edge case exists |
 | High-risk density | For High-risk Journeys: edge case count >= happy path step count |
@@ -386,6 +396,7 @@ After generating all Journey files, validate each one:
 | Expected result | Every step has an Expected Result description |
 | PRD traceability | Every Journey traces back to specific PRD user story IDs or proposal section references |
 | Surface coverage complete | The union of all Journeys' `surface_types` includes every configured surface type. No surface may be left uncovered |
+| Surface key coverage complete | The union of all Journeys' `surface_keys` includes every configured surface key. No surface key may be left uncovered |
 
 If validation fails, fix the Journey file before proceeding.
 

@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"forge-cli/internal/cmd/base"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/proposal"
 
@@ -44,7 +44,7 @@ func runProposalList(projectRoot string) {
 	}
 
 	if len(proposals) == 0 {
-		fmt.Fprintln(os.Stderr, "no proposals found")
+		forgelog.Info("no proposals found\n")
 		return
 	}
 

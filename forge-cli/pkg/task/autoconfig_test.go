@@ -138,7 +138,7 @@ func TestGetBreakdownTestTasks_DefaultsMatchOldBehavior(t *testing.T) {
 	auto := forgeconfig.AutoConfigDefaults()
 	tasks := GetBreakdownTestTasks(scalarSurface("cli"), nil, auto, "")
 
-	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts", "T-test-run", "T-specs-consolidate"}
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
 		byID[t.ID] = t

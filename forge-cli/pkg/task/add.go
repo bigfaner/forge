@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"forge-cli/pkg/forgelog"
 	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/types"
 )
@@ -181,7 +182,7 @@ func AddTask(indexPath string, opts AddTaskOpts) (string, error) {
 				if t.Status == types.StatusCompleted || t.Status == types.StatusSkipped {
 					resolved := ResolveSourceTask(index, opts.SourceTaskID)
 					if resolved != opts.SourceTaskID {
-						fmt.Fprintf(os.Stderr, "SOURCE-RESOLVE: %s -> %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
+						forgelog.Info("SOURCE-RESOLVE: %s -> %s (source completed, resolving to root)\n", opts.SourceTaskID, resolved)
 						opts.SourceTaskID = resolved
 						if k2, t2, err2 := FindTask(index, opts.SourceTaskID); err2 == nil {
 							k, t = k2, t2

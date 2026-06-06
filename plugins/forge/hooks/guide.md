@@ -74,7 +74,7 @@ A **Surface** is a testable system entry point (e.g. a web app, API server, CLI 
 | `web` | Web E2E Test | dev → probe → test → teardown | browser automation |
 | `mobile` | Mobile E2E Test | test-setup → dev → probe → test → teardown | Maestro YAML / manual |
 
-> **"e2e" is reserved for Web and Mobile only.** CLI/TUI/API tests use "Functional Test" — their validation is protocol-level, not device-level automation. Test files go to `tests/<journey>/` regardless of surface type. Run `/test-guide` for full per-surface strategy.
+> **"e2e" is reserved for Web and Mobile only.** CLI/TUI/API tests use "Functional Test" — their validation is protocol-level, not device-level automation. Test files go to `tests/<surfaceKey>/<journey>/` (multi-surface) or `tests/<journey>/` (single surface), where `surfaceKey` is the key from `forge surfaces` output (e.g. `backend`, `frontend`), not the surface type. Run `/test-guide` for full per-surface strategy.
 
 ### Surface Output Parsing
 

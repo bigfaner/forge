@@ -17,6 +17,8 @@ import (
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/types"
 
+	"forge-cli/pkg/forgelog"
+
 	"github.com/spf13/cobra"
 )
 
@@ -245,7 +247,7 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, id
 	}
 	if allDone {
 		if err := feature.WriteForgeState(projectRoot, featureSlug); err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: failed to write forge state: %v\n", err)
+			forgelog.Warn("WARNING: failed to write forge state: %v\n", err)
 		}
 	}
 	return nil
@@ -258,11 +260,11 @@ func saveIndexAndSignalCompletion(indexPath, projectRoot, featureSlug string, id
 func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 	srcKey, srcTask, err := task.FindTask(index, sourceTaskID)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "AUTO-RESTORE-SKIP: source task %s not found in index\n", sourceTaskID)
+		forgelog.Warn("AUTO-RESTORE-SKIP: source task %s not found in index\n", sourceTaskID)
 		return
 	}
 	if srcTask.Status != types.StatusBlocked {
-		fmt.Fprintf(os.Stderr, "AUTO-RESTORE-SKIP: source task %s is %s (not blocked)\n", sourceTaskID, srcTask.Status)
+		forgelog.Warn("AUTO-RESTORE-SKIP: source task %s is %s (not blocked)\n", sourceTaskID, srcTask.Status)
 		return
 	}
 
@@ -277,13 +279,13 @@ func autoRestoreSourceTask(index *task.TaskIndex, sourceTaskID string) {
 		knownUnmet = append(knownUnmet, id)
 	}
 	if len(knownUnmet) > 0 {
-		fmt.Fprintf(os.Stderr, "AUTO-RESTORE-SKIP: source task %s has unmet deps: %v\n", sourceTaskID, knownUnmet)
+		forgelog.Warn("AUTO-RESTORE-SKIP: source task %s has unmet deps: %v\n", sourceTaskID, knownUnmet)
 		return
 	}
 
 	srcTask.Status = types.StatusPending
 	index.SetTask(srcKey, *srcTask)
-	fmt.Fprintf(os.Stderr, "AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
+	forgelog.Info("AUTO-RESTORE: source task %s restored to pending (all deps completed or skipped)\n", sourceTaskID)
 }
 
 // readSubmitData delegates to pkg/task.ReadSubmitData.
@@ -322,7 +324,7 @@ func validateRecordData(rd *task.RecordData, taskType string) error {
 
 	// Auto-downgrade (coding only): completed with test failures -> blocked
 	if isCoding && rd.Status == string(types.StatusCompleted) && rd.TestsFailed > 0 {
-		fmt.Fprintf(os.Stderr, "---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
+		forgelog.Warn("---\nWARNING: %d test failures detected — auto-downgrading status from 'completed' to 'blocked'\nHINT: Fix test failures, then re-record with status 'completed'\n---\n", rd.TestsFailed)
 		rd.Status = string(types.StatusBlocked)
 	}
 

@@ -14,6 +14,7 @@ import (
 
 	"forge-cli/internal/cmd/base"
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/task"
 	"forge-cli/pkg/types"
@@ -221,7 +222,7 @@ func runFeatureList(_ *cobra.Command, _ []string) error {
 	})
 
 	if len(features) == 0 {
-		fmt.Fprintln(os.Stderr, "no features found")
+		forgelog.Info("no features found\n")
 		return nil
 	}
 

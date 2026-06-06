@@ -9,9 +9,9 @@ domains: [testing, cli]
 
 ## 文件位置
 
-- **目录**: `tests/<category>/`（如 `tests/error-handling/`, `tests/forge-commands/`, `tests/task-lifecycle/` 等），按功能域组织而非统一 `tests/cli/`
+- **目录**: `tests/<surfaceKey>/<journey>/`（多 surface 项目）或 `tests/<journey>/`（单 surface 项目）。Journey 名称由 gen-journeys 生成，surfaceKey 为 `forge surfaces` 输出的 key
 - **文件命名**: `<feature>_<command>_test.<ext>`（Go）、`test_<feature>_<command>.<ext>`（Python）、`<feature>.<command>.test.<ext>`（Node.js）
-- **Build tag**: `//go:build cli_functional`（Go）— applies to all test files under `tests/` (shared kit, per-category tests, and testkit helpers); `@cli-functional`（BDD tag）
+- **Build tag**: `//go:build cli_functional`（Go）— applies to all test files under `tests/` (shared kit, per-journey tests, and testkit helpers); `@cli-functional`（BDD tag）
 - **约束**: 不得使用 `e2e` 作为 build tag 或测试分类名
 
 ## 隔离模型

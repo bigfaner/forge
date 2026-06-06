@@ -1,12 +1,11 @@
 package qualitygate
 
 import (
-	"fmt"
-	"os"
 	"time"
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/just"
 	"forge-cli/pkg/serverprobe"
 	"forge-cli/pkg/testrunner"
@@ -41,16 +40,16 @@ func runTestRegression(projectRoot, featureSlug string) error {
 func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 	// Optional setup step — skip regression on failure.
 	if just.HasRecipe(projectRoot, "test-setup") {
-		fmt.Fprintln(os.Stderr, "--- Ensuring test dependencies (just test-setup) ---")
+		forgelog.Info("--- Ensuring test dependencies (just test-setup) ---\n")
 		setupOutput, setupSuccess := just.RunCapture(projectRoot, "just", "test-setup")
 		if !setupSuccess {
-			fmt.Fprintln(os.Stderr, "WARNING: test-setup failed; skipping test regression")
-			fmt.Fprintln(os.Stderr, "  To retry manually: just test-setup && just test")
+			forgelog.Warn("WARNING: test-setup failed; skipping test regression\n")
+			forgelog.Info("  To retry manually: just test-setup && just test\n")
 			if setupOutput != "" {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, "=== test-setup failure ===\n"+setupOutput); err != nil {
-					fmt.Fprintf(os.Stderr, "WARNING: failed to write setup output: %v\n", err)
+					forgelog.Warn("WARNING: failed to write setup output: %v\n", err)
 				} else {
-					fmt.Fprintln(os.Stderr, "  Setup output saved to "+feature.TestResultsDir+"/"+feature.TestOutputFileName)
+					forgelog.Info("  Setup output saved to " + feature.TestResultsDir + "/" + feature.TestOutputFileName + "\n")
 				}
 			}
 			return nil
@@ -59,25 +58,25 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 
 	// Health check — skip regression if servers aren't ready.
 	if !serverprobe.ProbeServers(projectRoot, "") {
-		fmt.Fprintln(os.Stderr, "WARNING: server health check failed; skipping test regression")
-		fmt.Fprintln(os.Stderr, "  Start dev server and retry: just dev && just test")
+		forgelog.Warn("WARNING: server health check failed; skipping test regression\n")
+		forgelog.Info("  Start dev server and retry: just dev && just test\n")
 		return nil
 	}
 
 	// Run the regression suite.
-	fmt.Fprintln(os.Stderr, "--- Running full test regression (just test) ---")
+	forgelog.Info("--- Running full test regression (just test) ---\n")
 	regressionOutput, regSuccess := just.RunCapture(projectRoot, "just", "test")
 	if !regSuccess {
-		fmt.Fprintln(os.Stderr, "ERROR: test regression failed")
+		forgelog.Error("ERROR: test regression failed\n")
 		errorDocPath := feature.TestResultsDir + "/" + feature.TestOutputFileName
 		if regressionOutput != "" {
 			if err := testrunner.WriteRegressionRawOutput(projectRoot, regressionOutput); err != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
+				forgelog.Warn("WARNING: failed to write raw-output.txt: %v\n", err)
 			}
 		}
 		fixID, fixErr := addRegressionFixTasks(projectRoot, featureSlug, regressionOutput, errorDocPath)
 		if fixErr != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+			forgelog.Warn("WARNING: %v\n", fixErr)
 		}
 		return HandleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(regressionOutput, conciseErrorMaxLines), true)
 	}
@@ -95,18 +94,18 @@ func runTestRegressionLegacy(projectRoot, featureSlug string) error {
 func runTestRegressionSurface(projectRoot, featureSlug string, surfaceTypes []string) error {
 	var lastErr error
 	for _, surfaceType := range surfaceTypes {
-		fmt.Fprintf(os.Stderr, "--- Running surface orchestration for %s ---\n", surfaceType)
+		forgelog.Info("--- Running surface orchestration for %s ---\n", surfaceType)
 		result := runSurfaceLifecycle(projectRoot, surfaceType)
 		if !result.success {
 			errorDocPath := feature.TestResultsDir + "/" + feature.TestOutputFileName
 			if result.output != "" {
 				if err := testrunner.WriteRegressionRawOutput(projectRoot, result.output); err != nil {
-					fmt.Fprintf(os.Stderr, "WARNING: failed to write raw-output.txt: %v\n", err)
+					forgelog.Warn("WARNING: failed to write raw-output.txt: %v\n", err)
 				}
 			}
 			fixID, fixErr := addRegressionFixTasks(projectRoot, featureSlug, result.output, errorDocPath)
 			if fixErr != nil {
-				fmt.Fprintf(os.Stderr, "WARNING: %v\n", fixErr)
+				forgelog.Warn("WARNING: %v\n", fixErr)
 			}
 			lastErr = HandleGateFailure("test", errorDocPath, fixID, just.ExtractConciseError(result.output, conciseErrorMaxLines), true)
 		}
@@ -152,10 +151,10 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 	if full {
 		recipe := resolveRecipe(projectRoot, surfaceType, "dev")
 		if recipe != "" {
-			fmt.Fprintf(os.Stderr, "  Starting dev server (just %s)...\n", recipe)
+			forgelog.Info("  Starting dev server (just %s)...\n", recipe)
 			output, success := just.RunCapture(projectRoot, "just", recipe)
 			if !success {
-				fmt.Fprintf(os.Stderr, "  ERROR: dev failed (just %s)\n", recipe)
+				forgelog.Error("  ERROR: dev failed (just %s)\n", recipe)
 				runTeardown(projectRoot, surfaceType)
 				return lifecycleResult{success: false, output: output}
 			}
@@ -166,7 +165,7 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 	if full {
 		probeRecipe := resolveRecipe(projectRoot, surfaceType, "probe")
 		if !probeWithRetry(projectRoot, probeRecipe, maxProbeRetries, probeRetryInterval) {
-			fmt.Fprintln(os.Stderr, "  ERROR: probe failed after retries")
+			forgelog.Error("  ERROR: probe failed after retries\n")
 			runTeardown(projectRoot, surfaceType)
 			return lifecycleResult{success: false, output: "probe failed: server not responding after 3 retries"}
 		}
@@ -176,10 +175,10 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 	if types.SurfaceType(surfaceType) == types.SurfaceMobile {
 		setupRecipe := resolveRecipe(projectRoot, surfaceType, "test-setup")
 		if setupRecipe != "" {
-			fmt.Fprintf(os.Stderr, "  Running mobile test setup (just %s)...\n", setupRecipe)
+			forgelog.Info("  Running mobile test setup (just %s)...\n", setupRecipe)
 			output, success := just.RunCapture(projectRoot, "just", setupRecipe)
 			if !success {
-				fmt.Fprintf(os.Stderr, "  ERROR: mobile-test-setup failed (just %s)\n", setupRecipe)
+				forgelog.Error("  ERROR: mobile-test-setup failed (just %s)\n", setupRecipe)
 				runTeardown(projectRoot, surfaceType)
 				return lifecycleResult{success: false, output: output}
 			}
@@ -190,11 +189,11 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 	var result lifecycleResult
 	testRecipe := resolveRecipe(projectRoot, surfaceType, "test")
 	if testRecipe != "" {
-		fmt.Fprintf(os.Stderr, "  Running tests (just %s)...\n", testRecipe)
+		forgelog.Info("  Running tests (just %s)...\n", testRecipe)
 		output, success := just.RunCapture(projectRoot, "just", testRecipe)
 		result = lifecycleResult{success: success, output: output}
 		if !success {
-			fmt.Fprintln(os.Stderr, "  ERROR: test failed")
+			forgelog.Error("  ERROR: test failed\n")
 		}
 	} else {
 		result = lifecycleResult{success: true}
@@ -211,12 +210,12 @@ func runSurfaceLifecycle(projectRoot, surfaceType string) lifecycleResult {
 func runTeardown(projectRoot, surfaceType string) {
 	recipe := resolveRecipe(projectRoot, surfaceType, "teardown")
 	if recipe != "" {
-		fmt.Fprintf(os.Stderr, "  Running teardown (just %s)...\n", recipe)
+		forgelog.Info("  Running teardown (just %s)...\n", recipe)
 		output, success := just.RunCapture(projectRoot, "just", recipe)
 		if !success {
-			fmt.Fprintf(os.Stderr, "  WARNING: teardown failed (just %s)\n", recipe)
+			forgelog.Warn("  WARNING: teardown failed (just %s)\n", recipe)
 			if output != "" {
-				fmt.Fprintf(os.Stderr, "  %s\n", just.ExtractConciseError(output, 3))
+				forgelog.Info("  %s\n", just.ExtractConciseError(output, 3))
 			}
 		}
 	}
@@ -238,13 +237,13 @@ func probeWithRetry(projectRoot, probeRecipe string, maxRetries int, interval ti
 
 	for attempt := range maxRetries {
 		if attempt > 0 && interval > 0 {
-			fmt.Fprintf(os.Stderr, "  Probe retry %d/%d (waiting %v)...\n", attempt+1, maxRetries, interval)
+			forgelog.Info("  Probe retry %d/%d (waiting %v)...\n", attempt+1, maxRetries, interval)
 			time.Sleep(interval)
 		}
-		fmt.Fprintf(os.Stderr, "  Probing (just %s) attempt %d/%d...\n", probeRecipe, attempt+1, maxRetries)
+		forgelog.Info("  Probing (just %s) attempt %d/%d...\n", probeRecipe, attempt+1, maxRetries)
 		_, success := just.RunCapture(projectRoot, "just", probeRecipe)
 		if success {
-			fmt.Fprintln(os.Stderr, "  Probe succeeded")
+			forgelog.Info("  Probe succeeded\n")
 			return true
 		}
 	}

@@ -162,11 +162,11 @@ domains: [testing]
 
 | Surface | 测试类型 | 文件位置 | 断言重点 | 详细策略 |
 |---------|---------|---------|---------|---------|
-| cli | CLI 功能测试 | tests/<journey>/ | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
-| api | API 功能测试 | tests/<journey>/ | status code + response body + headers | [api/core.md](api/core.md) |
-| web | Web E2E 测试 | tests/<journey>/ | DOM 可见性 + 用户操作 + URL | [web/core.md](web/core.md) |
-| tui | 终端功能测试 | tests/<journey>/ | 精确文本 + 正则匹配 + 快照 | [tui/core.md](tui/core.md) |
-| mobile | Mobile E2E 测试 | tests/<journey>/ | UI 可见性 + 操作响应 + 屏幕 ID | [mobile/core.md](mobile/core.md) |
+| cli | CLI 功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
+| api | API 功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | status code + response body + headers | [api/core.md](api/core.md) |
+| web | Web E2E 测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | DOM 可见性 + 用户操作 + URL | [web/core.md](web/core.md) |
+| tui | 终端功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | 精确文本 + 正则匹配 + 快照 | [tui/core.md](tui/core.md) |
+| mobile | Mobile E2E 测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | UI 可见性 + 操作响应 + 屏幕 ID | [mobile/core.md](mobile/core.md) |
 ```
 
 Only include rows for surfaces present in `active_surfaces`.
@@ -312,7 +312,7 @@ See `references/test-type-model.md` for the complete Surface -> Test Type mappin
 
 - **No code execution**: This skill is entirely LLM-driven file analysis and generation. It reads files and writes files. It does NOT run `go test`, `npm test`, or any other test command.
 - **Surface-first organization**: Convention files are organized by Surface (cli/api/web/tui/mobile), not by framework. Framework information is reduced to a single row in the assertion preference table within each surface's core.md.
-- **Multi-surface projects**: If the project has multiple surfaces (e.g., cli + api), generate separate core.md for each surface. The top-level index.md provides a unified quick-reference.
+- **Multi-surface projects**: If the project has multiple surfaces (e.g., cli + api), generate separate core.md for each surface. The top-level index.md provides a unified quick-reference. Test directory follows surface-key adaptive rules: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects (scalar or named) use `tests/<journey>/`. The `surfaceKey` is the key from `forge surfaces` output (e.g., `backend`, `frontend`), not the surface type (e.g., `api`, `web`).
 - **Existing Convention files**: When Convention files already exist, the skill presents diffs and asks for confirmation. It never silently overwrites without `--force`.
 - **Cold start**: When no test files exist, the skill uses dependency detection for framework identification and fills the assertion preference table from defaults.
 - **Draft feedback loop**: User rejections trigger regeneration of only the rejected files/sections. After 2 retries, drafts are written as `.draft.md` for manual editing.

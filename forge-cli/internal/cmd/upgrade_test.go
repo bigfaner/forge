@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,6 +30,7 @@ type upgradeTestEnv struct {
 	origRunClaude       func([]string) error
 	origPluginInstalled func() bool
 	origBinDir          func() string
+	origRename          func(string, string) error
 	origVersion         string
 }
 
@@ -41,6 +43,7 @@ func newUpgradeTestEnv(t *testing.T) *upgradeTestEnv {
 		origRunClaude:       runClaudeCommand,
 		origPluginInstalled: pluginInstalledCheck,
 		origBinDir:          forgeBinaryDir,
+		origRename:          osRename,
 		origVersion:         types.Version,
 	}
 
@@ -51,6 +54,7 @@ func newUpgradeTestEnv(t *testing.T) *upgradeTestEnv {
 		runClaudeCommand = env.origRunClaude
 		pluginInstalledCheck = env.origPluginInstalled
 		forgeBinaryDir = env.origBinDir
+		osRename = env.origRename
 		types.Version = env.origVersion
 	})
 
@@ -247,8 +251,8 @@ func TestUpgradeCLIBinary_NewerAvailableButDownloadFails(t *testing.T) {
 	}))
 	defer server.Close()
 
-	httpGet = func(url string) (*http.Response, error) {
-		return server.Client().Get(url)
+	httpGet = func(_ string) (*http.Response, error) {
+		return http.Get(server.URL)
 	}
 
 	action := upgradeCLIBinary(&env.stdout)
@@ -304,9 +308,8 @@ func TestReplaceUnixBinary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content := strings.NewReader("new-binary-content")
 	var buf bytes.Buffer
-	err := replaceUnixBinary(&buf, forgePath, content)
+	err := replaceUnixBinary(&buf, forgePath, []byte("new-binary-content"))
 	if err != nil {
 		t.Fatalf("replaceUnixBinary failed: %v", err)
 	}
@@ -326,6 +329,192 @@ func TestReplaceUnixBinary(t *testing.T) {
 	}
 }
 
+func TestReplaceUnixBinary_RenameFailsThenRetrySucceeds(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-only test")
+	}
+
+	origRename := osRename
+	defer func() { osRename = origRename }()
+
+	callCount := 0
+	osRename = func(oldpath, newpath string) error {
+		callCount++
+		if callCount == 1 {
+			return os.ErrNotExist
+		}
+		return origRename(oldpath, newpath)
+	}
+
+	dir := t.TempDir()
+	forgePath := filepath.Join(dir, "forge")
+	if err := os.WriteFile(forgePath, []byte("old"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err := replaceUnixBinary(&buf, forgePath, []byte("new-content"))
+	if err != nil {
+		t.Fatalf("replaceUnixBinary should succeed via fallback: %v", err)
+	}
+
+	data, err := os.ReadFile(forgePath)
+	if err != nil {
+		t.Fatalf("failed to read binary: %v", err)
+	}
+	if string(data) != "new-content" {
+		t.Errorf("expected 'new-content', got %q", string(data))
+	}
+
+	if callCount < 2 {
+		t.Errorf("expected at least 2 rename attempts, got %d", callCount)
+	}
+}
+
+func TestReplaceUnixBinary_RenameAlwaysFailsDirectWriteSucceeds(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-only test")
+	}
+
+	origRename := osRename
+	defer func() { osRename = origRename }()
+
+	osRename = func(_, _ string) error {
+		return os.ErrNotExist
+	}
+
+	dir := t.TempDir()
+	forgePath := filepath.Join(dir, "forge")
+	if err := os.WriteFile(forgePath, []byte("old"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err := replaceUnixBinary(&buf, forgePath, []byte("direct-write-content"))
+	if err != nil {
+		t.Fatalf("replaceUnixBinary should succeed via direct write: %v", err)
+	}
+
+	data, err := os.ReadFile(forgePath)
+	if err != nil {
+		t.Fatalf("failed to read binary: %v", err)
+	}
+	if string(data) != "direct-write-content" {
+		t.Errorf("expected 'direct-write-content', got %q", string(data))
+	}
+
+	// .new file should be cleaned up
+	if _, err := os.Stat(forgePath + ".new"); !os.IsNotExist(err) {
+		t.Error(".new file should be cleaned up after direct write")
+	}
+}
+
+func TestReplaceUnixBinary_CleansUpStaleNewFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-only test")
+	}
+
+	dir := t.TempDir()
+	forgePath := filepath.Join(dir, "forge")
+
+	// Create a stale .new file from a previous failed attempt
+	if err := os.WriteFile(forgePath+".new", []byte("stale"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	err := replaceUnixBinary(&buf, forgePath, []byte("fresh-content"))
+	if err != nil {
+		t.Fatalf("replaceUnixBinary failed: %v", err)
+	}
+
+	data, err := os.ReadFile(forgePath)
+	if err != nil {
+		t.Fatalf("failed to read binary: %v", err)
+	}
+	if string(data) != "fresh-content" {
+		t.Errorf("expected 'fresh-content', got %q", string(data))
+	}
+}
+
+func TestDownloadAndReplace_NetworkError(t *testing.T) {
+	origHTTPGet := httpGet
+	defer func() { httpGet = origHTTPGet }()
+
+	dir := t.TempDir()
+	binDir := filepath.Join(dir, "bin")
+	forgeBinaryDir = func() string { return binDir }
+
+	httpGet = func(_ string) (*http.Response, error) {
+		return nil, errors.New("connection refused")
+	}
+
+	var buf bytes.Buffer
+	err := downloadAndReplace(&buf, "5.17.0")
+	if err == nil {
+		t.Fatal("expected error for network failure")
+	}
+	if !strings.Contains(err.Error(), "download failed") {
+		t.Errorf("expected 'download failed' error, got: %v", err)
+	}
+}
+
+func TestDownloadAndReplace_ServerError(t *testing.T) {
+	origHTTPGet := httpGet
+	defer func() { httpGet = origHTTPGet }()
+
+	dir := t.TempDir()
+	binDir := filepath.Join(dir, "bin")
+	forgeBinaryDir = func() string { return binDir }
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	httpGet = func(_ string) (*http.Response, error) {
+		return http.Get(server.URL)
+	}
+
+	var buf bytes.Buffer
+	err := downloadAndReplace(&buf, "5.17.0")
+	if err == nil {
+		t.Fatal("expected error for HTTP 500")
+	}
+	if !strings.Contains(err.Error(), "HTTP 500") {
+		t.Errorf("expected HTTP 500 error, got: %v", err)
+	}
+}
+
+func TestDownloadAndReplace_IncompleteDownload(t *testing.T) {
+	origHTTPGet := httpGet
+	defer func() { httpGet = origHTTPGet }()
+
+	dir := t.TempDir()
+	binDir := filepath.Join(dir, "bin")
+	forgeBinaryDir = func() string { return binDir }
+
+	// Server sends Content-Length: 100 but only 50 bytes
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Length", "100")
+		_, _ = w.Write([]byte("short-data-that-is-only-29-bytes"))
+	}))
+	defer server.Close()
+
+	httpGet = func(_ string) (*http.Response, error) {
+		return http.Get(server.URL)
+	}
+
+	var buf bytes.Buffer
+	err := downloadAndReplace(&buf, "5.17.0")
+	if err == nil {
+		t.Fatal("expected error for incomplete download")
+	}
+	if !strings.Contains(err.Error(), "download incomplete") {
+		t.Errorf("expected 'download incomplete' error, got: %v", err)
+	}
+}
+
 func TestReplaceWindowsBinary(t *testing.T) {
 	dir := t.TempDir()
 	forgePath := filepath.Join(dir, "forge.exe")
@@ -335,7 +524,7 @@ func TestReplaceWindowsBinary(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content := strings.NewReader("new-binary-content")
+	content := []byte("new-binary-content")
 	var buf bytes.Buffer
 	err := replaceWindowsBinary(&buf, forgePath, content)
 	if err != nil {
@@ -362,7 +551,7 @@ func TestReplaceWindowsBinary_FreshInstall(t *testing.T) {
 	forgePath := filepath.Join(dir, "forge.exe")
 
 	// No existing binary — fresh install scenario
-	content := strings.NewReader("fresh-binary")
+	content := []byte("fresh-binary")
 	var buf bytes.Buffer
 	err := replaceWindowsBinary(&buf, forgePath, content)
 	if err != nil {
@@ -391,7 +580,7 @@ func TestReplaceWindowsBinary_StaleOldFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	content := strings.NewReader("new")
+	content := []byte("new")
 	var buf bytes.Buffer
 	err := replaceWindowsBinary(&buf, forgePath, content)
 	if err != nil {
@@ -482,8 +671,8 @@ func TestUpgradeCommand_CLINewerVersion(t *testing.T) {
 	}))
 	defer server.Close()
 
-	httpGet = func(url string) (*http.Response, error) {
-		return server.Client().Get(url)
+	httpGet = func(_ string) (*http.Response, error) {
+		return http.Get(server.URL)
 	}
 
 	runClaudeCommand = func(_ []string) error {
@@ -578,6 +767,9 @@ func TestFetchLatestReleaseImpl_HTTPError(t *testing.T) {
 // --- Download and replace integration test ---
 
 func TestDownloadAndReplace_Integration(t *testing.T) {
+	origHTTPGet := httpGet
+	defer func() { httpGet = origHTTPGet }()
+
 	dir := t.TempDir()
 	binDir := filepath.Join(dir, "bin")
 	forgeBinaryDir = func() string { return binDir }
@@ -590,7 +782,7 @@ func TestDownloadAndReplace_Integration(t *testing.T) {
 	defer server.Close()
 
 	httpGet = func(_ string) (*http.Response, error) {
-		return server.Client().Get(server.URL)
+		return http.Get(server.URL)
 	}
 
 	var buf bytes.Buffer
@@ -615,6 +807,9 @@ func TestDownloadAndReplace_Integration(t *testing.T) {
 }
 
 func TestDownloadAndReplace_404Error(t *testing.T) {
+	origHTTPGet := httpGet
+	defer func() { httpGet = origHTTPGet }()
+
 	dir := t.TempDir()
 	binDir := filepath.Join(dir, "bin")
 	forgeBinaryDir = func() string { return binDir }
@@ -625,7 +820,7 @@ func TestDownloadAndReplace_404Error(t *testing.T) {
 	defer server.Close()
 
 	httpGet = func(_ string) (*http.Response, error) {
-		return server.Client().Get(server.URL)
+		return http.Get(server.URL)
 	}
 
 	var buf bytes.Buffer

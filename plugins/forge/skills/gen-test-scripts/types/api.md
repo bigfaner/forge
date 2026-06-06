@@ -177,7 +177,7 @@ API surface targets a **balanced 50/50** ratio between Contract tests and Journe
 
 ## Output
 
-API test scripts are written to `tests/<journey>/` following the strategy's template naming convention. Each test function includes a traceability comment linking back to the source test case ID.
+API test scripts are written to the adaptive output directory: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects use `tests/<journey>/`. Each test function includes a traceability comment linking back to the source test case ID.
 
 ## Reconnaissance Hints
 

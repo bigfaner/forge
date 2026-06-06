@@ -661,6 +661,42 @@ func TestSynthesize_GenScripts_WithTypeSuffix(t *testing.T) {
 	}
 }
 
+// Verify that gen-test-scripts with key!=type uses surface-key in task ID but --type uses surface-type.
+func TestSynthesize_GenScripts_KeyNotType_UsesTypeArg(t *testing.T) {
+	dir := t.TempDir()
+	taskID := "T-test-gen-scripts-backend"
+	tasks := map[string]task.Task{
+		taskID: {
+			ID:          taskID,
+			Title:       "Gen scripts backend",
+			Status:      "pending",
+			File:        taskID + ".md",
+			Record:      "records/" + taskID + ".md",
+			Type:        task.TypeTestGenScripts,
+			SurfaceKey:  "backend",
+			SurfaceType: "api",
+		},
+	}
+	setupFeatureDir(t, dir, tasks)
+
+	opts := SynthesizeOpts{
+		ProjectRoot: dir,
+		FeatureSlug: "test-feature",
+		TaskID:      taskID,
+	}
+	result, err := Synthesize(opts)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// Task ID uses surface-key (backend), but --type uses surface-type (api)
+	if !strings.Contains(result, `Skill(skill="forge:gen-test-scripts" --type api)`) {
+		t.Errorf("result should contain skill invocation with --type api (surface-type), got:\n%s", result)
+	}
+	if !strings.Contains(result, "SURFACE_KEY: backend") {
+		t.Errorf("result should contain SURFACE_KEY: backend, got:\n%s", result)
+	}
+}
+
 func TestSynthesize_GenScripts_NoTypeSuffix(t *testing.T) {
 	// Ensure backward compatibility: no --type when no type suffix.
 	tests := []struct {

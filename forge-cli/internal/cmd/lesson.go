@@ -2,10 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"forge-cli/internal/cmd/base"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/infocmd"
 	"forge-cli/pkg/project"
 
@@ -42,7 +42,7 @@ func runLessonList(projectRoot string) error {
 	}
 
 	if len(lessons) == 0 {
-		fmt.Fprintln(os.Stderr, "no lessons found")
+		forgelog.Info("no lessons found\n")
 		return nil
 	}
 

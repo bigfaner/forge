@@ -2,7 +2,6 @@
 package serverprobe
 
 import (
-	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -10,6 +9,8 @@ import (
 
 	"forge-cli/pkg/feature"
 	"forge-cli/pkg/just"
+
+	"forge-cli/pkg/forgelog"
 )
 
 // ProbeEndpoint checks if an HTTP endpoint responds with status < 500.
@@ -33,13 +34,13 @@ func ProbeServers(projectRoot, path string) bool {
 
 	configPath := feature.GetTestConfigPath(projectRoot)
 	if !just.FileExists(configPath) {
-		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
+		forgelog.Info("OK: CLI-only project\n")
 		return true
 	}
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "  WARNING: cannot read config.yaml: %v\n", err)
+		forgelog.Warn("  WARNING: cannot read config.yaml: %v\n", err)
 		return true
 	}
 
@@ -54,7 +55,7 @@ func ProbeServers(projectRoot, path string) bool {
 		endpoints = append(endpoints, apiBaseURL)
 	}
 	if len(endpoints) == 0 {
-		fmt.Fprintln(os.Stderr, "OK: CLI-only project")
+		forgelog.Info("OK: CLI-only project\n")
 		return true
 	}
 
@@ -62,10 +63,10 @@ func ProbeServers(projectRoot, path string) bool {
 	for _, ep := range endpoints {
 		probeURL := strings.TrimRight(ep, "/") + path
 		if !ProbeEndpoint(probeURL, probeTimeout) {
-			fmt.Fprintf(os.Stderr, "FAIL: %s not responding\n", probeURL)
+			forgelog.Warn("FAIL: %s not responding\n", probeURL)
 			return false
 		}
-		fmt.Fprintf(os.Stderr, "OK: %s\n", probeURL)
+		forgelog.Info("OK: %s\n", probeURL)
 	}
 	return true
 }

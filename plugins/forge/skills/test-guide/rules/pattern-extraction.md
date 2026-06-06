@@ -11,7 +11,7 @@
 | Java           | `**/*Test.java`, `**/*Tests.java`               |
 | C#             | `**/*Tests.cs`, `**/*Test.cs`                   |
 
-Focus on `tests/` and `tests/<journey>/` directories first (forge convention), then project-wide.
+Focus on `tests/`, `tests/<surfaceKey>/<journey>/` (multi-surface), and `tests/<journey>/` (single-surface) directories first (forge convention), then project-wide.
 
 ## Import Detection (Assertion Library)
 

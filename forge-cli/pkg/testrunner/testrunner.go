@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/just"
 )
 
@@ -15,7 +16,7 @@ import (
 func PrintHookJSON(v any) {
 	data, err := json.Marshal(v)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to marshal hook JSON: %v\n", err)
+		forgelog.Warn("WARNING: failed to marshal hook JSON: %v\n", err)
 		return
 	}
 	fmt.Println(string(data))

@@ -1,8 +1,9 @@
 package task
 
 import (
-	"log"
 	"strings"
+
+	"forge-cli/pkg/forgelog"
 )
 
 // Category constants for task type classification.
@@ -34,7 +35,7 @@ func CategoryForType(typ string) string {
 	case strings.HasPrefix(typ, "eval."):
 		return CategoryEval
 	default:
-		log.Printf("CategoryForType: unknown type %q, defaulting to coding", typ)
+		forgelog.Info("CategoryForType: unknown type %q, defaulting to coding\n", typ)
 		return CategoryCoding
 	}
 }

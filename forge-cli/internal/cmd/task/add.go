@@ -4,11 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"forge-cli/internal/cmd/base"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"forge-cli/pkg/feature"
+	"forge-cli/pkg/forgelog"
 	"forge-cli/pkg/project"
 	"forge-cli/pkg/proposal"
 	"forge-cli/pkg/task"
@@ -221,12 +221,12 @@ func executeAdd(cmd *cobra.Command) (*AddResult, error) {
 		Intent:      addIntent,
 	}
 	if _, err := task.BuildIndex(buildOpts); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to rebuild index: %v\n", err)
+		forgelog.Warn("WARNING: failed to rebuild index: %v\n", err)
 	}
 
 	// Reset forge state so claim loop continues
 	if err := feature.EnsureForgeState(projectRoot, featureSlug); err != nil {
-		fmt.Fprintf(os.Stderr, "WARNING: failed to update .forge/state.json: %v\n", err)
+		forgelog.Warn("WARNING: failed to update .forge/state.json: %v\n", err)
 	}
 
 	// Report which source was blocked (if --block-source was used)

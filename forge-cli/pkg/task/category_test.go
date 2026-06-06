@@ -3,7 +3,6 @@ package task
 import (
 	"bytes"
 	"encoding/json"
-	"log"
 	"os"
 	"testing"
 
@@ -58,21 +57,35 @@ func TestCategoryForType_DefaultAndUnknown(t *testing.T) {
 }
 
 func TestCategoryForType_UnknownLogsWarning(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
+	// Capture stderr output (forgelog dispatches to stderr when no backends registered)
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+	defer func() { os.Stderr = oldStderr }()
 
 	result := CategoryForType("unknown.type")
+	_ = w.Close()
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	os.Stderr = oldStderr
+
 	assert.Equal(t, CategoryCoding, result)
 	assert.Contains(t, buf.String(), `CategoryForType: unknown type "unknown.type", defaulting to coding`)
 }
 
 func TestCategoryForType_KnownTypeNoWarning(t *testing.T) {
-	var buf bytes.Buffer
-	log.SetOutput(&buf)
-	defer log.SetOutput(os.Stderr)
+	// Capture stderr output (forgelog dispatches to stderr when no backends registered)
+	oldStderr := os.Stderr
+	r, w, _ := os.Pipe()
+	os.Stderr = w
+	defer func() { os.Stderr = oldStderr }()
 
 	_ = CategoryForType(TypeEvalJourney)
+	_ = w.Close()
+	var buf bytes.Buffer
+	_, _ = buf.ReadFrom(r)
+	os.Stderr = oldStderr
+
 	assert.NotContains(t, buf.String(), "CategoryForType: unknown type")
 }
 
