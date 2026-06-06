@@ -927,6 +927,9 @@ func TestSortedSurfaceKeys(t *testing.T) {
 }
 
 func TestMatchTypeSuffixedID(t *testing.T) {
+	// matchTypeSuffixedID is a generic helper for per-surface-type pattern matching.
+	// Note: gen-test-scripts now uses per-surface-key, so the {surface-type} template
+	// below is hypothetical — no current registry node uses per-surface-type.
 	tests := []struct {
 		id       string
 		template string

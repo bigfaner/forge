@@ -310,7 +310,7 @@ func TestResolveDocTasks(t *testing.T) {
 	})
 }
 
-func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
+func TestGetBreakdownTestTasks_PerKey_TwoTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + 2 gen-scripts(tui,api) + 2 run-test(api,tui) + consolidate = 9
@@ -328,7 +328,7 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		"T-specs-consolidate",
 	}
 	// NOTE: multiSurface("tui","tui","api","api") has key==type, so per-surface-key
-	// produces the same IDs as the old per-surface-type expansion.
+	// produces the same IDs as when key equals type.
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -340,7 +340,7 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		t.Errorf("tasks[0].Key = %q, want gen-journeys", tasks[0].Key)
 	}
 
-	// gen-scripts keys include type suffix (sorted alphabetically)
+	// gen-scripts keys include surface-key suffix (sorted alphabetically)
 	if tasks[4].Key != "gen-test-scripts-api" {
 		t.Errorf("tasks[4].Key = %q, want gen-test-scripts-api", tasks[4].Key)
 	}
@@ -400,7 +400,7 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 }
 
-func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
+func TestGetBreakdownTestTasks_PerKey_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts (degenerate) + run + consolidate = 7
@@ -427,7 +427,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	}
 }
 
-func TestGetBreakdownTestTasks_PerType_ThreeTypes(t *testing.T) {
+func TestGetBreakdownTestTasks_PerKey_ThreeTypes(t *testing.T) {
 	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli", ""), []string{"api", "tui", "cli"}, defaultAuto, "")
 
 	// gen-journeys + eval-journey + gen-contracts + eval-contract + 3 gen-scripts + 3 run-tests + consolidate = 11
@@ -495,7 +495,7 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
+func TestGetQuickTestTasks_PerKey_TwoTypes(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, allEnabledAuto, "")
 
 	// gen-journeys + 2 run-tests(api,tui) + drift = 4
@@ -538,7 +538,7 @@ func TestGetQuickTestTasks_PerType_TwoTypes(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
+func TestGetQuickTestTasks_PerKey_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto, "")
 
 	// gen-journeys + run + drift = 3
@@ -568,7 +568,7 @@ func TestGetQuickTestTasks_PerType_SingleType(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_PerType_ThreeTypes(t *testing.T) {
+func TestGetQuickTestTasks_PerKey_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli", ""), []string{"api", "tui", "cli"}, allEnabledAuto, "")
 
 	// gen-journeys + 3 run-tests + drift = 5
@@ -1349,7 +1349,7 @@ func TestAutogenTemplateDiscovery(t *testing.T) {
 
 // --- Tests for gen-journeys/gen-contracts in Breakdown mode (Task 3) ---
 
-func TestGetBreakdownTestTasks_GenJourneysPerType(t *testing.T) {
+func TestGetBreakdownTestTasks_GenJourneysPerKey(t *testing.T) {
 	tasks := GetBreakdownTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, defaultAuto, "")
 
 	foundGenJourneys := false
@@ -1442,7 +1442,7 @@ func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
 	}
 
 	// gen-scripts use per-surface-key serial chain: api(1st) depends on eval-contract, cli(2nd) depends on api
-	// NOTE: multiSurface("cli","cli","api","api") has key==type, so IDs are same as old per-surface-type.
+	// NOTE: multiSurface("cli","cli","api","api") has key==type, so IDs are same as per-surface-key with key==type.
 	// Execution order is ["api","cli"], so api comes first.
 	if len(byID["T-test-gen-scripts-api"].Dependencies) != 1 || byID["T-test-gen-scripts-api"].Dependencies[0] != "T-eval-contract" {
 		t.Errorf("gen-scripts-api should depend on eval-contract, got %v", byID["T-test-gen-scripts-api"].Dependencies)
@@ -1641,7 +1641,7 @@ func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
 		t.Errorf("drift should depend on T-test-run-cli (chain tail), got %v", byID["T-quick-doc-drift"].Dependencies)
 	}
 }
-func TestGetQuickTestTasks_GenJourneysPerType(t *testing.T) {
+func TestGetQuickTestTasks_GenJourneysPerKey(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, allEnabledAuto, "")
 
 	foundGenJourneys := false
@@ -2101,6 +2101,56 @@ func TestGetBreakdownTestTasks_KeyNotType_SetsSurfaceFields(t *testing.T) {
 	}
 	if apTask.SurfaceType != "web" {
 		t.Errorf("SurfaceType = %q, want web", apTask.SurfaceType)
+	}
+}
+
+// Verify gen-test-scripts uses surface-key naming when key != type (e.g., backend=api)
+func TestGetBreakdownTestTasks_KeyNotType_GenScriptsUsesKeyNaming(t *testing.T) {
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	resolved, _ := forgeconfig.ResolveExecutionOrder(surfaces, nil)
+
+	tasks := GetBreakdownTestTasks(surfaces, resolved, defaultAuto, "")
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// gen-test-scripts should use surface KEY (backend, frontend), not surface TYPE (api, web)
+	backendGS, ok := byID["T-test-gen-scripts-backend"]
+	if !ok {
+		t.Fatal("T-test-gen-scripts-backend not found — gen-scripts should use surface-key naming")
+	}
+	if backendGS.SurfaceKey != "backend" {
+		t.Errorf("gen-scripts-backend SurfaceKey = %q, want backend", backendGS.SurfaceKey)
+	}
+	if backendGS.SurfaceType != "api" {
+		t.Errorf("gen-scripts-backend SurfaceType = %q, want api", backendGS.SurfaceType)
+	}
+	if backendGS.Key != "gen-test-scripts-backend" {
+		t.Errorf("gen-scripts-backend Key = %q, want gen-test-scripts-backend", backendGS.Key)
+	}
+
+	frontendGS, ok := byID["T-test-gen-scripts-frontend"]
+	if !ok {
+		t.Fatal("T-test-gen-scripts-frontend not found — gen-scripts should use surface-key naming")
+	}
+	if frontendGS.SurfaceKey != "frontend" {
+		t.Errorf("gen-scripts-frontend SurfaceKey = %q, want frontend", frontendGS.SurfaceKey)
+	}
+	if frontendGS.SurfaceType != "web" {
+		t.Errorf("gen-scripts-frontend SurfaceType = %q, want web", frontendGS.SurfaceType)
+	}
+	if frontendGS.Key != "gen-test-scripts-frontend" {
+		t.Errorf("gen-scripts-frontend Key = %q, want gen-test-scripts-frontend", frontendGS.Key)
+	}
+
+	// Verify old type-based IDs do NOT exist
+	if _, ok := byID["T-test-gen-scripts-api"]; ok {
+		t.Error("T-test-gen-scripts-api should NOT exist — gen-scripts now uses surface-key, not surface-type")
+	}
+	if _, ok := byID["T-test-gen-scripts-web"]; ok {
+		t.Error("T-test-gen-scripts-web should NOT exist — gen-scripts now uses surface-key, not surface-type")
 	}
 }
 
