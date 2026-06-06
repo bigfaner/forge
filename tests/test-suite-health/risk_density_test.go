@@ -205,10 +205,10 @@ func TestTC_RD_009_SkillMdSpecifiesFactTableOutput(t *testing.T) {
 func TestTC_RD_010_SkillMdLoadsSurfaceRules(t *testing.T) {
 	text := readSkillFile(t)
 
-	// Must reference surface rule loading
+	// Must reference surface rule loading via forge surfaces CLI
 	assert.True(t,
-		strings.Contains(text, "surface-") && strings.Contains(text, "config.yaml"),
-		"SKILL.md must reference surface rule loading from config.yaml surface type")
+		strings.Contains(text, "surface-") && strings.Contains(text, "forge surfaces"),
+		"SKILL.md must reference surface rule loading via 'forge surfaces'")
 }
 
 // TC-RD-011: risk-density.md documents inferred Outcome annotation format

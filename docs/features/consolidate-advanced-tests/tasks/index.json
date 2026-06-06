@@ -110,6 +110,7 @@
       "record": "records/7-update-references-and-cleanup.md",
       "surface-type": "cli",
       "type": "coding.cleanup",
+      "blockedReason": "auto-downgrade: testsFailed=3",
       "complexity": "low"
     },
     "fix-1": {
@@ -146,6 +147,18 @@
       "record": "records/fix-3.md",
       "breaking": true,
       "sourceTaskID": "5",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: 3 pre-existing failures (TypeRefine_009, FixTaskPrompt, RD_010)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "7",
       "type": "coding.fix"
     }
   },

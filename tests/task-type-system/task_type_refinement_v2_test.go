@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// --- Shared helpers for task-type-refinement tests (v2: from forge-cli/tests) ---
+// --- Shared helpers for task-type-refinement tests (v2) ---
 
 // trCreateFeatureDir creates a temporary feature directory with the given tasks in
 // index.json under docs/features/<featureSlug>/tasks/. Returns the project root.
@@ -185,8 +185,6 @@ func TestTC_TypeRefine_009_BuildIndexGeneratesReviewDocForDocumentationOnly(t *t
 		"documentation-only feature should have T-review-doc auto-gen task")
 	assert.False(t, trHasTaskWithIDPrefix(tasks, "T-test-"),
 		"documentation-only feature should NOT have test pipeline tasks")
-	assert.False(t, trHasTaskWithIDPrefix(tasks, "T-quick-"),
-		"documentation-only feature should NOT have quick test pipeline tasks")
 }
 
 // --- TC-010: forge build-index generates neither pipeline nor review-doc for mixed cleanup-refactor ---

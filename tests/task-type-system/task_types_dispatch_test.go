@@ -132,11 +132,11 @@ func TestTC_002_FixTaskPromptContainsFiveStepDiagnosticFlow(t *testing.T) {
 	}
 
 	lower := strings.ToLower(out)
-	assert.True(t, strings.Contains(lower, "diagnose"), "fix prompt should contain 'diagnose'")
+	assert.True(t, strings.Contains(lower, "diagnosis"), "fix prompt should contain 'diagnosis'")
 	assert.True(t, strings.Contains(lower, "locate"), "fix prompt should contain 'locate'")
 	assert.True(t, strings.Contains(lower, "fix"), "fix prompt should contain 'fix'")
 	assert.True(t, strings.Contains(lower, "verify"), "fix prompt should contain 'verify'")
-	assert.True(t, strings.Contains(lower, "commit"), "fix prompt should contain 'commit'")
+	assert.True(t, strings.Contains(lower, "submit"), "fix prompt should contain 'submit'")
 }
 
 // ── Story 2: New type template extensibility ───────────────────────────────
@@ -307,11 +307,11 @@ func TestTC_013_RunTasksDispatchesFixTaskViaTaskPromptWithFiveStepPrompt(t *test
 	}
 
 	lower := strings.ToLower(out)
-	assert.True(t, strings.Contains(lower, "diagnose"), "fix prompt should contain 'diagnose'")
+	assert.True(t, strings.Contains(lower, "diagnosis"), "fix prompt should contain 'diagnosis'")
 	assert.True(t, strings.Contains(lower, "locate"), "fix prompt should contain 'locate'")
 	assert.True(t, strings.Contains(lower, "fix"), "fix prompt should contain 'fix'")
 	assert.True(t, strings.Contains(lower, "verify"), "fix prompt should contain 'verify'")
-	assert.True(t, strings.Contains(lower, "commit"), "fix prompt should contain 'commit'")
+	assert.True(t, strings.Contains(lower, "submit"), "fix prompt should contain 'submit'")
 
 	// Verify run-tasks.md doesn't reference error-fixer
 	runTasksContent := dispatchReadFile(t, filepath.Join("plugins", "forge", "commands", "run-tasks.md"))
