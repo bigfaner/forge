@@ -259,7 +259,7 @@ gen-journeys ──→ eval-journey ──→ gen-contracts ──→ eval-contr
 | T-test-eval-journey | `/eval-journey` | 评分报告 | 是 |
 | T-test-gen-contracts | `/gen-contracts` | `testing/<journey>/contracts/step-*.md` | 是 |
 | T-test-eval-contract | `/eval-contract` | 评分报告 | 是 |
-| T-test-gen-scripts | `/gen-test-scripts` | `tests/<journey>/*` | 是 |
+| T-test-gen-scripts | `/gen-test-scripts` | `tests/<surfaceKey>/<journey>/*` (多 surface) 或 `tests/<journey>/*` (单 surface) | 是 |
 | T-test-run | `/run-tests` | `results/latest.md` | 是 |
 
 前置任务：`/gen-web-sitemap`（生成 `sitemap.json` 页面元素映射）。

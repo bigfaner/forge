@@ -170,7 +170,7 @@
       "dependencies": [
         "T-test-run"
       ],
-      "status": "pending",
+      "status": "in_progress",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "breaking": true,
