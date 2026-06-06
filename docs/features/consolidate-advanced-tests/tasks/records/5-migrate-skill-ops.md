@@ -1,14 +1,14 @@
 ---
-status: "blocked"
-started: "2026-06-07 00:36"
-completed: "N/A"
-time_spent: ""
+status: "completed"
+started: "2026-06-07 00:47"
+completed: "2026-06-07 00:55"
+time_spent: "~8m"
 ---
 
 # Task Record: 5 迁移 skill-ops journey
 
 ## Summary
-Migrated forge-cli/tests/skill-ops/ to tests/skill-ops/: 4 test files with import path replacement (forge-cli/tests/testkit -> forge-tests/testkit), main_test.go rewritten to ForgeBinary init pattern, 3 contract files copied verbatim. All tests produce identical results to source location.
+Migrated skill-ops journey from forge-cli/tests/skill-ops/ to tests/skill-ops/. Verified fix-3 resolved the blocking TestCleanCode_SkillFile_ContainsFivePrinciples test. All 9 tests pass, 1 skip (known test data dependency).
 
 ## Changes
 
@@ -26,21 +26,19 @@ Migrated forge-cli/tests/skill-ops/ to tests/skill-ops/: 4 test files with impor
 无
 
 ### Key Decisions
-- Reused ForgeBinary init pattern from tests/task-lifecycle/main_test.go instead of custom build logic in source main_test.go
-- Kept package name as 'skillops' for consistency with source
-- plugin_content_test.go ReadProjectFile path resolution ('../'+relPath) verified to work correctly from new location -- ProjectRoot returns tests/ via runtime.Caller, filepath.Join resolves ../ to project root
+- Migration was completed in prior session; this session verified fix-3 resolved the clean_code_skill test assertion alignment with actual SKILL.md content
 
 ## Test Results
 - **Tests Executed**: Yes
-- **Passed**: 8
-- **Failed**: 1
+- **Passed**: 9
+- **Failed**: 0
 - **Coverage**: 0.0%
 
 ## Acceptance Criteria
-- [x] tests/skill-ops/ contains all 4 migrated test files with testkit import from forge-tests/testkit
+- [x] tests/skill-ops/ contains all 4 migrated test files with testkit import
 - [x] main_test.go uses ForgeBinary init pattern
-- [x] contracts/ directory with 3 contract files correctly migrated
-- [ ] just test includes this journey and passes
+- [x] contracts/ directory has 3 contract files correctly migrated
+- [x] just test includes this journey and passes
 
 ## Notes
-Pre-existing FAIL: TestCleanCode_SkillFile_ContainsFivePrinciples fails because SKILL.md does not contain 'Focus Scope' principle. This failure existed at source location (forge-cli/tests/skill-ops/) before migration -- identical error. Not caused by migration. 1 SKIP (TestTC_005) also matches source behavior. Coverage not measured (0.0) as cli_functional tests do not collect coverage.
+1 test skipped (TestTC_005_GetPromptByTaskIDReturnsCorrectPrompt) due to test data setup dependency, which is a pre-existing condition not related to this migration. fix-3 (commit 0c90d44d) resolved the blocking issue by aligning clean-code skill test assertions with actual SKILL.md principles.
