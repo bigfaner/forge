@@ -149,6 +149,9 @@ func TestInit_RegistersCommands(t *testing.T) {
 func ptrBool(v bool) *bool { return &v }
 
 func TestPersistentPreRun_InitsWithProjectRoot(t *testing.T) {
+	// Clear env vars that override FindProjectRoot (set by CI/hook environments)
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
 	// Unset FORGE_NO_LOG (set by TestMain) to allow file backend
 	t.Setenv("FORGE_NO_LOG", "")
 
@@ -193,6 +196,10 @@ func TestPersistentPreRun_InitsWithProjectRoot(t *testing.T) {
 }
 
 func TestPersistentPreRun_FallbackWithoutProject(t *testing.T) {
+	// Clear env vars that override FindProjectRoot
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
+
 	// In a temp dir with no project markers, should not fail
 	dir := t.TempDir()
 	oldWd, _ := os.Getwd()
@@ -207,6 +214,9 @@ func TestPersistentPreRun_FallbackWithoutProject(t *testing.T) {
 }
 
 func TestPersistentPreRun_WithEnvDisable(t *testing.T) {
+	// Clear env vars that override FindProjectRoot
+	t.Setenv("CLAUDE_PROJECT_DIR", "")
+	t.Setenv("PROJECT_ROOT", "")
 	t.Setenv("FORGE_NO_LOG", "1")
 
 	dir := t.TempDir()
