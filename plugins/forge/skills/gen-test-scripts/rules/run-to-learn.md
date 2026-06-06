@@ -68,7 +68,7 @@ For each Contract Outcome that lacks a confirmed/runtime fact:
    - **Output capture**: Capture stdout, stderr, exit code (or HTTP status/response body for API).
    - **No assertions**: The skeleton test does NOT assert on expected values. It only captures actual runtime output.
 
-2. Write skeleton tests to a temporary directory (NOT to `tests/<journey>/`). Use `os.TempDir()` + journey-specific subdirectory.
+2. Write skeleton tests to a temporary directory (NOT to the project's adaptive test output directory). Use `os.TempDir()` + journey-specific subdirectory.
 
 3. Skeleton tests must respect the Convention's framework patterns (imports, test runner, file naming) so they compile and execute correctly.
 
