@@ -3,7 +3,6 @@ package qualitygate
 import (
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -146,7 +145,7 @@ func RunQualityGate(_ *cobra.Command, _ []string) error {
 	// Docs-only features have no code changes — skip compile/test gates.
 	if result.DocsOnly {
 		forgelog.Info("Feature is docs-only — skipping quality gate (no implementation or fix tasks)\n")
-		os.Exit(0)
+		return nil // gate failure already reported to user
 	}
 
 	// NOTE: The legacy promotion model was removed in v3.0.0 in favor of
@@ -174,7 +173,7 @@ func RunQualityGate(_ *cobra.Command, _ []string) error {
 		gateBlockErr = HandleGateFailure(step, errorDocPath, fixID, just.ExtractConciseError(output, conciseErrorMaxLines), fixTypeFromStep(step) == task.TypeCodingFix)
 	})
 	if gateBlockErr != nil {
-		os.Exit(0)
+		return nil // gate failure already reported to user
 	}
 
 	// Step 2: Project-wide unit tests (with retry-once policy)
@@ -190,13 +189,13 @@ func RunQualityGate(_ *cobra.Command, _ []string) error {
 		unitOutput := "" // output already written by runUnitTestStep
 		errorDocPath := feature.TestResultsDir + "/" + feature.UnitTestOutputFileName
 		if err := HandleGateFailure("unit-test", errorDocPath, unitFixID, just.ExtractConciseError(unitOutput, conciseErrorMaxLines), true); err != nil {
-			os.Exit(0)
+			return nil // gate failure already reported to user
 		}
 	}
 
 	// Step 3: Full test regression (test scripts in tests/)
 	if err := runTestRegression(result.ProjectRoot, result.FeatureSlug); err != nil {
-		os.Exit(0)
+		return nil // gate failure already reported to user
 	}
 	return nil
 }
