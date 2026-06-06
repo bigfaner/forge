@@ -379,7 +379,7 @@ func TestReplaceUnixBinary_RenameAlwaysFailsDirectWriteSucceeds(t *testing.T) {
 	origRename := osRename
 	defer func() { osRename = origRename }()
 
-	osRename = func(oldpath, newpath string) error {
+	osRename = func(_, _ string) error {
 		return os.ErrNotExist
 	}
 
@@ -514,7 +514,6 @@ func TestDownloadAndReplace_IncompleteDownload(t *testing.T) {
 		t.Errorf("expected 'download incomplete' error, got: %v", err)
 	}
 }
-
 
 func TestReplaceWindowsBinary(t *testing.T) {
 	dir := t.TempDir()
