@@ -8,7 +8,7 @@
       "title": "删除死代码：requireSurfaceInference、extractScope、extractBulletItems",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-delete-dead-code.md",
       "record": "records/1-delete-dead-code.md",
       "surface-type": "cli",
