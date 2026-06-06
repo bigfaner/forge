@@ -104,7 +104,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-split-run-extract.md",
       "record": "records/6-split-run-extract.md",
       "surface-type": "cli",
