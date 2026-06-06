@@ -1,13 +1,13 @@
 ---
 name: gen-test-scripts
-description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags directly into tests/<journey>/. Test type naming follows Surface → Test Type mapping (cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test).
+description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags. Output directory adapts to surface count: multi-surface projects use tests/<surfaceKey>/<journey>/, single-surface projects use tests/<journey>/. Test type naming follows Surface → Test Type mapping (cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test).
 ---
 
 # Gen Test Scripts
 
 Generate executable test scripts from Contract specifications.
 
-**Core principle**: Tests are generated per Journey, not per interface type. Each Journey step's Contract defines the assertions. Tests go directly to `tests/<journey>/` with `@feature` tags.
+**Core principle**: Tests are generated per Journey, not per interface type. Each Journey step's Contract defines the assertions. Output directory adapts to surface count: multi-surface projects write to `tests/<surfaceKey>/<journey>/`, single-surface projects write to `tests/<journey>/`.
 
 ## Pipeline Position
 
@@ -17,7 +17,7 @@ gen-journeys -> gen-contracts -> gen-test-scripts -> run-tests
 ```
 
 Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance).
-Output: Executable test code with `@feature` tags in `tests/<journey>/`.
+Output: Executable test code with `@feature` tags. Output directory adapts to surface count: multi-surface → `tests/<surfaceKey>/<journey>/`, single-surface → `tests/<journey>/`.
 
 ## Prerequisites
 
@@ -240,7 +240,14 @@ Apply the surface type detected in Step 0.5 to constrain the generation plan. Lo
 
 ### Output Directory
 
-Tests go directly into `tests/<journey>/`. Contract specs are read from `docs/features/<slug>/testing/<journey>/contracts/`:
+Output directory adapts to the project's surface count. Determine the correct path by checking whether the project has multiple surfaces (via `forge surfaces` or `.forge/config.yaml`):
+
+- **Multi-surface** (2+ surfaces): `tests/<surfaceKey>/<journey>/`
+- **Single-surface** (1 surface): `tests/<journey>/`
+
+Contract specs are read from `docs/features/<slug>/testing/<journey>/contracts/`.
+
+**Multi-surface example** (surfaces: `backend=api`, `frontend=web`):
 
 ```
 docs/features/<slug>/testing/
@@ -252,15 +259,41 @@ docs/features/<slug>/testing/
       step-3-task-submit.md
 
 tests/
-  task-lifecycle/                  <- Generated test scripts
-    step1_feature_create_test.go   <- Generated step test
-    step2_task_claim_test.go       <- Generated step test (multiple Outcomes)
-    step3_task_submit_test.go      <- Generated step test
-    task_lifecycle_smoke_test.go   <- Journey smoke test (happy path, full Journey sequence)
+  backend/                         <- surfaceKey directory
+    task-lifecycle/                <- Generated test scripts for backend surface
+      step1_feature_create_test.go
+      step2_task_claim_test.go
+  frontend/                        <- surfaceKey directory
+    task-lifecycle/                <- Generated test scripts for frontend surface
+      step1_feature_create_test.go
+      step2_task_claim_test.go
+```
+
+**Single-surface example** (surfaces: `tui` or `surfaces: [{key: app, type: tui}]`):
+
+```
+docs/features/<slug>/testing/
+  task-lifecycle/                  <- Journey directory
+    journey.md                     <- Journey narrative
+    contracts/                     <- Contract specs (input, from gen-contracts)
+      step-1-feature-create.md
+      step-2-task-claim.md
+      step-3-task-submit.md
+
+tests/
+  task-lifecycle/                  <- Generated test scripts (no surfaceKey layer)
+    step1_feature_create_test.go
+    step2_task_claim_test.go
+    step3_task_submit_test.go
+    task_lifecycle_smoke_test.go
 ```
 
 <HARD-RULE>
-**No staging area**: Tests go directly to `tests/<journey>/`, NOT to `tests/e2e/features/` staging. The old staging model is replaced by tag-based lifecycle management.
+**No staging area**: Tests go directly to the output directory (adaptive per surface count), NOT to `tests/e2e/features/` staging. The old staging model is replaced by tag-based lifecycle management.
+</HARD-RULE>
+
+<HARD-RULE>
+**Surface-key directory**: When the project has multiple surfaces, the `<surfaceKey>` segment MUST use the surface's key (e.g., `backend`, `frontend`), NOT the surface's type (e.g., `api`, `web`). The key is the user-defined identifier; the type is the technical classification. Keys are unique; types can repeat.
 </HARD-RULE>
 
 ### @feature Tags
@@ -327,7 +360,7 @@ Before compile, run lightweight syntax and import checks:
 
 | Framework | Syntax Validation | Import Validation |
 |-----------|-------------------|-------------------|
-| Go | `gofmt -e <file>` | `go vet ./tests/<journey>/...` |
+| Go | `gofmt -e <file>` | `go vet ./tests/...` (adaptive path per surface count) |
 | JavaScript/TypeScript | `node --check <file>` or `tsc --noEmit` | `tsc --noEmit` or `node -e "require('<import>')"` |
 | Python | `python -m py_compile <file>` | `python -c "import <module>"` per import |
 | Maestro YAML | `maestro validate <file>` or YAML lint | N/A |
@@ -365,7 +398,7 @@ If all compile attempts fail:
 
 ### 4.4 Post-Compile Checks
 
-- **VERIFY Marker Check**: `grep -rn '// VERIFY:' tests/<journey>/` -- resolve remaining markers using Fact Table.
+- **VERIFY Marker Check**: `grep -rn '// VERIFY:' tests/` (adaptive per surface count) -- resolve remaining markers using Fact Table.
 - **Antipattern Guard & Duplicate Name Check**: See `rules/quality-gates.md`.
 
 ## Error Handling

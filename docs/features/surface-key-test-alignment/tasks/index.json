@@ -52,7 +52,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-update-gen-test-scripts-skill-types.md",
       "record": "records/2-update-gen-test-scripts-skill-types.md",
       "type": "doc"

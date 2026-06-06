@@ -11,6 +11,18 @@ Framework-agnostic principles that apply to **all** interface types (CLI, TUI, W
 
 **Test type terminology**: Each surface maps to a specific test type name — cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test. The generic "e2e" label is NOT used as a blanket term -- "e2e" applies only to Web and Mobile surfaces.
 
+## Output Directory: Adaptive Per Surface Count
+
+Test output directory adapts to the project's surface count:
+
+- **Multi-surface** (2+ surfaces): `tests/<surfaceKey>/<journey>/`
+  - `<surfaceKey>` is the user-defined key (e.g., `backend`, `frontend`), NOT the surface type (e.g., `api`, `web`)
+  - Each surface's tests are isolated under its own `<surfaceKey>` directory
+- **Single-surface** (1 surface): `tests/<journey>/`
+  - No surface-key directory layer to keep the structure simple
+
+**Why**: Multi-surface projects organize tests by functional area (backend, frontend), not by technology (api, web). Keys are unique per project; types can repeat (e.g., two `api` surfaces). Single-surface projects do not need the extra directory level.
+
 ## Principle: Isolation
 
 Each test must execute in an isolated environment that does not depend on or interfere with other tests, the host system, or external state.
