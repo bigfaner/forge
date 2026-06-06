@@ -1,15 +1,12 @@
 package task
 
 import (
-	"bytes"
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"forge-cli/pkg/forgeconfig"
-	indexPkg "forge-cli/pkg/index"
 	"forge-cli/pkg/types"
 )
 
@@ -36,8 +33,6 @@ type BuildIndexResult struct {
 // BuildIndex scans .md files and generates/updates index.json.
 // It is idempotent: re-running with no changes produces the same output.
 func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
-	result := &BuildIndexResult{}
-
 	// Apply defaults only when AutoConfig is completely zero (nothing was loaded from config).
 	// WithDefaults() is NOT called here because it cannot distinguish "user explicitly set
 	// both fields to false" from "field was never set" — both equal ModeToggle{}.
@@ -47,383 +42,47 @@ func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
 		opts.AutoConfig = forgeconfig.AutoConfigDefaults()
 	}
 
-	// 1. Load existing index or create new
-	var index *TaskIndex
-	if data, err := os.ReadFile(opts.IndexPath); err == nil {
-		index, err = loadIndexFromBytes(data)
-		if err != nil {
-			return nil, fmt.Errorf("load existing index: %w", err)
-		}
-	} else {
-		index = NewTaskIndex(opts.FeatureSlug)
-	}
+	bc := &buildContext{opts: opts, result: &BuildIndexResult{}}
 
-	// 1.5 Resolve intent (default to new-feature if not set)
-	intent := opts.Intent
-	if intent == "" {
-		intent = "new-feature"
-	}
-
-	// 2. Detect mode
-	mode := detectMode(opts.ProjectRoot, opts.FeatureSlug, intent)
-
-	// 3. Set feature metadata
-	setFeatureMetadata(index, opts.ProjectRoot, opts.FeatureSlug)
-
-	// 3.5 Build BodyContext from planning-time data (proposal/PRD + config)
-	surfaces, _ := forgeconfig.ReadSurfaces(opts.ProjectRoot)
-	// Validate surfaces: log warnings for unknown types, filter them out
-	forgeconfig.ValidateSurfaceTypes(surfaces)
-	capabilities := forgeconfig.SurfaceTypes(surfaces)
-	executionOrder, _ := forgeconfig.ReadExecutionOrder(opts.ProjectRoot)
-	bodyCtx := extractBodyContext(opts.ProjectRoot, opts.FeatureSlug, mode, capabilities)
-
-	// 4. Profiles and surfaces resolved by caller (task 1.4)
-	// BuildIndex no longer holds Languages/Surfaces; caller injects them into generateTestTasks.
-
-	// 5. Scan .md files
-	existingKeys := make(map[string]bool) // track which keys come from .md files
-
-	entries, err := os.ReadDir(opts.TasksDir)
-	if err != nil {
-		return nil, fmt.Errorf("read tasks dir: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-		// Skip special directories/files
-		if shouldSkipFile(entry.Name()) {
-			continue
-		}
-
-		filePath := filepath.Join(opts.TasksDir, entry.Name())
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("read %s: %v", entry.Name(), err))
-			continue
-		}
-
-		fm, _, err := ParseFrontmatter(content)
-		if err != nil {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("parse %s: %v", entry.Name(), err))
-			continue
-		}
-
-		if fm.ID == "" {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("skip %s: no id in frontmatter", entry.Name()))
-			continue
-		}
-
-		key := strings.TrimSuffix(entry.Name(), ".md")
-		existingKeys[key] = true
-
-		// Build task from frontmatter
-		taskType := fm.Type
-		if taskType == "" {
-			taskType = InferType(fm.ID, surfaces)
-		}
-
-		newTask := Task{
-			ID:            fm.ID,
-			Title:         fm.Title,
-			Priority:      types.Priority(fm.Priority),
-			EstimatedTime: fm.EstimatedTime,
-			Dependencies:  fm.Dependencies,
-			File:          entry.Name(),
-			Record:        path.Join("records", entry.Name()),
-			Breaking:      fm.Breaking,
-			SurfaceKey:    fm.SurfaceKey,
-			SurfaceType:   fm.SurfaceType,
-			MainSession:   fm.MainSession,
-			Type:          taskType,
-			Coverage:      fm.Coverage,
-			Complexity:    fm.Complexity,
-		}
-
-		// Merge with existing
-		if existing, found := index.ByID(fm.ID); found {
-			PreserveRuntimeFields(&existing, &newTask)
-			index.SetTask(key, newTask)
-			result.UpdatedCount++
-		} else {
-			newTask.Status = types.StatusPending
-			index.SetTask(key, newTask)
-			result.NewCount++
-		}
-	}
-
-	// 5.5 Validate: business tasks from .md files must have a type
-	for key, t := range index.TasksMap() {
-		if !existingKeys[key] {
-			continue // auto-generated tasks are not from .md files
-		}
-		if IsAutoGenTaskID(t.ID) {
-			continue // auto-generated tasks use InferType
-		}
-		if t.Type == "" {
-			return nil, fmt.Errorf("task %s has empty type (set type in frontmatter or use a recognizable ID pattern)", t.File)
-		}
-	}
-
-	// 5.5.0 Validate: non-auto-gen tasks must not use system types
-	for key, t := range index.TasksMap() {
-		if !existingKeys[key] {
-			continue // auto-generated tasks are not from .md files
-		}
-		if IsAutoGenTaskID(t.ID) {
-			continue // auto-generated tasks are allowed to use system types
-		}
-		if IsSystemType(t.Type) {
-			return nil, fmt.Errorf("task '%s': type '%s' is a system-reserved type (reserved: %s)", t.ID, t.Type, FormatSystemTypes())
-		}
-	}
-
-	// 5.5.1 Detect pipeline needs
-	needsTest := needsTestPipeline(index.TasksMap(), intent)
-	needsEval := needsReviewDoc(index.TasksMap())
-
-	// 5.5.2 Extract AC from doc tasks for review-doc template
-	if needsEval {
-		bodyCtx.DocTaskCriteria = extractDocTaskCriteria(opts.TasksDir)
-
-		// Validate: warn about doc tasks without AC section
-		for taskName, acContent := range bodyCtx.DocTaskCriteria {
-			if acContent == "" {
-				result.Warnings = append(result.Warnings,
-					fmt.Sprintf("[WARN] task %s has no Acceptance Criteria section", taskName))
-			}
-		}
-
-		// Validate: check that DocTaskCriteria keys cover all doc tasks
-		// Collect doc task keys from the index (non-auto-gen, doc-category)
-		docTaskKeys := make(map[string]bool)
-		for key, t := range index.TasksMap() {
-			if IsAutoGenTaskID(t.ID) {
-				continue
-			}
-			if CategoryForType(t.Type) == CategoryDoc {
-				docTaskKeys[key] = true
-			}
-		}
-		// Verify every doc task has an entry in DocTaskCriteria
-		for key := range docTaskKeys {
-			if _, ok := bodyCtx.DocTaskCriteria[key]; !ok {
-				result.Warnings = append(result.Warnings,
-					fmt.Sprintf("[WARN] task %s has no Acceptance Criteria section", key))
-			}
-		}
-
-		// Special warning when ALL doc tasks lack AC (zero-AC feature)
-		allEmpty := true
-		for _, acContent := range bodyCtx.DocTaskCriteria {
-			if strings.TrimSpace(acContent) != "" {
-				allEmpty = false
-				break
-			}
-		}
-		if len(bodyCtx.DocTaskCriteria) > 0 && allEmpty {
-			result.Warnings = append(result.Warnings,
-				"[WARN] feature has no AC for any doc task")
-		}
-	}
-
-	// 5.9 Migrate fix-tasks from legacy T-test-run to per-surface-key T-test-run-{key}
-	// Only applies to multi-surface projects. Single-surface projects keep T-test-run unchanged.
-	// Must run BEFORE orphan cleanup (step 6) so the old T-test-run entry is still available.
-	var migratedState *migratedRunTestState
-	if !isSingleSurface(surfaces) {
-		resolvedEO, _ := forgeconfig.ResolveExecutionOrder(surfaces, executionOrder)
-		migratedState = migrateFixTaskSources(index, surfaces, resolvedEO)
-	}
-
-	// 6. Detect and clean up orphans
-	// Test tasks (T-test-*) are also cleaned up when they have no .md file AND
-	// are not regenerated by Step 7.5 (config disabled test pipeline).
-	// Fix tasks (fix-*) are excluded — they are business tasks without auto-generated .md files.
-	for key, t := range index.TasksMap() {
-		if !existingKeys[key] && !isFixTaskID(t.ID) {
-			result.Warnings = append(result.Warnings, fmt.Sprintf("orphan: key %q (id=%s) has no .md file", key, t.ID))
-			delete(index.TasksMap(), key)
-			result.PreservedCount++
-		}
-	}
-
-	// 6.5 Generate stage-gates (skip for features without testable types)
-	var generated int
-	if needsTest {
-		// Collect all task IDs from the current index for phase detection.
-		var allTaskIDs []string
-		for _, t := range index.TasksMap() {
-			allTaskIDs = append(allTaskIDs, t.ID)
-		}
-		generated, err = GenerateStageGates(allTaskIDs, opts.TasksDir, opts.FeatureSlug)
-		if err != nil {
-			return nil, fmt.Errorf("generate stage-gates: %w", err)
-		}
-		result.StageGatesGenerated = generated
-	}
-
-	// Index any newly generated stage-gate files
-	if generated > 0 {
-		stageEntries, err := os.ReadDir(opts.TasksDir)
-		if err != nil {
-			return nil, fmt.Errorf("read tasks dir for stage-gates: %w", err)
-		}
-		for _, entry := range stageEntries {
-			if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-				continue
-			}
-			if shouldSkipFile(entry.Name()) {
-				continue
-			}
-			key := strings.TrimSuffix(entry.Name(), ".md")
-			if existingKeys[key] {
-				continue // already indexed
-			}
-
-			filePath := filepath.Join(opts.TasksDir, entry.Name())
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				continue
-			}
-			fm, _, err := ParseFrontmatter(content)
-			if err != nil || fm.ID == "" {
-				continue
-			}
-
-			existingKeys[key] = true
-			taskType := fm.Type
-			if taskType == "" {
-				taskType = InferType(fm.ID, surfaces)
-			}
-			newTask := Task{
-				ID:            fm.ID,
-				Title:         fm.Title,
-				Priority:      types.Priority(fm.Priority),
-				EstimatedTime: fm.EstimatedTime,
-				Dependencies:  fm.Dependencies,
-				File:          entry.Name(),
-				Record:        path.Join("records", entry.Name()),
-				Breaking:      fm.Breaking,
-				SurfaceKey:    fm.SurfaceKey,
-				SurfaceType:   fm.SurfaceType,
-				MainSession:   fm.MainSession,
-				Type:          taskType,
-				Coverage:      fm.Coverage,
-				Complexity:    fm.Complexity,
-			}
-			// Preserve runtime state if task already exists in index
-			if existing, found := index.ByID(fm.ID); found {
-				PreserveRuntimeFields(&existing, &newTask)
-				index.SetTask(key, newTask)
-				result.UpdatedCount++
-			} else {
-				newTask.Status = types.StatusPending
-				index.SetTask(key, newTask)
-				result.NewCount++
-			}
-		}
-	}
-
-	// 7. Generate auto-gen tasks via registry (T-review-doc + test pipeline + validation + consolidation + clean-code)
-	// The registry handles mode/config/intent/condition filtering, expansion, and dependency resolution.
-	// Step 7 (T-review-doc only) and Step 7.5 (test pipeline only) are now unified.
-	if mode != "" && (needsTest || needsEval) {
-		// Note: surfaces may be empty for docs-only features — that's fine.
-		// GenerateTestTasks generates non-surface tasks (T-review-doc, T-clean-code,
-		// T-validate-code) even with empty surfaces; surface-dependent nodes produce zero tasks.
-
-		// Collect business tasks for GenerateCondition and dependency resolvers
-		var businessTasks []Task
-		for _, t := range index.TasksMap() {
-			if !IsAutoGenTaskID(t.ID) {
-				businessTasks = append(businessTasks, t)
-			}
-		}
-
-		// Docs-only features (needsEval && !needsTest) should get T-review-doc
-		// but NOT surface-dependent test pipeline tasks. Suppress surfaces to
-		// ensure GenerateTestTasks only produces non-surface nodes.
-		effectiveSurfaces := surfaces
-		if !needsTest {
-			effectiveSurfaces = nil
-		}
-
-		resolvedExecOrder, _ := forgeconfig.ResolveExecutionOrder(effectiveSurfaces, executionOrder)
-		testTasks := GenerateTestTasks(mode, effectiveSurfaces, resolvedExecOrder, opts.AutoConfig, intent, businessTasks, index.TasksMap())
-
-		for _, td := range testTasks {
-			ttKey := td.Key
-			existingKeys[ttKey] = true
-
-			// Generate .md if missing
-			mdPath := filepath.Join(opts.TasksDir, ttKey+".md")
-			if _, err := os.Stat(mdPath); os.IsNotExist(err) {
-				content, genErr := GenerateTestTaskMD(td, bodyCtx)
-				if genErr != nil {
-					result.Warnings = append(result.Warnings, fmt.Sprintf("generate %s: %v", ttKey, genErr))
-					continue
-				}
-				if writeErr := os.WriteFile(mdPath, content, 0o644); writeErr != nil {
-					result.Warnings = append(result.Warnings, fmt.Sprintf("write %s: %v", ttKey, writeErr))
-					continue
-				}
-			}
-
-			t := td.TaskFromFile()
-			if existing, found := index.ByID(td.ID); found {
-				PreserveRuntimeFields(&existing, &t)
-				index.SetTask(ttKey, t)
-				result.UpdatedCount++
-			} else {
-				index.SetTask(ttKey, t)
-				result.NewCount++
-			}
-		}
-
-		// Phase 2 of migration: apply saved T-test-run state to the first run-test task
-		if migratedState != nil {
-			applyMigratedRunTestState(index, migratedState)
-		}
-	}
-
-	// 8. Normalize task files (remove empty ## Hard Rules sections)
-	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".md") {
-			continue
-		}
-		if shouldSkipFile(entry.Name()) {
-			continue
-		}
-		filePath := filepath.Join(opts.TasksDir, entry.Name())
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			continue
-		}
-		normalized := NormalizeTaskMD(content)
-		if !bytes.Equal(normalized, content) {
-			_ = os.WriteFile(filePath, normalized, 0o644)
-		}
-	}
-
-	// 8.5 Check for legacy scope fields that require migration
-	var allTasks []Task
-	for _, t := range index.TasksMap() {
-		allTasks = append(allTasks, t)
-	}
-	if err := CheckLegacyScope(allTasks); err != nil {
+	// Step 1: Load existing index or create new
+	if err := bc.loadOrCreateIndex(); err != nil {
 		return nil, err
 	}
 
-	// 9. Save index
-	if err := indexPkg.SaveIndexAtomic(opts.IndexPath, index); err != nil {
-		return nil, fmt.Errorf("save index: %w", err)
+	// Step 2-3.5: Resolve context (mode, metadata, body context)
+	bc.resolveContext()
+
+	// Step 5: Scan .md files and upsert into index
+	if err := bc.scanTaskFiles(); err != nil {
+		return nil, err
 	}
 
-	result.Index = index
-	return result, nil
+	// Step 5.5: Validate task types
+	if err := bc.validateTaskTypes(); err != nil {
+		return nil, err
+	}
+
+	// Step 5.5.1-5.5.2: Detect pipeline needs and extract AC
+	bc.detectPipelineNeedsAndAC()
+
+	// Step 5.9-6: Migrate fix-tasks and cleanup orphans
+	bc.cleanupOrphans()
+
+	// Step 6.5: Generate stage-gates and index new files
+	if err := bc.generateAndIndexStageGates(); err != nil {
+		return nil, err
+	}
+
+	// Step 7: Generate auto-gen tasks via registry
+	bc.generateAutoGenTasks()
+
+	// Step 8-9: Normalize task files and save index
+	if err := bc.normalizeAndSave(); err != nil {
+		return nil, err
+	}
+
+	bc.result.Index = bc.index
+	return bc.result, nil
 }
 
 // detectMode determines the feature mode from file existence and intent.
