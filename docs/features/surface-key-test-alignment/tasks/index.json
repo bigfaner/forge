@@ -1,0 +1,232 @@
+{
+  "feature": "surface-key-test-alignment",
+  "proposal": "docs/proposals/surface-key-test-alignment/proposal.md",
+  "created": "2026-06-06",
+  "tasks": {
+    "1-switch-per-surface-key": {
+      "id": "1",
+      "title": "Switch gen-test-scripts to per-surface-key expansion in pipeline.go",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-switch-per-surface-key.md",
+      "record": "records/1-switch-per-surface-key.md",
+      "breaking": true,
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "10-update-hooks-submit-task": {
+      "id": "10",
+      "title": "Update hooks/guide.md and submit-task record format",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "10-update-hooks-submit-task.md",
+      "record": "records/10-update-hooks-submit-task.md",
+      "type": "doc"
+    },
+    "11-update-forge-cli-tests": {
+      "id": "11",
+      "title": "Update forge-cli test files for surface-key naming",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "11-update-forge-cli-tests.md",
+      "record": "records/11-update-forge-cli-tests.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "2-update-gen-test-scripts-skill-types": {
+      "id": "2",
+      "title": "Update gen-test-scripts SKILL.md and type templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-update-gen-test-scripts-skill-types.md",
+      "record": "records/2-update-gen-test-scripts-skill-types.md",
+      "type": "doc"
+    },
+    "3-update-gen-test-scripts-rules": {
+      "id": "3",
+      "title": "Update gen-test-scripts rule files",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-update-gen-test-scripts-rules.md",
+      "record": "records/3-update-gen-test-scripts-rules.md",
+      "type": "doc"
+    },
+    "4-verify-run-tests-compat": {
+      "id": "4",
+      "title": "Verify run-tests SKILL.md compatibility",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-verify-run-tests-compat.md",
+      "record": "records/4-verify-run-tests-compat.md",
+      "type": "doc"
+    },
+    "5-update-init-justfile-skill-rules": {
+      "id": "5",
+      "title": "Update init-justfile SKILL.md and surface rules",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-update-init-justfile-skill-rules.md",
+      "record": "records/5-update-init-justfile-skill-rules.md",
+      "type": "doc"
+    },
+    "6-update-init-justfile-templates": {
+      "id": "6",
+      "title": "Update init-justfile justfile templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "pending",
+      "file": "6-update-init-justfile-templates.md",
+      "record": "records/6-update-init-justfile-templates.md",
+      "type": "doc"
+    },
+    "7-update-gen-journeys-contracts": {
+      "id": "7",
+      "title": "Update gen-journeys and gen-contracts references",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "7-update-gen-journeys-contracts.md",
+      "record": "records/7-update-gen-journeys-contracts.md",
+      "type": "doc"
+    },
+    "8-update-test-guide-skill-templates": {
+      "id": "8",
+      "title": "Update test-guide SKILL.md and surface templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "8-update-test-guide-skill-templates.md",
+      "record": "records/8-update-test-guide-skill-templates.md",
+      "type": "doc"
+    },
+    "9-update-test-guide-rules": {
+      "id": "9",
+      "title": "Update test-guide rules",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "8"
+      ],
+      "status": "pending",
+      "file": "9-update-test-guide-rules.md",
+      "record": "records/9-update-test-guide-rules.md",
+      "type": "doc"
+    },
+    "gen-journeys": {
+      "id": "T-test-gen-journeys",
+      "title": "Generate Test Journeys",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "T-review-doc"
+      ],
+      "status": "pending",
+      "file": "gen-journeys.md",
+      "record": "records/gen-journeys.md",
+      "breaking": true,
+      "type": "test.gen-journeys"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4",
+        "6",
+        "10",
+        "2",
+        "5",
+        "7",
+        "3",
+        "8",
+        "9"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    },
+    "run-test": {
+      "id": "T-test-run",
+      "title": "Run CLI Functional Test",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-gen-journeys"
+      ],
+      "status": "pending",
+      "file": "run-test.md",
+      "record": "records/run-test.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "test.run"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
