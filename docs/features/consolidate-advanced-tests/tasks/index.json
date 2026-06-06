@@ -1,0 +1,127 @@
+{
+  "feature": "consolidate-advanced-tests",
+  "proposal": "docs/proposals/consolidate-advanced-tests/proposal.md",
+  "created": "2026-06-06",
+  "tasks": {
+    "1-merge-testkit": {
+      "id": "1",
+      "title": "合并 testkit：补充 3 个缺失函数到顶层 tests/testkit",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "1-merge-testkit.md",
+      "record": "records/1-merge-testkit.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "low"
+    },
+    "2-migrate-lightweight-journeys": {
+      "id": "2",
+      "title": "迁移 error-handling 和 scope-resolution journeys",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-migrate-lightweight-journeys.md",
+      "record": "records/2-migrate-lightweight-journeys.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "low"
+    },
+    "3-migrate-forge-commands": {
+      "id": "3",
+      "title": "迁移 forge-commands journey",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-migrate-forge-commands.md",
+      "record": "records/3-migrate-forge-commands.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "4-migrate-justfile-integration": {
+      "id": "4",
+      "title": "迁移 justfile-integration journey",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-migrate-justfile-integration.md",
+      "record": "records/4-migrate-justfile-integration.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "5-migrate-skill-ops": {
+      "id": "5",
+      "title": "迁移 skill-ops journey",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-migrate-skill-ops.md",
+      "record": "records/5-migrate-skill-ops.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "6-merge-overlapping-journeys": {
+      "id": "6",
+      "title": "合并 task-lifecycle 和 task-type-system 重叠 journeys",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "6-merge-overlapping-journeys.md",
+      "record": "records/6-merge-overlapping-journeys.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "7-update-references-and-cleanup": {
+      "id": "7",
+      "title": "更新活跃引用并删除 forge-cli/tests/",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "status": "pending",
+      "file": "7-update-references-and-cleanup.md",
+      "record": "records/7-update-references-and-cleanup.md",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "low"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
