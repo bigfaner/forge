@@ -53,7 +53,7 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
-	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts-cli", "T-test-run", "T-specs-consolidate"}
+	wantIDs := []string{"T-test-gen-journeys", "T-eval-journey", "T-test-gen-contracts", "T-eval-contract", "T-test-gen-scripts", "T-test-run", "T-specs-consolidate"}
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -73,8 +73,8 @@ func TestGetBreakdownTestTasks_SingleType(t *testing.T) {
 	if tasks[4].Dependencies[0] != "T-eval-contract" {
 		t.Errorf("gen-scripts should depend on eval-contract, got %v", tasks[4].Dependencies)
 	}
-	if tasks[5].Dependencies[0] != "T-test-gen-scripts-cli" {
-		t.Errorf("run should depend on gen-scripts-cli, got %v", tasks[5].Dependencies)
+	if tasks[5].Dependencies[0] != "T-test-gen-scripts" {
+		t.Errorf("run should depend on gen-scripts, got %v", tasks[5].Dependencies)
 	}
 	if tasks[6].Dependencies[0] != "T-test-run" {
 		t.Errorf("consolidate should depend on run, got %v", tasks[6].Dependencies)
@@ -327,6 +327,8 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 		"T-test-run-api", "T-test-run-tui",
 		"T-specs-consolidate",
 	}
+	// NOTE: multiSurface("tui","tui","api","api") has key==type, so per-surface-key
+	// produces the same IDs as the old per-surface-type expansion.
 	for i, want := range wantIDs {
 		if tasks[i].ID != want {
 			t.Errorf("tasks[%d].ID = %q, want %q", i, tasks[i].ID, want)
@@ -401,7 +403,7 @@ func TestGetBreakdownTestTasks_PerType_TwoTypes(t *testing.T) {
 func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 	tasks := GetBreakdownTestTasks(scalarSurface("api"), nil, defaultAuto, "")
 
-	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts-api + run + consolidate = 7
+	// gen-journeys + eval-journey + gen-contracts + eval-contract + gen-scripts (degenerate) + run + consolidate = 7
 	if len(tasks) != 7 {
 		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
@@ -411,7 +413,7 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		"T-eval-journey",
 		"T-test-gen-contracts",
 		"T-eval-contract",
-		"T-test-gen-scripts-api",
+		"T-test-gen-scripts",
 		"T-test-run", "T-specs-consolidate",
 	}
 	for i, want := range wantIDs {
@@ -420,8 +422,8 @@ func TestGetBreakdownTestTasks_PerType_SingleType(t *testing.T) {
 		}
 	}
 
-	if len(tasks[5].Dependencies) != 1 || tasks[5].Dependencies[0] != "T-test-gen-scripts-api" {
-		t.Errorf("T-test-run should depend on T-test-gen-scripts-api, got %v", tasks[5].Dependencies)
+	if len(tasks[5].Dependencies) != 1 || tasks[5].Dependencies[0] != "T-test-gen-scripts" {
+		t.Errorf("T-test-run should depend on T-test-gen-scripts, got %v", tasks[5].Dependencies)
 	}
 }
 
@@ -1395,7 +1397,7 @@ func TestGetBreakdownTestTasks_NewOrdering(t *testing.T) {
 		"T-eval-journey",
 		"T-test-gen-contracts",
 		"T-eval-contract",
-		"T-test-gen-scripts-cli",
+		"T-test-gen-scripts",
 		"T-test-run",
 		"T-specs-consolidate",
 	}
@@ -1439,12 +1441,14 @@ func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
 		t.Errorf("eval-contract should depend on gen-contracts, got %v", byID["T-eval-contract"].Dependencies)
 	}
 
-	// gen-scripts depend on eval-contract
-	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-eval-contract" {
-		t.Errorf("gen-scripts-cli should depend on eval-contract, got %v", byID["T-test-gen-scripts-cli"].Dependencies)
-	}
+	// gen-scripts use per-surface-key serial chain: api(1st) depends on eval-contract, cli(2nd) depends on api
+	// NOTE: multiSurface("cli","cli","api","api") has key==type, so IDs are same as old per-surface-type.
+	// Execution order is ["api","cli"], so api comes first.
 	if len(byID["T-test-gen-scripts-api"].Dependencies) != 1 || byID["T-test-gen-scripts-api"].Dependencies[0] != "T-eval-contract" {
 		t.Errorf("gen-scripts-api should depend on eval-contract, got %v", byID["T-test-gen-scripts-api"].Dependencies)
+	}
+	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Errorf("gen-scripts-cli should depend on gen-scripts-api (serial chain), got %v", byID["T-test-gen-scripts-cli"].Dependencies)
 	}
 
 	// T-test-run-api (first in chain) depends on all gen-scripts
@@ -1579,8 +1583,8 @@ func TestGetBreakdownTestTasks_RegressionStillValid(t *testing.T) {
 	if byID["T-specs-consolidate"].Dependencies[0] != "T-test-run" {
 		t.Errorf("consolidate-specs should depend on T-test-run, got %v", byID["T-specs-consolidate"].Dependencies)
 	}
-	if byID["T-test-run"].Dependencies[0] != "T-test-gen-scripts-cli" {
-		t.Errorf("run should still depend on gen-scripts-cli, got %v", byID["T-test-run"].Dependencies)
+	if byID["T-test-run"].Dependencies[0] != "T-test-gen-scripts" {
+		t.Errorf("run should still depend on gen-scripts, got %v", byID["T-test-run"].Dependencies)
 	}
 }
 
@@ -2154,15 +2158,19 @@ func TestGetBreakdownTestTasks_AC1_FullDAG(t *testing.T) {
 		t.Errorf("gen-contracts should depend on eval-journey, got %v", byID["T-test-gen-contracts"].Dependencies)
 	}
 
-	// gen-scripts depend on eval-contract
-	for _, typ := range []string{"api", "web", "cli"} {
-		gsID := "T-test-gen-scripts-" + typ
-		if byID[gsID].Dependencies[0] != "T-eval-contract" {
-			t.Errorf("%s should depend on eval-contract, got %v", gsID, byID[gsID].Dependencies)
-		}
+	// gen-scripts use per-surface-key serial chain:
+	// auth-service(1st) depends on eval-contract, admin(2nd) depends on auth-service, cli(3rd) depends on admin
+	if byID["T-test-gen-scripts-auth-service"].Dependencies[0] != "T-eval-contract" {
+		t.Errorf("gen-scripts-auth-service should depend on eval-contract, got %v", byID["T-test-gen-scripts-auth-service"].Dependencies)
+	}
+	if byID["T-test-gen-scripts-admin"].Dependencies[0] != "T-test-gen-scripts-auth-service" {
+		t.Errorf("gen-scripts-admin should depend on gen-scripts-auth-service (serial), got %v", byID["T-test-gen-scripts-admin"].Dependencies)
+	}
+	if byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-gen-scripts-admin" {
+		t.Errorf("gen-scripts-cli should depend on gen-scripts-admin (serial), got %v", byID["T-test-gen-scripts-cli"].Dependencies)
 	}
 
-	// run-test chain: first depends on all gen-scripts
+	// run-test chain: first depends on all gen-scripts (ResolveUpstream returns all)
 	firstRunID := "T-test-run-auth-service"
 	firstRunDeps := byID[firstRunID].Dependencies
 	if len(firstRunDeps) != 3 {

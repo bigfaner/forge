@@ -810,16 +810,18 @@ func TestMatchRegistryID_ExactMatch(t *testing.T) {
 	}
 }
 
-func TestMatchRegistryID_SurfaceTypeSuffix(t *testing.T) {
+func TestMatchRegistryID_SurfaceKeySuffix_GenScripts(t *testing.T) {
+	surfaces := map[string]string{"backend": "api", "frontend": "web"}
+
 	tests := []struct {
 		id       string
 		surfaces map[string]string
 		want     string
 	}{
-		{"T-test-gen-scripts-api", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-cli", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts-web", nil, TypeTestGenScripts},
-		{"T-test-gen-scripts", nil, TypeTestGenScripts}, // degenerate form
+		{"T-test-gen-scripts-backend", surfaces, TypeTestGenScripts},
+		{"T-test-gen-scripts-frontend", surfaces, TypeTestGenScripts},
+		{"T-test-gen-scripts", nil, TypeTestGenScripts}, // degenerate form (single surface)
+		{"T-test-gen-scripts-backend", nil, ""},         // no surfaces map -> no key match
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {

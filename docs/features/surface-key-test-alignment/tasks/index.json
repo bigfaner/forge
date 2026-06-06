@@ -8,7 +8,7 @@
       "title": "Switch gen-test-scripts to per-surface-key expansion in pipeline.go",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-switch-per-surface-key.md",
       "record": "records/1-switch-per-surface-key.md",
       "breaking": true,
