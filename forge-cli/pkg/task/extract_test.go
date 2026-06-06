@@ -7,56 +7,6 @@ import (
 	"testing"
 )
 
-// --- extractScope tests ---
-
-func TestExtractScope(t *testing.T) {
-	tests := []struct {
-		name    string
-		content string
-		want    []string
-	}{
-		{
-			name:    "extracts in-scope items",
-			content: "## Scope\n\n### In Scope\n\n- Backend API endpoints\n- Database schema\n- CLI commands\n\n### Out of Scope\n\n- Frontend UI\n- Documentation\n\n## Other",
-			want:    []string{"Backend API endpoints", "Database schema", "CLI commands"},
-		},
-		{
-			name:    "handles checkboxes",
-			content: "## Scope\n\n### In Scope\n\n- [ ] Backend API endpoints\n- [x] Database schema\n\n## Other",
-			want:    []string{"Backend API endpoints", "Database schema"},
-		},
-		{
-			name:    "empty scope section",
-			content: "## Scope\n\n### In Scope\n\n## Other",
-			want:    nil,
-		},
-		{
-			name:    "no scope heading",
-			content: "## Other\n\n- item1\n- item2",
-			want:    nil,
-		},
-		{
-			name:    "in scope with blank lines",
-			content: "## Scope\n\n### In Scope\n\n- First item\n\n- Second item\n\n## Other",
-			want:    []string{"First item", "Second item"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := extractScope(tt.content)
-			if len(got) != len(tt.want) {
-				t.Fatalf("extractScope() = %v, want %v", got, tt.want)
-			}
-			for i, v := range got {
-				if v != tt.want[i] {
-					t.Errorf("extractScope()[%d] = %q, want %q", i, v, tt.want[i])
-				}
-			}
-		})
-	}
-}
-
 // --- extractSuccessCriteria tests ---
 
 func TestExtractSuccessCriteria(t *testing.T) {

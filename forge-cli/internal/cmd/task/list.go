@@ -1,11 +1,10 @@
 package task
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
 
 	"forge-cli/internal/cmd/base"
@@ -18,10 +17,6 @@ import (
 )
 
 var listLocal bool
-
-// fallbackSortPriority is assigned to task IDs that cannot be parsed,
-// ensuring they sort after all valid business IDs.
-const fallbackSortPriority = 99999
 
 // ANSI escape sequences for cycle marker display.
 const (
@@ -65,13 +60,20 @@ func init() {
 
 const titleMaxWidth = 50
 
+// colWidths holds computed column widths for the task table.
+type colWidths struct {
+	id       int
+	typ      int
+	title    int
+	status   int
+	breaking int
+	mainSess int
+}
+
 func runList(cmd *cobra.Command, args []string) error {
-	sortMode := "topo"
-	if cmd != nil {
-		sortMode = cmd.Flags().Lookup("sort").Value.String()
-	}
-	if sortMode != "topo" && sortMode != "id" {
-		return fmt.Errorf("invalid --sort value %q: must be \"topo\" or \"id\"", sortMode)
+	sortMode, err := parseSortMode(cmd)
+	if err != nil {
+		return err
 	}
 
 	projectRoot, err := project.FindProjectRoot()
@@ -79,108 +81,168 @@ func runList(cmd *cobra.Command, args []string) error {
 		base.Exit(base.ErrProjectNotFound())
 	}
 
-	var featureSlug string
-	var indexPath string
-
-	if len(args) == 1 {
-		// Slug provided: bypass RequireFeature, construct index path directly
-		featureSlug = args[0]
-
-		// Validate: feature directory must exist (in main repo or worktree)
-		if !featureDirExists(projectRoot, featureSlug) {
-			return base.ErrFeatureNotFound(featureSlug)
-		}
-
-		indexPath = resolveListIndexPath(projectRoot, featureSlug)
-	} else {
-		// No slug: use existing auto-detection logic
-		featureSlug, err = feature.RequireFeature(projectRoot)
-		if err != nil {
-			base.Exit(base.ErrFeatureNotSet())
-		}
-
-		indexPath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	featureSlug, indexPath, err := resolveFeatureArgs(projectRoot, args)
+	if err != nil {
+		return err
 	}
 
+	index, err := loadTaskIndex(indexPath, featureSlug)
+	if err != nil {
+		if errors.Is(err, errSentinelNoTasks) {
+			return nil // message already printed
+		}
+		return err
+	}
+
+	if err := checkLegacyScope(index); err != nil {
+		return err
+	}
+
+	// --tree mode: build dependency tree and render
+	if isTreeMode(cmd) {
+		handled, err := handleTreeMode(index, sortMode)
+		if handled || err != nil {
+			return err
+		}
+		// Not handled: terminal doesn't support TUI, fall through to table mode
+	}
+
+	// Table mode
+	sortedIDs, cycleSet, missingForTask := sortTaskIDs(index, sortMode)
+	displayID := newDisplayIDFunc(cycleSet, missingForTask)
+
+	fmt.Printf("%d found  (feature: %s)\n\n", len(sortedIDs), featureSlug)
+
+	widths := computeColumnWidths(sortedIDs, index, cycleSet, missingForTask)
+	printTaskTable(sortedIDs, index, widths, displayID)
+
+	return nil
+}
+
+// parseSortMode extracts and validates the --sort flag value.
+func parseSortMode(cmd *cobra.Command) (string, error) {
+	sortMode := "topo"
+	if cmd != nil {
+		sortMode = cmd.Flags().Lookup("sort").Value.String()
+	}
+	if sortMode != "topo" && sortMode != "id" {
+		return "", fmt.Errorf("invalid --sort value %q: must be \"topo\" or \"id\"", sortMode)
+	}
+	return sortMode, nil
+}
+
+// resolveFeatureArgs determines the feature slug and index path from CLI args.
+func resolveFeatureArgs(projectRoot string, args []string) (featureSlug, indexPath string, err error) {
+	if len(args) == 1 {
+		featureSlug = args[0]
+		if !featureDirExists(projectRoot, featureSlug) {
+			return "", "", base.ErrFeatureNotFound(featureSlug)
+		}
+		indexPath = resolveListIndexPath(projectRoot, featureSlug)
+		return featureSlug, indexPath, nil
+	}
+
+	// No slug: use existing auto-detection logic
+	var err2 error
+	featureSlug, err2 = feature.RequireFeature(projectRoot)
+	if err2 != nil {
+		base.Exit(base.ErrFeatureNotSet())
+	}
+	indexPath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	return featureSlug, indexPath, nil
+}
+
+// loadTaskIndex loads the task index, printing a message and returning a
+// sentinel error if the file is missing or contains no tasks.
+func loadTaskIndex(indexPath, featureSlug string) (*task.TaskIndex, error) {
 	index, err := task.LoadIndex(indexPath)
 	if err != nil || index.TaskCount() == 0 {
 		fmt.Printf("no tasks found  (feature: %s)\n", featureSlug)
-		return nil
+		return nil, errSentinelNoTasks
 	}
+	return index, nil
+}
 
-	// Check for legacy scope fields
+// errSentinelNoTasks is returned by loadTaskIndex when no tasks are found.
+// Callers should return nil for this case (the message is already printed).
+var errSentinelNoTasks = errors.New("no tasks found")
+
+// checkLegacyScope verifies no legacy scope fields remain in tasks.
+func checkLegacyScope(index *task.TaskIndex) error {
 	var allTasks []task.Task
 	for _, t := range index.TasksMap() {
 		allTasks = append(allTasks, t)
 	}
 	if legacyErr := task.CheckLegacyScope(allTasks); legacyErr != nil {
-		scopeErr, ok := legacyErr.(*task.LegacyScopeError)
-		if ok {
+		if scopeErr, ok := legacyErr.(*task.LegacyScopeError); ok {
 			base.Exit(base.ErrLegacyScope(scopeErr.Count))
 		}
 		return legacyErr
 	}
+	return nil
+}
 
-	// --tree mode: build dependency tree and render
-	treeMode := false
-	if cmd != nil {
-		treeMode, _ = cmd.Flags().GetBool("tree")
+// isTreeMode returns true if the --tree flag is set.
+func isTreeMode(cmd *cobra.Command) bool {
+	if cmd == nil {
+		return false
 	}
-	if treeMode {
-		// Terminal capability detection before entering TUI
-		isTerminal := listIsTerminalFunc()
-		termEnv := os.Getenv("TERM")
+	treeMode, _ := cmd.Flags().GetBool("tree")
+	return treeMode
+}
 
-		if canUseTUI(isTerminal, termEnv) {
-			sortByID := sortMode == "id"
-			roots := buildForest(index, withSortByID(sortByID))
-			return runTreeTUI(roots)
-		}
-		// Non-TTY: silently fall back to table mode (continue below)
+// handleTreeMode attempts TUI rendering. Returns (handled, error):
+//   - (true, err) if TUI was launched (err may be nil on success)
+//   - (false, nil) if terminal doesn't support TUI (fall back to table mode)
+func handleTreeMode(index *task.TaskIndex, sortMode string) (bool, error) {
+	isTerminal := listIsTerminalFunc()
+	termEnv := os.Getenv("TERM")
+
+	if !canUseTUI(isTerminal, termEnv) {
+		return false, nil // fall back to table mode
 	}
 
-	// Collect and sort task IDs
-	tasks := index.TasksMap()
+	sortByID := sortMode == "id"
+	roots := buildForest(index, withSortByID(sortByID))
+	return true, runTreeTUI(roots)
+}
 
-	var sortedIDs []string
-	var cycleSet map[string]bool
-	var missingForTask map[string][]string // task ID -> its missing deps
-
-	if sortMode == "topo" {
-		ordered, cycles, missing := task.TopologicalSort(index)
-		sortedIDs = ordered
-		// Append cycle nodes at the end so they still appear in the table
-		sortedIDs = append(sortedIDs, cycles...)
-
-		cycleSet = make(map[string]bool, len(cycles))
-		for _, c := range cycles {
-			cycleSet[c] = true
-		}
-
-		// Build missing-deps lookup per task
-		missingForTask = buildMissingPerTask(index, missing)
-	} else {
-		ids := make([]string, 0, len(tasks))
-		for _, t := range tasks {
+// sortTaskIDs returns sorted task IDs along with cycle and missing-dep metadata.
+func sortTaskIDs(index *task.TaskIndex, sortMode string) (sortedIDs []string, cycleSet map[string]bool, missingForTask map[string][]string) {
+	if sortMode != "topo" {
+		ids := make([]string, 0, len(index.TasksMap()))
+		for _, t := range index.TasksMap() {
 			ids = append(ids, t.ID)
 		}
-		sortedIDs = naturalSortTaskIDs(ids)
+		return naturalSortTaskIDs(ids), nil, nil
 	}
 
-	// Determine if color should be used (TTY only)
+	ordered, cycles, missing := task.TopologicalSort(index)
+	sortedIDs = ordered
+	sortedIDs = append(sortedIDs, cycles...)
+
+	cycleSet = make(map[string]bool, len(cycles))
+	for _, c := range cycles {
+		cycleSet[c] = true
+	}
+
+	missingForTask = buildMissingPerTask(index, missing)
+	return sortedIDs, cycleSet, missingForTask
+}
+
+// newDisplayIDFunc returns a closure that formats a task ID with optional
+// cycle/missing markers and ANSI color codes.
+func newDisplayIDFunc(cycleSet map[string]bool, missingForTask map[string][]string) func(string) string {
 	useColor := listIsTerminalFunc()
 
-	// Build display ID with optional marker for each task
-	displayID := func(id string) string {
+	return func(id string) string {
 		var markers []string
 		if cycleSet != nil && cycleSet[id] {
 			markers = append(markers, "cycle")
 		}
 		if missingForTask != nil {
-			if missIDs := missingForTask[id]; len(missIDs) > 0 {
-				for _, mid := range missIDs {
-					markers = append(markers, "missing: "+mid)
-				}
+			for _, mid := range missingForTask[id] {
+				markers = append(markers, "missing: "+mid)
 			}
 		}
 		if len(markers) == 0 {
@@ -192,91 +254,96 @@ func runList(cmd *cobra.Command, args []string) error {
 		}
 		return id + markerText
 	}
+}
 
-	// Print header
-	fmt.Printf("%d found  (feature: %s)\n\n", len(sortedIDs), featureSlug)
-
-	// Calculate dynamic column widths based on display width (CJK-aware)
-	idCol := base.DisplayWidth("ID")
-	typeCol := base.DisplayWidth("TYPE")
-	titleCol := base.DisplayWidth("TITLE")
-	statusCol := base.DisplayWidth("STATUS")
-	breakingCol := base.DisplayWidth("BREAKING")
-	mainSessCol := base.DisplayWidth("MAIN_SESS")
-
-	boolStr := func(v bool) string {
-		if v {
-			return "true"
-		}
-		return "false"
+// computeColumnWidths calculates dynamic column widths for the task table.
+func computeColumnWidths(sortedIDs []string, index *task.TaskIndex, cycleSet map[string]bool, missingForTask map[string][]string) colWidths {
+	w := colWidths{
+		id:       base.DisplayWidth("ID"),
+		typ:      base.DisplayWidth("TYPE"),
+		title:    base.DisplayWidth("TITLE"),
+		status:   base.DisplayWidth("STATUS"),
+		breaking: base.DisplayWidth("BREAKING"),
+		mainSess: base.DisplayWidth("MAIN_SESS"),
 	}
 
 	for _, id := range sortedIDs {
 		t, _ := index.ByID(id)
-		// Use display ID width (includes marker text, but exclude ANSI codes)
 		displayW := displayWidthPlain(id, cycleSet, missingForTask)
-		if displayW > idCol {
-			idCol = displayW
+		if displayW > w.id {
+			w.id = displayW
 		}
-		if base.DisplayWidth(t.Type) > typeCol {
-			typeCol = base.DisplayWidth(t.Type)
+		if dw := base.DisplayWidth(t.Type); dw > w.typ {
+			w.typ = dw
 		}
 		titleLen := base.DisplayWidth(t.Title)
 		if titleLen > titleMaxWidth {
 			titleLen = titleMaxWidth
 		}
-		if titleLen > titleCol {
-			titleCol = titleLen
+		if titleLen > w.title {
+			w.title = titleLen
 		}
-		if base.DisplayWidth(string(t.Status)) > statusCol {
-			statusCol = base.DisplayWidth(string(t.Status))
+		if dw := base.DisplayWidth(string(t.Status)); dw > w.status {
+			w.status = dw
 		}
-		if base.DisplayWidth(boolStr(t.Breaking)) > breakingCol {
-			breakingCol = base.DisplayWidth(boolStr(t.Breaking))
+		boolBreaking := boolStr(t.Breaking)
+		if dw := base.DisplayWidth(boolBreaking); dw > w.breaking {
+			w.breaking = dw
 		}
-		if base.DisplayWidth(boolStr(t.MainSession)) > mainSessCol {
-			mainSessCol = base.DisplayWidth(boolStr(t.MainSession))
+		boolMainSess := boolStr(t.MainSession)
+		if dw := base.DisplayWidth(boolMainSess); dw > w.mainSess {
+			w.mainSess = dw
 		}
 	}
+	return w
+}
 
+// boolStr converts a bool to its lowercase string representation.
+func boolStr(v bool) string {
+	if v {
+		return "true"
+	}
+	return "false"
+}
+
+// printTaskTable renders the task table with headers, separator, and rows.
+func printTaskTable(sortedIDs []string, index *task.TaskIndex, w colWidths, displayID func(string) string) {
 	// Print column headers
 	fmt.Printf("%s  %s  %s  %s  %s  %s\n",
-		base.PadRight("ID", idCol),
-		base.PadRight("TYPE", typeCol),
-		base.PadRight("TITLE", titleCol),
-		base.PadRight("STATUS", statusCol),
-		base.PadRight("BREAKING", breakingCol),
-		base.PadRight("MAIN_SESS", mainSessCol),
+		base.PadRight("ID", w.id),
+		base.PadRight("TYPE", w.typ),
+		base.PadRight("TITLE", w.title),
+		base.PadRight("STATUS", w.status),
+		base.PadRight("BREAKING", w.breaking),
+		base.PadRight("MAIN_SESS", w.mainSess),
 	)
 
 	// Print separator
 	sep := fmt.Sprintf("%s  %s  %s  %s  %s  %s",
-		strings.Repeat("-", idCol),
-		strings.Repeat("-", typeCol),
-		strings.Repeat("-", titleCol),
-		strings.Repeat("-", statusCol),
-		strings.Repeat("-", breakingCol),
-		strings.Repeat("-", mainSessCol),
+		strings.Repeat("-", w.id),
+		strings.Repeat("-", w.typ),
+		strings.Repeat("-", w.title),
+		strings.Repeat("-", w.status),
+		strings.Repeat("-", w.breaking),
+		strings.Repeat("-", w.mainSess),
 	)
 	fmt.Println(sep)
 
 	// Print task rows
 	for _, id := range sortedIDs {
 		t, _ := index.ByID(id)
-		title := base.TruncateSlug(t.Title, titleCol)
+		title := base.TruncateSlug(t.Title, w.title)
 		idDisplay := displayID(id)
-		idDisplayPadded := padRightPlain(idDisplay, idCol)
+		idDisplayPadded := padRightPlain(idDisplay, w.id)
 		fmt.Printf("%s  %s  %s  %s  %s  %s\n",
 			idDisplayPadded,
-			base.PadRight(t.Type, typeCol),
-			base.PadRight(title, titleCol),
-			base.PadRight(string(t.Status), statusCol),
-			base.PadRight(boolStr(t.Breaking), breakingCol),
-			base.PadRight(boolStr(t.MainSession), mainSessCol),
+			base.PadRight(t.Type, w.typ),
+			base.PadRight(title, w.title),
+			base.PadRight(string(t.Status), w.status),
+			base.PadRight(boolStr(t.Breaking), w.breaking),
+			base.PadRight(boolStr(t.MainSession), w.mainSess),
 		)
 	}
-
-	return nil
 }
 
 // displayWidthPlain returns the display width of the ID column for a task,
@@ -385,69 +452,4 @@ func resolveListIndexPath(projectRoot, slug string) string {
 
 	// Fallback: main repo's index.json
 	return filepath.Join(projectRoot, feature.GetFeatureIndexFile(slug))
-}
-
-// naturalSortTaskIDs sorts task IDs in natural order:
-// business IDs grouped by numeric prefix (1, 1.gate, 2, 2.summary, ...),
-// then test pipeline IDs (T-1, T-2, ...).
-// Within the same numeric prefix, pure numeric comes before compound.
-func naturalSortTaskIDs(ids []string) []string {
-	sorted := make([]string, len(ids))
-	copy(sorted, ids)
-
-	sort.SliceStable(sorted, func(i, j int) bool {
-		ki := sortKey(sorted[i])
-		kj := sortKey(sorted[j])
-
-		// Primary: T-prefixed IDs sort after all business IDs
-		if ki.isTestPipeline != kj.isTestPipeline {
-			return !ki.isTestPipeline
-		}
-
-		// Secondary: numeric prefix (groups 1, 1.gate together before 2)
-		if ki.numPrefix != kj.numPrefix {
-			return ki.numPrefix < kj.numPrefix
-		}
-
-		// Tertiary: same prefix — pure numeric before compound (1 < 1.gate)
-		if ki.isPureNumeric != kj.isPureNumeric {
-			return ki.isPureNumeric
-		}
-
-		// Quaternary: string comparison for compound suffixes
-		return sorted[i] < sorted[j]
-	})
-
-	return sorted
-}
-
-type idSortKey struct {
-	isTestPipeline bool
-	isPureNumeric  bool
-	numPrefix      int
-}
-
-func sortKey(id string) idSortKey {
-	// Test pipeline IDs: T-1, T-2, etc.
-	if numStr, ok := strings.CutPrefix(id, task.IDPrefixTestPipeline); ok {
-		num, _ := strconv.Atoi(numStr)
-		return idSortKey{isTestPipeline: true, numPrefix: num}
-	}
-
-	// Try pure numeric: "1", "2", "10"
-	if num, err := strconv.Atoi(id); err == nil {
-		return idSortKey{isPureNumeric: true, numPrefix: num}
-	}
-
-	// Compound IDs: "1.gate", "1.summary", "1.1" etc.
-	dotIdx := strings.Index(id, ".")
-	if dotIdx > 0 {
-		prefix := id[:dotIdx]
-		if num, err := strconv.Atoi(prefix); err == nil {
-			return idSortKey{numPrefix: num}
-		}
-	}
-
-	// Fallback: high numPrefix to sort last among business IDs
-	return idSortKey{numPrefix: fallbackSortPriority}
 }

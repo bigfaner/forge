@@ -17,8 +17,26 @@ import (
 
 func runExtract(_ *cobra.Command, args []string) error {
 	jsonlPath := args[0]
+	resolveOutDir(jsonlPath)
 
-	// Resolve output directory: --slug > --out > auto-derive from session ID
+	f, err := os.Open(jsonlPath)
+	if err != nil {
+		return base.NewAIError(base.ErrNotFound, "Cannot open transcript", err.Error(), "", "")
+	}
+	defer func() { _ = f.Close() }()
+
+	result := newExtractResult(jsonlPath)
+	ts := parseJSONLEntries(f, result)
+
+	result.Lines = ts.lineNum
+	aggregateTimings(result)
+	computeTimeRange(ts.firstTS, ts.lastTS, &result.Summary)
+
+	return writeExtractOutput(jsonlPath, result)
+}
+
+// resolveOutDir sets the global outDir based on --slug, --out, or auto-derived path.
+func resolveOutDir(jsonlPath string) {
 	if slug != "" {
 		outDir = filepath.Join("docs", "forensics", slug, "evidence")
 	} else if outDir == "" {
@@ -27,14 +45,10 @@ func runExtract(_ *cobra.Command, args []string) error {
 			outDir = filepath.Join("docs", "forensics", base, "evidence")
 		}
 	}
+}
 
-	f, err := os.Open(jsonlPath)
-	if err != nil {
-		return base.NewAIError(base.ErrNotFound, "Cannot open transcript", err.Error(), "", "")
-	}
-	defer func() { _ = f.Close() }()
-
-	result := extractResult{
+func newExtractResult(jsonlPath string) *extractResult {
+	return &extractResult{
 		File:        jsonlPath,
 		Thinking:    []thinkingEntry{},
 		ToolCalls:   []toolCallEntry{},
@@ -48,196 +62,225 @@ func runExtract(_ *cobra.Command, args []string) error {
 			StopReasons:   map[string]int{},
 		},
 	}
+}
 
+// parseState carries timestamp tracking across lines.
+type parseState struct {
+	lineNum int
+	firstTS string
+	lastTS  string
+	prevTS  string
+}
+
+// pendingCall records a tool_use awaiting its matching tool_result for timing.
+type pendingCall struct {
+	ts     string
+	tool   string
+	line   int
+	detail string
+}
+
+func parseJSONLEntries(f *os.File, result *extractResult) parseState {
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 0, 1024*1024), 10*1024*1024)
 
-	var firstTS, lastTS, prevTS string
-	// pending tool_use calls: toolUseID -> {timestamp, tool, line, detail}
-	type pendingCall struct {
-		ts     string
-		tool   string
-		line   int
-		detail string
-	}
+	var ts parseState
 	pending := map[string]pendingCall{}
 
-	lineNum := 0
 	for scanner.Scan() {
-		lineNum++
+		ts.lineNum++
 		var entry jsonlEntry
 		if err := json.Unmarshal(scanner.Bytes(), &entry); err != nil {
 			continue
 		}
-
 		if result.GitBranch == "" && entry.GitBranch != "" {
 			result.GitBranch = entry.GitBranch
 		}
 
 		switch entry.Type {
 		case "assistant":
-			for _, block := range entry.Message.Content {
-				switch block.Type {
-				case "thinking":
-					result.Summary.TotalThinking++
-					result.Thinking = append(result.Thinking, thinkingEntry{
-						Line:       lineNum,
-						Thinking:   truncate(block.Thinking, 500),
-						StopReason: entry.Message.StopReason,
-						Model:      entry.Message.Model,
-						MsgID:      entry.Message.ID,
-					})
-					if result.Model == "" && entry.Message.Model != "" {
-						result.Model = entry.Message.Model
-					}
-				case "tool_use":
-					result.Summary.TotalToolCalls++
-					result.Summary.ToolBreakdown[block.Name]++
-					inputJSON, _ := json.Marshal(block.Input)
-					result.ToolCalls = append(result.ToolCalls, toolCallEntry{
-						Line:       lineNum,
-						Tool:       block.Name,
-						Input:      truncate(string(inputJSON), 300),
-						StopReason: entry.Message.StopReason,
-						MsgID:      entry.Message.ID,
-					})
-					aggregateToolInput(block.Name, block.Input, &result.Summary)
-					// Record pending tool_use for timing
-					if block.ID != "" && entry.Timestamp != "" {
-						pending[block.ID] = pendingCall{
-							ts:     entry.Timestamp,
-							tool:   block.Name,
-							line:   lineNum,
-							detail: truncate(string(inputJSON), 120),
-						}
-					}
-				}
-			}
-
-			// Track stop reasons from assistant messages
-			if entry.Message.StopReason != "" {
-				result.Summary.StopReasons[entry.Message.StopReason]++
-			}
-
-			// Track timestamps for duration
-			ts := entry.Timestamp
-			if ts == "" && entry.Snapshot.Timestamp != "" {
-				ts = entry.Snapshot.Timestamp
-			}
-			if ts != "" {
-				if firstTS == "" {
-					firstTS = ts
-				}
-				lastTS = ts
-				if prevTS != "" {
-					if dur := computeDurationMs(prevTS, ts); dur > 0 {
-						result.Summary.ThinkingTurns = append(result.Summary.ThinkingTurns, thinkingTurn{
-							Line:       lineNum,
-							Seconds:    float64(dur) / 1000.0,
-							StopReason: entry.Message.StopReason,
-							Detail:     truncate(firstThinking(entry.Message.Content), 80),
-						})
-						result.Summary.TotalThinkingMs += dur
-					}
-				}
-			}
+			parseAssistantEntry(entry, &ts, result, pending)
 		case "user":
-			result.Summary.TotalUserMsgs++
-			content := extractUserContent(entry)
-			if content != "" {
-				result.UserMsgs = append(result.UserMsgs, userMsgEntry{
-					Line:    lineNum,
-					Content: truncate(content, 300),
-				})
-				detectSkills(content, &result.SkillsUsed)
-			}
-
-			// Extract tool_result metadata
-			for _, block := range entry.Message.Content {
-				if block.Type == "tool_result" {
-					// Match with pending tool_use for timing
-					if pc, ok := pending[block.ToolUseID]; ok {
-						dur := computeDurationMs(pc.ts, entry.Timestamp)
-						if dur >= 0 {
-							result.Summary.TotalToolMs += dur
-							result.Summary.TopSlowest = append(result.Summary.TopSlowest, timingEntry{
-								Tool:    pc.tool,
-								Line:    pc.line,
-								Seconds: float64(dur) / 1000.0,
-								Detail:  pc.detail,
-							})
-						}
-						delete(pending, block.ToolUseID)
-					}
-					result.Summary.TotalToolResults++
-					tre := toolResultEntry{
-						Line:      lineNum,
-						ToolUseID: block.ToolUseID,
-					}
-					if entry.ToolUseResult != nil {
-						tre.ResultType = entry.ToolUseResult.Type
-						tre.FilePath = entry.ToolUseResult.FilePath
-					}
-					result.ToolResults = append(result.ToolResults, tre)
-				}
-			}
-
+			parseUserEntry(entry, ts.lineNum, result, pending)
 		case "attachment":
-			att := entry.Attachment
-			switch att.Type {
-			case "invoked_skills":
-				for _, skill := range att.Skills {
-					name := strings.ToLower(strings.TrimPrefix(skill.Name, "forge:"))
-					found := false
-					for _, s := range result.SkillsUsed {
-						if s == name {
-							found = true
-							break
-						}
-					}
-					if !found {
-						result.SkillsUsed = append(result.SkillsUsed, name)
-					}
-				}
-			case "hook_success":
-				result.Hooks = append(result.Hooks, hookEventEntry{
-					Line:       lineNum,
-					HookName:   att.HookName,
-					HookEvent:  att.HookEvent,
-					DurationMs: att.DurationMs,
-					ExitCode:   att.ExitCode,
-					Command:    att.Command,
-				})
-				addToAgg(&result.Summary.HookBreakdown, att.HookName)
-				if att.ExitCode != 0 {
-					result.Summary.HookFailures++
-				}
-			case "edited_text_file":
-				if att.Filename != "" {
-					result.FilesEdited = append(result.FilesEdited, att.Filename)
-				}
-			case "compact_file_reference":
-				result.Summary.CompactCount++
-			case "plan_mode", "plan_mode_exit", "plan_mode_reentry":
-				result.Summary.PlanModeCount++
-			}
-			// Track skill invocations from all attachment types
-			for _, skill := range att.Skills {
-				addToAgg(&result.Summary.SkillInvocations, skill.Name)
-			}
+			parseAttachmentEntry(entry.Attachment, ts.lineNum, result)
 		}
-		entryTS := entry.Timestamp
-		if entryTS == "" && entry.Snapshot.Timestamp != "" {
-			entryTS = entry.Snapshot.Timestamp
-		}
-		if entryTS != "" {
-			prevTS = entryTS
+
+		updateTimestamps(&ts, entry)
+	}
+	return ts
+}
+
+func updateTimestamps(ts *parseState, entry jsonlEntry) {
+	entryTS := entry.Timestamp
+	if entryTS == "" && entry.Snapshot.Timestamp != "" {
+		entryTS = entry.Snapshot.Timestamp
+	}
+	if entryTS == "" {
+		return
+	}
+	ts.prevTS = entryTS
+	if ts.firstTS == "" {
+		ts.firstTS = entryTS
+	}
+	ts.lastTS = entryTS
+}
+
+func parseAssistantEntry(entry jsonlEntry, ts *parseState, result *extractResult, pending map[string]pendingCall) {
+	for _, block := range entry.Message.Content {
+		switch block.Type {
+		case "thinking":
+			result.Summary.TotalThinking++
+			result.Thinking = append(result.Thinking, thinkingEntry{
+				Line:       ts.lineNum,
+				Thinking:   truncate(block.Thinking, 500),
+				StopReason: entry.Message.StopReason,
+				Model:      entry.Message.Model,
+				MsgID:      entry.Message.ID,
+			})
+			if result.Model == "" && entry.Message.Model != "" {
+				result.Model = entry.Message.Model
+			}
+		case "tool_use":
+			recordToolUse(block, entry, ts.lineNum, result, pending)
 		}
 	}
 
-	result.Lines = lineNum
+	if entry.Message.StopReason != "" {
+		result.Summary.StopReasons[entry.Message.StopReason]++
+	}
 
-	// Aggregate timing by tool type and sort TopSlowest
+	entryTS := entry.Timestamp
+	if entryTS == "" && entry.Snapshot.Timestamp != "" {
+		entryTS = entry.Snapshot.Timestamp
+	}
+	if entryTS == "" {
+		return
+	}
+	if ts.prevTS != "" {
+		if dur := computeDurationMs(ts.prevTS, entryTS); dur > 0 {
+			result.Summary.ThinkingTurns = append(result.Summary.ThinkingTurns, thinkingTurn{
+				Line:       ts.lineNum,
+				Seconds:    float64(dur) / 1000.0,
+				StopReason: entry.Message.StopReason,
+				Detail:     truncate(firstThinking(entry.Message.Content), 80),
+			})
+			result.Summary.TotalThinkingMs += dur
+		}
+	}
+}
+
+func recordToolUse(block contentBlock, entry jsonlEntry, lineNum int, result *extractResult, pending map[string]pendingCall) {
+	result.Summary.TotalToolCalls++
+	result.Summary.ToolBreakdown[block.Name]++
+	inputJSON, _ := json.Marshal(block.Input)
+	result.ToolCalls = append(result.ToolCalls, toolCallEntry{
+		Line:       lineNum,
+		Tool:       block.Name,
+		Input:      truncate(string(inputJSON), 300),
+		StopReason: entry.Message.StopReason,
+		MsgID:      entry.Message.ID,
+	})
+	aggregateToolInput(block.Name, block.Input, &result.Summary)
+	if block.ID != "" && entry.Timestamp != "" {
+		pending[block.ID] = pendingCall{
+			ts:     entry.Timestamp,
+			tool:   block.Name,
+			line:   lineNum,
+			detail: truncate(string(inputJSON), 120),
+		}
+	}
+}
+
+func parseUserEntry(entry jsonlEntry, lineNum int, result *extractResult, pending map[string]pendingCall) {
+	result.Summary.TotalUserMsgs++
+	content := extractUserContent(entry)
+	if content != "" {
+		result.UserMsgs = append(result.UserMsgs, userMsgEntry{
+			Line:    lineNum,
+			Content: truncate(content, 300),
+		})
+		detectSkills(content, &result.SkillsUsed)
+	}
+
+	for _, block := range entry.Message.Content {
+		if block.Type != "tool_result" {
+			continue
+		}
+		matchPendingToolUse(block, entry, lineNum, result, pending)
+	}
+}
+
+func matchPendingToolUse(block contentBlock, entry jsonlEntry, lineNum int, result *extractResult, pending map[string]pendingCall) {
+	if pc, ok := pending[block.ToolUseID]; ok {
+		dur := computeDurationMs(pc.ts, entry.Timestamp)
+		if dur >= 0 {
+			result.Summary.TotalToolMs += dur
+			result.Summary.TopSlowest = append(result.Summary.TopSlowest, timingEntry{
+				Tool:    pc.tool,
+				Line:    pc.line,
+				Seconds: float64(dur) / 1000.0,
+				Detail:  pc.detail,
+			})
+		}
+		delete(pending, block.ToolUseID)
+	}
+	result.Summary.TotalToolResults++
+	tre := toolResultEntry{
+		Line:      lineNum,
+		ToolUseID: block.ToolUseID,
+	}
+	if entry.ToolUseResult != nil {
+		tre.ResultType = entry.ToolUseResult.Type
+		tre.FilePath = entry.ToolUseResult.FilePath
+	}
+	result.ToolResults = append(result.ToolResults, tre)
+}
+
+func parseAttachmentEntry(att attachment, lineNum int, result *extractResult) {
+	switch att.Type {
+	case "invoked_skills":
+		for _, skill := range att.Skills {
+			name := strings.ToLower(strings.TrimPrefix(skill.Name, "forge:"))
+			found := false
+			for _, s := range result.SkillsUsed {
+				if s == name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				result.SkillsUsed = append(result.SkillsUsed, name)
+			}
+		}
+	case "hook_success":
+		result.Hooks = append(result.Hooks, hookEventEntry{
+			Line:       lineNum,
+			HookName:   att.HookName,
+			HookEvent:  att.HookEvent,
+			DurationMs: att.DurationMs,
+			ExitCode:   att.ExitCode,
+			Command:    att.Command,
+		})
+		addToAgg(&result.Summary.HookBreakdown, att.HookName)
+		if att.ExitCode != 0 {
+			result.Summary.HookFailures++
+		}
+	case "edited_text_file":
+		if att.Filename != "" {
+			result.FilesEdited = append(result.FilesEdited, att.Filename)
+		}
+	case "compact_file_reference":
+		result.Summary.CompactCount++
+	case "plan_mode", "plan_mode_exit", "plan_mode_reentry":
+		result.Summary.PlanModeCount++
+	}
+	for _, skill := range att.Skills {
+		addToAgg(&result.Summary.SkillInvocations, skill.Name)
+	}
+}
+
+func aggregateTimings(result *extractResult) {
 	toolTiming := map[string]*timingAgg{}
 	for _, t := range result.Summary.TopSlowest {
 		agg, ok := toolTiming[t.Tool]
@@ -261,50 +304,51 @@ func runExtract(_ *cobra.Command, args []string) error {
 	sort.Slice(result.Summary.TopSlowest, func(i, j int) bool {
 		return result.Summary.TopSlowest[i].Seconds > result.Summary.TopSlowest[j].Seconds
 	})
-	// Keep top 20 slowest
 	if len(result.Summary.TopSlowest) > 20 {
 		result.Summary.TopSlowest = result.Summary.TopSlowest[:20]
 	}
-
-	// Compute subagent count from Agent tool calls
 	for _, a := range result.Summary.AgentsSpawned {
 		result.Summary.SubagentCount += a.Count
 	}
+}
 
-	// Compute start/end time and duration
+func computeTimeRange(firstTS, lastTS string, s *extractSummary) {
 	if firstTS != "" {
 		if t, err := parseTimestamp(firstTS); err == nil {
-			result.Summary.StartTime = t.Format("2006-01-02 15:04:05")
+			s.StartTime = t.Format("2006-01-02 15:04:05")
 		} else {
-			result.Summary.StartTime = firstTS
+			s.StartTime = firstTS
 		}
 	}
 	if lastTS != "" {
 		if t, err := parseTimestamp(lastTS); err == nil {
-			result.Summary.EndTime = t.Format("2006-01-02 15:04:05")
+			s.EndTime = t.Format("2006-01-02 15:04:05")
 		} else {
-			result.Summary.EndTime = lastTS
+			s.EndTime = lastTS
 		}
 	}
-	if firstTS != "" && lastTS != "" {
-		t1, err1 := parseTimestamp(firstTS)
-		t2, err2 := parseTimestamp(lastTS)
-		if err1 == nil && err2 == nil {
-			d := t2.Sub(t1)
-			switch {
-			case d < time.Minute:
-				result.Summary.Duration = fmt.Sprintf("%.0fs", d.Seconds())
-			case d < time.Hour:
-				result.Summary.Duration = fmt.Sprintf("%.1fmin", d.Minutes())
-			default:
-				result.Summary.Duration = fmt.Sprintf("%.1fh", d.Hours())
-			}
-		} else {
-			result.Summary.Duration = fmt.Sprintf("%s / %s", firstTS, lastTS)
-		}
+	if firstTS == "" || lastTS == "" {
+		return
 	}
-	out, _ := json.MarshalIndent(result, "", "  ")
+	t1, err1 := parseTimestamp(firstTS)
+	t2, err2 := parseTimestamp(lastTS)
+	if err1 != nil || err2 != nil {
+		s.Duration = fmt.Sprintf("%s / %s", firstTS, lastTS)
+		return
+	}
+	d := t2.Sub(t1)
+	switch {
+	case d < time.Minute:
+		s.Duration = fmt.Sprintf("%.0fs", d.Seconds())
+	case d < time.Hour:
+		s.Duration = fmt.Sprintf("%.1fmin", d.Minutes())
+	default:
+		s.Duration = fmt.Sprintf("%.1fh", d.Hours())
+	}
+}
 
+func writeExtractOutput(jsonlPath string, result *extractResult) error {
+	out, _ := json.MarshalIndent(result, "", "  ")
 	if outDir != "" {
 		_ = os.MkdirAll(outDir, 0o755)
 		outPath := filepath.Join(outDir, "evidence.json")

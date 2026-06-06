@@ -168,12 +168,6 @@ func extractBodyContext(projectRoot, slug, mode string, surfaceTypes []string) B
 	return ctx
 }
 
-// extractScope parses "## Scope > ### In Scope" section and returns bullet items.
-// Returns nil if the section is not found or empty.
-func extractScope(content string) []string {
-	return extractBulletItems(content, "### In Scope")
-}
-
 // extractSuccessCriteria parses "## Success Criteria" section and returns checkbox items.
 // Returns nil if the section is not found or empty.
 func extractSuccessCriteria(content string) []string {
@@ -184,63 +178,6 @@ func extractSuccessCriteria(content string) []string {
 // Returns nil if the section is not found or empty.
 func extractAcceptanceCriteria(content string) []string {
 	return extractCheckboxItems(content, "## Acceptance Criteria")
-}
-
-// extractBulletItems extracts "- " bullet list items under a subheading.
-// The subheading is the exact line to match (e.g., "### In Scope").
-// Collection stops at the next heading (## or ###) or end of content.
-func extractBulletItems(content, subheading string) []string {
-	lines := strings.Split(content, "\n")
-
-	// Find the subheading line
-	startIdx := -1
-	for i, line := range lines {
-		if strings.TrimSpace(line) == subheading {
-			startIdx = i + 1
-			break
-		}
-	}
-	if startIdx < 0 {
-		return nil
-	}
-
-	// Collect bullet items until we hit another heading
-	var items []string
-	for i := startIdx; i < len(lines); i++ {
-		line := lines[i]
-		trimmed := strings.TrimSpace(line)
-
-		// Stop at next heading
-		if strings.HasPrefix(trimmed, "##") {
-			break
-		}
-
-		// Skip blank lines
-		if trimmed == "" {
-			continue
-		}
-
-		// Collect "- " items (strip checkbox prefixes if present)
-		if strings.HasPrefix(trimmed, "- ") {
-			item := strings.TrimPrefix(trimmed, "- ")
-			item = strings.TrimSpace(item)
-			// Strip checkbox prefixes: "[ ] " or "[x] " or "[X] "
-			switch {
-			case strings.HasPrefix(item, "[ ] "):
-				item = strings.TrimPrefix(item, "[ ] ")
-			case strings.HasPrefix(item, "[x] "):
-				item = strings.TrimPrefix(item, "[x] ")
-			case strings.HasPrefix(item, "[X] "):
-				item = strings.TrimPrefix(item, "[X] ")
-			}
-			item = strings.TrimSpace(item)
-			if item != "" {
-				items = append(items, item)
-			}
-		}
-	}
-
-	return items
 }
 
 // extractCheckboxItems extracts "- [ ] " or "- [x] " checkbox items under a heading.

@@ -1856,61 +1856,6 @@ func TestInferSurface(t *testing.T) {
 	}
 }
 
-func TestRequireSurfaceInference(t *testing.T) {
-	t.Run("returns values when inference succeeds", func(t *testing.T) {
-		projectRoot := t.TempDir()
-		forgeDir := filepath.Join(projectRoot, ".forge")
-		if err := os.MkdirAll(forgeDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  .: web\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		key, typ, err := requireSurfaceInference(projectRoot, "src/App.tsx")
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if key != "." {
-			t.Errorf("key = %q, want %q", key, ".")
-		}
-		if typ != "web" {
-			t.Errorf("typ = %q, want %q", typ, "web")
-		}
-	})
-
-	t.Run("returns error when no surfaces configured", func(t *testing.T) {
-		projectRoot := t.TempDir()
-		_, _, err := requireSurfaceInference(projectRoot, "handler.go")
-		if err == nil {
-			t.Fatal("expected error when no surfaces configured")
-		}
-		if !strings.Contains(err.Error(), "surface inference failed") {
-			t.Errorf("error should mention 'surface inference failed', got: %v", err)
-		}
-		if !strings.Contains(err.Error(), "forge surfaces detect") {
-			t.Errorf("error should contain 'forge surfaces detect' guidance, got: %v", err)
-		}
-	})
-
-	t.Run("returns error when file matches no surface", func(t *testing.T) {
-		projectRoot := t.TempDir()
-		forgeDir := filepath.Join(projectRoot, ".forge")
-		if err := os.MkdirAll(forgeDir, 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte("surfaces:\n  admin-panel: web\n"), 0644); err != nil {
-			t.Fatal(err)
-		}
-		_, _, err := requireSurfaceInference(projectRoot, "unrelated/path.go")
-		if err == nil {
-			t.Fatal("expected error when file matches no surface")
-		}
-		if !strings.Contains(err.Error(), "surface inference failed") {
-			t.Errorf("error should mention 'surface inference failed', got: %v", err)
-		}
-	})
-}
-
 func TestAddFixTask_SurfaceInference(t *testing.T) {
 	projectRoot, featureSlug, indexPath := helperSetup(t)
 

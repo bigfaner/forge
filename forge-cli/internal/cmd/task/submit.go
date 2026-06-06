@@ -113,9 +113,38 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 		return base.ErrTaskNotFound(taskIDArg)
 	}
 
-	rd, err := readSubmitData(submitDataPath)
+	rd, err := readAndPrepareRecordData(submitDataPath, taskIDArg, t.Type)
 	if err != nil {
-		return base.ErrNoInput(err.Error())
+		return err
+	}
+
+	targetStatus := rd.Status
+
+	if err := validateRecordData(rd, t.Type); err != nil {
+		return err
+	}
+
+	if err := validateSubmitTransitions(t.Status, targetStatus, rd.Status, t.Type, projectRoot, t.SurfaceKey, t.Breaking); err != nil {
+		return err
+	}
+
+	if !slices.Contains(idx.StatusEnum, rd.Status) {
+		return base.ErrInvalidStatus(rd.Status, idx.StatusEnum)
+	}
+
+	recordPath, err := writeRecordFile(projectRoot, featureSlug, t, rd)
+	if err != nil {
+		return err
+	}
+
+	return finalizeSubmit(idx, key, t, rd, targetStatus, indexPath, projectRoot, featureSlug, recordPath)
+}
+
+// readAndPrepareRecordData reads submit data, applies defaults and pre-validation adjustments.
+func readAndPrepareRecordData(dataPath, taskIDArg, taskType string) (*task.RecordData, error) {
+	rd, err := readSubmitData(dataPath)
+	if err != nil {
+		return nil, base.ErrNoInput(err.Error())
 	}
 
 	if rd.Status == "" {
@@ -124,7 +153,7 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 
 	// Validate taskId matches CLI arg if provided
 	if rd.TaskID != "" && rd.TaskID != taskIDArg {
-		return base.NewAIError(base.ErrValidation,
+		return nil, base.NewAIError(base.ErrValidation,
 			fmt.Sprintf("taskId mismatch: JSON has %q, CLI arg is %q", rd.TaskID, taskIDArg),
 			"The taskId in record.json does not match the task being recorded",
 			"Either omit taskId from JSON or ensure it matches the CLI argument",
@@ -132,50 +161,43 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 	}
 
 	// Non-testable tasks: auto-set coverage=-1.0 to skip test evidence check
-	if !task.IsTestableType(t.Type) {
+	if !task.IsTestableType(taskType) {
 		if rd.Coverage >= 0 && rd.TestsPassed == 0 && rd.TestsFailed == 0 {
 			rd.Coverage = -1.0
 		}
 	}
 
-	// Capture intended status before validateRecordData may auto-downgrade
-	targetStatus := rd.Status
+	return rd, nil
+}
 
-	// Validate required and recommended fields
-	if err := validateRecordData(rd, t.Type); err != nil {
-		return err
-	}
-
+// validateSubmitTransitions checks state machine transitions and runs the quality gate.
+func validateSubmitTransitions(currentStatus types.Status, targetStatus, actualStatus, taskType, projectRoot, surfaceKey string, breaking bool) error {
 	// State machine validation: check transition before proceeding
 	if targetStatus == string(types.StatusCompleted) {
-		if transitionErr := task.ValidateTransition(t.Status, types.StatusCompleted, task.RoleSubmit); transitionErr != nil {
+		if transitionErr := task.ValidateTransition(currentStatus, types.StatusCompleted, task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return base.NewErrInvalidTransition(string(t.Status), string(types.StatusCompleted), te.Msg)
+			return base.NewErrInvalidTransition(string(currentStatus), string(types.StatusCompleted), te.Msg)
 		}
 	}
 
 	// Quality gate pre-check for completed tasks (non-testable types excluded)
-	// Tiered model: breaking tasks run full gate (compile+fmt+lint+test),
-	// non-breaking coding tasks run static gate (compile+fmt+lint).
-	if targetStatus == string(types.StatusCompleted) && task.IsTestableType(t.Type) {
-		validateQualityGate(projectRoot, t.SurfaceKey, t.Breaking)
+	if targetStatus == string(types.StatusCompleted) && task.IsTestableType(taskType) {
+		validateQualityGate(projectRoot, surfaceKey, breaking)
 	}
 
-	// After validateRecordData, rd.Status may have been auto-downgraded (completed -> blocked)
-	if rd.Status != targetStatus && rd.Status == string(types.StatusBlocked) {
-		// Auto-downgrade: validate the blocked transition
-		if transitionErr := task.ValidateTransition(t.Status, types.StatusBlocked, task.RoleSubmit); transitionErr != nil {
+	// After validateRecordData, actualStatus may have been auto-downgraded (completed -> blocked)
+	if actualStatus != targetStatus && actualStatus == string(types.StatusBlocked) {
+		if transitionErr := task.ValidateTransition(currentStatus, types.StatusBlocked, task.RoleSubmit); transitionErr != nil {
 			te := transitionErr.(*task.TransitionError)
-			return base.NewErrInvalidTransition(string(t.Status), string(types.StatusBlocked), te.Msg)
+			return base.NewErrInvalidTransition(string(currentStatus), string(types.StatusBlocked), te.Msg)
 		}
 	}
 
-	// Validate status against index statusEnum
-	if !slices.Contains(idx.StatusEnum, rd.Status) {
-		return base.ErrInvalidStatus(rd.Status, idx.StatusEnum)
-	}
+	return nil
+}
 
-	// Read startedTime from task-state.json
+// writeRecordFile reads the task state, renders the record template, and writes it to disk.
+func writeRecordFile(projectRoot, featureSlug string, t *task.Task, rd *task.RecordData) (string, error) {
 	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
 	state, _ := task.LoadState(statePath)
 	startedTime := ""
@@ -185,17 +207,20 @@ func doSubmit(projectRoot, featureSlug, indexPath, taskIDArg string) error {
 
 	content := fillRecordTemplate(t, rd, startedTime)
 
-	// Write record file
 	recordPath := filepath.Join(projectRoot, feature.GetTaskFile(featureSlug, t.Record))
 	if err := os.MkdirAll(filepath.Dir(recordPath), 0o755); err != nil {
-		return base.NewAIError(base.ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath))
+		return "", base.NewAIError(base.ErrValidation, "Failed to create record directory", err.Error(), "Check directory permissions", "mkdir -p "+filepath.Dir(recordPath))
 	}
 
 	if err := os.WriteFile(recordPath, []byte(content), 0o644); err != nil {
-		return base.NewAIError(base.ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath)
+		return "", base.NewAIError(base.ErrValidation, "Failed to write record file", err.Error(), "Check file permissions", "cat "+recordPath)
 	}
 
-	// Update task status in index
+	return recordPath, nil
+}
+
+// finalizeSubmit updates the task status in the index, handles auto-restore, saves, and prints output.
+func finalizeSubmit(idx *task.TaskIndex, key string, t *task.Task, rd *task.RecordData, targetStatus, indexPath, projectRoot, featureSlug, recordPath string) error {
 	t.Status = types.Status(rd.Status)
 
 	// Set BlockedReason on auto-downgrade

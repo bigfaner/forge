@@ -1,0 +1,183 @@
+{
+  "feature": "forge-cli-readability-round2",
+  "proposal": "docs/proposals/forge-cli-readability-round2/proposal.md",
+  "created": "2026-06-06",
+  "tasks": {
+    "1-delete-dead-code": {
+      "id": "1",
+      "title": "删除死代码：requireSurfaceInference、extractScope、extractBulletItems",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-delete-dead-code.md",
+      "record": "records/1-delete-dead-code.md",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "medium"
+    },
+    "10-refactor-os-exit": {
+      "id": "10",
+      "title": "重构 quality_gate.go 的 os.Exit 反模式",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "6",
+        "7",
+        "8",
+        "9"
+      ],
+      "status": "completed",
+      "file": "10-refactor-os-exit.md",
+      "record": "records/10-refactor-os-exit.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "2-split-build-index": {
+      "id": "2",
+      "title": "拆分 BuildIndex 390 行上帝函数",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-split-build-index.md",
+      "record": "records/2-split-build-index.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "3-split-config-go": {
+      "id": "3",
+      "title": "拆分 config.go 为三文件（配置读写 / reflect 路径遍历 / AutoConfig）",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-split-config-go.md",
+      "record": "records/3-split-config-go.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "4-split-pipeline-go": {
+      "id": "4",
+      "title": "拆分 pipeline.go 提取校验逻辑",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-split-pipeline-go.md",
+      "record": "records/4-split-pipeline-go.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "5-split-detect-surface": {
+      "id": "5",
+      "title": "拆分 detect_surface.go 提取信号表",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-split-detect-surface.md",
+      "record": "records/5-split-detect-surface.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "6-split-run-extract": {
+      "id": "6",
+      "title": "拆分 runExtract 304 行函数",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-split-run-extract.md",
+      "record": "records/6-split-run-extract.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "7-split-run-list": {
+      "id": "7",
+      "title": "拆分 runList 217 行函数",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "7-split-run-list.md",
+      "record": "records/7-split-run-list.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "8-split-do-submit": {
+      "id": "8",
+      "title": "拆分 doSubmit 131 行函数",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "8-split-do-submit.md",
+      "record": "records/8-split-do-submit.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "9-flatten-validate-nesting": {
+      "id": "9",
+      "title": "平坦化 validate.go 嵌套过深的 validator 方法",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "9-flatten-validate-nesting.md",
+      "record": "records/9-flatten-validate-nesting.md",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
