@@ -12,7 +12,7 @@
       "file": "1-merge-testkit.md",
       "record": "records/1-merge-testkit.md",
       "surface-type": "cli",
-      "type": "coding.refactor",
+      "type": "coding.feature",
       "complexity": "low"
     },
     "2-migrate-lightweight-journeys": {
@@ -27,7 +27,7 @@
       "file": "2-migrate-lightweight-journeys.md",
       "record": "records/2-migrate-lightweight-journeys.md",
       "surface-type": "cli",
-      "type": "coding.refactor",
+      "type": "coding.feature",
       "blockedReason": "auto-downgrade: testsFailed=1",
       "complexity": "low"
     },
@@ -43,7 +43,7 @@
       "file": "3-migrate-forge-commands.md",
       "record": "records/3-migrate-forge-commands.md",
       "surface-type": "cli",
-      "type": "coding.refactor",
+      "type": "coding.feature",
       "complexity": "medium"
     },
     "4-migrate-justfile-integration": {
@@ -58,7 +58,7 @@
       "file": "4-migrate-justfile-integration.md",
       "record": "records/4-migrate-justfile-integration.md",
       "surface-type": "cli",
-      "type": "coding.refactor",
+      "type": "coding.feature",
       "blockedReason": "auto-downgrade: testsFailed=7",
       "complexity": "medium"
     },
@@ -74,7 +74,7 @@
       "file": "5-migrate-skill-ops.md",
       "record": "records/5-migrate-skill-ops.md",
       "surface-type": "cli",
-      "type": "coding.refactor",
+      "type": "coding.feature",
       "blockedReason": "auto-downgrade: testsFailed=1",
       "complexity": "medium"
     },
@@ -90,7 +90,7 @@
       "file": "6-merge-overlapping-journeys.md",
       "record": "records/6-merge-overlapping-journeys.md",
       "surface-type": "cli",
-      "type": "coding.refactor",
+      "type": "coding.feature",
       "complexity": "high"
     },
     "7-update-references-and-cleanup": {
@@ -109,7 +109,7 @@
       "file": "7-update-references-and-cleanup.md",
       "record": "records/7-update-references-and-cleanup.md",
       "surface-type": "cli",
-      "type": "coding.cleanup",
+      "type": "coding.feature",
       "blockedReason": "auto-downgrade: testsFailed=3",
       "complexity": "low"
     },
