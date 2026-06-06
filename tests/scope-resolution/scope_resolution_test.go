@@ -41,12 +41,14 @@ func TestTC_007_MixedProjectTasksReceiveScopeFieldInIndexJSON(t *testing.T) {
 
 // Traceability: TC-008 -> Story 3 / AC-2
 // Frontend-only task scope marked as frontend.
-// Skill should describe how frontend-only files get scope=frontend.
+// Skill delegates scope detection to `forge surfaces` at runtime (Surface-Key/Type Inference).
+// Verify the skill describes surface inference, which assigns per-task surface keys
+// (e.g., frontend, backend) based on file paths.
 func TestTC_008_FrontendOnlyTaskScopeMarkedAsFrontend(t *testing.T) {
 	skillContent := testkit.ReadProjectFile(t, "../plugins/forge/skills/breakdown-tasks/SKILL.md")
 	assert.True(t,
-		strings.Contains(skillContent, "frontend") && strings.Contains(skillContent, "scope"),
-		"Expected scope=frontend logic in breakdown-tasks skill")
+		strings.Contains(skillContent, "surfaces") && strings.Contains(skillContent, "Surface"),
+		"Expected Surface-Key/Type Inference logic in breakdown-tasks skill")
 }
 
 // Traceability: TC-009 -> Story 3 / AC-3
