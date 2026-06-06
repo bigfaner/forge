@@ -70,11 +70,12 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "5-migrate-skill-ops.md",
       "record": "records/5-migrate-skill-ops.md",
       "surface-type": "cli",
       "type": "coding.refactor",
+      "blockedReason": "auto-downgrade: testsFailed=1",
       "complexity": "medium"
     },
     "6-merge-overlapping-journeys": {
