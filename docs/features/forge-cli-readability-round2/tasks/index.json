@@ -71,7 +71,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-split-pipeline-go.md",
       "record": "records/4-split-pipeline-go.md",
       "surface-type": "cli",
