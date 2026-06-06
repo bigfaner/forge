@@ -1,7 +1,7 @@
 ---
 feature: "forge-cli-readability-round2"
 created: "2026-06-06"
-status: tasks
+status: completed
 mode: quick
 ---
 
