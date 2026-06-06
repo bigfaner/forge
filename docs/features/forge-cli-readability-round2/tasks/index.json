@@ -158,7 +158,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-flatten-validate-nesting.md",
       "record": "records/9-flatten-validate-nesting.md",
       "surface-type": "cli",

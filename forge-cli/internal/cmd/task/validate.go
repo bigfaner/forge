@@ -284,70 +284,80 @@ func (v *validator) validateWildcardSelfDeps(index *task.TaskIndex) {
 
 // V2: Gate integrity
 func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
-	type gateInfo struct {
-		key string
-		id  string
-	}
-
-	// Find all gate tasks
-	var gates []gateInfo
-	for key, t := range tasks {
-		if strings.HasSuffix(t.ID, task.IDSuffixGate) && t.Breaking {
-			gates = append(gates, gateInfo{key: key, id: t.ID})
-		}
-	}
+	gates := collectGateInfos(tasks)
 
 	for _, g := range gates {
 		phase := task.GetTaskPhase(g.id)
 		if phase <= 0 {
 			continue
 		}
+		v.validateGateOwnSummaryDep(g, phase, tasks)
+		v.validateNextPhaseGateDep(g.id, phase, tasks)
+	}
+}
 
-		// Gate N.gate is phase N's exit gate — must depend on N.summary
-		ownSummary := fmt.Sprintf("%d.summary", phase)
-		hasOwnSummary := false
-		for _, t := range tasks {
-			if t.ID == ownSummary {
-				hasOwnSummary = true
-				break
-			}
-		}
-		if hasOwnSummary {
-			found := false
-			for _, dep := range tasks[g.key].Dependencies {
-				if dep == ownSummary {
-					found = true
-					break
-				}
-			}
-			if !found {
-				v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on own phase summary '%s'", g.key, g.id, ownSummary))
-			}
-		}
+// gateInfo holds a gate task's map key and ID.
+type gateInfo struct {
+	key string
+	id  string
+}
 
-		// Next phase's business tasks must depend on this gate
-		gateID := g.id
-		nextPhase := phase + 1
-		for key, t := range tasks {
-			if !task.IsBusinessTask(t.ID) {
-				continue
-			}
-			if task.GetTaskPhase(t.ID) != nextPhase {
-				continue
-			}
-			// Check if this business task depends on the gate
-			dependsOnGate := false
-			for _, dep := range t.Dependencies {
-				if dep == gateID {
-					dependsOnGate = true
-					break
-				}
-			}
-			if !dependsOnGate {
-				v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): must depend on gate '%s'", key, t.ID, gateID))
-			}
+func collectGateInfos(tasks map[string]task.Task) []gateInfo {
+	var gates []gateInfo
+	for key, t := range tasks {
+		if strings.HasSuffix(t.ID, task.IDSuffixGate) && t.Breaking {
+			gates = append(gates, gateInfo{key: key, id: t.ID})
 		}
 	}
+	return gates
+}
+
+// validateGateOwnSummaryDep checks that a gate depends on its own phase summary.
+func (v *validator) validateGateOwnSummaryDep(g gateInfo, phase int, tasks map[string]task.Task) {
+	ownSummary := fmt.Sprintf("%d.summary", phase)
+	if !taskExists(tasks, ownSummary) {
+		return
+	}
+	for _, dep := range tasks[g.key].Dependencies {
+		if dep == ownSummary {
+			return
+		}
+	}
+	v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on own phase summary '%s'", g.key, g.id, ownSummary))
+}
+
+// validateNextPhaseGateDep checks that next-phase business tasks depend on the gate.
+func (v *validator) validateNextPhaseGateDep(gateID string, phase int, tasks map[string]task.Task) {
+	nextPhase := phase + 1
+	for key, t := range tasks {
+		if !task.IsBusinessTask(t.ID) || task.GetTaskPhase(t.ID) != nextPhase {
+			continue
+		}
+		if hasDep(t.Dependencies, gateID) {
+			continue
+		}
+		v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): must depend on gate '%s'", key, t.ID, gateID))
+	}
+}
+
+// taskExists checks whether a task with the given ID exists in the map.
+func taskExists(tasks map[string]task.Task, id string) bool {
+	for _, t := range tasks {
+		if t.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// hasDep checks whether the dependency list contains the given target.
+func hasDep(deps []string, target string) bool {
+	for _, dep := range deps {
+		if dep == target {
+			return true
+		}
+	}
+	return false
 }
 
 // V3: Phase order sanity
@@ -418,14 +428,7 @@ func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
 	// Check each such phase has a .summary task
 	for phase := range phasesWithBusiness {
 		summaryID := fmt.Sprintf("%d.summary", phase)
-		found := false
-		for _, t := range tasks {
-			if t.ID == summaryID {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !taskExists(tasks, summaryID) {
 			v.warnings = append(v.warnings, fmt.Sprintf("Phase %d has business tasks but no '%d.summary' task", phase, phase))
 		}
 	}
@@ -462,111 +465,4 @@ func (v *validator) printResults() bool {
 	}
 	base.PrintResult("FAIL", fmt.Sprintf("%s (%d errors)", v.filePath, len(v.errors)))
 	return false
-}
-
-// validateLiveness checks for lifecycle anomalies in blocked tasks.
-func (v *validator) validateLiveness(index *task.TaskIndex) {
-	for key, t := range index.TasksMap() {
-		if t.Status != types.StatusBlocked {
-			continue
-		}
-
-		if len(t.Dependencies) == 0 {
-			v.warnings = append(v.warnings,
-				fmt.Sprintf("Task '%s' (%s): blocked with no dependencies (orphaned)", key, t.ID))
-			continue
-		}
-
-		allDepsCompleted := true
-		hasActiveDep := false
-		for _, dep := range t.Dependencies {
-			matches, isWildcard := task.ResolveWildcardDep(index, dep)
-			if isWildcard {
-				for _, matchID := range matches {
-					if matchID == t.ID {
-						continue
-					}
-					other, _ := index.ByID(matchID)
-					if !task.IsDepSatisfied(string(other.Status)) {
-						allDepsCompleted = false
-						if other.Status == types.StatusPending || other.Status == types.StatusInProgress {
-							hasActiveDep = true
-						}
-					}
-				}
-				continue
-			}
-			depTask, found := index.ByID(dep)
-			if !found {
-				v.errors = append(v.errors,
-					fmt.Sprintf("Task '%s' (%s): blocked on missing dependency '%s'", key, t.ID, dep))
-				allDepsCompleted = false
-				continue
-			}
-			if task.IsDepSatisfied(string(depTask.Status)) {
-				continue
-			}
-			allDepsCompleted = false
-			if depTask.Status == types.StatusPending || depTask.Status == types.StatusInProgress {
-				hasActiveDep = true
-			}
-		}
-
-		if allDepsCompleted {
-			v.warnings = append(v.warnings,
-				fmt.Sprintf("Task '%s' (%s): blocked but all dependencies resolved (stale, should be pending)", key, t.ID))
-		} else if !hasActiveDep {
-			v.warnings = append(v.warnings,
-				fmt.Sprintf("Task '%s' (%s): blocked with no path to resolution (all deps blocked or missing)", key, t.ID))
-		}
-	}
-}
-
-// validateACCount checks that each task .md file has between 1 and 6 acceptance criteria.
-func (v *validator) validateACCount(featureSlug string, tasks map[string]task.Task) {
-	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(v.filePath)))))
-	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
-
-	for _, t := range tasks {
-		if t.File == "" {
-			continue
-		}
-		taskFile := filepath.Join(tasksDir, t.File)
-		data, err := os.ReadFile(taskFile)
-		if err != nil {
-			continue // File existence already checked in validateFilesExist
-		}
-
-		acCount := countACItems(string(data))
-		if acCount == 0 {
-			v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): has 0 acceptance criteria (must have 1-6)", t.File, t.ID))
-		} else if acCount > 6 {
-			v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): has %d acceptance criteria (max 6)", t.File, t.ID, acCount))
-		}
-	}
-}
-
-// countACItems parses a task .md file content and counts `- [ ]` lines
-// under the `## Acceptance Criteria` section.
-func countACItems(content string) int {
-	lines := strings.Split(content, "\n")
-	inACSection := false
-	count := 0
-
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		// Detect section headers
-		if strings.HasPrefix(trimmed, "## ") {
-			if trimmed == "## Acceptance Criteria" {
-				inACSection = true
-			} else {
-				inACSection = false
-			}
-			continue
-		}
-		if inACSection && strings.HasPrefix(trimmed, "- [ ]") {
-			count++
-		}
-	}
-	return count
 }
