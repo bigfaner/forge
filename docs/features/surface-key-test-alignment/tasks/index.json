@@ -91,7 +91,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-update-init-justfile-skill-rules.md",
       "record": "records/5-update-init-justfile-skill-rules.md",
       "type": "doc"
