@@ -86,7 +86,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-split-detect-surface.md",
       "record": "records/5-split-detect-surface.md",
       "surface-type": "cli",
