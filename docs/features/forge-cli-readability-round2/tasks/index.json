@@ -56,7 +56,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-split-config-go.md",
       "record": "records/3-split-config-go.md",
       "surface-type": "cli",
