@@ -122,7 +122,7 @@
         "4",
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-split-run-list.md",
       "record": "records/7-split-run-list.md",
       "surface-type": "cli",
