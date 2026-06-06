@@ -101,11 +101,11 @@ domains: [testing]
 
 | Surface | 测试类型 | 文件位置 | 断言重点 | 详细策略 |
 |---------|---------|---------|---------|---------|
-| cli | CLI 功能测试 | tests/<journey>/ | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
-| api | API 功能测试 | tests/<journey>/ | status code + response body + headers | [api/core.md](api/core.md) |
-| web | Web E2E 测试 | tests/<journey>/ | DOM 可见性 + 用户操作 + URL | [web/core.md](web/core.md) |
-| tui | 终端功能测试 | tests/<journey>/ | 精确文本 + 正则匹配 + 快照 | [tui/core.md](tui/core.md) |
-| mobile | Mobile E2E 测试 | tests/<journey>/ | UI 可见性 + 操作响应 + 屏幕 ID | [mobile/core.md](mobile/core.md) |
+| cli | CLI 功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
+| api | API 功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | status code + response body + headers | [api/core.md](api/core.md) |
+| web | Web E2E 测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | DOM 可见性 + 用户操作 + URL | [web/core.md](web/core.md) |
+| tui | 终端功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | 精确文本 + 正则匹配 + 快照 | [tui/core.md](tui/core.md) |
+| mobile | Mobile E2E 测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | UI 可见性 + 操作响应 + 屏幕 ID | [mobile/core.md](mobile/core.md) |
 ```
 
 Only include rows for surfaces present in `active_surfaces`.
