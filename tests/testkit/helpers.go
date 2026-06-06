@@ -3,7 +3,10 @@
 package testkit
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -111,4 +114,55 @@ func WithRetry(t *testing.T, fn func() error, maxRetries int, delay time.Duratio
 		time.Sleep(delay)
 	}
 	t.Fatalf("retry exhausted: %s", err)
+}
+
+// RunCLIExitCode executes a forge CLI command and returns exit code and combined output.
+// Unlike RunCLIRaw, it does not take a *testing.T and does not fatalf — it simply
+// reports the exit code and output, leaving assertion decisions to the caller.
+func RunCLIExitCode(args ...string) (int, string) {
+	cmd := exec.Command(ForgeBinary, args...)
+	out, err := cmd.CombinedOutput()
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		return exitErr.ExitCode(), string(out)
+	}
+	if err != nil {
+		return 1, err.Error()
+	}
+	return 0, string(out)
+}
+
+// ProjectRoot resolves the project root directory by walking up from the
+// source file location (via runtime.Caller) to find a go.mod marker.
+// Since tests/ is an independent Go module (forge-tests), it looks for
+// the tests/go.mod file specifically.
+func ProjectRoot(t *testing.T) string {
+	t.Helper()
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed: cannot determine source file path")
+	}
+	dir := filepath.Dir(thisFile)
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			t.Fatal("cannot find project root (no go.mod found walking up from testkit source)")
+		}
+		dir = parent
+	}
+}
+
+// ReadProjectFile reads and returns the content of a file relative to the
+// project root. Fails the test if the file cannot be read.
+func ReadProjectFile(t *testing.T, relPath string) string {
+	t.Helper()
+	root := ProjectRoot(t)
+	path := filepath.Join(root, relPath)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("cannot read project file %q: %v", relPath, err)
+	}
+	return string(data)
 }
