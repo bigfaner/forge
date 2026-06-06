@@ -156,7 +156,7 @@
       "dependencies": [
         "T-review-doc"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-journeys.md",
       "record": "records/gen-journeys.md",
       "breaking": true,
