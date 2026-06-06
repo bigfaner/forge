@@ -78,7 +78,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-verify-run-tests-compat.md",
       "record": "records/4-verify-run-tests-compat.md",
       "type": "doc"
