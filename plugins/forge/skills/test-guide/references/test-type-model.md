@@ -49,3 +49,19 @@ domains: [testing, surface, test-type]
 - 在 justfile recipe、task type、测试报告或文档中将所有 Forge 生成的测试统称为 "e2e 测试"
 
 新 surface 加入时，按分类标准的判定规则归入"功能测试"或"端到端测试"：验证机制为协议级调用则归入功能测试，为设备级自动化则归入端到端测试。若出现混合验证机制的 surface，可在本文档中新增第三分类。
+
+## 测试目录结构
+
+测试文件按 surfaceKey 分区存放，遵循以下自适应规则：
+
+| 场景 | 配置示例 | 测试目录 | 任务名后缀 |
+|------|---------|---------|-----------|
+| 单 surface（scalar） | `surfaces: tui` | `tests/<journey>/` | 无后缀 |
+| 单 surface（named） | `surfaces: [{key: app, type: tui}]` | `tests/<journey>/` | 无后缀 |
+| 多 surface | `surfaces: [{key: backend, type: api}, {key: frontend, type: web}]` | `tests/backend/<journey>/` + `tests/frontend/<journey>/` | `-backend` + `-frontend` |
+| 多 surface 同 type | `surfaces: [{key: admin, type: api}, {key: public, type: api}]` | `tests/admin/<journey>/` + `tests/public/<journey>/` | `-admin` + `-public` |
+
+**核心原则**：目录分区使用 `surfaceKey`（用户定义标识符，如 `backend`、`frontend`），不使用 `surfaceType`（技术分类，如 `api`、`web`）。理由：
+- surfaceKey 天然唯一，surfaceType 可以重复（两个 surface 都是 `api`）
+- justfile recipe 已使用 key（`backend-test` 而非 `api-test`）
+- 单 surface 项目保持简洁结构 `tests/<journey>/`，不受命名方式影响

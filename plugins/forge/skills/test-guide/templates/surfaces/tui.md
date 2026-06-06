@@ -9,7 +9,7 @@ domains: [testing, tui]
 
 ## 文件位置
 
-- **目录**: `tests/<journey>/`（Journey 名称由 gen-journeys 生成）
+- **目录**: `tests/<surfaceKey>/<journey>/`（多 surface 项目）或 `tests/<journey>/`（单 surface 项目）。Journey 名称由 gen-journeys 生成，surfaceKey 为 `forge surfaces` 输出的 key
 - **文件命名**: `<feature>_<screen>_test.<ext>`（Go）、`test_<feature>_<screen>.<ext>`（Python）、`<feature>.<screen>.test.<ext>`（Node.js）
 - **Build tag**: `//go:build tui_functional`（Go）、`@tui-functional`（BDD tag）
 - **约束**: 不得使用 `e2e` 作为 build tag 或测试分类名

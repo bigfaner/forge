@@ -44,8 +44,8 @@ domains: [testing]
 
 | Surface | 测试类型 | 文件位置 | 断言重点 | 详细策略 |
 |---------|---------|---------|---------|---------|
-| cli | CLI 功能测试 | tests/<journey>/ | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
-| api | API 功能测试 | tests/<journey>/ | status code + response body + headers | [api/core.md](api/core.md) |
+| cli | CLI 功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | exit code + stdout + stderr | [cli/core.md](cli/core.md) |
+| api | API 功能测试 | tests/<surfaceKey>/<journey>/ (多 surface) 或 tests/<journey>/ (单 surface) | status code + response body + headers | [api/core.md](api/core.md) |
 | ... | ... | ... | ... | ... |
 ```
 
