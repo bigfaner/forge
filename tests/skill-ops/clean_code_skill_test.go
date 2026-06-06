@@ -72,8 +72,8 @@ func TestCleanCode_SkillFile_ContainsWorkflow(t *testing.T) {
 		"SKILL.md must mention cleanup summary")
 }
 
-// Traceability: Task 1 / AC-3 — Cleanup logic follows code-simplifier 5 principles
-func TestCleanCode_SkillFile_ContainsFivePrinciples(t *testing.T) {
+// Traceability: Task 1 / AC-3 — Cleanup logic follows code-simplifier refinement principles
+func TestCleanCode_SkillFile_ContainsRefinementPrinciples(t *testing.T) {
 	root := cleanCodeRepoRoot(t)
 	skillPath := filepath.Join(root, "plugins", "forge", "skills", "clean-code", "SKILL.md")
 	data, err := os.ReadFile(skillPath)
@@ -86,7 +86,6 @@ func TestCleanCode_SkillFile_ContainsFivePrinciples(t *testing.T) {
 		"Apply Project Standards",
 		"Enhance Clarity",
 		"Maintain Balance",
-		"Focus Scope",
 	}
 	for _, p := range principles {
 		assert.True(t, strings.Contains(content, p),

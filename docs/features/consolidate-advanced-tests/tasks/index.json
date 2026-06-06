@@ -70,7 +70,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "blocked",
+      "status": "pending",
       "file": "5-migrate-skill-ops.md",
       "record": "records/5-migrate-skill-ops.md",
       "surface-type": "cli",
@@ -134,6 +134,18 @@
       "record": "records/fix-2.md",
       "breaking": true,
       "sourceTaskID": "4",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: skill-ops TestCleanCode_SkillFile_ContainsFivePrinciples pre-existing failure",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "5",
       "type": "coding.fix"
     }
   },
