@@ -23,11 +23,12 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "blocked",
       "file": "2-migrate-lightweight-journeys.md",
       "record": "records/2-migrate-lightweight-journeys.md",
       "surface-type": "cli",
       "type": "coding.refactor",
+      "blockedReason": "auto-downgrade: testsFailed=1",
       "complexity": "low"
     },
     "3-migrate-forge-commands": {
