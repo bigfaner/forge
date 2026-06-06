@@ -16,7 +16,7 @@ gen-journeys -> gen-contracts -> gen-test-scripts -> run-tests
                                       ^^^ YOU ARE HERE
 ```
 
-Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance).
+Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance) + Handbook (design document, optional).
 Output: Executable test code with `@feature` tags. Output directory adapts to surface count: multi-surface → `tests/<surfaceKey>/<journey>/`, single-surface → `tests/<journey>/`.
 
 ## Prerequisites
@@ -121,6 +121,122 @@ Load `rules/step-1-contract-loading.md` for the complete reconnaissance logic, i
 - Domain reconnaissance (CLI entry points, API handlers, config values)
 - Fact Table construction with source citations
 - Semantic descriptor to regex conversion
+
+## Step 1.5: Cross-Validation (Fact Table vs Contract Anchors)
+
+After building the Fact Table (Step 1), cross-validate it against Contract frontmatter anchor fields. This step detects mismatches between code reality (Fact Table) and design intent (Contract anchors), using the handbook (design document) as the authority source.
+
+Load `rules/step-1.5-cross-validation.md` for the complete cross-validation logic, including:
+- Anchor field extraction from Contract frontmatter
+- Fact Table vs anchor comparison and classification
+- Handbook authority resolution and suggestion generation
+- Degradation mode when handbook or anchors are missing
+
+### Cross-Validation Flow
+
+1. **Extract anchors**: For each Contract in the target Journey, read frontmatter anchor fields based on the detected surface type:
+
+   | Surface | Anchor fields to read |
+   |---------|----------------------|
+   | API | `endpoint`, `method` |
+   | CLI | `command`, `subcommand` |
+   | TUI | `command` |
+   | Web | `page`, `route` |
+   | Mobile | `screen`, `deeplink` |
+
+2. **Match against Fact Table**: Compare each anchor value with corresponding Fact Table entries from code reconnaissance.
+
+3. **Classify results**: Each comparison produces one of three classifications:
+
+   | Classification | Criteria | Action |
+   |---------------|----------|--------|
+   | **High confidence match** | Anchor value matches Fact Table exactly (normalized comparison) | Proceed normally |
+   | **Low confidence mismatch** | Anchor value differs from Fact Table, but Fact Table signal is incomplete (e.g., dynamic route registration, partial scan) | Log mismatch with both values, prompt user to confirm |
+   | **Cannot verify** | No corresponding Fact Table entry exists, or anchor field is absent from Contract | Log as unverifiable, proceed with anchor value if present, or Fact Table inference if absent |
+
+4. **Authority resolution**: When a mismatch is detected, resolve authority:
+
+   | Handbook exists? | Authority source | Mismatch action |
+   |-----------------|-----------------|-----------------|
+   | Yes, and matches anchor | Handbook = anchor | Fact Table differs -> **code bug**: handbook says X, code does Y. Generate code bug report. |
+   | Yes, and differs from anchor | Handbook | Anchor is stale. Generate suggested fix (diff) to update Contract anchor to match handbook. User confirms before writing. |
+   | Yes, and differs from Fact Table | Handbook | Code does not match handbook -> **code bug**. Generate code bug report. |
+   | No | Fact Table | Degraded mode: use Fact Table as inference source. Prompt user that handbook is missing and recommend generating one. |
+   | No, anchor also missing | Fact Table | Full degradation: use Fact Table inference, no cross-validation possible. Prompt user. |
+
+5. **Suggestion generation**: For each mismatch where handbook exists and differs from anchor, generate a suggested fix:
+
+   - Show a diff of the current Contract frontmatter vs proposed change
+   - Include the handbook source citation for the proposed value
+   - Present to user for confirmation before writing to Contract
+   - If user rejects, keep current anchor value and log the rejection
+
+<HARD-RULE>
+**Handbook is the authority source** for cross-validation. When handbook and code implementation disagree, the discrepancy is flagged as a **code bug** (not a test or Contract issue). The user confirmation step is the final gate -- no automatic writes to Contract without explicit user approval.
+</HARD-RULE>
+
+<HARD-RULE>
+**Low confidence and cannot-verify results are NEVER auto-resolved**. They are reported to the user for manual confirmation. The pipeline does not block on these classifications.
+</HARD-RULE>
+
+### Degradation Mode (Backward Compatibility)
+
+When handbook is missing or anchor fields are absent from Contract:
+
+1. **No handbook**: Skip cross-validation for the relevant surface. Use Fact Table values as inference source. Output prompt: "Handbook not found for surface `{surface}`. Cross-validation skipped. Recommend running `/tech-design` to generate handbook for improved anchor accuracy."
+2. **No anchor fields in Contract**: The Contract predates technical anchors. Use Fact Table inference as fallback. Output prompt: "Contract `{contract_path}` has no anchor fields. Using Fact Table inference. Consider running `/gen-contracts` to populate anchors from handbook."
+3. **Both missing**: Proceed with existing Step 1 Fact Table inference only. No cross-validation. Output both prompts above.
+
+Degradation mode is non-blocking. The pipeline continues normally with reduced confidence.
+
+### Surface Coverage Report
+
+After cross-validation completes (or degrades), output a coverage report:
+
+```
+=== Surface Coverage Report ===
+Surface: API
+  - Contracts with anchors: 3/4
+  - Cross-validated (high confidence): 2
+  - Mismatches detected: 1 (low confidence: 0, cannot verify: 1)
+  - Code bugs flagged: 0
+  - Suggested fixes pending user confirmation: 1
+
+Surface: CLI
+  - Contracts with anchors: 2/2
+  - Cross-validated (high confidence): 2
+  - Mismatches detected: 0
+  - Code bugs flagged: 0
+  - Suggested fixes pending user confirmation: 0
+
+Surfaces not covered:
+  - Web: no handbook found
+  - Mobile: no contracts in journey
+  - TUI: not applicable (surface type = CLI)
+
+Summary: 4/6 anchors verified, 1 mismatch, 0 code bugs, 1 fix pending
+```
+
+The report MUST:
+- List each surface type present in the Journey's Contracts
+- Show anchor coverage ratio (Contracts with anchors / total Contracts)
+- Count verification results by classification
+- Explicitly list surfaces that were NOT verified and why (no handbook, no contracts, not applicable)
+- Provide a summary line with totals
+
+### Lesson Scenario Capture
+
+The cross-validation MUST capture the lesson scenario from the proposal evidence:
+
+**Scenario**: Contract does not specify HTTP method (no `method` anchor) or specifies POST, but the actual route is registered as PUT (per handbook).
+
+**Expected behavior**:
+1. Fact Table finds `PUT /teams/:teamId/sub-items/:subId/move` from code reconnaissance
+2. Handbook defines `PUT /teams/:teamId/sub-items/:subId/move`
+3. Contract anchor says `method: POST` (or missing)
+4. Cross-validation detects mismatch: Fact Table (PUT) vs Contract anchor (POST)
+5. Authority check: handbook says PUT -> suggest fix: change Contract `method` from POST to PUT
+6. Generate diff, present to user for confirmation
 
 ## Step 2: Read Contract Specifications
 

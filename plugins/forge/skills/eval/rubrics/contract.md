@@ -22,27 +22,28 @@ context:
 
 | Dimension | Points | Min Threshold |
 |-----------|--------|---------------|
-| 1. Completeness (完整性) | 200 | 120 |
+| 1. Completeness (完整性) | 150 | 90 |
 | 2. Semantic Purity (语义纯度) | 200 | 120 |
 | 3. Precondition Exclusivity (前置条件互斥性) | 150 | 90 |
 | 4. Fact Alignment (事实依据) | 150 | 90 |
-| 5. Surface Fitness (Surface 适配) | 150 | 90 |
+| 5. Surface Fitness (Surface 适配) | 100 | 60 |
 | 6. Internal Consistency (一致性) | 150 | 90 |
+| 7. Anchor Integrity (锚点完整性) | 100 | 60 |
 | **Total** | **1000** | **sum >= 850** |
 
 **Pass condition**: Total score >= 850 AND every dimension >= its min threshold.
 
 ## Dimensions
 
-### 1. Completeness (完整性) -- 200 pts
+### 1. Completeness (完整性) -- 150 pts
 
 Evaluates whether all required Contract fields and sections are present, with emphasis on six-dimension structural integrity.
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Every Outcome has all four mandatory dimensions non-empty (Preconditions, Input, Output, State) | 0-70 | Each Outcome block must contain non-empty values for Preconditions, Input, Output, and State. Side-effect defaults to "none" when omitted. Invariants is optional per Outcome. Missing any mandatory dimension in any Outcome is a critical failure. |
-| Journey Invariants section present with at least one entry in every Contract file | 0-60 | Every Contract file must have a `## Journey Invariants` section with at least one invariant. Missing or empty invariants section is a failure. |
-| Outcomes cover happy path plus required derived scenarios per surface type | 0-70 | Beyond the happy path Outcome, boundary/error Outcomes must be present as mandated by the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` outcomes should be considered. For API: `unauthorized` per authenticated endpoint. Missing mandatory derived Outcomes is a significant gap. |
+| Every Outcome has all four mandatory dimensions non-empty (Preconditions, Input, Output, State) | 0-50 | Each Outcome block must contain non-empty values for Preconditions, Input, Output, and State. Side-effect defaults to "none" when omitted. Invariants is optional per Outcome. Missing any mandatory dimension in any Outcome is a critical failure. |
+| Journey Invariants section present with at least one entry in every Contract file | 0-50 | Every Contract file must have a `## Journey Invariants` section with at least one invariant. Missing or empty invariants section is a failure. |
+| Outcomes cover happy path plus required derived scenarios per surface type | 0-50 | Beyond the happy path Outcome, boundary/error Outcomes must be present as mandated by the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` outcomes should be considered. For API: `unauthorized` per authenticated endpoint. Missing mandatory derived Outcomes is a significant gap. |
 
 ### 2. Semantic Purity (语义纯度) -- 200 pts
 
@@ -82,7 +83,7 @@ Evaluates whether claims in Contract dimensions are grounded in verifiable facts
 | Inferred claims have required_outcomes rule support and source: inferred | 0-50 | Derived boundary Outcomes (e.g., `not-found`, `validation-error`) must cite the `required_outcomes` rule from the surface type configuration that mandated their generation. Must be annotated `source: inferred`. |
 | No hallucinated claims without classification | 0-40 | Claims that are neither factual (with traceability) nor inferred (with rule support) represent hallucinations. Zero tolerance for unclassified claims. |
 
-### 5. Surface Fitness (Surface 适配) -- 150 pts
+### 5. Surface Fitness (Surface 适配) -- 100 pts
 
 Evaluates whether the Contract follows the surface type's `required_outcomes` rules and uses surface-appropriate dimension descriptions.
 
@@ -90,9 +91,9 @@ Evaluates whether the Contract follows the surface type's `required_outcomes` ru
 
 | Criterion | Points | What to check |
 |-----------|--------|---------------|
-| Mandatory derived Outcomes from surface `required_outcomes` are present | 0-60 | Check the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` must be considered. For Web: `validation-error` + `session-expired`. For API: `unauthorized` per authenticated endpoint. Score 0 if mandatory Outcomes are completely absent. |
-| Dimension descriptions use surface-appropriate language | 0-50 | CLI: subprocess commands, exit codes, stdout/stderr. TUI: keyboard input, view descriptions, await semantics. Web: user interactions, page elements, async operations. API: HTTP methods, status codes, request/response bodies. Mobile: tap gestures, screen navigation, deep links. Using inappropriate surface language (e.g., DOM selectors in CLI) indicates poor adaptation. |
-| TUI async Contracts include timeout Outcomes with await semantics | 0-40 | For TUI surface: any Contract with async Cmds must include a timeout Outcome with proper `await <N>ms` semantics, and the timeout Outcome must report the timed-out Cmd name. Missing timeout Outcomes for async steps is a critical failure for TUI. Non-TUI surfaces should score full points here. |
+| Mandatory derived Outcomes from surface `required_outcomes` are present | 0-40 | Check the surface type's `required_outcomes` rules. For CLI: `not-found` + `already-exists` must be considered. For Web: `validation-error` + `session-expired`. For API: `unauthorized` per authenticated endpoint. Score 0 if mandatory Outcomes are completely absent. |
+| Dimension descriptions use surface-appropriate language | 0-35 | CLI: subprocess commands, exit codes, stdout/stderr. TUI: keyboard input, view descriptions, await semantics. Web: user interactions, page elements, async operations. API: HTTP methods, status codes, request/response bodies. Mobile: tap gestures, screen navigation, deep links. Using inappropriate surface language (e.g., DOM selectors in CLI) indicates poor adaptation. |
+| TUI async Contracts include timeout Outcomes with await semantics | 0-25 | For TUI surface: any Contract with async Cmds must include a timeout Outcome with proper `await <N>ms` semantics, and the timeout Outcome must report the timed-out Cmd name. Missing timeout Outcomes for async steps is a critical failure for TUI. Non-TUI surfaces should score full points here. |
 
 ### 6. Internal Consistency (一致性) -- 150 pts
 
@@ -104,6 +105,35 @@ Evaluates whether Journey Invariants hold across all Step Contracts and cross-Co
 | Cross-Contract state references are consistent | 0-50 | If Contract for Step 3 references state created in Step 1 (e.g., "task created in step 1"), verify that Step 1's Contract actually describes creating that state and the reference is unambiguous. Dangling or contradictory cross-Contract references are failures. |
 | Outcome Preconditions are consistent with preceding Steps' State changes | 0-40 | Step N's Outcome Preconditions should be achievable based on Step N-1's State changes. A Step claiming "task status is in_progress" as a precondition when the previous Step sets it to "completed" is an inconsistency. |
 
+### 7. Anchor Integrity (锚点完整性) -- 100 pts
+
+Evaluates whether Contracts contain correct technical anchor fields that link to the corresponding handbook, and whether the handbook itself is internally consistent. This dimension bridges design intent and test implementation.
+
+**Activation condition**: This dimension applies only when the corresponding handbook file exists in the design directory (e.g., `design/api-handbook.md` for API surface). When no handbook exists, all criteria in this dimension score full marks (backward-compatible — no penalty for missing handbook).
+
+**Anchor field mapping by surface type**:
+
+| Surface | Required Anchor Fields | Handbook File |
+|---------|----------------------|---------------|
+| API | `endpoint`, `method` | `design/api-handbook.md` |
+| CLI | `command` | `design/cli-handbook.md` |
+| TUI | `command` | `design/cli-handbook.md` |
+| Web | `page` | `design/page-map.md` |
+| Mobile | `screen` | `design/screen-map.md` |
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| Anchor field completeness: Contract frontmatter contains required anchor fields matching handbook entries | 0-40 | When handbook exists for the detected surface type, each Contract file must contain the required anchor fields (e.g., `endpoint` + `method` for API). Check that every endpoint/command/page/screen defined in the handbook has a corresponding Contract with matching anchor values. Missing anchor fields on any Contract when handbook is present is a deduction. Report missing fields grouped by surface type. |
+| Anchor values match handbook definitions | 0-30 | Anchor field values in Contract frontmatter must match the corresponding handbook entry exactly (endpoint paths, HTTP methods, command names, page/screen identifiers). Mismatches indicate the Contract is out of sync with the design. Each mismatch is a deduction. |
+| Handbook internal consistency: no duplicate or conflicting endpoint/command definitions | 0-30 | Within the handbook itself, verify no conflicting definitions exist: (1) For API: same endpoint path with different HTTP methods (method conflict) or different paths mapping to the same logical operation (path conflict). (2) For CLI: same command with conflicting subcommand definitions. (3) For Web/Mobile: same page/screen with different routes/navigation paths. Conflicts indicate design ambiguity that will propagate to Contracts. |
+
+**Scoring guidance**:
+- When handbook does not exist for the surface type: score full marks (100/100) and note in report "handbook not found — anchor integrity check skipped (backward-compatible)"
+- When handbook exists but contains no entries for the surface type: score full marks and note "handbook exists but empty for this surface type"
+- Missing anchor field: -10 pts per missing field (from the 0-40 criterion)
+- Anchor value mismatch: -10 pts per mismatch (from the 0-30 criterion)
+- Handbook conflict: -15 pts per conflict (from the 0-30 criterion)
+
 ## Deduction Rules
 
 - **Missing mandatory dimension in any Outcome**: 0 pts for Completeness
@@ -112,6 +142,9 @@ Evaluates whether Journey Invariants hold across all Step Contracts and cross-Co
 - **Invariant violation in any Contract**: -40 pts per violation (Internal Consistency)
 - **Precondition overlap across Outcomes**: -20 pts per ambiguous pair (Precondition Exclusivity)
 - **Missing `## Journey Invariants` section**: 0 pts for Completeness Journey Invariants criterion
+- **Missing anchor field when handbook exists**: -10 pts per missing field (Anchor Integrity)
+- **Anchor value mismatch with handbook**: -10 pts per mismatch (Anchor Integrity)
+- **Handbook endpoint/command conflict**: -15 pts per conflict (Anchor Integrity)
 
 ## Eval Failure Handling
 

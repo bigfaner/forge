@@ -100,7 +100,7 @@ Type-specific inputs:
 - `consistency`: add `SCOPE` = value from `--scope`
 - `validate-ux`: add `UX_SNAPSHOT_PATH` = path to generated `ux-snapshot.md`
 - `journey`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surfaces` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
-- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surfaces` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory)
+- `contract`: add `SURFACE_TYPE` = value from `.forge/config.yaml` `surfaces` field; add `SURFACE_RULE_PATH` = gen-journeys skill's `rules/surface-<type>.md` (resolve relative to the gen-journeys skill directory); add `HANDBOOK_ANCHORS` = anchor map from pre-processing (null if no handbook)
 
 Do NOT pass reviser change summaries to the scorer.
 

@@ -36,3 +36,9 @@ Before writing, scan existing test files in the module for matching function nam
 | Syntax validation failed (attempt 2) | Mark file as `gen-failed`, skip in subsequent steps |
 | Import path resolution failed | Same as syntax validation: retry once, then `gen-failed` |
 | Surface type not in config.yaml | Auto-detect from code signals (Step 0.5.2), or ask user |
+| Cross-validation: handbook not found for surface | Degrade to Fact Table inference. Prompt user to generate handbook. Non-blocking. |
+| Cross-validation: no anchor fields in Contract | Degrade to Fact Table inference. Prompt user to run `/gen-contracts` to populate anchors. Non-blocking. |
+| Cross-validation: handbook anchor differs from Fact Table | Flag as code bug (handbook is authority). Generate code bug report. Non-blocking. |
+| Cross-validation: handbook differs from Contract anchor | Generate suggested fix (diff). Present to user for confirmation. Non-blocking if user rejects. |
+| Cross-validation: all three sources disagree | Present all three values to user. Default to handbook. Non-blocking. |
+| Cross-validation: Fact Table entry is UNKNOWN | Classify as "cannot verify". Include in coverage report. Non-blocking. |
