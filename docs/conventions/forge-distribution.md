@@ -128,15 +128,14 @@ Plugin 由 `forge upgrade` 自动管理安装和升级，用户不直接操作 P
 │   ├── manifest.md           # Feature 入口
 │   ├── tasks/                # 任务文件
 │   └── testing/              # 测试脚本（运行时生成）
-├── forge-cli/tests/          # forge-cli 自身 E2E 测试
-├── tests/                    # Surface 回归测试
+├── tests/                    # Surface 回归测试（含 CLI 功能测试）
 └── .forge/
     └── config.yaml           # Forge 项目配置（test profile 等）
 ```
 
 **关键约束**：
 - `docs/conventions/` 和 `docs/business-rules/` 由 `/consolidate-specs` 从 feature 文档中提取，agent 在任务执行时读取这些规范
-- `tests/` 和 `forge-cli/tests/` 测试通过标签管理（`/run-tests` skill 内部处理 `@feature` → `@regression` 晋升），不使用文件迁移
+- `tests/` 测试通过标签管理（`/run-tests` skill 内部处理 `@feature` → `@regression` 晋升），不使用文件迁移
 - `records/` 由 `forge task submit` 生成，不能手动写入
 
 ## 5. 路径解析机制

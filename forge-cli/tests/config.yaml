@@ -1,5 +1,0 @@
-# Server probe configuration
-# Set baseUrl and/or apiBaseUrl to enable health-check probing.
-# This file is optional; CLI-only projects work without it.
-# baseUrl: http://localhost:3000
-# apiBaseUrl: http://localhost:8080

@@ -163,11 +163,11 @@ func TestPerType_TC_001_TaskIndexCreatesPerTypeTasksForMultiType(t *testing.T) {
 
 	// Verify per-type gen-scripts tasks exist
 	// go profile capabilities: [api, cli]
-	_, hasAPI := idx.Tasks["gen-test-scripts-api"]
-	_, hasCLI := idx.Tasks["gen-test-scripts-cli"]
+	_, hasAPI := idx.Tasks["gen-test-scripts-backend"]
+	_, hasCLI := idx.Tasks["gen-test-scripts-frontend"]
 
-	assert.True(t, hasAPI, "index should contain gen-test-scripts-api task")
-	assert.True(t, hasCLI, "index should contain gen-test-scripts-cli task")
+	assert.True(t, hasAPI, "index should contain gen-test-scripts-backend task")
+	assert.True(t, hasCLI, "index should contain gen-test-scripts-frontend task")
 }
 
 // ==============================================================================
@@ -187,7 +187,7 @@ func TestPerType_TC_002_TaskIndexPerTypeTasksHaveCorrectType(t *testing.T) {
 
 	idx := readPerTypeIndexJSON(t, dir, "type-check-feat")
 
-	for _, key := range []string{"gen-test-scripts-api", "gen-test-scripts-cli"} {
+	for _, key := range []string{"gen-test-scripts-backend", "gen-test-scripts-frontend"} {
 		task, ok := idx.Tasks[key]
 		require.True(t, ok, "task %s should exist", key)
 		assert.Equal(t, "test.gen-scripts", task.Type,
@@ -214,12 +214,12 @@ func TestPerType_TC_003_TaskIndexSingleTypeCreatesOneGenTask(t *testing.T) {
 
 	// go profile capabilities [api, cli] are always used regardless of test-cases content
 	// All per-type gen-scripts tasks should exist
-	_, hasCLI := idx.Tasks["gen-test-scripts-cli"]
-	assert.True(t, hasCLI, "index should contain gen-test-scripts-cli task")
+	_, hasCLI := idx.Tasks["gen-test-scripts-frontend"]
+	assert.True(t, hasCLI, "index should contain gen-test-scripts-frontend task")
 
 	// Should also have api variant (driven by profile capabilities)
-	_, hasAPI := idx.Tasks["gen-test-scripts-api"]
-	assert.True(t, hasAPI, "index should contain gen-test-scripts-api task")
+	_, hasAPI := idx.Tasks["gen-test-scripts-backend"]
+	assert.True(t, hasAPI, "index should contain gen-test-scripts-backend task")
 }
 
 // ==============================================================================
@@ -241,7 +241,7 @@ func TestPerType_TC_004_TaskIndexWithoutTestCasesUsesProfileCapabilities(t *test
 
 	// Without test-cases.md, capabilities still come from profile manifest
 	// Per-type tasks are generated based on profile capabilities
-	for _, typ := range []string{"api", "cli"} {
+	for _, typ := range []string{"backend", "frontend"} {
 		key := "gen-test-scripts-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s (capabilities from profile manifest)", key)
@@ -267,7 +267,7 @@ func TestPerType_TC_005_TaskIndexZeroTypeTestCasesUsesProfileCapabilities(t *tes
 
 	// All-zero test-cases types do not change per-type generation;
 	// capabilities from profile manifest drive the per-type split
-	for _, typ := range []string{"api", "cli"} {
+	for _, typ := range []string{"backend", "frontend"} {
 		key := "gen-test-scripts-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s for zero-type test-cases", key)
@@ -303,8 +303,8 @@ func TestPerType_TC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	require.NoError(t, err, "run task .md file should exist")
 	runMDContent := string(runMDData)
 
-	assert.Contains(t, runMDContent, "T-test-gen-scripts-api", "run task should depend on T-test-gen-scripts-api")
-	assert.Contains(t, runMDContent, "T-test-gen-scripts-cli", "run task should depend on T-test-gen-scripts-cli")
+	assert.Contains(t, runMDContent, "T-test-gen-scripts-backend", "run task should depend on T-test-gen-scripts-backend")
+	assert.Contains(t, runMDContent, "T-test-gen-scripts-frontend", "run task should depend on T-test-gen-scripts-frontend")
 }
 
 // ==============================================================================
@@ -326,7 +326,7 @@ func TestPerType_TC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 
 	// Multi-surface: surfaces {backend: api, frontend: cli}
 	// Per-type gen-scripts tasks generated for each surface type
-	for _, typ := range []string{"api", "cli"} {
+	for _, typ := range []string{"backend", "frontend"} {
 		key := "gen-test-scripts-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s", key)
@@ -341,8 +341,8 @@ func TestPerType_TC_007_TaskIndexMultiProfilePerTypeTasks(t *testing.T) {
 	// Verify per-type gen-scripts .md files have correct task IDs
 	tasksDir := filepath.Join(dir, "docs", "features", "multi-prof-feat", "tasks")
 	for _, key := range []string{
-		"gen-test-scripts-api",
-		"gen-test-scripts-cli",
+		"gen-test-scripts-backend",
+		"gen-test-scripts-frontend",
 	} {
 		mdPath := filepath.Join(tasksDir, key+".md")
 		mdData, err := os.ReadFile(mdPath)
@@ -409,8 +409,8 @@ func TestPerType_TC_009_PerTypeGenScriptsMdContainsTestType(t *testing.T) {
 		key string
 		typ string
 	}{
-		{"gen-test-scripts-api", "api"},
-		{"gen-test-scripts-cli", "cli"},
+		{"gen-test-scripts-backend", "api"},
+		{"gen-test-scripts-frontend", "cli"},
 	}
 
 	tasksDir := filepath.Join(dir, "docs", "features", "type-md-feat", "tasks")
@@ -448,7 +448,7 @@ func TestPerType_TC_010_TaskIndexPerTypeIdempotent(t *testing.T) {
 
 	// Should have exactly the expected per-type tasks (not duplicated)
 	// go capabilities: [api, cli]
-	for _, typ := range []string{"api", "cli"} {
+	for _, typ := range []string{"backend", "frontend"} {
 		key := "gen-test-scripts-" + typ
 		_, ok := idx.Tasks[key]
 		assert.True(t, ok, "index should contain %s after idempotent re-run", key)
@@ -480,8 +480,8 @@ func TestPerType_TC_011_PerTypeGenScriptsMdHasCorrectTaskIDs(t *testing.T) {
 	// Verify task IDs have type suffix
 	// go capabilities: [api, cli]
 	expectedIDs := map[string]string{
-		"gen-test-scripts-api": "T-test-gen-scripts-api",
-		"gen-test-scripts-cli": "T-test-gen-scripts-cli",
+		"gen-test-scripts-backend": "T-test-gen-scripts-backend",
+		"gen-test-scripts-frontend": "T-test-gen-scripts-frontend",
 	}
 	for key, wantID := range expectedIDs {
 		task, ok := idx.Tasks[key]

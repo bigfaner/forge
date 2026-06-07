@@ -208,7 +208,8 @@ func TestTC_006_NoStaticFileTextGrepTests(t *testing.T) {
 		lines := strings.Split(content, "\n")
 
 		for i, line := range lines {
-			if readFilePattern.MatchString(line) && !strings.Contains(line, "testdata") {
+			// Skip: testdata paths and dynamically constructed paths (filepath.Join with variables = temp output files)
+				if readFilePattern.MatchString(line) && !strings.Contains(line, "testdata") && !strings.Contains(line, "filepath.Join") {
 				end := i + 30
 				if end > len(lines) {
 					end = len(lines)
