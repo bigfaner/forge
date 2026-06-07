@@ -18,7 +18,7 @@ domains: [cli, commands, reference, skills, task-list, validate]
 | `forge feature [slug]` | 设置或显示当前 feature | `feature/feature.go` |
 | `forge proposal [slug]` | 列出或查看 proposal 详情 | `proposal.go` |
 | `forge lesson [name]` | 列出或查看 lesson 详情 | `lesson.go` |
-| `forge cleanup` | 清理已完成的任务状态 | `cleanup.go` |
+| `forge cleanup` | 清理已完成/阻塞/暂停/拒绝的任务状态（删除 state.json 和 record.json） | `cleanup.go` |
 | `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `qualitygate/quality_gate.go` |
 | `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
 | `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
@@ -68,7 +68,7 @@ domains: [cli, commands, reference, skills, task-list, validate]
 | `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree/cmd_remove.go` |
 | `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree/cmd_resume.go` |
 | `forge worktree push` | 推送当前 worktree 分支到远程并设置 upstream 跟踪 | `worktree/cmd_push.go` |
-| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表）；无参数时显示所有 worktree | `worktree/cmd_status.go` |
+| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表、未推送提交数）；无参数时显示所有 worktree | `worktree/cmd_status.go` |
 
 ### forge config — 配置管理
 

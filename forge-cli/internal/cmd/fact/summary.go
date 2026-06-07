@@ -18,6 +18,14 @@ var summaryCmd = &cobra.Command{
 	Long: `Show statistics about the Fact Table grouped by source, confidence, and kind.
 
 Displays counts for each group and the total number of facts.
+Includes a [COVERAGE] indicator showing the ratio of runtime-confirmed
+facts to total facts (percentage of facts verified at runtime).
+
+Sections:
+  [BY SOURCE]      — counts by fact source (e.g. runtime, static)
+  [BY CONFIDENCE]  — counts by confidence level (e.g. confirmed, assumed)
+  [BY KIND]        — counts by fact kind
+  [COVERAGE]       — runtime confirmed / total ratio (shown when applicable)
 
 Examples:
   forge fact summary`,

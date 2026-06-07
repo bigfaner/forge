@@ -31,7 +31,14 @@ The task is selected based on:
 1. All dependencies must be met
 2. Topological order (shallower depth first)
 3. Priority as tiebreaker within same depth (P0 > P1 > P2)
-4. Task ID (semantic version ordering)`,
+4. Task ID (semantic version ordering)
+
+Auto-unblock: before selecting a task, blocked tasks whose dependencies are
+all completed/skipped are automatically transitioned to pending status.
+Suspended tasks remain excluded from auto-unblock.
+
+If a task is already in progress (state.json exists), returns CONTINUE
+instead of claiming a new one.`,
 	Args: cobra.NoArgs,
 	RunE: runClaim,
 }

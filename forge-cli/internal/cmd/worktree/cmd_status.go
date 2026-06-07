@@ -15,8 +15,14 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status [<slug>]",
 	Short: "Show worktree status",
-	Long: `Display the status of a forge-managed worktree: branch name, latest commit,
-and uncommitted files list.
+	Long: `Display the status of a forge-managed worktree.
+
+For each worktree, shows:
+  WORKTREE     — feature slug
+  BRANCH       — current branch name (or "(detached)")
+  COMMIT       — latest commit (git log -1 --oneline)
+  UNCOMMITTED  — list of uncommitted files (or "(none)")
+  UNPUSHED     — count of commits not yet pushed to remote, or "no remote"
 
 When no slug is provided, shows status for all forge-managed worktrees.
 This command is strictly read-only — it never modifies any filesystem state.`,

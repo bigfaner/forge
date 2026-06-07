@@ -20,9 +20,15 @@ var initCmd = &cobra.Command{
 	Short: "Initialize forge project environment",
 	Long: `One-stop initialization for forge project.
 
-Creates .forge/ directory, appends runtime entries to .gitignore,
-ensures just is installed, and runs interactive config if
-.forge/config.yaml doesn't exist.`,
+Steps:
+  1. Create .forge/ directory
+  2. Append runtime entries to .gitignore
+  3. Ensure just is installed (skip with --skip-just)
+  4. Run interactive config if .forge/config.yaml doesn't exist
+  5. Detect project surfaces (e.g. cli, web, api) and confirm via TUI
+
+Re-running init is safe — existing state is preserved or skipped.
+Surface detection on re-run offers Confirm / Re-detect / Edit options.`,
 	Args: cobra.NoArgs,
 	RunE: runInit,
 }

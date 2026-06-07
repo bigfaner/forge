@@ -40,10 +40,19 @@ var QualityGateCmd = &cobra.Command{
 	Short: "Check if all tasks are done, then run tests",
 	Long: `Checks if every task in the current feature is completed or skipped.
 Exits 0 silently if any task is still pending, in_progress, or blocked (no-op).
-If all done: runs project-wide unit tests, then test regression.
 
-Feature test scripts are run by T-test-run (run-test task), not this hook.
-This hook is the project health gate: unit tests + regression suite.
+When all tasks are done, runs the quality gate pipeline:
+  1. Static checks: compile -> fmt -> lint (stops at first failure)
+  2. Project-wide unit tests (with retry-once policy for transient failures)
+  3. Full test regression (test scripts in tests/)
+
+Side effects on failure:
+  - Automatically creates fix tasks (P0) for the failing step, grouped by
+    source file directory for parallel execution. Max 3 active fix-tasks per step.
+  - compile/test failures create coding.fix tasks (breaking=true).
+  - fmt/lint failures create coding.cleanup tasks (breaking=false).
+
+Docs-only features (no testable runtime types) skip the quality gate entirely.
 
 Use -v to see why the command exits early (useful for debugging).`,
 	Args: cobra.NoArgs,
