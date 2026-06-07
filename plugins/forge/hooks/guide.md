@@ -46,7 +46,7 @@ Use these for ad-hoc lookups when a user mentions a slug:
 - `forge task add --type <type> --title "..." [--source-task-id <id>] [--block-source] [--var KEY=VALUE] --description "..."` — create a new task (fix-tasks use `--source-task-id --block-source`)
 - `forge task transition <id> <status> --reason "..."` — manually transition (unblock, skip, reject)
 - `forge task reopen <id>` — re-activate a rejected/skipped task
-- `forge task submit <id> --data <record-path>` — submit task execution record
+- `forge task submit <id> [--data <record-path>] [--quiet]` — submit task execution record (`--quiet` for minimal output)
 
 ### Feature Management
 
@@ -56,11 +56,11 @@ Use these for ad-hoc lookups when a user mentions a slug:
 ### Pipeline Utilities
 
 - `forge prompt get-by-task-id <id>` — retrieve task execution prompt (dispatcher/agent entry point)
-- `forge quality-gate` — run quality gate checks for the current feature
+- `forge quality-gate` — run quality gate when all tasks completed: compile/fmt/lint → unit tests (with retry-once) → regression; auto-creates fix task on failure; skips compile/test for docs-only features
 - `forge surfaces detect` — auto-detect surface types for configured surface keys
 - `forge task index --feature <slug>` — regenerate task index from task files
-- `forge task validate-index <path>` — validate index.json structure
-- `forge cleanup` — clean stale artifacts
+- `forge task validate [file]` — validate index.json structure and task sizing (omit file to validate current feature)
+- `forge cleanup` — remove state.json and record.json for completed, blocked, suspended, or rejected tasks
 
 ## Surfaces
 

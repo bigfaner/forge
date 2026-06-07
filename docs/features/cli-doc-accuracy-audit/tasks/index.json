@@ -8,7 +8,7 @@
       "title": "Update existing command descriptions in guide.md",
       "priority": "P0",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-update-guide-commands.md",
       "record": "records/1-update-guide-commands.md",
       "type": "doc"
