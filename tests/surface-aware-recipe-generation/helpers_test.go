@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	testkit "forge-tests/testkit"
@@ -64,6 +65,7 @@ func runForgeRaw(t *testing.T, dir string, args ...string) (string, int) {
 	t.Helper()
 	cmd := exec.Command(testkit.ForgeBinary, args...)
 	cmd.Dir = dir
+	cmd.Stdin = strings.NewReader("")
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+dir)
 	out, err := cmd.CombinedOutput()
 	exitCode := 0

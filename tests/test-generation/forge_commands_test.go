@@ -170,6 +170,7 @@ func TestForgeCmd_TC_026_ForgeInitCreatesProjectWithoutLegacyFields(t *testing.T
 
 	cmd := forgeCmdForConvention("init", "--project-root", projectRoot, "--skip-just")
 	cmd.Dir = projectRoot
+	cmd.Stdin = strings.NewReader("")
 	out, err := cmd.CombinedOutput()
 	t.Logf("forge init output: %s", string(out))
 
