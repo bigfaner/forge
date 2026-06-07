@@ -34,7 +34,31 @@ var (
 var addCmd = &cobra.Command{
 	Use:   "add --title TITLE [flags]",
 	Short: "Add a new task to the current feature",
-	Long: `Add a new task dynamically. Validates inputs and writes files.
+	Long: `Add a new task dynamically. Validates inputs, writes task markdown,
+and rebuilds the feature index.
+
+Usage patterns:
+  Regular task:
+    forge task add --title "Implement feature X" --type feature
+
+  Fix task (for quality-gate or error escalation):
+    forge task add --title "Fix: compilation error" --type coding.fix \
+      --source-task-id 3 --block-source \
+      --var SOURCE_FILES="main.go" --var TEST_SCRIPT="just compile"
+
+Key flags:
+  --title TITLE          Task title (required)
+  --type TYPE            Task type (feature, enhancement, cleanup, refactor,
+                         fix, documentation). Applies template defaults.
+  --id ID                Custom task ID (auto-generated as disc-N if omitted)
+  --priority P           P0, P1, or P2 (default: P1; overridden by type template)
+  --depends-on IDS       Comma-separated dependency task IDs
+  --breaking             Mark as breaking (triggers full test suite)
+  --source-task-id ID    Root ancestor task ID for fix chains
+  --block-source         Block source task (preserves fix chain ordering)
+  --var KEY=VALUE        Template variable (repeatable)
+  --description TEXT     Task description (markdown body)
+
 The CLI is a pure tool — the caller decides what to add.`,
 	Args: cobra.NoArgs,
 	RunE: runAdd,

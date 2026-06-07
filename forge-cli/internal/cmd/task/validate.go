@@ -26,11 +26,24 @@ var validateCmd = &cobra.Command{
 If no file is specified, validates the current feature's index.json.
 
 Validations:
-  - JSON syntax
-  - Required fields present
-  - Dependency references exist
-  - No circular dependencies
-  - AC count per task (must be >= 1 and <= 6)`,
+  1. JSON syntax correctness
+  2. Required 'feature' field present
+  3. PRD/Design field presence (warning if missing, relaxed in proposal quick mode)
+  4. statusEnum field presence (warning if missing)
+  5. Task fields: id, title, file, status, priority, type (including system-type guard)
+  6. Dependency references exist (exact IDs and wildcard matches)
+  7. No circular dependencies
+  8. Task markdown files exist on disk
+  9. First-test task template placeholders resolved
+  10. No wildcard self-dependency deadlocks
+  11. Gate integrity: gates depend on own phase summary, next-phase tasks depend on gate
+  12. Phase ordering: cross-phase dependencies present
+  13. Phase summary tasks exist for phases with business tasks
+  14. Blocked task liveness: detect orphaned, stale, or deadlocked blocked tasks
+  15. AC count per task (must be >= 1 and <= 6)
+
+Proposal quick mode: when index has a proposal field but no PRD/design, phases,
+summaries, and gates are not required (flat task structure).`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runValidate,
 }

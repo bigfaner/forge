@@ -32,11 +32,14 @@ var Cmd = &cobra.Command{
 	Long: `Set or display the current feature context.
 
 Without arguments: displays the current feature.
-With a slug argument: sets the current feature.
+With a slug argument: sets the current feature (creates directory if needed).
 
 Subcommands:
-  list            List all features
-  status <slug>   Show feature status detail`,
+  list            List all features with status, progress, and scores
+  status <slug>   Show detailed status for a feature (manifest, tasks, artifacts)
+  set <slug>      Explicitly set the current feature by writing .forge/state.json
+                  and ensuring the feature directory structure exists. Provides an
+                  explicit override complementing implicit git-based resolution.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: runFeature,
 }

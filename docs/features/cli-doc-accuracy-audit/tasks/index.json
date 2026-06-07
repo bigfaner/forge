@@ -31,7 +31,7 @@
       "title": "Fix CLI help text for task/feature/quality-gate commands",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "3-fix-cli-help-task.md",
       "record": "records/3-fix-cli-help-task.md",
       "surface-type": "cli",

@@ -14,12 +14,15 @@ import (
 
 var cleanupCmd = &cobra.Command{
 	Use:   "cleanup",
-	Short: "Clean up completed task state",
-	Long: `Removes state.json and record.json when task is completed.
+	Short: "Clean up task state for completed, blocked, suspended, or rejected tasks",
+	Long: `Removes state.json and record.json when the current task has a terminal
+or inactive status: completed, blocked, suspended, or rejected.
 
 Called as a Stop hook to clean up:
   - docs/features/<feature>/tasks/process/state.json
-  - docs/features/<feature>/tasks/process/record.json (if exists)`,
+  - docs/features/<feature>/tasks/process/record.json (if exists)
+
+Note: .forge/state.json is NOT deleted here — it is only cleared by quality-gate.`,
 	Args: cobra.NoArgs,
 	RunE: runCleanup,
 }
