@@ -101,7 +101,7 @@
       "dependencies": [
         "T-test-gen-journeys"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "run-test.md",
       "record": "records/run-test.md",
       "breaking": true,
