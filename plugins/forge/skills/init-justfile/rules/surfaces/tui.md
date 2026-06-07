@@ -21,11 +21,16 @@ Notes:
 |-------------|---------------|----------------------|----------------------|
 | tui-test | `just tui-test [journey]` | All terminal functional tests passed | At least one test failed |
 | tui-teardown | `just tui-teardown` | Cleanup complete | Cleanup failed |
+| tui-compile | `just tui-compile` | TUI surface code compiled successfully | Compilation failed, stderr contains error details |
+| tui-fmt | `just tui-fmt` | TUI surface code formatted (no changes needed or changes applied) | Formatting failed or check-only mode found unformatted code |
+| tui-lint | `just tui-lint` | TUI surface code passed all lint checks | Lint violations found, stderr contains rule violations |
+| tui-unit-test | `just tui-unit-test` | All TUI surface unit tests passed | At least one unit test failed |
 
 Implementation constraints:
 - Each recipe must support both `[linux]` and `[windows]` platform variants
 - `tui-teardown` must be validated with `just --dry-run`
 - **Do not generate** `tui-dev`, `tui-probe`, or `tui` aggregate recipes
+- Gate recipes (`tui-compile`, `tui-fmt`, `tui-lint`, `tui-unit-test`) are invoked by the quality gate per-task scoping mechanism; they operate ONLY on the tui surface code, not other surfaces
 
 ## Journey Filter Strategy
 
@@ -71,6 +76,63 @@ tui-teardown:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement tui-teardown" >&2; exit 1
+```
+
+# Compile ONLY the tui surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+tui-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-compile (compile tui surface code only)" >&2; exit 1
+
+# user-customized
+tui-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-compile (compile tui surface code only)" >&2; exit 1
+
+# Format ONLY the tui surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+tui-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-fmt (format tui surface code only)" >&2; exit 1
+
+# user-customized
+tui-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-fmt (format tui surface code only)" >&2; exit 1
+
+# Lint ONLY the tui surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+tui-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-lint (lint tui surface code only)" >&2; exit 1
+
+# user-customized
+tui-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-lint (lint tui surface code only)" >&2; exit 1
+
+# Run unit tests ONLY for the tui surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+tui-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-unit-test (run tui surface unit tests only)" >&2; exit 1
+
+# user-customized
+tui-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement tui-unit-test (run tui surface unit tests only)" >&2; exit 1
 ```
 
 **LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern. **Do not generate** `tui-dev`, `tui-probe`, or `tui` aggregate recipes.

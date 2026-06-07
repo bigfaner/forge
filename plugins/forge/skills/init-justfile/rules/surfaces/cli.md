@@ -21,11 +21,16 @@ Notes:
 |-------------|---------------|----------------------|----------------------|
 | cli-test | `just cli-test [journey]` | All CLI functional tests passed | At least one test failed |
 | cli-teardown | `just cli-teardown` | Cleanup complete | Cleanup failed |
+| cli-compile | `just cli-compile` | CLI surface code compiled successfully | Compilation failed, stderr contains error details |
+| cli-fmt | `just cli-fmt` | CLI surface code formatted (no changes needed or changes applied) | Formatting failed or check-only mode found unformatted code |
+| cli-lint | `just cli-lint` | CLI surface code passed all lint checks | Lint violations found, stderr contains rule violations |
+| cli-unit-test | `just cli-unit-test` | All CLI surface unit tests passed | At least one unit test failed |
 
 Implementation constraints:
 - Each recipe must support both `[linux]` and `[windows]` platform variants
 - `cli-teardown` must be validated with `just --dry-run`
 - **Do not generate** `cli-dev`, `cli-probe`, or `cli` aggregate recipes
+- Gate recipes (`cli-compile`, `cli-fmt`, `cli-lint`, `cli-unit-test`) are invoked by the quality gate per-task scoping mechanism; they operate ONLY on the cli surface code, not other surfaces
 
 ## Journey Filter Strategy
 
@@ -71,6 +76,63 @@ cli-teardown:
     #!/usr/bin/env bash
     set -euo pipefail
     echo "TODO: implement cli-teardown" >&2; exit 1
+```
+
+# Compile ONLY the cli surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+cli-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-compile (compile cli surface code only)" >&2; exit 1
+
+# user-customized
+cli-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-compile (compile cli surface code only)" >&2; exit 1
+
+# Format ONLY the cli surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+cli-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-fmt (format cli surface code only)" >&2; exit 1
+
+# user-customized
+cli-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-fmt (format cli surface code only)" >&2; exit 1
+
+# Lint ONLY the cli surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+cli-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-lint (lint cli surface code only)" >&2; exit 1
+
+# user-customized
+cli-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-lint (lint cli surface code only)" >&2; exit 1
+
+# Run unit tests ONLY for the cli surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+cli-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-unit-test (run cli surface unit tests only)" >&2; exit 1
+
+# user-customized
+cli-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement cli-unit-test (run cli surface unit tests only)" >&2; exit 1
 ```
 
 **LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern. **Do not generate** `cli-dev`, `cli-probe`, or `cli` aggregate recipes.

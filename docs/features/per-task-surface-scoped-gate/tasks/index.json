@@ -20,7 +20,7 @@
       "title": "Surface rules 增加 compile/fmt/lint/unit-test gate recipe 模板",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-surface-rules-gate-recipes.md",
       "record": "records/2-surface-rules-gate-recipes.md",
       "type": "doc"

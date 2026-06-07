@@ -28,11 +28,16 @@ Notes:
 | mobile-test | `just mobile-test [journey]` | All mobile E2E tests passed | At least one test failed |
 | mobile-teardown | `just mobile-teardown` | Emulator stopped, process cleanup complete | Residual emulators or cleanup error |
 | mobile | `just mobile` | Aggregate recipe: test-setup->dev->probe->test->teardown complete flow | Any sub-step failed |
+| mobile-compile | `just mobile-compile` | Mobile surface code compiled successfully | Compilation failed, stderr contains error details |
+| mobile-fmt | `just mobile-fmt` | Mobile surface code formatted (no changes needed or changes applied) | Formatting failed or check-only mode found unformatted code |
+| mobile-lint | `just mobile-lint` | Mobile surface code passed all lint checks | Lint violations found, stderr contains rule violations |
+| mobile-unit-test | `just mobile-unit-test` | All mobile surface unit tests passed | At least one unit test failed |
 
 Implementation constraints:
 - Each recipe must support both `[linux]` and `[windows]` platform variants
 - The `mobile` aggregate recipe calls sub-recipes in orchestration sequence order, stopping immediately on a non-zero exit code
 - `mobile-teardown` must be validated with `just --dry-run`
+- Gate recipes (`mobile-compile`, `mobile-fmt`, `mobile-lint`, `mobile-unit-test`) are invoked by the quality gate per-task scoping mechanism; they operate ONLY on the mobile surface code, not other surfaces
 
 ## Journey Filter Strategy
 
@@ -123,6 +128,63 @@ mobile:
     #!/usr/bin/env bash
     set -euo pipefail
     just mobile-test-setup && just mobile-dev && just mobile-probe && just mobile-test; rc=$?; just mobile-teardown; exit $rc
+```
+
+# Compile ONLY the mobile surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+mobile-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-compile (compile mobile surface code only)" >&2; exit 1
+
+# user-customized
+mobile-compile:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-compile (compile mobile surface code only)" >&2; exit 1
+
+# Format ONLY the mobile surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+mobile-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-fmt (format mobile surface code only)" >&2; exit 1
+
+# user-customized
+mobile-fmt:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-fmt (format mobile surface code only)" >&2; exit 1
+
+# Lint ONLY the mobile surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+mobile-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-lint (lint mobile surface code only)" >&2; exit 1
+
+# user-customized
+mobile-lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-lint (lint mobile surface code only)" >&2; exit 1
+
+# Run unit tests ONLY for the mobile surface code
+# This recipe is invoked by the quality gate for per-task surface-scoped validation
+# user-customized
+mobile-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-unit-test (run mobile surface unit tests only)" >&2; exit 1
+
+# user-customized
+mobile-unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "TODO: implement mobile-unit-test (run mobile surface unit tests only)" >&2; exit 1
 ```
 
 **LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.
