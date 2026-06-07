@@ -1,7 +1,7 @@
 ---
 feature: "per-task-surface-scoped-gate"
 created: "2026-06-07"
-status: tasks
+status: completed
 mode: quick
 ---
 
