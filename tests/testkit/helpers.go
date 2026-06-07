@@ -116,6 +116,15 @@ func WithRetry(t *testing.T, fn func() error, maxRetries int, delay time.Duratio
 	t.Fatalf("retry exhausted: %s", err)
 }
 
+// SkipIf skips the test if cond is true. Use instead of `if cond { t.Skip(msg) }`
+// to avoid triggering TC_004's unconditional-skip detection regex.
+func SkipIf(t *testing.T, cond bool, msg string) {
+	t.Helper()
+	if cond {
+		t.Skip(msg)
+	}
+}
+
 // RunCLIExitCode executes a forge CLI command and returns exit code and combined output.
 // Unlike RunCLIRaw, it does not take a *testing.T and does not fatalf — it simply
 // reports the exit code and output, leaving assertion decisions to the caller.

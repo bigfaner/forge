@@ -17,9 +17,7 @@ import (
 func TestTC_023_ForensicSearchScansHistoryAndReturnsSessions(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("forensic", "search", "--last", "5")
 
-	if exitCode != 0 {
-		t.Skip("forensic search requires history.jsonl with recorded sessions")
-	}
+	testkit.SkipIf(t, exitCode != 0, "forensic search requires history.jsonl with recorded sessions")
 
 	assert.Equal(t, 0, exitCode, "forensic search should exit 0")
 

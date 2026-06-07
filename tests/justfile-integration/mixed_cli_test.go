@@ -395,12 +395,10 @@ func TestTC_010_JustTestSetupExits0WithOKMessageWhenDepsReady(t *testing.T) {
 	root := testkit.ProjectRoot(t)
 	pkgPath := filepath.Join(root, "tests", "e2e", "package.json")
 	nodeModulesPath := filepath.Join(root, "tests", "e2e", "node_modules")
-	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
-		t.Skip("requires real package.json to be present")
-	}
-	if _, err := os.Stat(nodeModulesPath); os.IsNotExist(err) {
-		t.Skip("requires real node_modules to be present")
-	}
+	_, statErr := os.Stat(pkgPath)
+	testkit.SkipIf(t, os.IsNotExist(statErr), "requires real package.json to be present")
+	_, statErr = os.Stat(nodeModulesPath)
+	testkit.SkipIf(t, os.IsNotExist(statErr), "requires real node_modules to be present")
 
 	exitCode, out := runJust("test-setup")
 	assert.Equal(t, 0, exitCode, "Expected exit code 0 when deps are ready")
@@ -509,12 +507,10 @@ func TestTC_020_JustTestSetupIsIdempotent(t *testing.T) {
 	root := testkit.ProjectRoot(t)
 	pkgPath := filepath.Join(root, "tests", "e2e", "package.json")
 	nodeModulesPath := filepath.Join(root, "tests", "e2e", "node_modules")
-	if _, err := os.Stat(pkgPath); os.IsNotExist(err) {
-		t.Skip("requires real package.json to be present")
-	}
-	if _, err := os.Stat(nodeModulesPath); os.IsNotExist(err) {
-		t.Skip("requires real node_modules to be present")
-	}
+	_, statErr := os.Stat(pkgPath)
+	testkit.SkipIf(t, os.IsNotExist(statErr), "requires real package.json to be present")
+	_, statErr = os.Stat(nodeModulesPath)
+	testkit.SkipIf(t, os.IsNotExist(statErr), "requires real node_modules to be present")
 
 	result1Code, result1Out := runJust("test-setup")
 	result2Code, result2Out := runJust("test-setup")

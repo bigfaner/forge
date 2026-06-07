@@ -173,17 +173,13 @@ func TestTC_024_UnexpectedProjectTypeOutputTriggersFallback(t *testing.T) {
 		// Try just project-type instead
 		exitCode1, out1 = runJust("project-type")
 	}
-	if exitCode1 != 0 {
-		t.Skip("no project-type command available for determinism check")
-	}
+	testkit.SkipIf(t, exitCode1 != 0, "no project-type command available for determinism check")
 
 	exitCode2, out2 := testkit.RunCLIExitCode("probe")
 	if exitCode2 != 0 {
 		exitCode2, out2 = runJust("project-type")
 	}
-	if exitCode2 != 0 {
-		t.Skip("no project-type command available on second run")
-	}
+	testkit.SkipIf(t, exitCode2 != 0, "no project-type command available on second run")
 
 	assert.Equal(t, strings.TrimSpace(out1), strings.TrimSpace(out2),
 		"Expected deterministic project-type output")

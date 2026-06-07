@@ -112,9 +112,7 @@ func dispatchStateFilePath(t *testing.T) string {
 func TestTC_001_DocGenerationSummaryTaskPromptContainsNoTDDSteps(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.summary")
 
-	if exitCode != 0 {
-		t.Skip("task 1.summary not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task 1.summary not found in current feature index - needs test data setup")
 
 	lower := strings.ToLower(out)
 	assert.False(t, strings.Contains(lower, "red") || strings.Contains(lower, "green") || strings.Contains(lower, "refactor"),
@@ -127,9 +125,7 @@ func TestTC_001_DocGenerationSummaryTaskPromptContainsNoTDDSteps(t *testing.T) {
 func TestTC_002_FixTaskPromptContainsFiveStepDiagnosticFlow(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "fix-1")
 
-	if exitCode != 0 {
-		t.Skip("task fix-1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task fix-1 not found in current feature index - needs test data setup")
 
 	lower := strings.ToLower(out)
 	assert.True(t, strings.Contains(lower, "diagnosis"), "fix prompt should contain 'diagnosis'")
@@ -148,9 +144,7 @@ func TestTC_003_NewTypeTemplateGeneratesCorrectPromptOutput(t *testing.T) {
 	// We verify the CLI's prompt command works with a known task.
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.1")
 
-	if exitCode != 0 {
-		t.Skip("task 1.1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task 1.1 not found in current feature index - needs test data setup")
 
 	assert.True(t, len(out) > 0, "prompt output should not be empty")
 }
@@ -187,9 +181,7 @@ func TestTC_005_TaskPromptOutputsCompleteSynthesizedPromptWithin500ms(t *testing
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.1")
 	elapsed := time.Since(start)
 
-	if exitCode != 0 {
-		t.Skip("task 1.1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task 1.1 not found in current feature index - needs test data setup")
 
 	assert.True(t, strings.Contains(out, "1.1"),
 		"prompt output should contain task ID '1.1'")
@@ -274,9 +266,7 @@ func TestTC_010_BreakdownTasksFallsBackToFeatureForUnrecognized(t *testing.T) {
 // Traceability: TC-011 -> Story 6 / AC-1
 func TestTC_011_ExecuteTaskAndRunTasksProduceIdenticalPromptOutput(t *testing.T) {
 	exitCode1, out1 := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.1")
-	if exitCode1 != 0 {
-		t.Skip("task 1.1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode1 != 0, "task 1.1 not found in current feature index - needs test data setup")
 
 	exitCode2, out2 := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.1")
 	assert.Equal(t, 0, exitCode2, "second prompt call should succeed")
@@ -302,9 +292,7 @@ func TestTC_012_ExecuteTaskMarksTaskBlockedWhenTaskPromptFails(t *testing.T) {
 // Traceability: TC-013 -> Story 7 / AC-1
 func TestTC_013_RunTasksDispatchesFixTaskViaTaskPromptWithFiveStepPrompt(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "fix-1")
-	if exitCode != 0 {
-		t.Skip("task fix-1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task fix-1 not found in current feature index - needs test data setup")
 
 	lower := strings.ToLower(out)
 	assert.True(t, strings.Contains(lower, "diagnosis"), "fix prompt should contain 'diagnosis'")
@@ -323,9 +311,7 @@ func TestTC_013_RunTasksDispatchesFixTaskViaTaskPromptWithFiveStepPrompt(t *test
 func TestTC_014_TaskPromptFixRecordMissedOutputsRecordRecoveryPrompt(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "fix-2", "--fix-record-missed")
 
-	if exitCode != 0 {
-		t.Skip("task fix-2 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task fix-2 not found in current feature index - needs test data setup")
 
 	lower := strings.ToLower(out)
 	assert.True(t,
@@ -347,9 +333,7 @@ func TestTC_016_TaskPromptInjectsPhaseSummaryPathForFirstTaskOfNewPhase(t *testi
 	// Phase boundary detection is covered by Go unit tests in pkg/prompt.
 	// Here we verify the prompt command works for a known task.
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.1")
-	if exitCode != 0 {
-		t.Skip("task 1.1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task 1.1 not found in current feature index - needs test data setup")
 	assert.True(t, len(out) > 0, "prompt output should not be empty")
 }
 
@@ -377,9 +361,7 @@ func TestTC_017_RunTasksRoutesEvalCasesTaskToMainSessionNotSubagent(t *testing.T
 func TestTC_018_TaskPromptFixRecordMissedOutputsRecordRecoveryPromptAlt(t *testing.T) {
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "fix-2", "--fix-record-missed")
 
-	if exitCode != 0 {
-		t.Skip("task fix-2 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task fix-2 not found in current feature index - needs test data setup")
 
 	lower := strings.ToLower(out)
 	assert.True(t,
@@ -418,9 +400,7 @@ func TestTC_020_GitBranchFallbackProvidesFeatureWhenStateJSONIsMissing(t *testin
 
 	// Read original state.json content
 	orig, err := os.ReadFile(stateFile)
-	if err != nil {
-		t.Skip("state.json does not exist - cannot test removal fallback")
-	}
+	testkit.SkipIf(t, err != nil, "state.json does not exist - cannot test removal fallback")
 
 	// Remove state.json
 	require.NoError(t, os.Remove(stateFile), "cannot remove state.json")
@@ -433,9 +413,7 @@ func TestTC_020_GitBranchFallbackProvidesFeatureWhenStateJSONIsMissing(t *testin
 	// task prompt should still work via git branch fallback
 	exitCode, out := testkit.RunCLIExitCode("prompt", "get-by-task-id", "1.1")
 
-	if exitCode != 0 {
-		t.Skip("task 1.1 not found in current feature index - needs test data setup")
-	}
+	testkit.SkipIf(t, exitCode != 0, "task 1.1 not found in current feature index - needs test data setup")
 
 	assert.True(t, strings.Contains(out, "1.1"),
 		"prompt should still work via git branch fallback after removing state.json")

@@ -73,14 +73,10 @@ func TestTC_013_CompileTypeErrorsOutputToStderr(t *testing.T) {
 func TestTC_014_ConsecutiveCommandsAllSucceed(t *testing.T) {
 	// Run install, compile in sequence — skip if toolchains unavailable.
 	installExit, _ := runJust("install")
-	if installExit != 0 {
-		t.Skip("install failed — toolchains unavailable, skipping rest of chain")
-	}
+	testkit.SkipIf(t, installExit != 0, "install failed — toolchains unavailable, skipping rest of chain")
 
 	compileExit, compileOut := runJust("compile")
-	if compileExit != 0 {
-		t.Skip("compile failed — toolchains unavailable, skipping rest of chain")
-	}
+	testkit.SkipIf(t, compileExit != 0, "compile failed — toolchains unavailable, skipping rest of chain")
 
 	// Verify no scope error in compile output
 	lower := strings.ToLower(compileOut)

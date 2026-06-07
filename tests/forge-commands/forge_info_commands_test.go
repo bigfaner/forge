@@ -259,9 +259,7 @@ func TestTC_020_LessonNameDetailView(t *testing.T) {
 		}
 	}
 
-	if lessonName == "" {
-		t.Skip("no lessons found in docs/lessons/ to test detail view")
-	}
+	testkit.SkipIf(t, lessonName == "", "no lessons found in docs/lessons/ to test detail view")
 
 	exitCode, out := testkit.RunCLIExitCode("lesson", lessonName)
 
@@ -295,9 +293,7 @@ func TestTC_032_JustfileHasNoProjectTypeRecipe(t *testing.T) {
 	if err != nil {
 		// Try relative to working directory
 		data, err = os.ReadFile("justfile")
-		if err != nil {
-			t.Skip("cannot locate justfile for migration check")
-		}
+		testkit.SkipIf(t, err != nil, "cannot locate justfile for migration check")
 	}
 
 	content := string(data)
