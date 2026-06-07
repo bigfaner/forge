@@ -1846,3 +1846,103 @@ func TestClaimNextTask_AutoDowngradeUnblock(t *testing.T) {
 		}
 	})
 }
+
+// --- Pipeline entry guard: T-test-gen-journeys blocked by incomplete work ---
+
+func TestCheckDependenciesMet_PipelineEntryGuard(t *testing.T) {
+	makeIndex := func(tasks map[string]task.Task) *task.TaskIndex {
+		idx := &task.TaskIndex{
+			StatusEnum:   []string{"pending", "in_progress", "completed", "blocked", "skipped"},
+			PriorityEnum: []string{"P0", "P1", "P2"},
+		}
+		idx.SetTasks(tasks)
+		return idx
+	}
+
+	t.Run("all biz tasks completed → T-test-gen-journeys eligible", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1": {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"biz-2": {ID: "1.2", Status: "completed", Type: task.TypeDoc},
+			"gate":  {ID: "1.gate", Status: "completed"},
+			"pip":   {ID: "T-test-gen-journeys", Status: "pending", Type: task.TypeTestGenJourneys, Dependencies: []string{"1.1", "1.2"}},
+		})
+		met, unmet := checkDependenciesMet(index, "T-test-gen-journeys", index.TasksMap()["pip"])
+		if !met {
+			t.Errorf("expected eligible, got unmet: %v", unmet)
+		}
+	})
+
+	t.Run("blocked biz task → T-test-gen-journeys blocked", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1": {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"biz-2": {ID: "1.2", Status: "blocked", Type: task.TypeCodingFeature},
+			"pip":   {ID: "T-test-gen-journeys", Status: "pending", Type: task.TypeTestGenJourneys, Dependencies: []string{"1.1"}},
+		})
+		met, _ := checkDependenciesMet(index, "T-test-gen-journeys", index.TasksMap()["pip"])
+		if met {
+			t.Error("should be blocked by blocked business task")
+		}
+	})
+
+	t.Run("incomplete gate → T-test-gen-journeys blocked", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1": {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"gate":  {ID: "1.gate", Status: "pending"},
+			"pip":   {ID: "T-test-gen-journeys", Status: "pending", Type: task.TypeTestGenJourneys, Dependencies: []string{"1.1"}},
+		})
+		met, _ := checkDependenciesMet(index, "T-test-gen-journeys", index.TasksMap()["pip"])
+		if met {
+			t.Error("should be blocked by incomplete gate")
+		}
+	})
+
+	t.Run("dynamically added fix task pending → T-test-gen-journeys blocked", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1": {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"biz-2": {ID: "1.2", Status: "completed", Type: task.TypeCodingFeature},
+			"fix-1": {ID: "fix-1", Status: "pending", Type: task.TypeCodingFix, SourceTaskID: "1.1", Dependencies: []string{}},
+			"pip":   {ID: "T-test-gen-journeys", Status: "pending", Type: task.TypeTestGenJourneys, Dependencies: []string{"1.1", "1.2"}},
+		})
+		met, _ := checkDependenciesMet(index, "T-test-gen-journeys", index.TasksMap()["pip"])
+		if met {
+			t.Error("should be blocked by dynamically added pending fix task")
+		}
+	})
+
+	t.Run("dynamically added fix task completed → T-test-gen-journeys eligible", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1": {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"biz-2": {ID: "1.2", Status: "completed", Type: task.TypeCodingFeature},
+			"fix-1": {ID: "fix-1", Status: "completed", Type: task.TypeCodingFix, SourceTaskID: "1.1"},
+			"pip":   {ID: "T-test-gen-journeys", Status: "pending", Type: task.TypeTestGenJourneys, Dependencies: []string{"1.1", "1.2"}},
+		})
+		met, unmet := checkDependenciesMet(index, "T-test-gen-journeys", index.TasksMap()["pip"])
+		if !met {
+			t.Errorf("expected eligible after fix completed, got unmet: %v", unmet)
+		}
+	})
+
+	t.Run("incomplete summary → T-test-gen-journeys blocked", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1":   {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"summary": {ID: "1.summary", Status: "pending"},
+			"pip":     {ID: "T-test-gen-journeys", Status: "pending", Type: task.TypeTestGenJourneys, Dependencies: []string{"1.1"}},
+		})
+		met, _ := checkDependenciesMet(index, "T-test-gen-journeys", index.TasksMap()["pip"])
+		if met {
+			t.Error("should be blocked by incomplete summary")
+		}
+	})
+
+	t.Run("non-pipeline task types not affected", func(t *testing.T) {
+		index := makeIndex(map[string]task.Task{
+			"biz-1": {ID: "1.1", Status: "completed", Type: task.TypeCodingFeature},
+			"biz-2": {ID: "1.2", Status: "pending", Type: task.TypeCodingFeature},
+			"biz-3": {ID: "1.3", Status: "pending", Type: task.TypeCodingFeature, Dependencies: []string{"1.1"}},
+		})
+		met, _ := checkDependenciesMet(index, "1.3", index.TasksMap()["biz-3"])
+		if !met {
+			t.Error("regular business task should not be affected by pipeline entry guard")
+		}
+	})
+}

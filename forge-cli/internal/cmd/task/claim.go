@@ -277,6 +277,24 @@ func checkDependenciesMet(index *task.TaskIndex, selfID string, t task.Task) (bo
 		}
 	}
 
+	// Pipeline entry guard: block T-test-gen-journeys if any non-pipeline task
+	// (business task, gate, or summary) is incomplete. This handles dynamically
+	// added fix tasks that bypass static dependencies generated at index time.
+	if t.Type == task.TypeTestGenJourneys {
+		for _, other := range index.TasksMap() {
+			if other.ID == selfID {
+				continue
+			}
+			if other.Status == types.StatusCompleted || other.Status == types.StatusSkipped {
+				continue
+			}
+			if task.IsBusinessTask(other.ID) || strings.HasSuffix(other.ID, task.IDSuffixGate) || strings.HasSuffix(other.ID, task.IDSuffixSummary) {
+				unmet = append(unmet, other.ID)
+				break
+			}
+		}
+	}
+
 	return len(unmet) == 0, unmet
 }
 
