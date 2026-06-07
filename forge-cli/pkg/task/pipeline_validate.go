@@ -218,6 +218,7 @@ var PipelineRegistry = []PipelineNode{
 		DependsOn: []DepRef{
 			{Resolve: ResolveIfGenerated("T-review-doc")},
 			{Resolve: ResolveIfGenerated("T-clean-code")},
+			{Resolve: ResolveLastBusinessTask},
 		}},
 	{Type: TypeEvalJourney, Key: "eval-journey", ID: "T-eval-journey",
 		Title: "Evaluate Journey Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",

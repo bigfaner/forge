@@ -1032,3 +1032,98 @@ func TestCheckNoCycles_Empty(t *testing.T) {
 		t.Errorf("checkNoCycles(nil) error: %v", err)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Bug regression: auto-gen tasks must depend on business tasks
+// ---------------------------------------------------------------------------
+
+func TestGenerateTestTasks_TestPipelineDependsOnBusinessTasks(t *testing.T) {
+	// Bug: when T-review-doc and T-clean-code are not generated,
+	// T-test-gen-journeys had zero dependencies and could be claimed
+	// before business tasks complete.
+	tests := []struct {
+		name      string
+		mode      string
+		auto      forgeconfig.AutoConfig
+		bizTasks  []Task
+		wantDepOn string // T-test-gen-journeys must contain this dep
+		surfaces  map[string]string
+	}{
+		{
+			name: "no doc tasks + clean-code disabled → T-test-gen-journeys depends on last biz task",
+			mode: "quick",
+			auto: forgeconfig.AutoConfig{
+				Test:             forgeconfig.ModeToggle{Quick: true},
+				CleanCode:        forgeconfig.ModeToggle{Quick: false}, // disabled
+				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
+			},
+			bizTasks:  []Task{{ID: "1", Type: TypeCodingFeature}, {ID: "2", Type: TypeCodingFeature}},
+			wantDepOn: "2", // must depend on last business task
+			surfaces:  scalarSurface("api"),
+		},
+		{
+			name: "no doc tasks + clean-code enabled → T-test-gen-journeys depends on last biz task via T-clean-code",
+			mode: "quick",
+			auto: forgeconfig.AutoConfig{
+				Test:             forgeconfig.ModeToggle{Quick: true},
+				CleanCode:        forgeconfig.ModeToggle{Quick: true},
+				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
+			},
+			bizTasks:  []Task{{ID: "1", Type: TypeCodingFeature}},
+			wantDepOn: "1",
+			surfaces:  scalarSurface("api"),
+		},
+		{
+			name: "doc tasks + clean-code disabled → T-test-gen-journeys depends on last biz task",
+			mode: "quick",
+			auto: forgeconfig.AutoConfig{
+				Test:             forgeconfig.ModeToggle{Quick: true},
+				CleanCode:        forgeconfig.ModeToggle{Quick: false},
+				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
+			},
+			bizTasks:  []Task{{ID: "1", Type: TypeDoc}, {ID: "2", Type: TypeCodingFeature}},
+			wantDepOn: "2",
+			surfaces:  scalarSurface("api"),
+		},
+		{
+			name: "breakdown mode with all gates → T-test-gen-journeys depends on last biz task",
+			mode: "breakdown",
+			auto: forgeconfig.AutoConfig{
+				Test:             forgeconfig.ModeToggle{Full: true},
+				CleanCode:        forgeconfig.ModeToggle{Full: false},
+				ConsolidateSpecs: forgeconfig.ModeToggle{Full: false},
+			},
+			bizTasks:  []Task{{ID: "1.1", Type: TypeCodingFeature}, {ID: "2.1", Type: TypeCodingFeature}},
+			wantDepOn: "2.1",
+			surfaces:  scalarSurface("api"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tasks := GenerateTestTasks(tt.mode, tt.surfaces, nil, tt.auto, "", tt.bizTasks, nil)
+
+			var genJourneys *AutoGenTaskDef
+			for i := range tasks {
+				if tasks[i].ID == "T-test-gen-journeys" {
+					genJourneys = &tasks[i]
+					break
+				}
+			}
+			if genJourneys == nil {
+				t.Fatal("T-test-gen-journeys not generated")
+			}
+
+			found := false
+			for _, dep := range genJourneys.Dependencies {
+				if dep == tt.wantDepOn {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("bug: T-test-gen-journeys deps = %v, want to contain %q (auto-gen task can be claimed before business tasks complete)", genJourneys.Dependencies, tt.wantDepOn)
+			}
+		})
+	}
+}
