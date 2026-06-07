@@ -41,9 +41,10 @@ func runReopen(_ *cobra.Command, args []string) error {
 	}
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
+	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
 
 	if lockErr := indexPkg.WithLock(indexPath, func() error {
-		return doReopen(indexPath, taskIDArg)
+		return doReopen(indexPath, statePath, taskIDArg)
 	}); lockErr != nil {
 		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
 			return base.NewAIError(base.ErrConflict, "Concurrent write conflict", "Retry the command", "Wait a moment and try again", "forge reopen "+taskIDArg)
@@ -56,7 +57,7 @@ func runReopen(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func doReopen(indexPath, taskIDArg string) error {
+func doReopen(indexPath, statePath, taskIDArg string) error {
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		return base.ErrFileNotFound(indexPath)
@@ -78,6 +79,15 @@ func doReopen(indexPath, taskIDArg string) error {
 
 	if err := indexPkg.SaveIndexAtomic(indexPath, index); err != nil {
 		return base.NewAIError(base.ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+	}
+
+	// Clear process/state.json if it references the reopened task.
+	// Without this, a stale state.json pointing to a reopened task causes
+	// subsequent claim to fail with a data integrity error.
+	if statePath != "" {
+		if state, _ := task.LoadState(statePath); state != nil && state.Key == key {
+			_ = task.DeleteState(statePath)
+		}
 	}
 
 	base.PrintBlockStart()

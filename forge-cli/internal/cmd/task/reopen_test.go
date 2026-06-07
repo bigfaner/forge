@@ -198,7 +198,7 @@ func TestReopen_ValidateTransition_UsesRoleReopen(t *testing.T) {
 			}})
 
 			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-			err := doReopen(indexPath, "1.1")
+			err := doReopen(indexPath, "", "1.1")
 
 			if tt.wantErr {
 				if err == nil {
@@ -266,7 +266,7 @@ func TestReopen_SlugKeyedTask(t *testing.T) {
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
 
 	// Should find the task by ID and reopen it
-	err := doReopen(indexPath, "T-test-run")
+	err := doReopen(indexPath, "", "T-test-run")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -415,7 +415,7 @@ func TestReopen_SetsStatusToPending_WithExistingIndex(t *testing.T) {
 	}})
 
 	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
-	err := doReopen(indexPath, "1.1")
+	err := doReopen(indexPath, "", "1.1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -433,5 +433,128 @@ func TestReopen_SetsStatusToPending_WithExistingIndex(t *testing.T) {
 	}
 	if index.TasksMap()["t3"].Status != "pending" {
 		t.Errorf("t3 status = %q, want pending (unchanged)", index.TasksMap()["t3"].Status)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestReopen_ClearsStateForClaimedTask
+//
+// When reopening a task that is tracked in process/state.json, doReopen
+// should delete state.json so subsequent claim works.
+// ---------------------------------------------------------------------------
+func TestReopen_ClearsStateForClaimedTask(t *testing.T) {
+	tests := []struct {
+		name   string
+		status string
+	}{
+		{"rejected", "rejected"},
+		{"skipped", "skipped"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			dir := setupFullProject(t, SetupOpts{
+				Tasks: map[string]task.Task{
+					"t1": {ID: "1.1", Title: "Task", Status: types.Status(tt.status), Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+					"t2": {ID: "1.2", Title: "Other", Status: types.StatusPending, Priority: "P0", File: "1.2.md", Record: "records/1.2.md", Dependencies: []string{}},
+				},
+				State: &task.TaskState{
+					TaskID: "1.1",
+					Key:    "t1",
+					Title:  "Task",
+				},
+			})
+
+			indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+			statePath := feature.GetTaskStatePath(dir, "test")
+
+			if _, err := os.Stat(statePath); os.IsNotExist(err) {
+				t.Fatal("state.json should exist before reopen")
+			}
+
+			err := doReopen(indexPath, statePath, "1.1")
+			if err != nil {
+				t.Fatalf("doReopen() error = %v", err)
+			}
+
+			if _, err := os.Stat(statePath); !os.IsNotExist(err) {
+				t.Error("state.json should be deleted after reopening claimed task")
+			}
+
+			index, _ := task.LoadIndex(indexPath)
+			if index.TasksMap()["t1"].Status != types.StatusPending {
+				t.Errorf("task status = %q, want pending", index.TasksMap()["t1"].Status)
+			}
+		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestReopen_DoesNotClearStateForOtherTask
+// ---------------------------------------------------------------------------
+func TestReopen_DoesNotClearStateForOtherTask(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Claimed", Status: types.StatusInProgress, Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+			"t2": {ID: "1.2", Title: "Rejected", Status: "rejected", Priority: "P0", File: "1.2.md", Record: "records/1.2.md"},
+		},
+		State: &task.TaskState{
+			TaskID: "1.1",
+			Key:    "t1",
+			Title:  "Claimed",
+		},
+	})
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	statePath := feature.GetTaskStatePath(dir, "test")
+
+	err := doReopen(indexPath, statePath, "1.2")
+	if err != nil {
+		t.Fatalf("doReopen() error = %v", err)
+	}
+
+	if _, err := os.Stat(statePath); os.IsNotExist(err) {
+		t.Error("state.json should NOT be deleted when reopening a different task")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// TestReopen_ThenClaimSucceeds
+//
+// skipped with stale state -> reopen -> claim should work.
+// CheckExistingTaskState does NOT handle "skipped" in its switch,
+// so this would fail without the state cleanup in doReopen.
+// ---------------------------------------------------------------------------
+func TestReopen_ThenClaimSucceeds(t *testing.T) {
+	dir := setupFullProject(t, SetupOpts{
+		Tasks: map[string]task.Task{
+			"t1": {ID: "1.1", Title: "Task One", Status: "skipped", Priority: "P0", File: "1.1.md", Record: "records/1.1.md"},
+			"t2": {ID: "1.2", Title: "Task Two", Status: types.StatusPending, Priority: "P0", File: "1.2.md", Record: "records/1.2.md", Dependencies: []string{}},
+		},
+		State: &task.TaskState{
+			TaskID: "1.1",
+			Key:    "t1",
+			Title:  "Task One",
+		},
+	})
+
+	indexPath := filepath.Join(dir, feature.GetFeatureIndexFile("test"))
+	statePath := feature.GetTaskStatePath(dir, "test")
+
+	err := doReopen(indexPath, statePath, "1.1")
+	if err != nil {
+		t.Fatalf("doReopen() error = %v", err)
+	}
+
+	result, err := executeClaim()
+	if err != nil {
+		t.Fatalf("executeClaim() after reopen should succeed, got error: %v", err)
+	}
+
+	if result.Action != "CLAIMED" {
+		t.Errorf("expected CLAIMED, got %q", result.Action)
+	}
+	if result.Task.ID != "1.1" {
+		t.Errorf("expected task 1.1, got %q", result.Task.ID)
 	}
 }
