@@ -80,6 +80,27 @@ When generating the `<prefix>test` recipe body, the LLM must include the correct
 
 Example: In a project with `backend=api` + `frontend=web` surfaces, the `backend-test` recipe runs tests from `tests/backend/<journey>/`, and `frontend-test` from `tests/frontend/<journey>/`.
 
+### Surface Gate Targets (multi-surface projects)
+
+When a project has multiple surfaces (2+ named surfaces), the per-task quality gate validates only the surface affected by the task. This requires surface-specific gate recipes that mirror the language-level targets but scoped to a single surface.
+
+Gate recipes use the same `<key>-` prefix convention as lifecycle recipes:
+
+| Target                | Required | Purpose                                                           |
+| --------------------- | -------- | ----------------------------------------------------------------- |
+| `<key>-compile`       | No       | Type-check and transpile for the `<key>` surface code only        |
+| `<key>-fmt`           | No       | Auto-format code for the `<key>` surface only                     |
+| `<key>-lint`          | No       | Static analysis for the `<key>` surface code only                 |
+| `<key>-unit-test`     | No       | Unit tests for the `<key>` surface code only (per-task submit gate) |
+
+These recipes are **only generated for multi-surface projects** (2+ named surfaces). Single-surface projects use the language-level targets directly — no gate recipes are needed.
+
+**Resolution logic**: At per-task gate time, if the task has a `surface-key` (e.g., `backend`), the gate resolves `<key>-<recipe>` (e.g., `backend-compile`). If the prefixed recipe exists, it is used; otherwise, the gate falls back to the generic language-level recipe (e.g., `compile`). This fallback ensures backward compatibility with projects that have surfaces but no prefixed gate recipes yet.
+
+**Key vs Type**: Gate recipe prefixes use the surface **key** (e.g., `backend`, `frontend`), NOT the surface type (e.g., `api`, `web`). This matches the lifecycle recipe naming convention.
+
+**Scope isolation**: Each gate recipe MUST validate ONLY its own surface. For example, `backend-compile` must not trigger frontend compilation, and `frontend-lint` must not lint backend code.
+
 ### Recipe Parameter Signatures
 
 | Recipe | Signature | Description |

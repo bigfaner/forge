@@ -59,7 +59,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-docs-sync-prefixed-recipe.md",
       "record": "records/5-docs-sync-prefixed-recipe.md",
       "type": "doc"
