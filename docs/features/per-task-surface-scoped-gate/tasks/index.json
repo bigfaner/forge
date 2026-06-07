@@ -8,7 +8,7 @@
       "title": "RunGate() 增加 prefixed recipe 解析",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-rungate-prefixed-recipe.md",
       "record": "records/1-rungate-prefixed-recipe.md",
       "surface-type": "cli",

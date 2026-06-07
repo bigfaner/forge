@@ -66,13 +66,6 @@ func HasRecipe(dir, recipe string) bool {
 	return c.Run() == nil
 }
 
-// hasRecipeWithArg checks if a recipe exists with an argument using dry-run.
-func hasRecipeWithArg(dir, recipe, arg string) bool {
-	c := exec.Command("just", "--dry-run", recipe, arg)
-	c.Dir = dir
-	return c.Run() == nil
-}
-
 // RunCapture runs a command, streams output to stderr, and returns
 // the combined output along with whether the command succeeded.
 func RunCapture(dir string, name string, args ...string) (string, bool) {
@@ -102,24 +95,43 @@ func ResolveScope(projectRoot, scope string) string {
 	return ""
 }
 
+// ResolvePrefixedRecipe resolves a recipe name using prefix-based scoping.
+// When scope is non-empty, it probes for a prefixed recipe (e.g., "backend-compile").
+// Falls back to the generic recipe name (e.g., "compile") when the prefixed recipe
+// does not exist or scope is empty. Returns empty string if neither exists.
+// When no justfile is present, returns the generic recipe name (no probing).
+func ResolvePrefixedRecipe(projectRoot, scope, recipe string) string {
+	if scope != "" && HasJustfile(projectRoot) {
+		prefixed := scope + "-" + recipe
+		if HasRecipe(projectRoot, prefixed) {
+			return prefixed
+		}
+	}
+	// Fallback: return generic recipe name if it exists, or empty string if not.
+	if HasRecipe(projectRoot, recipe) {
+		return recipe
+	}
+	// No justfile at all — return generic name (RunGate handles the no-justfile case).
+	if !HasJustfile(projectRoot) {
+		return recipe
+	}
+	return ""
+}
+
 // RunGate executes the gate sequence in order.
-// scope: task scope (frontend/backend/empty). Only passed to just if project is mixed.
-// onFail: called when a blocking step fails. Receives step name and output.
+// scope: task surface-key (e.g., "backend", "frontend", or empty).
+// Uses prefixed recipe resolution: when scope is set, tries "<scope>-<recipe>"
+// first (e.g., "backend-compile"), falling back to generic recipe (e.g., "compile").
+// onFail: called when a blocking step fails. Receives resolved recipe name and output.
 // Returns true if all steps passed (or skipped gracefully).
 func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, output string)) bool {
 	if !HasJustfile(projectRoot) {
 		return true
 	}
 
-	resolvedScope := ResolveScope(projectRoot, scope)
-
 	for _, step := range steps {
-		recipeExists := HasRecipe(projectRoot, step.Name)
-		// For scoped recipes, also probe with the resolved scope.
-		if !recipeExists && resolvedScope != "" {
-			recipeExists = hasRecipeWithArg(projectRoot, step.Name, resolvedScope)
-		}
-		if !recipeExists {
+		resolved := ResolvePrefixedRecipe(projectRoot, scope, step.Name)
+		if resolved == "" {
 			if step.Optional {
 				continue
 			}
@@ -132,20 +144,15 @@ func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, ou
 			return false
 		}
 
-		args := []string{step.Name}
-		if resolvedScope != "" {
-			args = append(args, resolvedScope)
-		}
-
-		output, success := RunCapture(projectRoot, "just", args...)
+		output, success := RunCapture(projectRoot, "just", resolved)
 		if !success {
 			if step.Blocking {
 				if onFail != nil {
-					onFail(step.Name, output)
+					onFail(resolved, output)
 				}
 				return false
 			}
-			forgelog.Warn("WARNING: non-blocking gate step %q failed\n", step.Name)
+			forgelog.Warn("WARNING: non-blocking gate step %q failed\n", resolved)
 		}
 	}
 	return true
