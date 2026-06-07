@@ -1,7 +1,7 @@
 ---
 feature: "cli-doc-accuracy-audit"
 created: "2026-06-07"
-status: tasks
+status: completed
 mode: quick
 ---
 
