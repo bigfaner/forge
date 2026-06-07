@@ -1,0 +1,101 @@
+{
+  "feature": "per-task-surface-scoped-gate",
+  "proposal": "docs/proposals/per-task-surface-scoped-gate/proposal.md",
+  "created": "2026-06-07",
+  "tasks": {
+    "1-rungate-prefixed-recipe": {
+      "id": "1",
+      "title": "RunGate() 增加 prefixed recipe 解析",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "1-rungate-prefixed-recipe.md",
+      "record": "records/1-rungate-prefixed-recipe.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "high"
+    },
+    "2-surface-rules-gate-recipes": {
+      "id": "2",
+      "title": "Surface rules 增加 compile/fmt/lint/unit-test gate recipe 模板",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "2-surface-rules-gate-recipes.md",
+      "record": "records/2-surface-rules-gate-recipes.md",
+      "type": "doc"
+    },
+    "gen-journeys": {
+      "id": "T-test-gen-journeys",
+      "title": "Generate Test Journeys",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "T-review-doc"
+      ],
+      "status": "pending",
+      "file": "gen-journeys.md",
+      "record": "records/gen-journeys.md",
+      "breaking": true,
+      "type": "test.gen-journeys"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    },
+    "run-test": {
+      "id": "T-test-run",
+      "title": "Run CLI Functional Test",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-gen-journeys"
+      ],
+      "status": "pending",
+      "file": "run-test.md",
+      "record": "records/run-test.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "test.run"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
