@@ -135,15 +135,30 @@ Output: `Step 2/4: Code cleanup... DONE (M files modified, K files skipped)`
 
 After cleanup, verify no regressions were introduced.
 
-Check if the project has a test infrastructure:
+### Surface-Aware Recipe Resolution
+
+Determine the unit-test recipe using surface-key aware fallback:
+
+1. **Detect surface-key**: If running in a task execution context, read the current task's `surface-key` from its YAML frontmatter (via `forge prompt get-by-task-id` or the task file). If no task context or no `surface-key`, treat as empty.
+
+2. **Resolve recipe**: When `surface-key` is non-empty, probe for a prefixed recipe first:
 
 ```bash
-just --evaluate 2>/dev/null && grep -q "^unit-test" justfile 2>/dev/null
+just --dry-run <key>-unit-test 2>/dev/null
 ```
 
-**If `just unit-test` is available**: Run it.
+- **If `<key>-unit-test` exists** (exit code 0): use `<key>-unit-test` as the test recipe
+- **If `<key>-unit-test` does not exist**: fall back to the generic `unit-test` recipe
+
+When `surface-key` is empty, always use the generic `unit-test` recipe directly (no probing).
+
+3. **Execute the resolved recipe**:
 
 ```bash
+# Prefixed (surface-scoped)
+just <key>-unit-test
+
+# Or generic (no surface-key, or prefixed not available)
 just unit-test
 ```
 
@@ -153,7 +168,7 @@ If tests fail, the cleanup introduced a regression:
 3. Re-run tests to confirm the revert fixes the issue
 4. Continue to summary with a note about the reverted changes
 
-**If `just unit-test` is not available**: Skip the quality gate.
+**If `just unit-test` is not available** (and no prefixed recipe exists): Skip the quality gate.
 
 Output one of:
 - `Step 3/4: Quality gate... DONE (tests passed)`
