@@ -39,6 +39,14 @@ All schema tasks typically resolve to `surface-type: "api"` or `"cli"` depending
 
 Schema tasks depend on interface tasks (if any), since the migration may need type information from the interface definitions. If no interface tasks exist, schema tasks have no intra-feature dependencies beyond phase structure.
 
+### Type Assignment
+
+Schema tasks that produce only `.sql` files (DDL: CREATE TABLE, ALTER TABLE, indexes) **must** use `type: "doc"`. SQL files are non-compilable and non-runnable — they should not trigger the language quality gate (compile + fmt + lint + test). Schema correctness is verified at migration time against an actual database, not at Go/TS compile time.
+
+**Exception**: If a schema task also modifies compilable source files (e.g., a `.go` model struct in the same task), use `coding.feature` because the quality gate IS relevant for the compilable portion.
+
+**Template selection**: SQL-only → `templates/task-doc.md`; mixed SQL + compilable code → `templates/task.md`.
+
 ## Maintenance Note
 
 This rule file depends on the following sections in the skeleton SKILL.md:

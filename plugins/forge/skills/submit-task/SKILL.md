@@ -84,7 +84,7 @@ Reclassify **only** when the task's recorded type in `index.json` objectively mi
 
 | Condition | Example | Reclassify to |
 |-----------|---------|---------------|
-| Task type is `coding` but all changes are documentation-only (no source code files modified) | Task typed `coding` but only `.md` files were changed | `doc` |
+| Task type is `coding` but all changes are non-compilable (no source code files modified) | Task typed `coding` but only `.md`, `.sql`, `.yaml`, `.json` files were changed | `doc` |
 | Task type is `doc` but the work required and produced code changes | Task typed `doc` but implementation revealed a code fix was needed | `coding` (or `coding.fix` if a fix task) |
 | Task type is `coding.fix` but the root cause was not a code bug (e.g., config error, environment issue) | Fix task resolved by updating `settings.json` | `coding.cleanup` or the appropriate actual type |
 | Task type implies testing but no test files were created or modified | — | Do NOT reclassify — report as `blocked` instead |

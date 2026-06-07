@@ -118,14 +118,14 @@ Fix-tasks in the same test directory are merged into one.
 | `coding.cleanup` | Removes dead code, fixes tech debt, improves hygiene |
 | `coding.refactor` | Restructures code without behavior change |
 | `coding.fix` | Auto-generated for test failures; do not assign manually |
-| `doc` | Non-compilable, non-runnable output only (`.md`, `.yaml`, `.json`) |
+| `doc` | Non-compilable, non-runnable output only (e.g., `.md`, `.yaml`, `.json`, `.sql`, `.toml`, `.graphql`) |
 | `doc.consolidate` | User-created consolidation task (legacy projects) |
 | `doc.drift` | User-created drift audit task |
 
-Fallback: `coding.feature`. **Classify by output artifact, not intent.** `.md` files are always non-compilable regardless of directory.
+Fallback: `coding.feature`. **Classify by output artifact, not intent.** If the task produces no compilable or runnable files, type must be `doc`.
 
 <HARD-RULE>
-`.md` files are non-compilable regardless of directory location — even under `pkg/`, `src/`, `internal/`. If output is only `.md` files, type **must** be `doc`, not `coding.*`.
+Non-compilable files (`.md`, `.sql`, `.yaml`, `.json`, `.toml`, `.graphql`, etc.) are always non-compilable regardless of directory location — even under `pkg/`, `src/`, `internal/`. If output is ONLY non-compilable files, type **must** be `doc`, not `coding.*`. Decision test: "Does the output include any file that needs compilation or runtime testing?" If NO → `doc`.
 </HARD-RULE>
 
 | Category | Quality-gate |
