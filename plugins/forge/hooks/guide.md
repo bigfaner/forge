@@ -41,8 +41,9 @@ Use these for ad-hoc lookups when a user mentions a slug:
 ### Task Management
 
 - `forge task claim` — claim the next pending task (sets status to in_progress)
-- `forge task list [slug]` — list tasks in table format (current feature if slug omitted; `--sort id|topo`)
+- `forge task list [slug]` — list tasks in table format (current feature if slug omitted; `--sort id|topo`; `--tree` for interactive dependency tree TUI)
 - `forge task status <id>` — query current task status and record info
+- `forge task query <id-or-key>` — query task by ID or key (e.g. "1.2.3" or "phase1-1.1.1-project-init"); `--verbose` to show all fields including related fixes
 - `forge task add --type <type> --title "..." [--source-task-id <id>] [--block-source] [--var KEY=VALUE] --description "..."` — create a new task (fix-tasks use `--source-task-id --block-source`)
 - `forge task transition <id> <status> --reason "..."` — manually transition (unblock, skip, reject)
 - `forge task reopen <id>` — re-activate a rejected/skipped task
@@ -52,6 +53,7 @@ Use these for ad-hoc lookups when a user mentions a slug:
 
 - `forge feature set <slug>` — set the active feature context for the session
 - `forge feature complete --if-done` — mark feature completed if all tasks done (stop hook)
+- `forge feature list` — list all features with status, progress, and scores
 
 ### Pipeline Utilities
 
@@ -60,6 +62,7 @@ Use these for ad-hoc lookups when a user mentions a slug:
 - `forge surfaces detect` — auto-detect surface types for configured surface keys
 - `forge task index --feature <slug>` — regenerate task index from task files
 - `forge task validate [file]` — validate index.json structure and task sizing (omit file to validate current feature)
+- `forge task check-deps` — validate all task dependencies (references exist, wildcards match at least one task)
 - `forge cleanup` — remove state.json and record.json for completed, blocked, suspended, or rejected tasks
 
 ## Surfaces
