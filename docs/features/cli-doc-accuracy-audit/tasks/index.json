@@ -1,0 +1,127 @@
+{
+  "feature": "cli-doc-accuracy-audit",
+  "proposal": "docs/proposals/cli-doc-accuracy-audit/proposal.md",
+  "created": "2026-06-07",
+  "tasks": {
+    "1-update-guide-commands": {
+      "id": "1",
+      "title": "Update existing command descriptions in guide.md",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "1-update-guide-commands.md",
+      "record": "records/1-update-guide-commands.md",
+      "type": "doc"
+    },
+    "2-add-guide-entries": {
+      "id": "2",
+      "title": "Add new commands and flags to guide.md",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-add-guide-entries.md",
+      "record": "records/2-add-guide-entries.md",
+      "type": "doc"
+    },
+    "3-fix-cli-help-task": {
+      "id": "3",
+      "title": "Fix CLI help text for task/feature/quality-gate commands",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "3-fix-cli-help-task.md",
+      "record": "records/3-fix-cli-help-task.md",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "medium"
+    },
+    "4-fix-cli-help-misc": {
+      "id": "4",
+      "title": "Fix CLI help text for init/forensic/worktree/fact commands",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "pending",
+      "file": "4-fix-cli-help-misc.md",
+      "record": "records/4-fix-cli-help-misc.md",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "medium"
+    },
+    "gen-journeys": {
+      "id": "T-test-gen-journeys",
+      "title": "Generate Test Journeys",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "T-review-doc"
+      ],
+      "status": "pending",
+      "file": "gen-journeys.md",
+      "record": "records/gen-journeys.md",
+      "breaking": true,
+      "type": "test.gen-journeys"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    },
+    "run-test": {
+      "id": "T-test-run",
+      "title": "Run CLI Functional Test",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-gen-journeys"
+      ],
+      "status": "pending",
+      "file": "run-test.md",
+      "record": "records/run-test.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "test.run"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
