@@ -105,10 +105,10 @@ Then run the quality gate:
 Execute in strict sequential order:
 
 ```bash
-just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just unit-test{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}fmt
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}lint
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}unit-test
 ```
 
 All must pass.

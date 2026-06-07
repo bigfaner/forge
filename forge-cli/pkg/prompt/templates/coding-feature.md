@@ -126,9 +126,9 @@ If any FAIL, address before proceeding. If no AC defined, output "No AC defined 
 **Static checks** — execute in strict sequential order:
 
 ```bash
-just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}fmt
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}lint
 ```
 
 **Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-native command for this project (e.g., `go test`, `pytest`, `jest`). Scope to the files or packages you modified.

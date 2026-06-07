@@ -9,7 +9,9 @@ Rules for the run-tasks dispatcher to maintain codebase integrity across sequent
 
 ### TECH-dispatcher-quality-001: Monitor Compilation Diagnostics After Task Completion
 
-**Requirement**: After each task completes (Step 2b verify), the dispatcher MUST check for compilation errors in the IDE diagnostics or run `just compile` (for projects with a justfile). If compilation errors exist, the dispatcher MUST create a fix task targeting those errors before claiming the next feature task. Fix type is derived from source task category (see derivation table below).
+**Requirement**: After each task completes (Step 2b verify), the dispatcher MUST check for compilation errors in the IDE diagnostics or run the appropriate compile recipe (for projects with a justfile). If compilation errors exist, the dispatcher MUST create a fix task targeting those errors before claiming the next feature task. Fix type is derived from source task category (see derivation table below).
+
+**Compile recipe selection**: When the completed task has a `surface-key`, the dispatcher MUST use the prefixed recipe `just <key>-compile` (e.g., `just backend-compile`). If the prefixed recipe does not exist in the justfile, fall back to `just compile` (generic). When the task has no `surface-key`, use `just compile` directly.
 
 **Scope**: [CROSS]
 

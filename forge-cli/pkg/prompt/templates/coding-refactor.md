@@ -186,7 +186,7 @@ Output: `Step 2/5: Impact mapping... DONE (type: <structural|behavioral>, files:
 
 {{if .CoverageStrategy}}<IMPORTANT>
 Coverage strategy: maintain existing coverage, no new tests required. {{.CoverageStrategy}} — {{.CoverageTarget}} applies only if you need to verify existing coverage levels, not as a mandate to write new tests. Do not chase high coverage.
-Incremental compile strategy: After modifying one file, run `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` immediately. If it passes, continue to the next file. If it fails, fix the current file before touching others.
+Incremental compile strategy: After modifying one file, run `just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile` immediately. If it passes, continue to the next file. If it fails, fix the current file before touching others.
 </IMPORTANT>
 {{end}}
 **Universal constraints:**
@@ -209,13 +209,13 @@ The goal is to keep the codebase compilable at every intermediate step. Never de
   - If the module has explicit export lists, update them accordingly
   - Be aware that re-export aliases may affect bundler optimization (tree-shaking)
 - If circular dependency detected: place alias in a thin shim module, or skip alias and migrate all callers in one batch instead
-- Run quick verification: `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` and run targeted tests on affected packages/modules
+- Run quick verification: `just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile` and run targeted tests on affected packages/modules
 - All tests must pass — old code is untouched, new code coexists
 
 **Phase B — Migrate callers in small batches:**
 - Group affected files into batches (see batch sizing below)
 - Per batch: update references from old name to new name across all syntactic layers in those files
-- After each batch: `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` and run targeted tests on affected packages/modules
+- After each batch: `just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile` and run targeted tests on affected packages/modules
 - If a batch fails: fix within the batch and retry. Max 3 retries per batch.
 - Continue to next batch only after current batch passes
 
@@ -227,21 +227,21 @@ The goal is to keep the codebase compilable at every intermediate step. Never de
 **Phase B failure recovery:**
 If max retries exhausted at batch N:
 1. Run `git diff --stat` to assess scope of changes
-2. If partial migration compiles (`just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` passes) -> report as "partially migrated at batch N/M" with remaining file list. Aliases keep code valid.
+2. If partial migration compiles (`just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile` passes) -> report as "partially migrated at batch N/M" with remaining file list. Aliases keep code valid.
 3. If partial migration has broken imports -> `git checkout` the failed batch files and report as "blocked at batch N" with the error details
 
 Replacement order within each file: longest identifier first -> shortest last (avoids partial matches).
 
 **Phase C — Remove old aliases:**
 - Once all callers are migrated, delete the old alias/redirect
-- Run `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` to confirm no remaining references
+- Run `just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile` to confirm no remaining references
 - If compile fails: grep for old name, fix remaining references, retry
 
 
 #### Behavioral Refactors
 
 Proceed incrementally — make one change, verify, make the next.
-- After each logical change: `just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` and run targeted tests on affected packages/modules
+- After each logical change: `just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile` and run targeted tests on affected packages/modules
 - Max 3 retries per failure. If still failing, stop and report.
 
 Output: `Step 3/5: Refactoring... DONE`
@@ -258,9 +258,9 @@ Run the final quality checks:
 **Static checks** — execute in strict sequential order:
 
 ```bash
-just compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
-just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}compile
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}fmt
+just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}lint
 ```
 
 **Targeted tests** — run the project's test command on changed packages/modules only. Use the appropriate framework-native command for this project (e.g., `go test`, `pytest`, `jest`). Scope to the files or packages you modified.
@@ -271,7 +271,7 @@ just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}
 |---|---|
 | `compile` | Grep for remaining old references, fix, retry (max 3 times) |
 | `fmt` | **WARNING** (non-blocking) — if `just fmt` produces changes: check if the affected files are ones you modified during the refactor. If yes, fix the fmt issues in those files. If the changes are only in pre-existing files (not touched by this refactor), continue — those are not your responsibility. Log the warning in your output. |
-| `lint` | If `just lint` fails: `git stash && just lint{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. If still failing after max 3 retries, evaluate Complex Error Pause Flow — if the error persists, create a fix task. Otherwise, stop and let the dispatcher handle it. |
+| `lint` | If `just lint` fails: `git stash && just {{if .SurfaceKey}}{{.SurfaceKey}}-{{end}}lint` to check pre-existing. New lint errors from refactor must be fixed. Pre-existing ones can be skipped. If still failing after max 3 retries, evaluate Complex Error Pause Flow — if the error persists, create a fix task. Otherwise, stop and let the dispatcher handle it. |
 | `targeted test` | Check IMPACT_DECLARATION for the failing test: **EVOLVE** -> update test assertion to match new behavior, then re-run; **PRESERVE** or **not declared** -> `BEHAVIOR_CHANGE_DETECTED` + skip; reference updates (import paths, renamed symbols) -> fix + retry (max 3 times) |
 
 Coverage is informational for refactoring — output the number but do not gate on it. If coverage drops >2%, investigate and report.
