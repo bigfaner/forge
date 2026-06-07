@@ -395,6 +395,35 @@ func TestPipeline_ResolveLastBusinessTask(t *testing.T) {
 	}
 }
 
+func TestPipeline_ResolveAllBusinessTasks(t *testing.T) {
+	tests := []struct {
+		name string
+		ctx  *GenContext
+		want []string
+	}{
+		{"no business tasks", &GenContext{BusinessTasks: nil}, nil},
+		{"single task", &GenContext{BusinessTasks: []Task{{ID: "1", Type: TypeCodingFeature}}}, []string{"1"}},
+		{"multiple tasks returns all IDs", &GenContext{BusinessTasks: []Task{
+			{ID: "1.1", Type: TypeCodingFeature},
+			{ID: "1.2", Type: TypeDoc},
+			{ID: "2.1", Type: TypeCodingFeature},
+		}}, []string{"1.1", "1.2", "2.1"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ResolveAllBusinessTasks(tt.ctx)
+			if len(got) != len(tt.want) {
+				t.Fatalf("ResolveAllBusinessTasks() = %v, want %v", got, tt.want)
+			}
+			for i := range got {
+				if got[i] != tt.want[i] {
+					t.Errorf("ResolveAllBusinessTasks()[%d] = %q, want %q", i, got[i], tt.want[i])
+				}
+			}
+		})
+	}
+}
+
 func TestPipeline_ResolveHighestGateOrLastBiz(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -1034,68 +1063,68 @@ func TestCheckNoCycles_Empty(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Bug regression: auto-gen tasks must depend on business tasks
+// Bug regression: auto-gen tasks must depend on ALL business tasks
 // ---------------------------------------------------------------------------
 
-func TestGenerateTestTasks_TestPipelineDependsOnBusinessTasks(t *testing.T) {
-	// Bug: when T-review-doc and T-clean-code are not generated,
-	// T-test-gen-journeys had zero dependencies and could be claimed
-	// before business tasks complete.
+func TestGenerateTestTasks_TestPipelineDependsOnAllBusinessTasks(t *testing.T) {
+	// Bug: T-test-gen-journeys must depend on ALL business tasks, not just
+	// the last one. When a middle business task is blocked and a later one
+	// completes independently, the test pipeline should still be blocked.
 	tests := []struct {
-		name      string
-		mode      string
-		auto      forgeconfig.AutoConfig
-		bizTasks  []Task
-		wantDepOn string // T-test-gen-journeys must contain this dep
-		surfaces  map[string]string
+		name            string
+		mode            string
+		auto            forgeconfig.AutoConfig
+		bizTasks        []Task
+		wantDepContains []string // T-test-gen-journeys deps must contain ALL of these
+		surfaces        map[string]string
 	}{
 		{
-			name: "no doc tasks + clean-code disabled → T-test-gen-journeys depends on last biz task",
-			mode: "quick",
-			auto: forgeconfig.AutoConfig{
-				Test:             forgeconfig.ModeToggle{Quick: true},
-				CleanCode:        forgeconfig.ModeToggle{Quick: false}, // disabled
-				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
-			},
-			bizTasks:  []Task{{ID: "1", Type: TypeCodingFeature}, {ID: "2", Type: TypeCodingFeature}},
-			wantDepOn: "2", // must depend on last business task
-			surfaces:  scalarSurface("api"),
-		},
-		{
-			name: "no doc tasks + clean-code enabled → T-test-gen-journeys depends on last biz task via T-clean-code",
-			mode: "quick",
-			auto: forgeconfig.AutoConfig{
-				Test:             forgeconfig.ModeToggle{Quick: true},
-				CleanCode:        forgeconfig.ModeToggle{Quick: true},
-				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
-			},
-			bizTasks:  []Task{{ID: "1", Type: TypeCodingFeature}},
-			wantDepOn: "1",
-			surfaces:  scalarSurface("api"),
-		},
-		{
-			name: "doc tasks + clean-code disabled → T-test-gen-journeys depends on last biz task",
+			name: "multiple biz tasks → T-test-gen-journeys depends on ALL",
 			mode: "quick",
 			auto: forgeconfig.AutoConfig{
 				Test:             forgeconfig.ModeToggle{Quick: true},
 				CleanCode:        forgeconfig.ModeToggle{Quick: false},
 				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
 			},
-			bizTasks:  []Task{{ID: "1", Type: TypeDoc}, {ID: "2", Type: TypeCodingFeature}},
-			wantDepOn: "2",
-			surfaces:  scalarSurface("api"),
+			bizTasks:        []Task{{ID: "1", Type: TypeCodingFeature}, {ID: "2", Type: TypeCodingFeature}},
+			wantDepContains: []string{"1", "2"},
+			surfaces:        scalarSurface("api"),
 		},
 		{
-			name: "breakdown mode with all gates → T-test-gen-journeys depends on last biz task",
+			name: "mixed doc + coding tasks → T-test-gen-journeys depends on ALL biz tasks",
+			mode: "quick",
+			auto: forgeconfig.AutoConfig{
+				Test:             forgeconfig.ModeToggle{Quick: true},
+				CleanCode:        forgeconfig.ModeToggle{Quick: false},
+				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
+			},
+			bizTasks:        []Task{{ID: "1", Type: TypeDoc}, {ID: "2", Type: TypeCodingFeature}, {ID: "3", Type: TypeCodingFeature}},
+			wantDepContains: []string{"1", "2", "3"},
+			surfaces:        scalarSurface("api"),
+		},
+		{
+			name: "breakdown with multi-phase tasks → T-test-gen-journeys depends on ALL",
 			mode: "breakdown",
 			auto: forgeconfig.AutoConfig{
 				Test:             forgeconfig.ModeToggle{Full: true},
 				CleanCode:        forgeconfig.ModeToggle{Full: false},
 				ConsolidateSpecs: forgeconfig.ModeToggle{Full: false},
 			},
-			bizTasks:  []Task{{ID: "1.1", Type: TypeCodingFeature}, {ID: "2.1", Type: TypeCodingFeature}},
-			wantDepOn: "2.1",
-			surfaces:  scalarSurface("api"),
+			bizTasks:        []Task{{ID: "1.1", Type: TypeCodingFeature}, {ID: "1.2", Type: TypeCodingFeature}, {ID: "2.1", Type: TypeCodingFeature}},
+			wantDepContains: []string{"1.1", "1.2", "2.1"},
+			surfaces:        scalarSurface("api"),
+		},
+		{
+			name: "single biz task → T-test-gen-journeys depends on it",
+			mode: "quick",
+			auto: forgeconfig.AutoConfig{
+				Test:             forgeconfig.ModeToggle{Quick: true},
+				CleanCode:        forgeconfig.ModeToggle{Quick: false},
+				ConsolidateSpecs: forgeconfig.ModeToggle{Quick: false},
+			},
+			bizTasks:        []Task{{ID: "1", Type: TypeCodingFeature}},
+			wantDepContains: []string{"1"},
+			surfaces:        scalarSurface("api"),
 		},
 	}
 
@@ -1114,15 +1143,17 @@ func TestGenerateTestTasks_TestPipelineDependsOnBusinessTasks(t *testing.T) {
 				t.Fatal("T-test-gen-journeys not generated")
 			}
 
-			found := false
-			for _, dep := range genJourneys.Dependencies {
-				if dep == tt.wantDepOn {
-					found = true
-					break
+			for _, want := range tt.wantDepContains {
+				found := false
+				for _, dep := range genJourneys.Dependencies {
+					if dep == want {
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				t.Errorf("bug: T-test-gen-journeys deps = %v, want to contain %q (auto-gen task can be claimed before business tasks complete)", genJourneys.Dependencies, tt.wantDepOn)
+				if !found {
+					t.Errorf("bug: T-test-gen-journeys deps = %v, missing %q (if task %q is blocked while others complete, test pipeline would be claimed prematurely)", genJourneys.Dependencies, want, want)
+				}
 			}
 		})
 	}

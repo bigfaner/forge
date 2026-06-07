@@ -36,6 +36,17 @@ var ResolveDocTasks DepResolveFunc = func(ctx *GenContext) []string {
 	return ids
 }
 
+// ResolveAllBusinessTasks returns the IDs of ALL business tasks.
+// Ensures the consuming node is blocked until every business task completes or is skipped,
+// preventing interleaving when a middle task is blocked while a later independent task completes.
+var ResolveAllBusinessTasks DepResolveFunc = func(ctx *GenContext) []string {
+	var ids []string
+	for _, t := range ctx.BusinessTasks {
+		ids = append(ids, t.ID)
+	}
+	return ids
+}
+
 // ResolveLastBusinessTask returns the ID of the highest-numbered business task.
 var ResolveLastBusinessTask DepResolveFunc = func(ctx *GenContext) []string {
 	if len(ctx.BusinessTasks) == 0 {
@@ -218,7 +229,7 @@ var PipelineRegistry = []PipelineNode{
 		DependsOn: []DepRef{
 			{Resolve: ResolveIfGenerated("T-review-doc")},
 			{Resolve: ResolveIfGenerated("T-clean-code")},
-			{Resolve: ResolveLastBusinessTask},
+			{Resolve: ResolveAllBusinessTasks},
 		}},
 	{Type: TypeEvalJourney, Key: "eval-journey", ID: "T-eval-journey",
 		Title: "Evaluate Journey Quality", Priority: string(types.PriorityP1), EstimatedTime: "20-30min",
