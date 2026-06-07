@@ -92,13 +92,15 @@ func TestGetQuickTestTasks_EmptyInterfaces(t *testing.T) {
 func TestGetQuickTestTasks_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
-	// gen-journeys + run + drift = 3
-	if len(tasks) != 3 {
-		t.Fatalf("expected 3 tasks, got %d", len(tasks))
+	// gen-journeys + gen-contracts + gen-scripts + run + drift = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-test-gen-journeys",
+		"T-test-gen-contracts",
+		"T-test-gen-scripts",
 		"T-test-run",
 		"T-quick-doc-drift",
 	}
@@ -112,8 +114,8 @@ func TestGetQuickTestTasks_SingleType(t *testing.T) {
 		t.Errorf("T-test-gen-journeys Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
 
-	if tasks[2].Type != TypeDocDrift {
-		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[2].Type, TypeDocDrift)
+	if tasks[4].Type != TypeDocDrift {
+		t.Errorf("T-quick-doc-drift Type = %q, want %q", tasks[4].Type, TypeDocDrift)
 	}
 }
 
@@ -498,20 +500,31 @@ func TestGenerateTestTaskMD_WithTestType(t *testing.T) {
 func TestGetQuickTestTasks_PerKey_TwoTypes(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", ""), []string{"api", "tui"}, allEnabledAuto, "")
 
-	// gen-journeys + 2 run-tests(api,tui) + drift = 4
-	if len(tasks) != 4 {
-		t.Fatalf("expected 4 tasks, got %d", len(tasks))
+	// gen-journeys + gen-contracts + 2 gen-scripts + 2 run-tests + drift = 7
+	if len(tasks) != 7 {
+		t.Fatalf("expected 7 tasks, got %d", len(tasks))
 	}
 
 	// Fixed-position tasks (before map-iteration-dependent ones)
 	if tasks[0].ID != "T-test-gen-journeys" {
 		t.Errorf("tasks[0].ID = %q, want T-test-gen-journeys", tasks[0].ID)
 	}
+	if tasks[1].ID != "T-test-gen-contracts" {
+		t.Errorf("tasks[1].ID = %q, want T-test-gen-contracts", tasks[1].ID)
+	}
 
-	// Map-iteration-dependent tasks: run-tests use byID lookups
+	// Map-iteration-dependent tasks: gen-scripts and run-tests use byID lookups
 	byID := make(map[string]AutoGenTaskDef)
 	for _, t := range tasks {
 		byID[t.ID] = t
+	}
+
+	// Both gen-scripts tasks exist
+	if _, ok := byID["T-test-gen-scripts-api"]; !ok {
+		t.Error("missing T-test-gen-scripts-api task")
+	}
+	if _, ok := byID["T-test-gen-scripts-tui"]; !ok {
+		t.Error("missing T-test-gen-scripts-tui task")
 	}
 
 	// Both run-test tasks exist with correct SurfaceKey
@@ -523,8 +536,8 @@ func TestGetQuickTestTasks_PerKey_TwoTypes(t *testing.T) {
 	}
 
 	// drift at fixed position
-	if tasks[3].ID != "T-quick-doc-drift" {
-		t.Errorf("tasks[3].ID = %q, want T-quick-doc-drift", tasks[3].ID)
+	if tasks[6].ID != "T-quick-doc-drift" {
+		t.Errorf("tasks[6].ID = %q, want T-quick-doc-drift", tasks[6].ID)
 	}
 
 	// gen-journeys key has no type suffix (single task)
@@ -541,13 +554,15 @@ func TestGetQuickTestTasks_PerKey_TwoTypes(t *testing.T) {
 func TestGetQuickTestTasks_PerKey_SingleType(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto, "")
 
-	// gen-journeys + run + drift = 3
-	if len(tasks) != 3 {
-		t.Fatalf("expected 3 tasks, got %d", len(tasks))
+	// gen-journeys + gen-contracts + gen-scripts + run + drift = 5
+	if len(tasks) != 5 {
+		t.Fatalf("expected 5 tasks, got %d", len(tasks))
 	}
 
 	wantIDs := []string{
 		"T-test-gen-journeys",
+		"T-test-gen-contracts",
+		"T-test-gen-scripts",
 		"T-test-run",
 		"T-quick-doc-drift",
 	}
@@ -561,28 +576,25 @@ func TestGetQuickTestTasks_PerKey_SingleType(t *testing.T) {
 		t.Errorf("T-test-gen-journeys Type = %q, want %q", tasks[0].Type, TypeTestGenJourneys)
 	}
 
-	// T-test-run depends on gen-journeys (direct, no gen-contracts/gen-scripts in Quick)
+	// T-test-run depends on gen-scripts (not gen-journeys directly)
 	runIdx := findTaskIndex(tasks, "T-test-run")
-	if len(tasks[runIdx].Dependencies) != 1 || tasks[runIdx].Dependencies[0] != "T-test-gen-journeys" {
-		t.Errorf("T-test-run should depend on T-test-gen-journeys, got %v", tasks[runIdx].Dependencies)
+	if len(tasks[runIdx].Dependencies) != 1 || tasks[runIdx].Dependencies[0] != "T-test-gen-scripts" {
+		t.Errorf("T-test-run should depend on T-test-gen-scripts, got %v", tasks[runIdx].Dependencies)
 	}
 }
 
 func TestGetQuickTestTasks_PerKey_ThreeTypes(t *testing.T) {
 	tasks := GetQuickTestTasks(multiSurface("tui", "tui", "api", "api", "cli", "cli", ""), []string{"api", "tui", "cli"}, allEnabledAuto, "")
 
-	// gen-journeys + 3 run-tests + drift = 5
-	if len(tasks) != 5 {
-		t.Fatalf("expected 5 tasks, got %d", len(tasks))
+	// gen-journeys + gen-contracts + 3 gen-scripts + 3 run-tests + drift = 9
+	if len(tasks) != 9 {
+		t.Fatalf("expected 9 tasks, got %d", len(tasks))
 	}
 
-	// T-test-run-api (first in chain) depends on gen-journeys (not gen-scripts)
+	// T-test-run-api (first in chain) depends on all gen-scripts (ResolveUpstream)
 	runAPIIdx := findTaskIndex(tasks, "T-test-run-api")
-	if len(tasks[runAPIIdx].Dependencies) != 1 {
-		t.Fatalf("T-test-run-api should depend on 1 gen-journeys, got %v", tasks[runAPIIdx].Dependencies)
-	}
-	if tasks[runAPIIdx].Dependencies[0] != "T-test-gen-journeys" {
-		t.Errorf("T-test-run-api should depend on T-test-gen-journeys, got %v", tasks[runAPIIdx].Dependencies)
+	if len(tasks[runAPIIdx].Dependencies) != 3 {
+		t.Fatalf("T-test-run-api should depend on 3 gen-scripts, got %v", tasks[runAPIIdx].Dependencies)
 	}
 
 	// Serial chain: api -> tui -> cli
@@ -1622,13 +1634,22 @@ func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
 		t.Errorf("gen-journeys should have no deps, got %v", byID["T-test-gen-journeys"].Dependencies)
 	}
 
-	// Stage 2: first run-test depends on gen-journeys (no gen-contracts/gen-scripts in Quick mode)
-	runAPIDeps := byID["T-test-run-api"].Dependencies
-	if len(runAPIDeps) != 1 {
-		t.Fatalf("T-test-run-api should depend on 1 gen-journeys, got %v", runAPIDeps)
+	// Stage 2: gen-contracts depends on gen-journeys (ResolveUpstream)
+	gcDeps := byID["T-test-gen-contracts"].Dependencies
+	if len(gcDeps) != 1 || gcDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("gen-contracts should depend on gen-journeys, got %v", gcDeps)
 	}
-	if runAPIDeps[0] != "T-test-gen-journeys" {
-		t.Errorf("T-test-run-api deps should be T-test-gen-journeys, got %v", runAPIDeps)
+
+	// Stage 3: first gen-scripts depends on gen-contracts (ResolveUpstream)
+	gsAPIDeps := byID["T-test-gen-scripts-api"].Dependencies
+	if len(gsAPIDeps) != 1 || gsAPIDeps[0] != "T-test-gen-contracts" {
+		t.Errorf("gen-scripts-api should depend on gen-contracts, got %v", gsAPIDeps)
+	}
+
+	// Stage 4: first run-test depends on all gen-scripts (ResolveUpstream)
+	runAPIDeps := byID["T-test-run-api"].Dependencies
+	if len(runAPIDeps) != 2 {
+		t.Fatalf("T-test-run-api should depend on 2 gen-scripts, got %v", runAPIDeps)
 	}
 
 	// Serial chain: T-test-run-cli depends on T-test-run-api
@@ -1661,17 +1682,20 @@ func TestGetQuickTestTasks_GenJourneysPerKey(t *testing.T) {
 	}
 }
 
-func TestGetQuickTestTasks_NoGenContractsOrScripts(t *testing.T) {
+func TestGetQuickTestTasks_IncludesGenContractsAndScripts(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("cli"), nil, allEnabledAuto, "")
 
-	// Quick mode should NOT generate gen-contracts or gen-scripts
-	for _, task := range tasks {
-		if task.ID == "T-test-gen-contracts" {
-			t.Error("Quick mode should not generate T-test-gen-contracts")
-		}
-		if strings.HasPrefix(task.ID, "T-test-gen-scripts-") {
-			t.Errorf("Quick mode should not generate %q", task.ID)
-		}
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// Quick mode SHOULD generate gen-contracts and gen-scripts (skip eval, not generation)
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("Quick mode should generate T-test-gen-contracts")
+	}
+	if _, ok := byID["T-test-gen-scripts"]; !ok {
+		t.Error("Quick mode should generate T-test-gen-scripts")
 	}
 }
 
@@ -2247,22 +2271,22 @@ func TestGetQuickTestTasks_AC2_DirectDependencyChain(t *testing.T) {
 		byID[t.ID] = t
 	}
 
-	// No gen-contracts or gen-scripts should exist
-	if _, ok := byID["T-test-gen-contracts"]; ok {
-		t.Error("Quick mode should not contain T-test-gen-contracts")
+	// gen-contracts and gen-scripts should exist in Quick mode
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("Quick mode should contain T-test-gen-contracts")
 	}
-	for _, typ := range []string{"api", "web", "cli"} {
-		gsID := "T-test-gen-scripts-" + typ
-		if _, ok := byID[gsID]; ok {
-			t.Errorf("Quick mode should not contain %q", gsID)
+	for _, key := range []string{"auth-service", "admin", "cli"} {
+		gsID := "T-test-gen-scripts-" + key
+		if _, ok := byID[gsID]; !ok {
+			t.Errorf("Quick mode should contain %q", gsID)
 		}
 	}
 
-	// First run-test depends directly on gen-journeys
+	// First run-test depends on all gen-scripts (ResolveUpstream)
 	firstRunID := "T-test-run-auth-service"
 	firstRunDeps := byID[firstRunID].Dependencies
-	if len(firstRunDeps) != 1 || firstRunDeps[0] != "T-test-gen-journeys" {
-		t.Errorf("%s should depend on T-test-gen-journeys, got %v", firstRunID, firstRunDeps)
+	if len(firstRunDeps) != 3 {
+		t.Errorf("%s should depend on 3 gen-scripts, got %v", firstRunID, firstRunDeps)
 	}
 
 	// drift depends on last run-test (chain tail)
@@ -2318,7 +2342,7 @@ func TestDownstreamDependsOnlyOnLastRunTest(t *testing.T) {
 }
 
 // Quick mode single surface: run depends directly on gen-journeys
-func TestGetQuickTestTasks_SingleSurface_RunDependsOnGenJourneys(t *testing.T) {
+func TestGetQuickTestTasks_SingleSurface_RunDependsOnGenScripts(t *testing.T) {
 	tasks := GetQuickTestTasks(scalarSurface("api"), nil, allEnabledAuto, "")
 
 	byID := make(map[string]AutoGenTaskDef)
@@ -2327,8 +2351,8 @@ func TestGetQuickTestTasks_SingleSurface_RunDependsOnGenJourneys(t *testing.T) {
 	}
 
 	runDeps := byID["T-test-run"].Dependencies
-	if len(runDeps) != 1 || runDeps[0] != "T-test-gen-journeys" {
-		t.Errorf("T-test-run should depend on T-test-gen-journeys (direct), got %v", runDeps)
+	if len(runDeps) != 1 || runDeps[0] != "T-test-gen-scripts" {
+		t.Errorf("T-test-run should depend on T-test-gen-scripts, got %v", runDeps)
 	}
 }
 
@@ -2343,9 +2367,17 @@ func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
 		byID[t.ID] = t
 	}
 
-	// Verify serial chain: gen-journeys -> backend -> frontend -> mobile-app -> drift
-	if byID["T-test-run-backend"].Dependencies[0] != "T-test-gen-journeys" {
-		t.Errorf("T-test-run-backend should depend on gen-journeys, got %v", byID["T-test-run-backend"].Dependencies)
+	// Verify chain: gen-contracts depends on gen-journeys
+	if byID["T-test-gen-contracts"].Dependencies[0] != "T-test-gen-journeys" {
+		t.Errorf("gen-contracts should depend on gen-journeys, got %v", byID["T-test-gen-contracts"].Dependencies)
+	}
+	// gen-scripts-backend (first) depends on gen-contracts
+	if byID["T-test-gen-scripts-backend"].Dependencies[0] != "T-test-gen-contracts" {
+		t.Errorf("gen-scripts-backend should depend on gen-contracts, got %v", byID["T-test-gen-scripts-backend"].Dependencies)
+	}
+	// T-test-run-backend depends on all gen-scripts (ResolveUpstream)
+	if len(byID["T-test-run-backend"].Dependencies) < 1 {
+		t.Fatalf("T-test-run-backend should depend on gen-scripts, got %v", byID["T-test-run-backend"].Dependencies)
 	}
 	if byID["T-test-run-frontend"].Dependencies[0] != "T-test-run-backend" {
 		t.Errorf("T-test-run-frontend should depend on T-test-run-backend, got %v", byID["T-test-run-frontend"].Dependencies)

@@ -742,9 +742,16 @@ func TestGenerateTestTasks_QuickMode_SkipsBreakdownOnlyNodes(t *testing.T) {
 	if _, ok := byID["T-eval-journey"]; ok {
 		t.Error("T-eval-journey should NOT generate in quick mode")
 	}
-	// T-test-gen-contracts has Mode: "breakdown", should NOT generate in quick
-	if _, ok := byID["T-test-gen-contracts"]; ok {
-		t.Error("T-test-gen-contracts should NOT generate in quick mode")
+	// T-eval-contract has Mode: "breakdown", should NOT generate in quick
+	if _, ok := byID["T-eval-contract"]; ok {
+		t.Error("T-eval-contract should NOT generate in quick mode")
+	}
+	// gen-contracts and gen-scripts are no longer mode-restricted, should generate in quick
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("T-test-gen-contracts should generate in quick mode")
+	}
+	if _, ok := byID["T-test-gen-scripts"]; !ok {
+		t.Error("T-test-gen-scripts should generate in quick mode")
 	}
 	// T-test-gen-journeys has no mode restriction, should generate
 	if _, ok := byID["T-test-gen-journeys"]; !ok {
