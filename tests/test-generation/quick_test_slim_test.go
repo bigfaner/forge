@@ -349,11 +349,11 @@ func TestTC_007_BreakdownModeUnchangedByQuickMerge(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// T-test-gen-scripts-api should have type gen-scripts (NOT gen-and-run)
-	task2api, ok := byID["T-test-gen-scripts-api"]
-	require.True(t, ok, "T-test-gen-scripts-api should exist in breakdown mode")
+	// T-test-gen-scripts-backend should have type gen-scripts (NOT gen-and-run)
+	task2api, ok := byID["T-test-gen-scripts-backend"]
+	require.True(t, ok, "T-test-gen-scripts-backend should exist in breakdown mode")
 	assert.Equal(t, "test.gen-scripts", task2api.Type,
-		"breakdown T-test-gen-scripts-api should have type test.gen-scripts, not gen-and-run")
+		"breakdown T-test-gen-scripts-backend should have type test.gen-scripts, not gen-and-run")
 
 	// Multi-surface: run-test tasks are per-surface-key (T-test-run-backend, T-test-run-frontend)
 	taskRun, ok := byID["T-test-run-backend"]

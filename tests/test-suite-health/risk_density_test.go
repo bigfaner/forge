@@ -103,15 +103,15 @@ func TestTC_RD_003_RiskDensityReferencesSurfaceRequiredOutcomes(t *testing.T) {
 	assert.Contains(t, text, "CLI", "must reference CLI surface")
 	assert.Contains(t, text, "API", "must reference API surface")
 	assert.Contains(t, text, "TUI", "must reference TUI surface")
-	assert.Contains(t, text, "WebUI", "must reference WebUI surface")
+	assert.Contains(t, text, "Web", "must reference Web surface")
 
 	// Must reference required outcome names from surface rules
 	assert.Contains(t, text, "not-found", "must reference CLI required outcome: not-found")
 	assert.Contains(t, text, "already-exists", "must reference CLI required outcome: already-exists")
 	assert.Contains(t, text, "unauthorized", "must reference API required outcome: unauthorized")
 	assert.Contains(t, text, "timeout", "must reference TUI required outcome: timeout")
-	assert.Contains(t, text, "validation-error", "must reference WebUI required outcome: validation-error")
-	assert.Contains(t, text, "session-expired", "must reference WebUI required outcome: session-expired")
+	assert.Contains(t, text, "validation-error", "must reference Web required outcome: validation-error")
+	assert.Contains(t, text, "session-expired", "must reference Web required outcome: session-expired")
 }
 
 // TC-RD-004: SKILL.md references risk-density rule
