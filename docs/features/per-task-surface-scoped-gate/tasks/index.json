@@ -64,6 +64,19 @@
       "record": "records/5-docs-sync-prefixed-recipe.md",
       "type": "doc"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
     "gen-journeys": {
       "id": "T-test-gen-journeys",
       "title": "Generate Test Journeys",
@@ -99,8 +112,8 @@
       "estimatedTime": "30min",
       "dependencies": [
         "5",
-        "3",
         "2",
+        "3",
         "4"
       ],
       "status": "completed",
