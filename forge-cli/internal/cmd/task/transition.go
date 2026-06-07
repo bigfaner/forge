@@ -4,6 +4,7 @@ import (
 	"errors"
 	"forge-cli/internal/cmd/base"
 	"path/filepath"
+	"slices"
 
 	"forge-cli/pkg/feature"
 	indexPkg "forge-cli/pkg/index"
@@ -57,8 +58,10 @@ func runTransition(_ *cobra.Command, args []string) error {
 
 	indexPath := filepath.Join(projectRoot, feature.GetFeatureIndexFile(featureSlug))
 
+	statePath := feature.GetTaskStatePath(projectRoot, featureSlug)
+
 	if lockErr := indexPkg.WithLock(indexPath, func() error {
-		return doTransition(indexPath, taskIDArg, targetStatus)
+		return doTransition(indexPath, statePath, taskIDArg, targetStatus)
 	}); lockErr != nil {
 		if errors.Is(lockErr, indexPkg.ErrLockConflict) {
 			return base.NewAIError(base.ErrConflict, "Concurrent write conflict", "Retry the command", "", "")
@@ -71,7 +74,7 @@ func runTransition(_ *cobra.Command, args []string) error {
 	return nil
 }
 
-func doTransition(indexPath, taskIDArg, targetStatus string) error {
+func doTransition(indexPath, statePath, taskIDArg, targetStatus string) error {
 	index, err := task.LoadIndex(indexPath)
 	if err != nil {
 		return base.ErrFileNotFound(indexPath)
@@ -89,14 +92,7 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 	}
 
 	// Validate target status against index enum
-	valid := false
-	for _, s := range index.StatusEnum {
-		if s == targetStatus {
-			valid = true
-			break
-		}
-	}
-	if !valid {
+	if !slices.Contains(index.StatusEnum, targetStatus) {
 		return base.ErrInvalidStatus(targetStatus, index.StatusEnum)
 	}
 
@@ -109,6 +105,15 @@ func doTransition(indexPath, taskIDArg, targetStatus string) error {
 
 	if err := indexPkg.SaveIndexAtomic(indexPath, index); err != nil {
 		return base.NewAIError(base.ErrConflict, "Failed to save index", err.Error(), "Check index.json is writable", "cat "+indexPath)
+	}
+
+	// Root cause: transition only updated index.json, leaving stale process/state.json.
+	// If the transitioned task is the currently claimed one (tracked in state.json),
+	// delete state.json so subsequent claim doesn't hit a data integrity error.
+	if statePath != "" {
+		if state, _ := task.LoadState(statePath); state != nil && state.Key == key {
+			_ = task.DeleteState(statePath)
+		}
 	}
 
 	base.PrintBlockStart()
