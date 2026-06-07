@@ -43,7 +43,7 @@
       "title": "Fix CLI help text for init/forensic/worktree/fact commands",
       "priority": "P1",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "4-fix-cli-help-misc.md",
       "record": "records/4-fix-cli-help-misc.md",
       "surface-type": "cli",

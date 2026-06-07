@@ -14,8 +14,20 @@ var (
 var searchCmd = &cobra.Command{
 	Use:   "search [project-path]",
 	Short: "Search history.jsonl for matching sessions",
-	Args:  cobra.MaximumNArgs(1),
-	RunE:  runSearch,
+	Long: `Search Claude's history.jsonl for sessions matching the given criteria.
+
+Reads ~/.claude/history.jsonl and filters by project path, session ID prefix,
+keyword, or skill name. Results are sorted by most recent first and output as
+a JSON array of session summaries, each containing:
+  sessionId, project, dateTime, msgCount, firstMsg
+
+Flags:
+  --keyword   Filter sessions by keyword in user messages
+  --session   Filter by session ID prefix
+  --skill     Filter by skill name invoked in session
+  --last      Limit number of results (default: 20)`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runSearch,
 }
 
 var extractCmd = &cobra.Command{
@@ -34,8 +46,15 @@ Output modes:
 var subagentsCmd = &cobra.Command{
 	Use:   "subagents <session-dir-path>",
 	Short: "List subagent transcripts for a session",
-	Args:  cobra.ExactArgs(1),
-	RunE:  runSubagents,
+	Long: `List subagent transcripts and metadata for a given session directory.
+
+Reads <session-dir>/subagents/*.meta.json files and outputs a JSON array of
+subagent entries, each containing:
+  agentId    — subagent identifier (derived from filename)
+  agentType  — type of agent (from metadata)
+  transcript — path to the subagent's JSONL transcript file`,
+	Args: cobra.ExactArgs(1),
+	RunE: runSubagents,
 }
 
 func init() {
