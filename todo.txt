@@ -288,3 +288,6 @@ T-review-doc       doc.review  Review Documentation Quality                     
 
 203、通过配置项控制评估次数与分数。done
 204、guide.md补充核心coding原则：agent在未显式调用forge相关的skill时，也能遵循TDD？
+205、learn要区分forge自身错误还是业务错误。
+206、just unit-test 接受surfaceKey参数，精确执行指定surface的单元测试。doing
+207、修改sql脚本，为什么要执行单元测试？参考milestone-map#task 1.2。doing
