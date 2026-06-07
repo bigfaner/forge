@@ -1063,6 +1063,59 @@ func TestCheckNoCycles_Empty(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// Bug regression: auto-gen tasks should have breaking=false by default
+// ---------------------------------------------------------------------------
+
+func TestGenerateTestTasks_BreakingIsFalse(t *testing.T) {
+	// Bug: expandNode() hardcoded Breaking: true for all auto-gen tasks.
+	// Pipeline tasks are verification/validation/generation tasks — they
+	// should default to breaking=false since they don't directly modify
+	// production code. The PipelineNode.Breaking field propagates through
+	// expandNode() instead of being hardcoded.
+	auto := allEnabledAuto
+	tasks := GenerateTestTasks("quick", scalarSurface("api"), nil, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	for _, task := range tasks {
+		if task.Breaking {
+			t.Errorf("bug: auto-gen task %q has Breaking=true, want false (auto-gen tasks are verification/generation, not production code changes)", task.ID)
+		}
+	}
+}
+
+func TestExpandNode_DefaultBreakingIsFalse(t *testing.T) {
+	// Verify PipelineNode uses Go zero value (false) for Breaking.
+	node := PipelineNode{
+		ID: "T-test-unit", Key: "test-unit", Title: "Unit Test",
+		Priority: "P1", EstimatedTime: "10min", Type: TypeTestRun,
+	}
+	defs := expandNode(node, scalarSurface("api"), nil)
+	if len(defs) != 1 {
+		t.Fatalf("expandNode() returned %d defs, want 1", len(defs))
+	}
+	if defs[0].Breaking {
+		t.Error("bug: expandNode() produced Breaking=true for node with no Breaking field set, want false")
+	}
+}
+
+func TestExpandNode_BreakingPropagates(t *testing.T) {
+	// Verify that when a PipelineNode explicitly sets Breaking: true,
+	// the value propagates through expandNode.
+	node := PipelineNode{
+		ID: "T-clean-code", Key: "clean-code", Title: "Clean Code",
+		Priority: "P2", EstimatedTime: "10min", Type: TypeCleanCode,
+		Breaking: true,
+	}
+	defs := expandNode(node, scalarSurface("api"), nil)
+	if len(defs) != 1 {
+		t.Fatalf("expandNode() returned %d defs, want 1", len(defs))
+	}
+	if !defs[0].Breaking {
+		t.Error("expandNode() did not propagate Breaking=true from PipelineNode")
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Bug regression: auto-gen tasks must depend on ALL business tasks
 // ---------------------------------------------------------------------------
 

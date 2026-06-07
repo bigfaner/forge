@@ -56,6 +56,7 @@ type PipelineNode struct {
 	DependsOn         []DepRef
 	Expansion         string // "", "per-surface-key", "per-surface-type"
 	MainSession       bool
+	Breaking          bool // when true, submit quality gate includes unit-test; default false for verification/validation tasks
 	StrategyKind      string
 	UISurfaceOnly     bool
 }
@@ -226,7 +227,7 @@ func expandNode(node PipelineNode, surfaces map[string]string, executionOrder []
 			{
 				ID: node.ID, Key: key, Title: node.Title, Priority: node.Priority,
 				EstimatedTime: node.EstimatedTime, Type: node.Type,
-				MainSession: node.MainSession, Breaking: true, StrategyKind: node.StrategyKind,
+				MainSession: node.MainSession, Breaking: node.Breaking, StrategyKind: node.StrategyKind,
 			},
 		}
 	}
@@ -241,7 +242,7 @@ func expandPerSurfaceKey(node PipelineNode, surfaces map[string]string, singleSu
 			return []AutoGenTaskDef{{
 				ID: stripID, Key: deriveKey(stripKey, stripID), Title: expandTitle(node.Title, typ),
 				Priority: node.Priority, EstimatedTime: node.EstimatedTime, Type: node.Type,
-				MainSession: node.MainSession, Breaking: true, SurfaceKey: key, SurfaceType: typ,
+				MainSession: node.MainSession, Breaking: node.Breaking, SurfaceKey: key, SurfaceType: typ,
 				StrategyKind: node.StrategyKind,
 			}}
 		}
@@ -264,7 +265,7 @@ func expandPerSurfaceKey(node PipelineNode, surfaces map[string]string, singleSu
 		tasks = append(tasks, AutoGenTaskDef{
 			ID: id, Key: keyVal, Title: expandTitle(node.Title, typ),
 			Priority: node.Priority, EstimatedTime: node.EstimatedTime, Type: node.Type,
-			MainSession: node.MainSession, Breaking: true, SurfaceKey: key, SurfaceType: typ,
+			MainSession: node.MainSession, Breaking: node.Breaking, SurfaceKey: key, SurfaceType: typ,
 			StrategyKind: node.StrategyKind,
 		})
 	}
@@ -289,7 +290,7 @@ func expandPerSurfaceType(node PipelineNode, surfaces map[string]string) []AutoG
 		tasks = append(tasks, AutoGenTaskDef{
 			ID: id, Key: keyVal, Title: expandTitle(node.Title, typ),
 			Priority: node.Priority, EstimatedTime: node.EstimatedTime, Type: node.Type,
-			MainSession: node.MainSession, Breaking: true, SurfaceType: typ,
+			MainSession: node.MainSession, Breaking: node.Breaking, SurfaceType: typ,
 			StrategyKind: node.StrategyKind,
 		})
 	}
