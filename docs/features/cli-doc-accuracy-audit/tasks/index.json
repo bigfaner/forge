@@ -11,7 +11,7 @@
       "status": "completed",
       "file": "1-update-guide-commands.md",
       "record": "records/1-update-guide-commands.md",
-      "type": "doc"
+      "type": "coding.feature"
     },
     "2-add-guide-entries": {
       "id": "2",
@@ -24,7 +24,7 @@
       "status": "completed",
       "file": "2-add-guide-entries.md",
       "record": "records/2-add-guide-entries.md",
-      "type": "doc"
+      "type": "coding.feature"
     },
     "3-fix-cli-help-task": {
       "id": "3",
@@ -35,7 +35,7 @@
       "file": "3-fix-cli-help-task.md",
       "record": "records/3-fix-cli-help-task.md",
       "surface-type": "cli",
-      "type": "coding.cleanup",
+      "type": "coding.feature",
       "complexity": "medium"
     },
     "4-fix-cli-help-misc": {
@@ -47,8 +47,21 @@
       "file": "4-fix-cli-help-misc.md",
       "record": "records/4-fix-cli-help-misc.md",
       "surface-type": "cli",
-      "type": "coding.cleanup",
+      "type": "coding.feature",
       "complexity": "medium"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
     },
     "gen-journeys": {
       "id": "T-test-gen-journeys",
