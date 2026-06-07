@@ -25,6 +25,45 @@
       "record": "records/2-surface-rules-gate-recipes.md",
       "type": "doc"
     },
+    "3-prompt-templates-prefix-pattern": {
+      "id": "3",
+      "title": "Prompt templates gate recipe 从参数模式切换为前缀模式",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "3-prompt-templates-prefix-pattern.md",
+      "record": "records/3-prompt-templates-prefix-pattern.md",
+      "type": "doc"
+    },
+    "4-clean-code-surface-aware": {
+      "id": "4",
+      "title": "clean-code skill 增加 surface-aware gate recipe 指引",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "4-clean-code-surface-aware.md",
+      "record": "records/4-clean-code-surface-aware.md",
+      "type": "doc"
+    },
+    "5-docs-sync-prefixed-recipe": {
+      "id": "5",
+      "title": "文档同步：quality gate prefixed recipe 规范更新",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "5-docs-sync-prefixed-recipe.md",
+      "record": "records/5-docs-sync-prefixed-recipe.md",
+      "type": "doc"
+    },
     "gen-journeys": {
       "id": "T-test-gen-journeys",
       "title": "Generate Test Journeys",
@@ -59,7 +98,10 @@
       "priority": "P1",
       "estimatedTime": "30min",
       "dependencies": [
-        "2"
+        "5",
+        "3",
+        "2",
+        "4"
       ],
       "status": "pending",
       "file": "review-doc.md",
