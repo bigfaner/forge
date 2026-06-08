@@ -1,7 +1,7 @@
 ---
 feature: "agent-driven-justfile-generation"
 created: "2026-06-08"
-status: tasks
+status: completed
 mode: quick
 ---
 
