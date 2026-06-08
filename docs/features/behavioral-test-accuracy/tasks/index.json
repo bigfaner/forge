@@ -1,0 +1,97 @@
+{
+  "feature": "behavioral-test-accuracy",
+  "proposal": "docs/proposals/behavioral-test-accuracy/proposal.md",
+  "created": "2026-06-08",
+  "tasks": {
+    "1-golden-path-journey": {
+      "id": "1",
+      "title": "gen-journeys 新增 Golden Path Journey 强制要求",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "1-golden-path-journey.md",
+      "record": "records/1-golden-path-journey.md",
+      "type": "doc"
+    },
+    "2-fixture-specification": {
+      "id": "2",
+      "title": "gen-contracts 新增 Fixture Specification 维度",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "2-fixture-specification.md",
+      "record": "records/2-fixture-specification.md",
+      "type": "doc"
+    },
+    "3-assertion-depth-seed-data": {
+      "id": "3",
+      "title": "gen-test-scripts 断言深度 + seed data 丰富度规则",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "3-assertion-depth-seed-data.md",
+      "record": "records/3-assertion-depth-seed-data.md",
+      "type": "doc"
+    },
+    "4-eval-rubrics-update": {
+      "id": "4",
+      "title": "eval rubrics 新增 Workflow Coverage + Fixture Specification 评估维度",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "4-eval-rubrics-update.md",
+      "record": "records/4-eval-rubrics-update.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
