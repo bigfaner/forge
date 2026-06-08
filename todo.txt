@@ -292,3 +292,6 @@ T-review-doc       doc.review  Review Documentation Quality                     
 206、just unit-test 接受surfaceKey参数，精确执行指定surface的单元测试。done
 207、修改sql脚本，为什么要执行单元测试？参考milestone-map#task 1.2。done
 208、增加一个forge命令，结合forge surfaces的结果和justfile文件，罗列待生成的just recipes?
+209、任务调度异常后，如何让agent优雅地恢复？
+210、优化任务pipeling: 生成api测试脚本，就是执行api测试脚本；然后再生成e2e测试脚本，执行e2e测试脚本。doing
+  而且任务模板要设置AC：所有测试用例必须通过，必须是真实的测试，不能是假测试。确定是正式代码的问题，才能修改正式代码。如果问题很多，可以追加fix任务。
