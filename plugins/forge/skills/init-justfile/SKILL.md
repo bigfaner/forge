@@ -446,6 +446,7 @@ just --dry-run lint
 just --dry-run fmt
 just --dry-run check
 just --dry-run install
+# Note: ci recipe is excluded — it aggregates other recipes (lint + compile + unit-test), which are individually verified above.
 ```
 
 For surface recipes, verify each generated recipe (`<prefix>` is `<key>-` for named surfaces or empty for scalar):

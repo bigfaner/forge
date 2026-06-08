@@ -475,6 +475,7 @@ done
 
 **[linux]:**
 ```just
+# user-customized
 <prefix>teardown [linux]:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -487,6 +488,7 @@ done
 
 **[windows]:**
 ```just
+# user-customized
 <prefix>teardown [windows]:
     #!/usr/bin/env bash
     set -euo pipefail

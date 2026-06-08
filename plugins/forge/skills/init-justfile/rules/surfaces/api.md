@@ -12,7 +12,7 @@
 | teardown | Cleanup complete | Cleanup failed (residual processes) | — | End |
 
 Notes:
-- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown and exit
+- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown (which is safe/idempotent — no process to clean if dev never started) and exit
 - Probe retries up to 3 times with 5-second intervals; if all 3 attempts fail, treat as exit code 1
 - Exit code 2 for test step allows re-running; the skill should prompt the user "Test environment error, consider retrying"
 
