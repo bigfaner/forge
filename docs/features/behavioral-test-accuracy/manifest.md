@@ -1,7 +1,7 @@
 ---
 feature: "behavioral-test-accuracy"
 created: "2026-06-08"
-status: tasks
+status: completed
 mode: quick
 ---
 
