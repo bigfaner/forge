@@ -8,7 +8,7 @@
       "title": "Create server-lifecycle.md rule with PID tracking, idempotent start, and health check patterns",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-create-server-lifecycle-rule.md",
       "record": "records/1-create-server-lifecycle-rule.md",
       "type": "doc"
