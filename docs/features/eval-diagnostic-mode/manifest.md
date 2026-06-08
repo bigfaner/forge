@@ -1,7 +1,7 @@
 ---
 feature: "eval-diagnostic-mode"
 created: "2026-06-08"
-status: tasks
+status: completed
 mode: quick
 ---
 
