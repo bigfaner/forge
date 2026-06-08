@@ -33,3 +33,7 @@ EXCLUDE the following from scanning — do NOT read or process these:
 - index.json (build artifact)
 
 Only .md files under the allowlist directories are target deliverables.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}

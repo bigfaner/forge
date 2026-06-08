@@ -25,3 +25,7 @@ Do NOT scan all spec files blindly. Use git diff to narrow scope first.
 If git diff returns no changes, skip — nothing to drift against.
 
 Auto-fix drifted specs and commit with [auto-specs] tag.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}
