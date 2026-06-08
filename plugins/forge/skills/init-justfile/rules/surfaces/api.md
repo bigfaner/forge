@@ -43,132 +43,43 @@ Implementation constraints:
 | `@api` | Exact match | Journey dedicated to api surface |
 | Other | Ignore | Non-api journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `api-test` recipe must resolve test scripts from the correct directory:
+When generating recipes for the api surface, the agent must follow these structural constraints.
+
+### Naming
+
+- Named surface (multi-surface project): `<key>-<verb>` — e.g. `backend-dev`, `backend-test`
+- Scalar surface (single-surface project): `<verb>` — e.g. `dev`, `test`
+
+### Dual Platform
+
+Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
+
+### Exit Code Semantics
+
+Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
+
+### Test Directory Path
+
+The `<surfaceKey>-test` recipe must resolve test scripts from:
 - **Single surface** (project has 1 surface): `tests/<journey>/`
 - **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `backend=api`, the path is `tests/backend/<journey>/`.
-</Test-Dir-Path>
+Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `backend=api`, the path is `tests/backend/<journey>/`.
 
-```just
-# Start API development server
-# user-customized
-api-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-dev (start API server)" >&2; exit 1
+### Aggregate Recipe
 
-# user-customized
-api-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-dev (start API server)" >&2; exit 1
+The `<surfaceKey>` aggregate recipe (e.g. `api` or `backend`) must follow the pattern:
 
-# Health check for API server
-# user-customized
-api-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-probe (HTTP GET /healthz)" >&2; exit 1
-
-# user-customized
-api-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-probe (HTTP GET /healthz)" >&2; exit 1
-
-# Run API functional tests (optionally filter by journey)
-# user-customized
-api-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-test" >&2; exit 1
-
-# user-customized
-api-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-test" >&2; exit 1
-
-
-# Clean up API test artifacts
-# user-customized
-api-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-teardown" >&2; exit 1
-
-# user-customized
-api-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-teardown" >&2; exit 1
-
-# api aggregate: dev -> probe -> test -> teardown
-api:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just api-dev && just api-probe && just api-test; rc=$?; just api-teardown; exit $rc
+```
+just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardown; exit $rc
 ```
 
-# Compile ONLY the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-compile (compile api surface code only)" >&2; exit 1
+### Server Lifecycle
 
-# user-customized
-api-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-compile (compile api surface code only)" >&2; exit 1
+Recipes for dev, probe, and teardown involve server process management (PID tracking, idempotent startup, health check polling). Follow the patterns defined in `rules/server-lifecycle.md` — do not inline server lifecycle bash code in the generated recipes.
 
-# Format ONLY the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-fmt (format api surface code only)" >&2; exit 1
+### Gate Recipes
 
-# user-customized
-api-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-fmt (format api surface code only)" >&2; exit 1
-
-# Lint ONLY the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-lint (lint api surface code only)" >&2; exit 1
-
-# user-customized
-api-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-lint (lint api surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-unit-test (run api surface unit tests only)" >&2; exit 1
-
-# user-customized
-api-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-unit-test (run api surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.
+`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the api surface code only.

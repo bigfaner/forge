@@ -39,100 +39,35 @@ Implementation constraints:
 | `@tui` | Exact match | Journey dedicated to tui surface |
 | Other | Ignore | Non-tui journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `tui-test` recipe must resolve test scripts from the correct directory:
+When generating recipes for the tui surface, the agent must follow these structural constraints.
+
+### Naming
+
+- Named surface (multi-surface project): `<key>-<verb>` — e.g. `terminal-test`, `terminal-teardown`
+- Scalar surface (single-surface project): `<verb>` — e.g. `test`, `teardown`
+
+### Dual Platform
+
+Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
+
+### Exit Code Semantics
+
+Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
+
+### Test Directory Path
+
+The `<surfaceKey>-test` recipe must resolve test scripts from:
 - **Single surface** (project has 1 surface): `tests/<journey>/`
 - **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `terminal=tui`, the path is `tests/terminal/<journey>/`.
-</Test-Dir-Path>
+Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `terminal=tui`, the path is `tests/terminal/<journey>/`.
 
-```just
-# Run terminal functional tests (optionally filter by journey)
-# user-customized
-tui-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-test" >&2; exit 1
+### No Server Lifecycle Recipes
 
-# user-customized
-tui-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-test" >&2; exit 1
+TUI surface does **not** generate `dev`, `probe`, or aggregate recipes. The orchestration sequence is `test -> teardown` only.
 
+### Gate Recipes
 
-# Clean up TUI test artifacts
-# user-customized
-tui-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-teardown" >&2; exit 1
-
-# user-customized
-tui-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-teardown" >&2; exit 1
-```
-
-# Compile ONLY the tui surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-tui-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-compile (compile tui surface code only)" >&2; exit 1
-
-# user-customized
-tui-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-compile (compile tui surface code only)" >&2; exit 1
-
-# Format ONLY the tui surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-tui-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-fmt (format tui surface code only)" >&2; exit 1
-
-# user-customized
-tui-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-fmt (format tui surface code only)" >&2; exit 1
-
-# Lint ONLY the tui surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-tui-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-lint (lint tui surface code only)" >&2; exit 1
-
-# user-customized
-tui-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-lint (lint tui surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the tui surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-tui-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-unit-test (run tui surface unit tests only)" >&2; exit 1
-
-# user-customized
-tui-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement tui-unit-test (run tui surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern. **Do not generate** `tui-dev`, `tui-probe`, or `tui` aggregate recipes.
+`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the tui surface code only.

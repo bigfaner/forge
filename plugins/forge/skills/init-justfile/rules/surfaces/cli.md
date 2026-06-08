@@ -39,100 +39,35 @@ Implementation constraints:
 | `@cli` | Exact match | Journey dedicated to cli surface |
 | Other | Ignore | Non-cli journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `cli-test` recipe must resolve test scripts from the correct directory:
+When generating recipes for the cli surface, the agent must follow these structural constraints.
+
+### Naming
+
+- Named surface (multi-surface project): `<key>-<verb>` — e.g. `myapp-test`, `myapp-teardown`
+- Scalar surface (single-surface project): `<verb>` — e.g. `test`, `teardown`
+
+### Dual Platform
+
+Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
+
+### Exit Code Semantics
+
+Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
+
+### Test Directory Path
+
+The `<surfaceKey>-test` recipe must resolve test scripts from:
 - **Single surface** (project has 1 surface): `tests/<journey>/`
 - **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `myapp=cli`, the path is `tests/myapp/<journey>/`.
-</Test-Dir-Path>
+Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `myapp=cli`, the path is `tests/myapp/<journey>/`.
 
-```just
-# Run CLI functional tests (optionally filter by journey)
-# user-customized
-cli-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-test" >&2; exit 1
+### No Server Lifecycle Recipes
 
-# user-customized
-cli-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-test" >&2; exit 1
+CLI surface does **not** generate `dev`, `probe`, or aggregate recipes. The orchestration sequence is `test -> teardown` only.
 
+### Gate Recipes
 
-# Clean up CLI test artifacts
-# user-customized
-cli-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-teardown" >&2; exit 1
-
-# user-customized
-cli-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-teardown" >&2; exit 1
-```
-
-# Compile ONLY the cli surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-cli-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-compile (compile cli surface code only)" >&2; exit 1
-
-# user-customized
-cli-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-compile (compile cli surface code only)" >&2; exit 1
-
-# Format ONLY the cli surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-cli-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-fmt (format cli surface code only)" >&2; exit 1
-
-# user-customized
-cli-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-fmt (format cli surface code only)" >&2; exit 1
-
-# Lint ONLY the cli surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-cli-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-lint (lint cli surface code only)" >&2; exit 1
-
-# user-customized
-cli-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-lint (lint cli surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the cli surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-cli-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-unit-test (run cli surface unit tests only)" >&2; exit 1
-
-# user-customized
-cli-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement cli-unit-test (run cli surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern. **Do not generate** `cli-dev`, `cli-probe`, or `cli` aggregate recipes.
+`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the cli surface code only.

@@ -46,145 +46,45 @@ Implementation constraints:
 | `@mobile` | Exact match | Journey dedicated to mobile surface |
 | Other | Ignore | Non-mobile journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `mobile-test` recipe must resolve test scripts from the correct directory:
+When generating recipes for the mobile surface, the agent must follow these structural constraints.
+
+### Naming
+
+- Named surface (multi-surface project): `<key>-<verb>` — e.g. `app-dev`, `app-test`
+- Scalar surface (single-surface project): `<verb>` — e.g. `dev`, `test`
+
+### Dual Platform
+
+Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
+
+### Exit Code Semantics
+
+Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
+
+### Test Directory Path
+
+The `<surfaceKey>-test` recipe must resolve test scripts from:
 - **Single surface** (project has 1 surface): `tests/<journey>/`
 - **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `app=mobile`, the path is `tests/app/<journey>/`.
-</Test-Dir-Path>
+Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `app=mobile`, the path is `tests/app/<journey>/`.
 
-```just
-# Prepare emulator and test environment for mobile tests
-# user-customized
-mobile-test-setup:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-test-setup (prepare emulator)" >&2; exit 1
+### Aggregate Recipe
 
-# user-customized
-mobile-test-setup:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-test-setup (prepare emulator)" >&2; exit 1
+The `<surfaceKey>` aggregate recipe (e.g. `mobile` or `app`) must follow the pattern:
 
-# Start emulator and deploy app
-# user-customized
-mobile-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-dev (start emulator + deploy app)" >&2; exit 1
-
-# user-customized
-mobile-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-dev (start emulator + deploy app)" >&2; exit 1
-
-# Health check for Appium
-# user-customized
-mobile-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-probe (Appium health check)" >&2; exit 1
-
-# user-customized
-mobile-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-probe (Appium health check)" >&2; exit 1
-
-# Run Mobile E2E tests (optionally filter by journey)
-# user-customized
-mobile-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-test" >&2; exit 1
-
-# user-customized
-mobile-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-test" >&2; exit 1
-
-
-# Clean up mobile test artifacts
-# user-customized
-mobile-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-teardown" >&2; exit 1
-
-# user-customized
-mobile-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-teardown" >&2; exit 1
-
-# mobile aggregate: test-setup -> dev -> probe -> test -> teardown
-mobile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just mobile-test-setup && just mobile-dev && just mobile-probe && just mobile-test; rc=$?; just mobile-teardown; exit $rc
+```
+just <key>-test-setup && just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardown; exit $rc
 ```
 
-# Compile ONLY the mobile surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-mobile-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-compile (compile mobile surface code only)" >&2; exit 1
+Note: mobile's aggregate includes `test-setup` as the first step, preceding `dev`.
 
-# user-customized
-mobile-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-compile (compile mobile surface code only)" >&2; exit 1
+### Server Lifecycle
 
-# Format ONLY the mobile surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-mobile-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-fmt (format mobile surface code only)" >&2; exit 1
+Recipes for dev, probe, and teardown involve server process management (PID tracking, idempotent startup, health check polling). Follow the patterns defined in `rules/server-lifecycle.md` — do not inline server lifecycle bash code in the generated recipes.
 
-# user-customized
-mobile-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-fmt (format mobile surface code only)" >&2; exit 1
+### Gate Recipes
 
-# Lint ONLY the mobile surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-mobile-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-lint (lint mobile surface code only)" >&2; exit 1
-
-# user-customized
-mobile-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-lint (lint mobile surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the mobile surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-mobile-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-unit-test (run mobile surface unit tests only)" >&2; exit 1
-
-# user-customized
-mobile-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement mobile-unit-test (run mobile surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.
+`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the mobile surface code only.

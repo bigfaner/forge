@@ -45,132 +45,43 @@ Implementation constraints:
 | `@smoke` | Exact match | Smoke test, assigned to web surface |
 | Other | Ignore | Non-web journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `web-test` recipe must resolve test scripts from the correct directory:
+When generating recipes for the web surface, the agent must follow these structural constraints.
+
+### Naming
+
+- Named surface (multi-surface project): `<key>-<verb>` — e.g. `frontend-dev`, `frontend-test`
+- Scalar surface (single-surface project): `<verb>` — e.g. `dev`, `test`
+
+### Dual Platform
+
+Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
+
+### Exit Code Semantics
+
+Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
+
+### Test Directory Path
+
+The `<surfaceKey>-test` recipe must resolve test scripts from:
 - **Single surface** (project has 1 surface): `tests/<journey>/`
 - **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `frontend=web`, the path is `tests/frontend/<journey>/`.
-</Test-Dir-Path>
+Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `frontend=web`, the path is `tests/frontend/<journey>/`.
 
-```just
-# Start web development server
-# user-customized
-web-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-dev (start web dev server)" >&2; exit 1
+### Aggregate Recipe
 
-# user-customized
-web-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-dev (start web dev server)" >&2; exit 1
+The `<surfaceKey>` aggregate recipe (e.g. `web` or `frontend`) must follow the pattern:
 
-# Health check for web server
-# user-customized
-web-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-probe (HTTP health check)" >&2; exit 1
-
-# user-customized
-web-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-probe (HTTP health check)" >&2; exit 1
-
-# Run Web E2E tests (optionally filter by journey)
-# user-customized
-web-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-test" >&2; exit 1
-
-# user-customized
-web-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-test" >&2; exit 1
-
-
-# Clean up web test artifacts
-# user-customized
-web-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-teardown" >&2; exit 1
-
-# user-customized
-web-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-teardown" >&2; exit 1
-
-# web aggregate: dev -> probe -> test -> teardown
-web:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just web-dev && just web-probe && just web-test; rc=$?; just web-teardown; exit $rc
+```
+just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardown; exit $rc
 ```
 
-# Compile ONLY the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-compile (compile web surface code only)" >&2; exit 1
+### Server Lifecycle
 
-# user-customized
-web-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-compile (compile web surface code only)" >&2; exit 1
+Recipes for dev, probe, and teardown involve server process management (PID tracking, idempotent startup, health check polling). Follow the patterns defined in `rules/server-lifecycle.md` — do not inline server lifecycle bash code in the generated recipes.
 
-# Format ONLY the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-fmt (format web surface code only)" >&2; exit 1
+### Gate Recipes
 
-# user-customized
-web-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-fmt (format web surface code only)" >&2; exit 1
-
-# Lint ONLY the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-lint (lint web surface code only)" >&2; exit 1
-
-# user-customized
-web-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-lint (lint web surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-unit-test (run web surface unit tests only)" >&2; exit 1
-
-# user-customized
-web-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-unit-test (run web surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.
+`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the web surface code only.
