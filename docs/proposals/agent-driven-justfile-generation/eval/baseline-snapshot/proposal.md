@@ -24,10 +24,9 @@ intent: refactor
 ## Proposed Solution
 
 移除所有语言模板，以 surface 为唯一驱动源：
-1. **检测语言/框架**：agent 逐 surface 扫描 marker files（`go.mod` → Go, `package.json` → Node, `Cargo.toml` → Rust, `pyproject.toml`/`setup.py` → Python, `pom.xml`/`build.gradle` → Java 等），确定每个 surface 目录的语言后查找对应 Convention 文件获取框架特定知识
-2. **枚举 recipe**：agent 根据 surfaceKey + surfaceType，从 surface rule 文件读取 recipe 清单和契约
-3. **填充内容**：agent 根据检测到的语言/框架 + Convention 知识 + 自身知识生成每个 recipe 的具体命令
-4. **复杂 bash 模式**：server lifecycle（PID 追踪、幂等启动、健康检查）提取到独立的 `rules/server-lifecycle.md`
+1. **枚举 recipe**：agent 根据 surfaceKey + surfaceType，从 surface rule 文件读取 recipe 清单和契约
+2. **填充内容**：agent 根据检测到的语言/框架 + Convention 知识 + 自身知识生成每个 recipe 的具体命令
+3. **复杂 bash 模式**：server lifecycle（PID 追踪、幂等启动、健康检查）提取到独立的 `rules/server-lifecycle.md`
 
 ### Innovation Highlights
 
@@ -45,8 +44,8 @@ intent: refactor
 
 ### Non-Functional Requirements
 
-- **一致性**：相同项目多次运行生成的 justfile **结构级**属性一致——recipe 名称、分组（group marker）、边界标记（boundary marker）、退出码语义（exit code 0=success, non-zero=failure）必须完全相同。命令体（command body）的具体实现允许因 LLM 变化而不同，但必须满足相同的语义契约（输入→输出→副作用）
-- **向后兼容**：生成的 justfile 结构（boundary markers、recipe 命名、分组、user-customized 标记、退出码语义）与当前模板输出一致
+- **一致性**：相同项目多次运行生成的 justfile 结构一致（recipe 名称、分组、边界标记不变；具体命令可能因 LLM 变化而有细微差异）
+- **向后兼容**：生成的 justfile 结构（boundary markers、recipe 命名、分组、user-customized 标记）与当前模板输出一致
 
 ### Constraints & Dependencies
 
@@ -77,17 +76,13 @@ Make/Just 脚手架工具普遍使用模板（template → fill → output）。
 
 ### Resource & Timeline
 
-改动集中在 `init-justfile` skill 目录内，但影响链较广：
-- 删除 6 个模板 + 1 个 rule（不可逆）
+改动集中在 `init-justfile` skill 目录内：
+- 删除 6 个模板 + 1 个 rule
 - 新增 1 个 rule（server-lifecycle.md）
 - 重写 SKILL.md 流程
-- 简化 5 个 surface rule 文件（双消费者：init-justfile 和 run-tests）
+- 简化 5 个 surface rule 文件
 
-实际改动涉及 13 个文件（6 删除 + 1 新增 + 6 重写），建议拆分为两个 phase：
-1. **Phase 1**：新增 `server-lifecycle.md` + 重写 SKILL.md + 删除模板（核心架构迁移）
-2. **Phase 2**：简化 5 个 surface rule 文件 + 一致性验证
-
-**回退策略**：模板删除前在 git 中打 tag（如 `pre-template-removal`），若 agent 驱动生成在关键场景（混合语言多 surface、server lifecycle 边界条件）表现不足，可从 tag 恢复模板作为 fallback，无需 revert 整个迁移。
+预计单个 skill 改动，可在一次 session 内完成。
 
 ### Dependency Readiness
 
@@ -107,10 +102,9 @@ Make/Just 脚手架工具普遍使用模板（template → fill → output）。
 
 - 删除 6 个语言模板（go/node/python/rust/mixed/generic.just）
 - 删除 `rules/project-detection.md`
-- 新增 `rules/server-lifecycle.md`（PID 追踪、幂等启动、健康检查通用 bash 模式），含 multi-service 场景指导：per-service PID 文件隔离、端口感知启动（检测端口占用后选择备选端口或报错）、启动顺序依赖声明
+- 新增 `rules/server-lifecycle.md`（PID 追踪、幂等启动、健康检查通用 bash 模式）
 - 重写 SKILL.md：移除 `--type` 参数、移除项目类型检测步骤、surfaces 为前提（空时提示 `forge init`）、Step 3 改为 agent 驱动生成
 - 简化 5 个 surface rule 文件：保留编排序列/recipe 契约/journey 策略，替换 TODO stub 模板为 "Recipe Generation Requirements" section
-- Post-generation 一致性验证：生成 justfile 后，自动比对 surface rule 文件中的 Recipe Invocation Contract（消费者视角）与实际生成的 recipe 名称/参数，确保 init-justfile 和 run-tests 双消费者一致性
 
 ### Out of Scope
 
@@ -124,7 +118,7 @@ Make/Just 脚手架工具普遍使用模板（template → fill → output）。
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | LLM 生成命令不一致（不同 run 产生不同命令） | M | L | Surface rule 的 recipe 契约 + Convention 约束了结构和语义；verification step (dry-run + actual) 捕获错误 |
-| Server lifecycle bash 复杂度高，agent 可能遗漏边界情况 | M | M | 提取为独立 rule 文件，提供完整参考模式。**已知限制**：verification step（dry-run + actual）无法覆盖 server lifecycle 的边界条件（PID 文件残留、进程被外部 kill 后 PID 被回收、Windows 上 `\r` 污染）。额外缓解：`server-lifecycle.md` 提供可直接使用的可执行 bash 代码片段（带插槽占位符），agent 优先复用而非从头生成，将确定性风险降至最低 |
+| Server lifecycle bash 复杂度高，agent 可能遗漏边界情况 | M | M | 提取为独立 rule 文件，提供完整参考模式；现有验证步骤覆盖 |
 | 冷启动（无 Convention）时生成质量下降 | L | M | agent 具备主流语言的默认知识；verification step 捕获错误并自修正 |
 | 罕见语言/框架生成失败 | L | L | agent 回退到 error stub（与当前 generic.just 行为一致） |
 

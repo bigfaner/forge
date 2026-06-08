@@ -11,6 +11,11 @@ review_history:
     accepted: 14
     final_score: 907
     iterations: 3
+  - proposal: "docs/proposals/agent-driven-justfile-generation/proposal.md"
+    date: "2026-06-08"
+    substantive_change: true
+    rubric_delta: 85
+    attack_points_changed: true
 deprecated: false
 ---
 
