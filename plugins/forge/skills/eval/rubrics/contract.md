@@ -1,6 +1,6 @@
 ---
-scale: 1000
-target: 850
+scale: 1100
+target: 935
 iterations: 3
 type: contract
 context:
@@ -10,7 +10,7 @@ context:
 
 # Contract Evaluation Rubric
 
-**Total: 1000 points**
+**Total: 1100 points**
 
 ## Required Documents
 
@@ -29,9 +29,10 @@ context:
 | 5. Surface Fitness (Surface 适配) | 100 | 60 |
 | 6. Internal Consistency (一致性) | 150 | 90 |
 | 7. Anchor Integrity (锚点完整性) | 100 | 60 |
-| **Total** | **1000** | **sum >= 850** |
+| 8. Fixture Specification (前置数据声明) | 100 | 60 |
+| **Total** | **1100** | **sum >= 935** |
 
-**Pass condition**: Total score >= 850 AND every dimension >= its min threshold.
+**Pass condition**: Total score >= 935 AND every dimension >= its min threshold.
 
 ## Dimensions
 
@@ -134,6 +135,26 @@ Evaluates whether Contracts contain correct technical anchor fields that link to
 - Anchor value mismatch: -10 pts per mismatch (from the 0-30 criterion)
 - Handbook conflict: -15 pts per conflict (from the 0-30 criterion)
 
+### 8. Fixture Specification (前置数据声明) -- 100 pts
+
+Evaluates whether the Contract's Preconditions include a complete `fixture_spec` that declares all prerequisite entities, relationships, and data constraints needed for test execution.
+
+**Activation condition**: This dimension applies to all Contracts. For Contracts generated before this rubric version (where `fixture_spec` is absent), apply backward-compatible scoring: note in report "fixture_spec absent — backward-compatible, no penalty" and score full marks. For newly generated Contracts, `fixture_spec` is mandatory and scored normally.
+
+**Veto item**: If the entity completeness criterion (first row) scores 0, the entire Fixture Specification dimension scores 0 regardless of other sub-scores. A Contract that does not declare the entities it operates on cannot guarantee test data sufficiency.
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| **Entity completeness** (veto item) | 0-40 | `fixture_spec.entities` must include every entity type the Contract's operations interact with (create, read, update, delete, or reference). **Semantic verification required**: the reviewer must verify that each `entity_type` matches a domain model entity defined in the Design document, not merely check that the `entities` field is non-empty. Cross-reference `entity_type` values against the Design's domain model / entity-relationship diagram. Score 0 if any entity type referenced in the Contract's Preconditions, Input, or State changes is missing from `fixture_spec.entities` — this triggers the veto. |
+| Relationship and constraint coverage | 0-35 | For Contracts involving parent-child or associated entities: verify that `relationship_type` and `parent_entity` are declared correctly. For entities with specific field requirements: verify `field_constraints` captures necessary constraints (e.g., status values, role types). For simple single-entity Contracts, score full marks if the single entity is properly declared. |
+| Minimum data quantity declarations | 0-25 | Each entity's `min_count` must be sufficient for the Contract's test scenarios. If the Contract creates N items and then performs a list/pagination operation, `min_count` must be ≥N. If the Contract tests "delete one of many", `min_count` must be ≥2. Under-declared `min_count` that would cause test scenarios to be infeasible is a deduction. |
+
+**Scoring guidance**:
+- When `fixture_spec` is absent (legacy Contracts): score full marks (100/100) and note "fixture_spec absent — backward-compatible, no penalty"
+- Entity completeness veto triggered: 0 pts for entire dimension
+- Missing `relationship_type`/`parent_entity` for multi-entity Contract: -10 pts per missing relationship (from 0-35 criterion)
+- `min_count` too low for test scenario: -8 pts per under-declared entity (from 0-25 criterion)
+
 ## Deduction Rules
 
 - **Missing mandatory dimension in any Outcome**: 0 pts for Completeness
@@ -145,6 +166,9 @@ Evaluates whether Contracts contain correct technical anchor fields that link to
 - **Missing anchor field when handbook exists**: -10 pts per missing field (Anchor Integrity)
 - **Anchor value mismatch with handbook**: -10 pts per mismatch (Anchor Integrity)
 - **Handbook endpoint/command conflict**: -15 pts per conflict (Anchor Integrity)
+- **Entity completeness veto triggered** (entity_type missing from fixture_spec): 0 pts for entire Fixture Specification dimension
+- **Missing relationship declaration for multi-entity Contract**: -10 pts per missing relationship (Fixture Specification)
+- **Under-declared min_count**: -8 pts per under-declared entity (Fixture Specification)
 
 ## Eval Failure Handling
 

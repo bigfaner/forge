@@ -322,7 +322,19 @@ Do NOT load type files for interface types not detected in the Contracts. No spe
 `_shared.md` is ALWAYS loaded regardless of detected types. Only type files matching detected interface types are loaded -- no speculative bulk loading.
 </HARD-RULE>
 
-### 2.5.4 Token Budget Warning
+### 2.5.4 Assertion Depth and Fixture Quality Rules
+
+Load behavioral test quality rules that constrain assertion depth and fixture data richness:
+
+1. **Load `rules/assertion-depth.md`**: Assertion classification criteria (behavioral vs structural), >=80% behavioral threshold, >=30% deep assertion requirement. This rule is enforced during Step 3 generation — the agent MUST count and classify assertions, supplementing if thresholds are not met.
+
+2. **Load `rules/fixture-from-spec.md`**: Fixture data generation from Contract `fixture_spec` declarations. When a Contract's Preconditions contain `fixture_spec.entities`, test code MUST create >= `min_count` entities with correct relationships and field constraints. When `fixture_spec` is absent, apply backward compatibility handling from `types/_shared.md`.
+
+<HARD-RULE>
+**Assertion depth enforcement is mandatory**: Every generated Journey's test suite MUST satisfy both the >=80% behavioral threshold and >=30% deep assertion requirement. Health check / readiness-only Journeys are exempt but MUST document the exemption with a header comment.
+</HARD-RULE>
+
+### 2.5.5 Token Budget Warning
 
 If the detected type set contains more than 3 types, emit:
 
@@ -516,6 +528,8 @@ If all compile attempts fail:
 
 - **VERIFY Marker Check**: `grep -rn '// VERIFY:' tests/` (adaptive per surface count) -- resolve remaining markers using Fact Table.
 - **Antipattern Guard & Duplicate Name Check**: See `rules/quality-gates.md`.
+- **Assertion Depth Check**: See `rules/assertion-depth.md` — verify >=80% behavioral assertion threshold and >=30% deep assertion requirement are met per Journey. If thresholds are not met and no exemption header exists, regenerate with supplemented assertions.
+- **Fixture Spec Compliance**: See `rules/fixture-from-spec.md` — verify that when Contract contains `fixture_spec.entities`, the generated test creates >= `min_count` entities with correct relationships.
 
 ## Error Handling
 

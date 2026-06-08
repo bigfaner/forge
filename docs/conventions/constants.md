@@ -79,7 +79,7 @@ Constants fall into five categories. Each has distinct extraction criteria and c
 
 | Constant Name | Location | Category |
 |---|---|---|
-| `fallbackSortPriority = 99999` | `internal/cmd/task/list.go` | Sort fallback for unparseable IDs |
+| `fallbackSortPriority = 99999` | `internal/cmd/task/list_sort.go` | Sort fallback for unparseable IDs |
 | `unreachableDepth = 99999` | `internal/cmd/task/claim.go` | Unreachable depth for cycle tasks |
 
 **Target state**: Each sentinel extracted to a named `const` with a descriptive name and doc comment.
@@ -183,7 +183,7 @@ The following table catalogs all magic values identified in the Evidence sources
 
 | # | Magic Value | File:Line | Current State | Remediation |
 |---|---|---|---|---|
-| S1 | `99999` | `internal/cmd/task/list.go` | **Fixed**: extracted as `fallbackSortPriority` with doc comment | Done |
+| S1 | `99999` | `internal/cmd/task/list_sort.go` | **Fixed**: extracted as `fallbackSortPriority` with doc comment | Done |
 | S2 | `99999` | `internal/cmd/task/claim.go` | **Fixed**: extracted as `unreachableDepth` with doc comment | Done |
 
 ### Retry Parameter Deviations

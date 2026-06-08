@@ -224,6 +224,12 @@ Journey "task-lifecycle":
 
 For each Outcome, declare all six dimensions per `rules/dimension-rules.md`: four mandatory (Preconditions, Input, Output, State) and two optional (Side-effect, Invariants).
 
+#### 4.2.1 Fixture Specification (Preconditions Sub-Dimension)
+
+Each Outcome's Preconditions MUST include a `fixture_spec` field per `rules/fixture-spec.md`. This field declaratively specifies the pre-existing data state (entities, relationships, minimum counts) required before the Step executes.
+
+**fixture_spec is required** in every Outcome's Preconditions. A Contract without fixture_spec is schema-invalid. When fixture_spec is absent from a legacy Contract, downstream consumers must fall back to implicit inference (see Backward Compatibility in `rules/fixture-spec.md`).
+
 #### 4.3 Semantic Descriptors
 
 All dimension values use semantic descriptors per `rules/dimension-rules.md`. MUST NOT contain regex syntax. MUST be natural language expressing business intent.
@@ -290,6 +296,7 @@ After generating all Contracts for a Journey, validate each one per `rules/valid
 | Check | Rule |
 |-------|------|
 | Mandatory dimensions | Each Outcome has non-empty: Preconditions, Input, Output, State |
+| Fixture Specification present | Each Outcome's Preconditions includes `fixture_spec` with at least 1 entity declaration (see `rules/fixture-spec.md`) |
 | Semantic descriptor purity | No dimension value contains regex syntax |
 | Outcome name uniqueness | Outcome names within a Step are unique |
 | Preconditions mutual exclusivity | Different Outcomes' Preconditions are distinguishable and non-overlapping |

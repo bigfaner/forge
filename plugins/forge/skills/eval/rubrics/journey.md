@@ -1,6 +1,6 @@
 ---
-scale: 1000
-target: 850
+scale: 1150
+target: 975
 iterations: 3
 type: journey
 context:
@@ -10,7 +10,7 @@ context:
 
 # Journey Evaluation Rubric
 
-**Total: 1000 points**
+**Total: 1150 points**
 
 ## Required Documents
 
@@ -28,9 +28,10 @@ context:
 | 4. Fact Alignment (事实依据) | 150 | 90 |
 | 5. Surface Fitness (Surface 适配) | 150 | 90 |
 | 6. Internal Consistency (一致性) | 150 | 90 |
-| **Total** | **1000** | **sum ≥ 850** |
+| 7. Workflow Coverage (工作流覆盖度) | 150 | 90 |
+| **Total** | **1150** | **sum ≥ 975** |
 
-**Pass condition**: Total score ≥ 850 AND every dimension ≥ its min threshold.
+**Pass condition**: Total score ≥ 975 AND every dimension ≥ its min threshold.
 
 ## Dimensions
 
@@ -104,6 +105,18 @@ Evaluates whether Journey Invariants hold across all Steps and cross-Step refere
 | Cross-Step references are consistent | 0-50 | If Step 3 references the output of Step 1 (e.g., "the task created in step 1"), verify that Step 1 indeed creates a task and the reference is unambiguous. Dangling or contradictory cross-Step references are failures. |
 | Risk level is consistent with Journey content | 0-40 | A Journey marked `High` risk should involve security, data loss, or irreversible operations. A `Low` risk Journey should be read-only. Inconsistency between risk level and actual content indicates a classification error. |
 
+### 7. Workflow Coverage (工作流覆盖度) — 150 pts
+
+Evaluates whether the Journey includes a Golden Path and provides sufficient multi-step workflow coverage grounded in PRD/Design user stories.
+
+**Veto item**: If the Golden Path existence criterion (first row) scores 0, the entire Workflow Coverage dimension scores 0 regardless of other sub-scores. This is a non-negotiable requirement — a Journey without a Golden Path cannot demonstrate that the feature's core workflow is testable.
+
+| Criterion | Points | What to check |
+|-----------|--------|---------------|
+| **Golden Path existence** (veto item) | 0-60 | The Journey must contain at least one Golden Path: a contiguous sequence of 3+ steps that covers the primary user story from PRD/Design. **Semantic verification required**: the reviewer must verify that the Golden Path step sequence corresponds to a specific user story or core workflow described in the PRD/Design document, not merely check that 3+ steps exist. Steps must reference domain-level user operations (e.g., "create a milestone", "transition task status"), not bare HTTP methods or API calls. Score 0 if no Golden Path exists or if the step sequence is semantically unrelated to any user story — this triggers the veto. |
+| Multi-step coverage depth | 0-50 | Beyond the Golden Path, evaluate whether the Journey covers additional meaningful workflow variations: state transitions, entity lifecycle operations (create → update → delete), cross-entity interactions (parent-child relationship operations). Shallow coverage (only CRUD on a single entity) scores low. Deep coverage (multi-entity workflows, state machines, error recovery paths) scores high. |
+| Workflow completeness against PRD/Design scope | 0-40 | Cross-reference the Journey's step coverage against the PRD/Design document's described user workflows. Identify any user-facing workflow mentioned in PRD/Design that has no corresponding Journey coverage. The reviewer should list uncovered workflows as gaps. Minor auxiliary workflows may be absent without penalty, but primary workflows must be covered. |
+
 ## Deduction Rules
 
 - **Missing required field/section**: 0 pts for the affected dimension
@@ -111,6 +124,8 @@ Evaluates whether Journey Invariants hold across all Steps and cross-Step refere
 - **Surface type violation** (e.g., Web assertions in CLI Journey): -25 pts per instance (Surface Fitness)
 - **Invariant violation**: -40 pts per violation (Internal Consistency)
 - **Precondition overlap across Outcomes**: -20 pts per ambiguous pair (Precondition Exclusivity)
+- **Golden Path veto triggered** (Golden Path scores 0): 0 pts for entire Workflow Coverage dimension regardless of other sub-scores
+- **Golden Path steps use API-level descriptions instead of domain-level user operations**: -15 pts per step (Workflow Coverage)
 
 ## Eval Failure Handling
 

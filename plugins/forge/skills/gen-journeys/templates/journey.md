@@ -2,6 +2,7 @@
 feature: "{{FEATURE_SLUG}}"
 journey: "{{JOURNEY_NAME}}"
 risk_level: "{{RISK_LEVEL}}"
+golden_path: false
 surface_types: ["{{SURFACE_TYPE_1}}", "{{SURFACE_TYPE_2}}"]
 surface_keys: ["{{SURFACE_KEY_1}}", "{{SURFACE_KEY_2}}"]
 sources:
