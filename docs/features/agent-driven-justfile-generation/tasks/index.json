@@ -21,7 +21,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-rewrite-skill-agent-driven.md",
       "record": "records/2-rewrite-skill-agent-driven.md",
       "type": "doc"
