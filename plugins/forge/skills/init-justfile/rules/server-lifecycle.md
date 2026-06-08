@@ -10,6 +10,7 @@ Every recipe MUST provide `[linux]` and `[windows]` dual-platform variants. The 
 
 ## Conventions
 
+- **Terminology**: `<surfaceKey>` in this file refers to the surface's key from `forge surfaces` output (e.g., `backend` for `backend=api`). This is the same concept as `<key>` in SKILL.md. For scalar surfaces (no key), use the surface type (e.g., `api`).
 - **PID file path**: `.forge/<surfaceKey>.pid` (under the project's `.forge/` working directory)
 - **Shell**: All snippets assume `#!/usr/bin/env bash` with `set -euo pipefail`
 - **Exit codes**: 0 = success, non-zero = failure

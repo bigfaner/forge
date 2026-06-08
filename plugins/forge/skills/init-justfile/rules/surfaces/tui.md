@@ -17,6 +17,8 @@ Notes:
 
 ## Recipe Invocation Contract
 
+> **Naming convention**: Recipe names below use the surface type (`tui-`) as prefix for illustration. For **named surfaces**, replace the type prefix with the surface key (e.g., `tui-test` → `terminal-test` for `terminal=tui`). For **scalar surfaces**, the prefix is omitted (e.g., `tui-test` → `test`). See SKILL.md Standard Target Contract for the `<prefix>` definition.
+
 | Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
 |-------------|---------------|----------------------|----------------------|
 | tui-test | `just tui-test [journey]` | All terminal functional tests passed | At least one test failed |

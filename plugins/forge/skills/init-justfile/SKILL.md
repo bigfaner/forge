@@ -105,7 +105,7 @@ These recipes are **only generated for multi-surface projects** (2+ named surfac
 | Recipe | Signature | Description |
 |--------|-----------|-------------|
 | `unit-test` | `just unit-test` (no parameters) | Language-level unit tests, no filtering needed |
-| `<prefix>test` | `just <prefix>test [journey]` | Surface-level advanced tests; `<prefix>` is `<key>-` for named surfaces or empty for scalar. Optional journey parameter filters to a specific journey, omit to run all |
+| `<prefix>test` | `just <prefix>test [journey]` | Surface-level advanced tests; optional journey parameter filters to a specific journey, omit to run all |
 | `<prefix>probe` | `just <prefix>probe` (no parameters) | Surface health check |
 
 ## Process Flow
@@ -301,7 +301,7 @@ For each surface in `SURFACES_LIST` (collected in Step 0):
    - **Orchestration sequence**: which steps apply (dev/probe/test/teardown).
    - **Recipe contracts**: recipe names, signatures, exit codes.
    - **Journey filter strategy**: which journey tags belong to this surface.
-3. Generate recipes for each step defined in the orchestration sequence. Recipe names use `<prefix><verb>` where `<prefix>` is `<key>-` for named surfaces or empty for scalar surfaces.
+3. Generate recipes for each step defined in the orchestration sequence. Recipe names use `<prefix><verb>` (see `<prefix>` definition in Standard Target Contract).
 
 **Recipe naming** (determined by surface form from Step 0 parsing):
 - **Scalar surface** (no key, only type): recipe names use the verb directly — `test`, `build`, `dev`, `teardown`. No prefix.
@@ -336,7 +336,9 @@ Every surface recipe MUST include `# user-customized` comment above the `[linux]
 - Generate `<prefix>` aggregate recipe that calls sub-recipes in orchestration order.
 - On any sub-step failure, run teardown and exit with the failure code.
 
-Aggregate pattern: `just <prefix>dev && just <prefix>probe && just <prefix>test; rc=$?; just <prefix>teardown; exit $rc`
+Aggregate pattern (web/api): `just <prefix>dev && just <prefix>probe && just <prefix>test; rc=$?; just <prefix>teardown; exit $rc`
+
+Note: mobile surface uses a different aggregate pattern that includes `test-setup` as the first step — see the mobile surface rule file for the correct sequence.
 
 **Test directory path**: The `<prefix>test` recipe body must resolve test scripts from the correct path (see "Test Directory Path in Recipes" above).
 
@@ -417,9 +419,9 @@ Three-phase verification: (1) consistency check against surface rule contracts, 
 
 After generating the justfile, verify that the generated recipes match the Recipe Invocation Contract defined in each surface rule file. For each surface in `SURFACES_LIST`:
 
-1. Read the surface rule file's **Recipe Invocation Contract** table.
+1. Read the surface rule file's **Recipe Invocation Contract** table. Note: contract tables use the surface type as prefix (e.g., `api-dev`) for illustration — for named surfaces, the actual recipe name uses the surface key (e.g., `backend-dev` for `backend=api`); for scalar surfaces, the prefix is omitted (e.g., `dev`). Apply this mapping when matching.
 2. For each recipe listed in the contract, verify the generated justfile contains a recipe with:
-   - **Matching name**: The recipe name in the justfile matches the contract (e.g., `api-dev`, `web-test`).
+   - **Matching name**: The recipe name in the justfile matches the contract after applying the prefix mapping (e.g., contract says `api-dev`, actual recipe is `backend-dev` for `backend=api` — this is a match).
    - **Matching signature**: The recipe's parameter signature matches the contract (e.g., `api-test journey=''` matches `just api-test [journey]`).
    - **Matching platform variants**: Both `[linux]` and `[windows]` variants exist.
 3. Report any mismatches:

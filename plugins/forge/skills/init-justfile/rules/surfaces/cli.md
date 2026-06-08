@@ -17,6 +17,8 @@ Notes:
 
 ## Recipe Invocation Contract
 
+> **Naming convention**: Recipe names below use the surface type (`cli-`) as prefix for illustration. For **named surfaces**, replace the type prefix with the surface key (e.g., `cli-test` → `myapp-test` for `myapp=cli`). For **scalar surfaces**, the prefix is omitted (e.g., `cli-test` → `test`). See SKILL.md Standard Target Contract for the `<prefix>` definition.
+
 | Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
 |-------------|---------------|----------------------|----------------------|
 | cli-test | `just cli-test [journey]` | All CLI functional tests passed | At least one test failed |

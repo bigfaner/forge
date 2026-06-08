@@ -18,6 +18,8 @@ Notes:
 
 ## Recipe Invocation Contract
 
+> **Naming convention**: Recipe names below use the surface type (`web-`) as prefix for illustration. For **named surfaces**, replace the type prefix with the surface key (e.g., `web-dev` → `frontend-dev` for `frontend=web`). For **scalar surfaces**, the prefix is omitted (e.g., `web-dev` → `dev`). See SKILL.md Standard Target Contract for the `<prefix>` definition.
+
 | Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
 |-------------|---------------|----------------------|----------------------|
 | web-dev | `just web-dev` | Development server ready, listening on port | Startup failed, stderr contains error details |
