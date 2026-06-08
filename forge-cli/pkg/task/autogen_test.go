@@ -379,21 +379,14 @@ func TestGetBreakdownTestTasks_PerKey_TwoTypes(t *testing.T) {
 		t.Errorf("T-eval-journey deps should be T-test-gen-journeys, got %v", tasks[1].Dependencies)
 	}
 
-	// T-test-run-api (first in chain) depends on ALL per-type gen-scripts tasks
-	if len(tasks[6].Dependencies) != 2 {
-		t.Fatalf("T-test-run-api should depend on 2 gen tasks, got %v", tasks[6].Dependencies)
-	}
-	depSet2 := make(map[string]bool)
-	for _, d := range tasks[6].Dependencies {
-		depSet2[d] = true
-	}
-	if !depSet2["T-test-gen-scripts-tui"] || !depSet2["T-test-gen-scripts-api"] {
-		t.Errorf("T-test-run-api deps should include both gen-scripts, got %v", tasks[6].Dependencies)
+	// T-test-run-api (first in chain) depends on its own gen-scripts (interleaved)
+	if len(tasks[6].Dependencies) != 1 || tasks[6].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Errorf("T-test-run-api should depend on T-test-gen-scripts-api (interleaved), got %v", tasks[6].Dependencies)
 	}
 
-	// T-test-run-tui (second in chain) depends on T-test-run-api (serial)
-	if len(tasks[7].Dependencies) != 1 || tasks[7].Dependencies[0] != "T-test-run-api" {
-		t.Errorf("T-test-run-tui should depend on T-test-run-api (serial), got %v", tasks[7].Dependencies)
+	// T-test-run-tui depends on its own gen-scripts (interleaved)
+	if len(tasks[7].Dependencies) != 1 || tasks[7].Dependencies[0] != "T-test-gen-scripts-tui" {
+		t.Errorf("T-test-run-tui should depend on T-test-gen-scripts-tui (interleaved), got %v", tasks[7].Dependencies)
 	}
 
 	// T-specs-consolidate depends on last run-test (T-test-run-tui)
@@ -437,30 +430,23 @@ func TestGetBreakdownTestTasks_PerKey_ThreeTypes(t *testing.T) {
 		t.Fatalf("expected 12 tasks, got %d", len(tasks))
 	}
 
-	// T-test-run-api (first in chain) depends on all 3 gen tasks
+	// T-test-run-api depends on its own gen-scripts (interleaved)
 	runAPIIdx := findTaskIndex(tasks, "T-test-run-api")
 	if runAPIIdx < 0 {
 		t.Fatalf("T-test-run-api not found in tasks")
 	}
-	if len(tasks[runAPIIdx].Dependencies) != 3 {
-		t.Fatalf("T-test-run-api should depend on 3 gen tasks, got %v", tasks[runAPIIdx].Dependencies)
-	}
-	depSet := make(map[string]bool)
-	for _, d := range tasks[runAPIIdx].Dependencies {
-		depSet[d] = true
-	}
-	if !depSet["T-test-gen-scripts-tui"] || !depSet["T-test-gen-scripts-api"] || !depSet["T-test-gen-scripts-cli"] {
-		t.Errorf("T-test-run-api missing expected deps, got %v", tasks[runAPIIdx].Dependencies)
+	if len(tasks[runAPIIdx].Dependencies) != 1 || tasks[runAPIIdx].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Errorf("T-test-run-api should depend on T-test-gen-scripts-api (interleaved), got %v", tasks[runAPIIdx].Dependencies)
 	}
 
-	// Serial chain: api -> tui -> cli
+	// Interleaved chain: test-run-tui depends on gen-scripts-tui, test-run-cli depends on gen-scripts-cli
 	runTUIIdx := findTaskIndex(tasks, "T-test-run-tui")
-	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-run-api" {
-		t.Errorf("T-test-run-tui should depend on T-test-run-api, got %v", tasks[runTUIIdx].Dependencies)
+	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-gen-scripts-tui" {
+		t.Errorf("T-test-run-tui should depend on T-test-gen-scripts-tui (interleaved), got %v", tasks[runTUIIdx].Dependencies)
 	}
 	runCLIIdx := findTaskIndex(tasks, "T-test-run-cli")
-	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-run-tui" {
-		t.Errorf("T-test-run-cli should depend on T-test-run-tui, got %v", tasks[runCLIIdx].Dependencies)
+	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("T-test-run-cli should depend on T-test-gen-scripts-cli (interleaved), got %v", tasks[runCLIIdx].Dependencies)
 	}
 
 	// Consolidate-specs depends on last run-test (cli)
@@ -591,20 +577,20 @@ func TestGetQuickTestTasks_PerKey_ThreeTypes(t *testing.T) {
 		t.Fatalf("expected 9 tasks, got %d", len(tasks))
 	}
 
-	// T-test-run-api (first in chain) depends on all gen-scripts (ResolveUpstream)
+	// T-test-run-api depends on its own gen-scripts (interleaved)
 	runAPIIdx := findTaskIndex(tasks, "T-test-run-api")
-	if len(tasks[runAPIIdx].Dependencies) != 3 {
-		t.Fatalf("T-test-run-api should depend on 3 gen-scripts, got %v", tasks[runAPIIdx].Dependencies)
+	if len(tasks[runAPIIdx].Dependencies) != 1 || tasks[runAPIIdx].Dependencies[0] != "T-test-gen-scripts-api" {
+		t.Fatalf("T-test-run-api should depend on T-test-gen-scripts-api (interleaved), got %v", tasks[runAPIIdx].Dependencies)
 	}
 
-	// Serial chain: api -> tui -> cli
+	// Interleaved chain: each test-run depends on its own gen-scripts
 	runTUIIdx := findTaskIndex(tasks, "T-test-run-tui")
-	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-run-api" {
-		t.Errorf("T-test-run-tui should depend on T-test-run-api, got %v", tasks[runTUIIdx].Dependencies)
+	if len(tasks[runTUIIdx].Dependencies) != 1 || tasks[runTUIIdx].Dependencies[0] != "T-test-gen-scripts-tui" {
+		t.Errorf("T-test-run-tui should depend on T-test-gen-scripts-tui (interleaved), got %v", tasks[runTUIIdx].Dependencies)
 	}
 	runCLIIdx := findTaskIndex(tasks, "T-test-run-cli")
-	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-run-tui" {
-		t.Errorf("T-test-run-cli should depend on T-test-run-tui, got %v", tasks[runCLIIdx].Dependencies)
+	if len(tasks[runCLIIdx].Dependencies) != 1 || tasks[runCLIIdx].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("T-test-run-cli should depend on T-test-gen-scripts-cli (interleaved), got %v", tasks[runCLIIdx].Dependencies)
 	}
 }
 
@@ -1453,35 +1439,31 @@ func TestGetBreakdownTestTasks_FullDependencyChain(t *testing.T) {
 		t.Errorf("eval-contract should depend on gen-contracts, got %v", byID["T-eval-contract"].Dependencies)
 	}
 
-	// gen-scripts use per-surface-key serial chain: api(1st) depends on eval-contract, cli(2nd) depends on api
+	// gen-scripts use interleaved wiring: api(1st) depends on eval-contract, cli(2nd) depends on test-run-api
 	// NOTE: multiSurface("cli","cli","api","api") has key==type, so IDs are same as per-surface-key with key==type.
 	// Execution order is ["api","cli"], so api comes first.
 	if len(byID["T-test-gen-scripts-api"].Dependencies) != 1 || byID["T-test-gen-scripts-api"].Dependencies[0] != "T-eval-contract" {
 		t.Errorf("gen-scripts-api should depend on eval-contract, got %v", byID["T-test-gen-scripts-api"].Dependencies)
 	}
-	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-gen-scripts-api" {
-		t.Errorf("gen-scripts-cli should depend on gen-scripts-api (serial chain), got %v", byID["T-test-gen-scripts-cli"].Dependencies)
+	if len(byID["T-test-gen-scripts-cli"].Dependencies) != 1 || byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-run-api" {
+		t.Errorf("gen-scripts-cli should depend on T-test-run-api (interleaved), got %v", byID["T-test-gen-scripts-cli"].Dependencies)
 	}
 
-	// T-test-run-api (first in chain) depends on all gen-scripts
+	// T-test-run-api depends on its own gen-scripts (interleaved)
 	runAPIDeps := byID["T-test-run-api"].Dependencies
-	if len(runAPIDeps) != 2 {
-		t.Fatalf("T-test-run-api should depend on 2 gen-scripts, got %v", runAPIDeps)
-	}
-	runDepSet := make(map[string]bool)
-	for _, d := range runAPIDeps {
-		runDepSet[d] = true
-	}
-	if !runDepSet["T-test-gen-scripts-cli"] || !runDepSet["T-test-gen-scripts-api"] {
-		t.Errorf("T-test-run-api deps should include both gen-scripts, got %v", runAPIDeps)
+	if len(runAPIDeps) != 1 || runAPIDeps[0] != "T-test-gen-scripts-api" {
+		t.Fatalf("T-test-run-api should depend on T-test-gen-scripts-api (interleaved), got %v", runAPIDeps)
 	}
 
-	// Serial chain: T-test-run-cli depends on T-test-run-api
-	if len(byID["T-test-run-cli"].Dependencies) != 1 || byID["T-test-run-cli"].Dependencies[0] != "T-test-run-api" {
-		t.Errorf("T-test-run-cli should depend on T-test-run-api (serial), got %v", byID["T-test-run-cli"].Dependencies)
+	// T-test-run-cli depends on its own gen-scripts (interleaved)
+	if len(byID["T-test-run-cli"].Dependencies) != 1 || byID["T-test-run-cli"].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("T-test-run-cli should depend on T-test-gen-scripts-cli (interleaved), got %v", byID["T-test-run-cli"].Dependencies)
 	}
 
-	// consolidate-specs depends on last run-test (T-test-run-cli)
+	// consolidate-specs depends on last run-test (T-test-run-cli) via RunTestChain
+	if len(byID["T-specs-consolidate"].Dependencies) != 1 || byID["T-specs-consolidate"].Dependencies[0] != "T-test-run-cli" {
+		t.Errorf("consolidate-specs should depend on T-test-run-cli (chain tail), got %v", byID["T-specs-consolidate"].Dependencies)
+	}
 	if len(byID["T-specs-consolidate"].Dependencies) != 1 || byID["T-specs-consolidate"].Dependencies[0] != "T-test-run-cli" {
 		t.Errorf("consolidate-specs should depend on T-test-run-cli (chain tail), got %v", byID["T-specs-consolidate"].Dependencies)
 	}
@@ -1646,18 +1628,18 @@ func TestGetQuickTestTasks_StagedAcrossTypesDependencyChain(t *testing.T) {
 		t.Errorf("gen-scripts-api should depend on gen-contracts, got %v", gsAPIDeps)
 	}
 
-	// Stage 4: first run-test depends on all gen-scripts (ResolveUpstream)
+	// Stage 4: test-run depends on its own gen-scripts (interleaved)
 	runAPIDeps := byID["T-test-run-api"].Dependencies
-	if len(runAPIDeps) != 2 {
-		t.Fatalf("T-test-run-api should depend on 2 gen-scripts, got %v", runAPIDeps)
+	if len(runAPIDeps) != 1 || runAPIDeps[0] != "T-test-gen-scripts-api" {
+		t.Fatalf("T-test-run-api should depend on T-test-gen-scripts-api (interleaved), got %v", runAPIDeps)
 	}
 
-	// Serial chain: T-test-run-cli depends on T-test-run-api
-	if len(byID["T-test-run-cli"].Dependencies) != 1 || byID["T-test-run-cli"].Dependencies[0] != "T-test-run-api" {
-		t.Errorf("T-test-run-cli should depend on T-test-run-api (serial), got %v", byID["T-test-run-cli"].Dependencies)
+	// T-test-run-cli depends on its own gen-scripts (interleaved)
+	if len(byID["T-test-run-cli"].Dependencies) != 1 || byID["T-test-run-cli"].Dependencies[0] != "T-test-gen-scripts-cli" {
+		t.Errorf("T-test-run-cli should depend on T-test-gen-scripts-cli (interleaved), got %v", byID["T-test-run-cli"].Dependencies)
 	}
 
-	// Drift depends on last run-test (T-test-run-cli)
+	// Drift depends on last run-test (T-test-run-cli) via RunTestChain
 	if len(byID["T-quick-doc-drift"].Dependencies) != 1 || byID["T-quick-doc-drift"].Dependencies[0] != "T-test-run-cli" {
 		t.Errorf("drift should depend on T-test-run-cli (chain tail), got %v", byID["T-quick-doc-drift"].Dependencies)
 	}
@@ -1944,9 +1926,9 @@ func TestGetBreakdownTestTasks_DefaultExecutionOrder_BackendBeforeFrontend(t *te
 		t.Errorf("T-test-run-backend (idx=%d) should come before T-test-run-frontend (idx=%d)", backendIdx, frontendIdx)
 	}
 
-	// Verify serial chain: frontend depends on backend
-	if len(tasks[frontendIdx].Dependencies) != 1 || tasks[frontendIdx].Dependencies[0] != "T-test-run-backend" {
-		t.Errorf("T-test-run-frontend should depend on T-test-run-backend (serial chain), got %v", tasks[frontendIdx].Dependencies)
+	// Verify interleaved: frontend test-run depends on its own gen-scripts
+	if len(tasks[frontendIdx].Dependencies) != 1 || tasks[frontendIdx].Dependencies[0] != "T-test-gen-scripts-frontend" {
+		t.Errorf("T-test-run-frontend should depend on T-test-gen-scripts-frontend (interleaved), got %v", tasks[frontendIdx].Dependencies)
 	}
 }
 
@@ -1969,8 +1951,15 @@ func TestGetBreakdownTestTasks_SerialChain_BlockedOnUpstreamFailure(t *testing.T
 		t.Error("T-test-run-backend should have dependencies (on gen-scripts)")
 	}
 
-	if len(frontendDeps) != 1 || frontendDeps[0] != "T-test-run-backend" {
-		t.Errorf("T-test-run-frontend should depend only on T-test-run-backend, got %v", frontendDeps)
+	// Interleaved: frontend test-run depends on its own gen-scripts
+	if len(frontendDeps) != 1 || frontendDeps[0] != "T-test-gen-scripts-frontend" {
+		t.Errorf("T-test-run-frontend should depend on T-test-gen-scripts-frontend (interleaved), got %v", frontendDeps)
+	}
+
+	// gen-scripts-frontend depends on test-run-backend (interleaved chain)
+	gsFrontendDeps := byID["T-test-gen-scripts-frontend"].Dependencies
+	if len(gsFrontendDeps) != 1 || gsFrontendDeps[0] != "T-test-run-backend" {
+		t.Errorf("T-test-gen-scripts-frontend should depend on T-test-run-backend (interleaved), got %v", gsFrontendDeps)
 	}
 }
 
@@ -2202,9 +2191,10 @@ func TestGetBreakdownTestTasks_ExplicitExecutionOrder(t *testing.T) {
 		t.Errorf("T-test-run-frontend (first in chain) should depend on gen-scripts, got %v", frontendDeps)
 	}
 
+	// Interleaved: backend test-run depends on its own gen-scripts
 	backendDeps := byID["T-test-run-backend"].Dependencies
-	if len(backendDeps) != 1 || backendDeps[0] != "T-test-run-frontend" {
-		t.Errorf("T-test-run-backend should depend on T-test-run-frontend (serial), got %v", backendDeps)
+	if len(backendDeps) != 1 || backendDeps[0] != "T-test-gen-scripts-backend" {
+		t.Errorf("T-test-run-backend should depend on T-test-gen-scripts-backend (interleaved), got %v", backendDeps)
 	}
 
 	consolidateDeps := byID["T-specs-consolidate"].Dependencies
@@ -2232,23 +2222,23 @@ func TestGetBreakdownTestTasks_AC1_FullDAG(t *testing.T) {
 		t.Errorf("gen-contracts should depend on eval-journey, got %v", byID["T-test-gen-contracts"].Dependencies)
 	}
 
-	// gen-scripts use per-surface-key serial chain:
-	// auth-service(1st) depends on eval-contract, admin(2nd) depends on auth-service, cli(3rd) depends on admin
+	// gen-scripts use interleaved wiring:
+	// auth-service(1st) depends on eval-contract, admin(2nd) depends on test-run-auth-service, cli(3rd) depends on test-run-admin
 	if byID["T-test-gen-scripts-auth-service"].Dependencies[0] != "T-eval-contract" {
 		t.Errorf("gen-scripts-auth-service should depend on eval-contract, got %v", byID["T-test-gen-scripts-auth-service"].Dependencies)
 	}
-	if byID["T-test-gen-scripts-admin"].Dependencies[0] != "T-test-gen-scripts-auth-service" {
-		t.Errorf("gen-scripts-admin should depend on gen-scripts-auth-service (serial), got %v", byID["T-test-gen-scripts-admin"].Dependencies)
+	if byID["T-test-gen-scripts-admin"].Dependencies[0] != "T-test-run-auth-service" {
+		t.Errorf("gen-scripts-admin should depend on T-test-run-auth-service (interleaved), got %v", byID["T-test-gen-scripts-admin"].Dependencies)
 	}
-	if byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-gen-scripts-admin" {
-		t.Errorf("gen-scripts-cli should depend on gen-scripts-admin (serial), got %v", byID["T-test-gen-scripts-cli"].Dependencies)
+	if byID["T-test-gen-scripts-cli"].Dependencies[0] != "T-test-run-admin" {
+		t.Errorf("gen-scripts-cli should depend on T-test-run-admin (interleaved), got %v", byID["T-test-gen-scripts-cli"].Dependencies)
 	}
 
-	// run-test chain: first depends on all gen-scripts (ResolveUpstream returns all)
+	// run-test: each depends on its own gen-scripts (interleaved)
 	firstRunID := "T-test-run-auth-service"
 	firstRunDeps := byID[firstRunID].Dependencies
-	if len(firstRunDeps) != 3 {
-		t.Fatalf("%s should depend on 3 gen-scripts, got %v", firstRunID, firstRunDeps)
+	if len(firstRunDeps) != 1 || firstRunDeps[0] != "T-test-gen-scripts-auth-service" {
+		t.Fatalf("%s should depend on T-test-gen-scripts-auth-service (interleaved), got %v", firstRunID, firstRunDeps)
 	}
 
 	// consolidate-specs depends on last run-test (chain tail)
@@ -2282,13 +2272,14 @@ func TestGetQuickTestTasks_AC2_DirectDependencyChain(t *testing.T) {
 		}
 	}
 
-	// First run-test depends on all gen-scripts (ResolveUpstream)
+	// Each run-test depends on its own gen-scripts (interleaved)
 	firstRunID := "T-test-run-auth-service"
 	firstRunDeps := byID[firstRunID].Dependencies
-	if len(firstRunDeps) != 3 {
-		t.Errorf("%s should depend on 3 gen-scripts, got %v", firstRunID, firstRunDeps)
+	if len(firstRunDeps) != 1 || firstRunDeps[0] != "T-test-gen-scripts-auth-service" {
+		t.Errorf("%s should depend on T-test-gen-scripts-auth-service (interleaved), got %v", firstRunID, firstRunDeps)
 	}
 
+	// drift depends on last gen-scripts (interleaved tail)
 	// drift depends on last run-test (chain tail)
 	driftDeps := byID["T-quick-doc-drift"].Dependencies
 	lastRunID := "T-test-run-cli"
@@ -2375,16 +2366,19 @@ func TestGetQuickTestTasks_MultiSurface_FullSerialChain(t *testing.T) {
 	if byID["T-test-gen-scripts-backend"].Dependencies[0] != "T-test-gen-contracts" {
 		t.Errorf("gen-scripts-backend should depend on gen-contracts, got %v", byID["T-test-gen-scripts-backend"].Dependencies)
 	}
-	// T-test-run-backend depends on all gen-scripts (ResolveUpstream)
-	if len(byID["T-test-run-backend"].Dependencies) < 1 {
-		t.Fatalf("T-test-run-backend should depend on gen-scripts, got %v", byID["T-test-run-backend"].Dependencies)
+	// T-test-run-backend depends on its own gen-scripts (interleaved)
+	if len(byID["T-test-run-backend"].Dependencies) != 1 || byID["T-test-run-backend"].Dependencies[0] != "T-test-gen-scripts-backend" {
+		t.Fatalf("T-test-run-backend should depend on T-test-gen-scripts-backend (interleaved), got %v", byID["T-test-run-backend"].Dependencies)
 	}
-	if byID["T-test-run-frontend"].Dependencies[0] != "T-test-run-backend" {
-		t.Errorf("T-test-run-frontend should depend on T-test-run-backend, got %v", byID["T-test-run-frontend"].Dependencies)
+	// T-test-run-frontend depends on its own gen-scripts (interleaved)
+	if byID["T-test-run-frontend"].Dependencies[0] != "T-test-gen-scripts-frontend" {
+		t.Errorf("T-test-run-frontend should depend on T-test-gen-scripts-frontend (interleaved), got %v", byID["T-test-run-frontend"].Dependencies)
 	}
-	if byID["T-test-run-mobile-app"].Dependencies[0] != "T-test-run-frontend" {
-		t.Errorf("T-test-run-mobile-app should depend on T-test-run-frontend, got %v", byID["T-test-run-mobile-app"].Dependencies)
+	// T-test-run-mobile-app depends on its own gen-scripts (interleaved)
+	if byID["T-test-run-mobile-app"].Dependencies[0] != "T-test-gen-scripts-mobile-app" {
+		t.Errorf("T-test-run-mobile-app should depend on T-test-gen-scripts-mobile-app (interleaved), got %v", byID["T-test-run-mobile-app"].Dependencies)
 	}
+	// drift depends on last run-test (chain tail)
 	if byID["T-quick-doc-drift"].Dependencies[0] != "T-test-run-mobile-app" {
 		t.Errorf("drift should depend on T-test-run-mobile-app (chain tail), got %v", byID["T-quick-doc-drift"].Dependencies)
 	}
