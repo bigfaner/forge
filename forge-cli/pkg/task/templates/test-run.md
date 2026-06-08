@@ -26,3 +26,12 @@ ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # co
 {{if .SurfaceKey}}- Scope: {{.SurfaceKey}}{{end}}
 
 Run all staged test scripts. If tests fail, identify root cause, apply minimal fix, and re-run.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}
+
+### Hard Acceptance Criteria (non-negotiable)
+
+- [ ] All test cases MUST pass — no skipped tests, no expected failures, no TODO placeholders
+- [ ] Tests MUST verify actual functional behavior — no placeholder tests, no always-pass mocks, no stub assertions that validate nothing
