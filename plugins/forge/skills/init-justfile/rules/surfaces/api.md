@@ -45,32 +45,16 @@ Implementation constraints:
 
 ## Recipe Generation Requirements
 
-When generating recipes for the api surface, the agent must follow these structural constraints.
+When generating recipes for the api surface, the agent must follow these structural constraints. Shared constraints (naming, dual platform, exit code semantics, test directory path, gate recipes) are defined in SKILL.md's **Standard Target Contract** section — follow those rules. Below are api-specific constraints.
 
-### Naming
+### Form → Naming
 
-- Named surface (multi-surface project): `<key>-<verb>` — e.g. `backend-dev`, `backend-test`
-- Scalar surface (single-surface project): `<verb>` — e.g. `dev`, `test`
-
-### Dual Platform
-
-Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
-
-### Exit Code Semantics
-
-Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
-
-### Test Directory Path
-
-The `<surfaceKey>-test` recipe must resolve test scripts from:
-- **Single surface** (project has 1 surface): `tests/<journey>/`
-- **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
-
-Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `backend=api`, the path is `tests/backend/<journey>/`.
+- Named surface (key present, e.g., `backend=api`): `<key>-<verb>` — e.g., `backend-dev`, `backend-test`
+- Scalar surface (no key, e.g., bare `api`): `<verb>` — e.g., `dev`, `test`
 
 ### Aggregate Recipe
 
-The `<surfaceKey>` aggregate recipe (e.g. `api` or `backend`) must follow the pattern:
+The `<key>` aggregate recipe (e.g., `api` for scalar, `backend` for named) must follow the pattern:
 
 ```
 just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardown; exit $rc
@@ -79,7 +63,3 @@ just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardow
 ### Server Lifecycle
 
 Recipes for dev, probe, and teardown involve server process management (PID tracking, idempotent startup, health check polling). Follow the patterns defined in `rules/server-lifecycle.md` — do not inline server lifecycle bash code in the generated recipes.
-
-### Gate Recipes
-
-`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the api surface code only.

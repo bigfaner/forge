@@ -41,33 +41,13 @@ Implementation constraints:
 
 ## Recipe Generation Requirements
 
-When generating recipes for the cli surface, the agent must follow these structural constraints.
+When generating recipes for the cli surface, the agent must follow these structural constraints. Shared constraints (naming, dual platform, exit code semantics, test directory path, gate recipes) are defined in SKILL.md's **Standard Target Contract** section — follow those rules. Below are cli-specific constraints.
 
-### Naming
+### Surface-Specific Behavior
 
-- Named surface (multi-surface project): `<key>-<verb>` — e.g. `myapp-test`, `myapp-teardown`
-- Scalar surface (single-surface project): `<verb>` — e.g. `test`, `teardown`
+CLI surface does **not** generate `dev`, `probe`, or aggregate recipes. The orchestration sequence is `test -> teardown` only. No server lifecycle patterns apply.
 
-### Dual Platform
+### Form → Naming
 
-Every recipe must have both `[linux]` and `[windows]` attribute variants. The `[linux]` variant must be preceded by a `# user-customized` comment on the line above its definition.
-
-### Exit Code Semantics
-
-Each recipe's exit codes must match the semantics defined in the **Recipe Invocation Contract** table above (exit code 0 = success, exit code 1 = failure).
-
-### Test Directory Path
-
-The `<surfaceKey>-test` recipe must resolve test scripts from:
-- **Single surface** (project has 1 surface): `tests/<journey>/`
-- **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
-
-Use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `myapp=cli`, the path is `tests/myapp/<journey>/`.
-
-### No Server Lifecycle Recipes
-
-CLI surface does **not** generate `dev`, `probe`, or aggregate recipes. The orchestration sequence is `test -> teardown` only.
-
-### Gate Recipes
-
-`compile`, `fmt`, `lint`, `unit-test` recipes are generated only in **multi-surface** projects. Each gate recipe must scope its operation to the cli surface code only.
+- Named surface (key present, e.g., `myapp=cli`): `<key>-<verb>` — e.g., `myapp-test`, `myapp-teardown`
+- Scalar surface (no key, e.g., bare `cli`): `<verb>` — e.g., `test`, `teardown`

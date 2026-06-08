@@ -72,10 +72,10 @@ Each surface recipe MUST support `[linux]` and `[windows]` dual-platform variant
 
 The `<prefix>test` recipe must resolve test scripts from the correct directory, which depends on the project's surface count:
 
-- **Single surface** (1 surface, scalar or named): `tests/<journey>/` -- no surface-key directory layer.
-- **Multi surface** (2+ surfaces): `tests/<surfaceKey>/<journey>/` -- each surface's tests live under its key.
+- **Single surface** (1 surface, scalar or named): `tests/<journey>/` -- no surface key directory layer.
+- **Multi surface** (2+ surfaces): `tests/<key>/<journey>/` -- each surface's tests live under its key.
 
-When generating the `<prefix>test` recipe body, the agent must include the correct base path. For multi-surface projects, the `<surfaceKey>` segment uses the surface's **key** (e.g., `backend`, `frontend`), NOT its type (e.g., `api`, `web`).
+When generating the `<prefix>test` recipe body, the agent must include the correct base path. For multi-surface projects, the `<key>` directory segment uses the surface's **key** (e.g., `backend`, `frontend`), NOT its type (e.g., `api`, `web`).
 
 Example: In a project with `backend=api` + `frontend=web` surfaces, the `backend-test` recipe runs tests from `tests/backend/<journey>/`, and `frontend-test` from `tests/frontend/<journey>/`.
 
@@ -111,88 +111,15 @@ These recipes are **only generated for multi-surface projects** (2+ named surfac
 ## Process Flow
 
 ```
-0. Load Convention + detect languages
-   -> 1s. Detect surfaces (prerequisite)
+0. Detect surfaces (prerequisite)
+   -> 1. Detect languages + load Convention
    -> 2. Check existing justfile
    -> 3. Generate recipes (agent-driven: language + surface) + assemble
    -> 4. Verify and self-correct
    -> 5. Output confirmation
 ```
 
-### Step 0: Load Convention and Detect Languages
-
-This step performs two tasks in parallel: (1) load framework-specific knowledge from Convention files, and (2) detect each surface directory's language via marker files. The combined knowledge drives agent-driven recipe generation in Step 3.
-
-#### 0a. Language Detection via Marker Files
-
-For each surface directory (or project root for surface-less projects), scan for marker files to determine the language:
-
-| Marker File               | Language     | Key Signals                                      |
-| ------------------------- | ------------ | ------------------------------------------------ |
-| `go.mod`                  | Go           | Module path, Go version                          |
-| `package.json`            | Node/TypeScript | Scripts section, dependencies                 |
-| `Cargo.toml`              | Rust         | Edition, dependencies                            |
-| `pyproject.toml`/`setup.py` | Python    | Build system, dependencies                       |
-| `pom.xml`/`build.gradle`  | Java        | Group/artifact, plugins                          |
-| `build.gradle.kts`        | Kotlin       | Kotlin plugins, dependencies                     |
-| `Gemfile`                 | Ruby         | Gems, Ruby version                               |
-| `*.csproj`/`*.sln`        | C#/.NET      | Target framework, dependencies                   |
-| `go.work`                 | Go (workspace) | Multiple Go modules                           |
-
-Scan each surface's working directory independently. In multi-surface projects, different surfaces may use different languages (e.g., Go backend + Node frontend).
-
-**Detection process**:
-1. For each surface, check the surface's working directory for marker files.
-2. If a marker file exists, read it to extract language version, dependency manager, and key tooling (e.g., `npm` vs `pnpm` vs `yarn` from `package.json`'s `packageManager` field).
-3. Record the detected language and tooling details per surface.
-
-If no marker file matches any known pattern, the agent falls back to its own knowledge to infer the language from file extensions and project structure.
-
-#### 0b. Load Convention Knowledge
-
-Load test strategy and framework knowledge from Convention files. Convention files provide the information needed to generate `unit-test` and surface-level test recipes in Step 3.
-
-**Surface-first loading** (preferred structure):
-
-1. List subdirectories under `docs/conventions/testing/`.
-2. For each subdirectory matching a configured surface key (from Step 1s):
-   - Read `docs/conventions/testing/<surface>/core.md`.
-   - Extract the **Assertion Preferences** table for framework-specific test runner, assertion library, and mock mechanism.
-   - Extract the **File Location** section for test file patterns and directory rules.
-   - Extract the **Lifecycle** section for build tag / marker syntax (e.g., `//go:build <surface>-<type>`).
-3. From the collected Convention data, note per-surface:
-   - Framework name (e.g., "Go testing package + testify/assert", "Vitest")
-   - File pattern (e.g., `*_test.go`, `*.test.ts`)
-   - Test runner (e.g., `go test`, `vitest run`)
-   - Build tag / marker (e.g., `//go:build cli-functional`)
-   - Result format output flags (e.g., `-json -v`, `--reporter=json`)
-
-**Fallback — legacy structure**:
-
-If `docs/conventions/testing/` contains flat files with `domains` frontmatter (e.g., `go.md`, `vitest.md`) instead of surface subdirectories:
-1. Read each file with `domains` frontmatter containing `testing`.
-2. Extract the **Framework**, **Tags**, and **Result Format** sections.
-3. Output migration hint: "Legacy Convention structure detected (flat files). Run `/forge:test-guide` to migrate to surface-first structure (`testing/{surface}/`)."
-4. Use extracted data as Convention knowledge for this run.
-
-**If no Convention files found** (cold start):
-- Proceed using agent's built-in knowledge of common patterns for the detected language/framework.
-- Output hint: "No test Convention files found in docs/conventions/testing/. Recipes will use agent defaults. Run `/forge:test-guide` to create surface-first Convention files."
-
-#### 0c. Load Server Lifecycle Patterns
-
-<HARD-RULE>
-When generating surface-level recipes that involve server lifecycle (dev, probe, teardown, and test recipes with embedded server startup), the agent MUST reference `rules/server-lifecycle.md` for ready-to-use bash code snippets. Prefer reusing these snippets (with slot placeholder substitution) over generating lifecycle code from scratch. This ensures reliability for PID tracking, idempotent start, health check, and teardown patterns.
-</HARD-RULE>
-
-The server lifecycle rule provides:
-- PID file management (atomic write, stale detection, cleanup)
-- Idempotent start (three-layer check: tracked process alive, port occupancy, start if needed)
-- Health check (HTTP probe with retry, TCP probe)
-- Multi-service orchestration (dependency order, per-service PID isolation)
-- Complete recipe snippets for dev, teardown, and test-with-server-lifecycle
-
-### Step 1s: Detect Surfaces (Prerequisite)
+### Step 0: Detect Surfaces
 
 Surfaces are a prerequisite for surface-aware recipe generation. Detect surfaces configured in the project:
 
@@ -230,25 +157,103 @@ After running `forge init`, re-run `/init-justfile` to generate surface-aware re
 
 This ensures users are guided to set up surfaces rather than silently receiving a justfile without surface recipes.
 
+### Step 1: Detect Languages and Load Convention
+
+This step detects the language for each surface and loads framework-specific knowledge from Convention files. The combined knowledge drives agent-driven recipe generation in Step 3.
+
+**Execution order**: First scan the project root (1a), then for each surface in `SURFACES_LIST` (from Step 0) scan its working directory independently (1b), then load Convention files per surface (1c).
+
+#### 1a. Root Language Detection
+
+Scan the project root for marker files to determine the primary language:
+
+| Marker File               | Language     | Key Signals                                      |
+| ------------------------- | ------------ | ------------------------------------------------ |
+| `go.mod`                  | Go           | Module path, Go version                          |
+| `package.json`            | Node/TypeScript | Scripts section, dependencies                 |
+| `Cargo.toml`              | Rust         | Edition, dependencies                            |
+| `pyproject.toml`/`setup.py` | Python    | Build system, dependencies                       |
+| `pom.xml`/`build.gradle`  | Java        | Group/artifact, plugins                          |
+| `build.gradle.kts`        | Kotlin       | Kotlin plugins, dependencies                     |
+| `Gemfile`                 | Ruby         | Gems, Ruby version                               |
+| `*.csproj`/`*.sln`        | C#/.NET      | Target framework, dependencies                   |
+| `go.work`                 | Go (workspace) | Multiple Go modules                           |
+
+**Detection process**:
+1. Check the project root for marker files.
+2. If a marker file exists, read it to extract language version, dependency manager, and key tooling (e.g., `npm` vs `pnpm` vs `yarn` from `package.json`'s `packageManager` field).
+3. Record the detected language and tooling as the project's primary language.
+
+If no marker file matches any known pattern, the agent falls back to its own knowledge to infer the language from file extensions and project structure.
+
+#### 1b. Per-Surface Language Detection
+
+For each surface in `SURFACES_LIST` (from Step 0), scan the surface's working directory for marker files using the same table in 1a. In multi-surface projects, different surfaces may use different languages (e.g., Go backend + Node frontend). Each surface records its own detected language independently.
+
+For single-surface scalar projects, the surface's working directory is the project root — this step reuses the detection from 1a.
+
+#### 1c. Load Convention Knowledge
+
+Load test strategy and framework knowledge from Convention files. Convention files provide the information needed to generate `unit-test` and surface-level test recipes in Step 3.
+
+**Surface-first loading** (preferred structure):
+
+1. List subdirectories under `docs/conventions/testing/`.
+2. For each subdirectory matching a surface key in `SURFACES_LIST`:
+   - Read `docs/conventions/testing/<surface>/core.md`.
+   - Extract the **Assertion Preferences** table for framework-specific test runner, assertion library, and mock mechanism.
+   - Extract the **File Location** section for test file patterns and directory rules.
+   - Extract the **Lifecycle** section for build tag / marker syntax (e.g., `//go:build <surface>-<type>`).
+3. From the collected Convention data, note per-surface:
+   - Framework name (e.g., "Go testing package + testify/assert", "Vitest")
+   - File pattern (e.g., `*_test.go`, `*.test.ts`)
+   - Test runner (e.g., `go test`, `vitest run`)
+   - Build tag / marker (e.g., `//go:build cli-functional`)
+   - Result format output flags (e.g., `-json -v`, `--reporter=json`)
+
+**Fallback — legacy structure**:
+
+If `docs/conventions/testing/` contains flat files with `domains` frontmatter (e.g., `go.md`, `vitest.md`) instead of surface subdirectories:
+1. Read each file with `domains` frontmatter containing `testing`.
+2. Extract the **Framework**, **Tags**, and **Result Format** sections.
+3. Output migration hint: "Legacy Convention structure detected (flat files). Run `/forge:test-guide` to migrate to surface-first structure (`testing/{surface}/`)."
+4. Use extracted data as Convention knowledge for this run.
+
+**If no Convention files found** (cold start):
+- Proceed using agent's built-in knowledge of common patterns for the detected language/framework.
+- Output hint: "No test Convention files found in docs/conventions/testing/. Recipes will use agent defaults. Run `/forge:test-guide` to create surface-first Convention files."
+
+#### 1d. Load Server Lifecycle Patterns
+
+<HARD-RULE>
+When generating surface-level recipes that involve server lifecycle (dev, probe, teardown, and test recipes with embedded server startup), the agent MUST reference `rules/server-lifecycle.md` for ready-to-use bash code snippets. Prefer reusing these snippets (with slot placeholder substitution) over generating lifecycle code from scratch. This ensures reliability for PID tracking, idempotent start, health check, and teardown patterns.
+</HARD-RULE>
+
+The server lifecycle rule provides:
+- PID file management (atomic write, stale detection, cleanup)
+- Idempotent start (three-layer check: tracked process alive, port occupancy, start if needed)
+- Health check (HTTP probe with retry, TCP probe)
+- Multi-service orchestration (dependency order, per-service PID isolation)
+- Complete recipe snippets for dev, teardown, and test-with-server-lifecycle
+
 ### Step 2: Check Existing Justfile
 
 ```bash
 ls justfile Justfile 2>/dev/null
 ```
 
-- If `justfile` or `Justfile` already exists:
-  - Check if it already contains `unit-test`, `<prefix>test`, and `<prefix>teardown` recipes:
-    ```bash
-    just --list 2>/dev/null | grep -E 'unit-test|<prefix>test|<prefix>teardown'
-    ```
-  - **If all expected recipes exist**: Output "justfile already contains required recipes. Skipping recipe generation." Proceed to Step 4 for verification only.
-  - **If some recipes are missing**: Proceed to Step 3 to append only the missing recipes.
-  - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
-  - **If boundary markers exist**: proceed to Step 3 (boundary marker merge).
-  - **If boundary markers do NOT exist** (user's justfile has no forge markers):
-    - If `--force` flag was provided: skip confirmation, proceed to Step 3.
-    - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
 - If no justfile exists: proceed to Step 3 (create new file).
+- If `justfile` or `Justfile` already exists, evaluate in this priority order:
+  1. **Check boundary markers** (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`):
+     - **Markers exist**: Check recipe completeness:
+       ```bash
+       just --list 2>/dev/null | grep -E 'unit-test|<prefix>test|<prefix>teardown'
+       ```
+       - All expected recipes present: Output "justfile already contains required recipes. Skipping recipe generation." Proceed to Step 4 for verification only.
+       - Some recipes missing: Proceed to Step 3 (boundary marker merge, append missing recipes only).
+     - **Markers do NOT exist**:
+       - If `--force` flag was provided: skip confirmation, proceed to Step 3.
+       - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
 
 <HARD-RULE>
 If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
@@ -265,16 +270,16 @@ This step uses agent-driven generation: the agent synthesizes language-level and
 
 #### 3a. Generate language-level recipes
 
-Generate `unit-test`, `compile`, `build`, `lint`, `fmt`, `check`, `clean`, `install`, `ci` recipes based on the detected language (from Step 0a) and Convention knowledge (from Step 0b).
+Generate `unit-test`, `compile`, `build`, `lint`, `fmt`, `check`, `clean`, `install`, `ci` recipes based on the detected language (from Step 1a) and Convention knowledge (from Step 1c).
 
 The agent determines the correct commands for each recipe by analyzing:
 
-1. **Detected language and tooling** (from Step 0a marker file scanning):
+1. **Detected language and tooling** (from Step 1a/1b marker file scanning):
    - Language-specific build/test/lint commands (e.g., `go test`, `npm test`, `cargo test`, `pytest`)
    - Dependency manager (e.g., `npm` vs `pnpm` vs `yarn`, `pip` vs `poetry`, `cargo` vs `go mod`)
    - Tool presence (e.g., golangci-lint, prettier, ruff, eslint)
 
-2. **Convention overrides** (from Step 0b):
+2. **Convention overrides** (from Step 1c):
    - `unit-test`: Use Convention's test runner + file pattern + output flags (e.g., `go test -json -v ./...` with `-tags` from Lifecycle section)
    - Other recipes: Use Convention-sourced commands where available
 
@@ -289,16 +294,16 @@ The agent determines the correct commands for each recipe by analyzing:
 
 #### 3b. Generate surface-level recipes
 
-For each surface in `SURFACES_LIST` (collected in Step 1s):
+For each surface in `SURFACES_LIST` (collected in Step 0):
 
-1. Read the surface rule file loaded in Step 1s (`rules/surfaces/<type>.md`).
+1. Read the surface rule file loaded in Step 0 (`rules/surfaces/<type>.md`).
 2. From the rule file, extract:
    - **Orchestration sequence**: which steps apply (dev/probe/test/teardown).
    - **Recipe contracts**: recipe names, signatures, exit codes.
    - **Journey filter strategy**: which journey tags belong to this surface.
 3. Generate recipes for each step defined in the orchestration sequence. Recipe names use `<prefix><verb>` where `<prefix>` is `<key>-` for named surfaces or empty for scalar surfaces.
 
-**Recipe naming** (determined by surface form from Step 1s parsing):
+**Recipe naming** (determined by surface form from Step 0 parsing):
 - **Scalar surface** (no key, only type): recipe names use the verb directly — `test`, `build`, `dev`, `teardown`. No prefix.
 - **Named surface** (has key): recipe names use `<key>-<verb>` — e.g., `app-test`, `admin-panel-dev`. This applies to both single and multi-surface projects.
 
@@ -336,12 +341,26 @@ Aggregate pattern: `just <prefix>dev && just <prefix>probe && just <prefix>test;
 **Test directory path**: The `<prefix>test` recipe body must resolve test scripts from the correct path (see "Test Directory Path in Recipes" above).
 
 **Recipe content generation**: The agent fills in recipe bodies by synthesizing:
-1. **Detected language and tooling** (from Step 0a): provides the underlying command patterns (e.g., `go run`, `npm run dev`, `cargo run`).
-2. **Convention knowledge** (from Step 0b): provides framework-specific test runners and patterns.
+1. **Detected language and tooling** (from Step 1a/1b): provides the underlying command patterns (e.g., `go run`, `npm run dev`, `cargo run`).
+2. **Convention knowledge** (from Step 1c): provides framework-specific test runners and patterns.
 3. **Surface rule file**: provides the orchestration sequence, exit code semantics, and recipe naming contract.
-4. **Server lifecycle patterns** (from `rules/server-lifecycle.md`): provides ready-to-use bash snippets for dev, probe, teardown, and test-with-server-lifecycle recipes. The agent replaces slot placeholders (e.g., `<PORT>`, `<START_CMD>`, `<surfaceKey>`) with project-specific values.
+4. **Server lifecycle patterns** (from `rules/server-lifecycle.md`, Step 1d): provides ready-to-use bash snippets for dev, probe, teardown, and test-with-server-lifecycle recipes. The agent replaces slot placeholders with project-specific values.
 
-Example (web surface, Go project): `web-dev` uses idempotent start from server-lifecycle.md with `go run` as `<START_CMD>`, `web-probe` uses HTTP probe pattern, `web-test` uses test-with-server-lifecycle pattern with `go test -tags=web-e2e ./tests/<surfaceKey>/{{journey}}/...` as `<TEST_CMD>`, `web-teardown` uses PID cleanup pattern.
+Example (web surface, Go project): `web-dev` uses idempotent start from server-lifecycle.md with `go run` as `<START_CMD>`, `web-probe` uses HTTP probe pattern, `web-test` uses test-with-server-lifecycle pattern with `go test -tags=web-e2e ./tests/<key>/{{journey}}/...` as `<TEST_CMD>`, `web-teardown` uses PID cleanup pattern.
+
+**Slot placeholder resolution** (for server-lifecycle.md snippets): When Convention files are absent (cold start), resolve slot placeholders from project structure:
+
+| Placeholder | Resolution Strategy |
+|-------------|-------------------|
+| `<START_CMD>` | From `package.json` `scripts.dev`/`scripts.start` (Node), `go run` + entry point from `cmd/*/main.go` (Go), `cargo run` (Rust), `python -m <module>` from `pyproject.toml` (Python) |
+| `<PORT>` | From Convention if available; else common defaults: Node 3000/5173 (Vite), Go 8080, Python 8000 (Django/FastAPI), Rust 3000. Check `package.json` scripts for `--port`/`-p` flags. |
+| `<HEALTH_URL>` | `http://localhost:<PORT>/healthz` (default). Convention may specify a different endpoint (e.g., `/api/health`, `/ready`). |
+| `<PID_FILE>` | `.forge/<key>.pid` (per-surface PID isolation in `.forge/` directory). |
+
+**`# user-customized` marker scope**:
+- **Lifecycle recipes** (dev, probe, test, teardown, test-setup): MUST include `# user-customized` — users may customize server commands, probe endpoints, test runners.
+- **Gate recipes** (compile, fmt, lint, unit-test): MUST include `# user-customized` — users may customize tool flags, file scopes.
+- **Aggregate recipes** (`<prefix>` with no verb): Do NOT include `# user-customized` — these are auto-generated orchestration that calls sub-recipes; users should customize the sub-recipes instead.
 
 #### 3c. Boundary marker merge
 
@@ -491,9 +510,9 @@ Edit justfile to customize commands. Recipes marked `# user-customized` will be 
 ## Notes
 
 - **just >= 1.50.0**: supports `[arg]` named option syntax and `[linux]`/`[windows]` platform attributes; surface recipes use dual-platform variants.
-- **Zero regression**: Projects without surface configuration are now required to run `forge init` first (Outcome B in Step 1s). This is a deliberate change to ensure all projects have proper surface configuration.
+- **Breaking change — surface prerequisite**: Projects without surface configuration must run `forge init` first (Outcome B in Step 0). This is a deliberate change from the previous behavior (which generated a basic justfile without surface recipes). Upgrade path: run `forge init` to configure surfaces, then re-run `/init-justfile`.
 - **Two-layer model**: `unit-test` is language-level (fast, per-task submit gate); `<prefix>test` is surface-level (functional tests for cli/tui/api, e2e tests for web/mobile). Forge is surface-agnostic -- it calls `just <prefix>test` based on task surface-key. Test type terminology follows the inline model below.
-- **Test directory path**: Single-surface projects use `tests/<journey>/` (no surface-key layer). Multi-surface projects use `tests/<surfaceKey>/<journey>/` (key-based directory layer). The `<prefix>test` recipe body must resolve scripts from the correct path.
+- **Test directory path**: Single-surface projects use `tests/<journey>/` (no surface key layer). Multi-surface projects use `tests/<key>/<journey>/` (key-based directory layer). The `<prefix>test` recipe body must resolve scripts from the correct path.
 
 <!-- INLINE:origin=test-guide/references/test-type-model.md -->
 **Surface -> Test Type mapping**:
@@ -518,9 +537,9 @@ Key: "Functional" = protocol-level call verification (subprocess/HTTP); "E2E" = 
 - If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
 - Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
 - After writing, you MUST run the verification steps (consistency check + dry-run + actual execution) and report all results.
-- Surface data source is `forge surfaces` (text mode). Scalar surfaces (no `=` in output line) produce prefix-less recipes (`test`, `dev`, `teardown`). Named surfaces produce `<key>-` prefixed recipes.
 - CLI/TUI surfaces MUST NOT generate dev, probe, or aggregate recipes.
 - `# user-customized` marked recipes MUST be preserved during re-generation.
 - No language templates are used. The agent generates recipes directly from detected language + Convention knowledge + surface rule contracts.
+- Surface data source is `forge surfaces` (text mode). Scalar surfaces (no `=` in output line) produce prefix-less recipes (`test`, `dev`, `teardown`). Named surfaces produce `<key>-` prefixed recipes.
 - Server lifecycle patterns MUST be sourced from `rules/server-lifecycle.md` — do not generate PID tracking, idempotent start, or health check code from scratch.
 </EXTREMELY-IMPORTANT>
