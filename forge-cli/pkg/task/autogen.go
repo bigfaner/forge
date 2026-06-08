@@ -76,6 +76,10 @@ func ValidateAutogenTemplates() error {
 			if err := validateAutogenVariables(meta, structType); err != nil {
 				return fmt.Errorf("autogen template validation error: %s: %w", filename, err)
 			}
+			// Verify AcceptanceCriteria rendering when declared in context
+			if err := validateACRendering(body, meta); err != nil {
+				return fmt.Errorf("autogen template validation error: %s: %w", filename, err)
+			}
 		}
 
 		// Validate template syntax and execution with missingkey=error
@@ -452,8 +456,12 @@ func parseAutogenMetadata(content string) (body string, meta *autogenMetadata) {
 		case strings.HasPrefix(line, "- ") && meta.Variables != nil:
 			varName := strings.Trim(strings.TrimSpace(strings.TrimPrefix(line, "- ")), "\"")
 			meta.Variables = append(meta.Variables, varName)
-		case strings.HasPrefix(line, "variables:"):
-			meta.Variables = []string{}
+		case strings.HasPrefix(line, "variables:"),
+			strings.HasPrefix(line, "context:"),
+			strings.HasPrefix(line, "identity:"):
+			if meta.Variables == nil {
+				meta.Variables = []string{}
+			}
 		}
 	}
 
@@ -464,6 +472,34 @@ func parseAutogenMetadata(content string) (body string, meta *autogenMetadata) {
 func stripAutogenMetadata(content string) string {
 	body, _ := parseAutogenMetadata(content)
 	return body
+}
+
+// validateACRendering checks that if AcceptanceCriteria is declared in template
+// metadata, the template body actually renders it via {{.AcceptanceCriteria}}.
+// This prevents the gotcha where AC data reaches the prompt template but never
+// appears in the generated .md task file that forge task validate checks.
+func validateACRendering(body string, meta *autogenMetadata) error {
+	if meta == nil || len(meta.Variables) == 0 {
+		return nil
+	}
+
+	// Check if AcceptanceCriteria is declared in metadata variables
+	hasAC := false
+	for _, v := range meta.Variables {
+		if v == "AcceptanceCriteria" {
+			hasAC = true
+			break
+		}
+	}
+	if !hasAC {
+		return nil
+	}
+
+	// Verify the body actually renders {{.AcceptanceCriteria}}
+	if !strings.Contains(body, "{{.AcceptanceCriteria}}") {
+		return fmt.Errorf("template declares AcceptanceCriteria in context but body does not render {{.AcceptanceCriteria}} — this causes forge task validate to report 0 AC")
+	}
+	return nil
 }
 
 // validateAutogenVariables checks that each variable declared in metadata

@@ -20,3 +20,7 @@ Simplify and clean up code for the {{.FeatureSlug}} feature.
 3. The skill resolves scope: git diff > feature context > user-specified paths
 
 Do NOT clean up files outside this feature's scope.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}

@@ -55,6 +55,10 @@ Follow the `/gen-contracts` skill process flow:
 
 ## Acceptance Criteria
 
+{{.AcceptanceCriteria}}
+
+### Hard Acceptance Criteria (non-negotiable)
+
 - [ ] At least 1 Contract file generated per Journey
 - [ ] Each Contract has six-dimension declarations with semantic descriptors (no regex)
 - [ ] Risk-driven Outcome density targets met per Journey risk level

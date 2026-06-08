@@ -32,4 +32,9 @@ For each Journey's Contracts:
 The eval skill's scorer-gate-revise loop handles iterative improvement within its iteration budget. Scores are recorded in the eval report for informational review.
 
 ## Acceptance Criteria
+
+{{.AcceptanceCriteria}}
+
+### Hard Acceptance Criteria (non-negotiable)
+
 - [ ] Eval report generated for all Contracts

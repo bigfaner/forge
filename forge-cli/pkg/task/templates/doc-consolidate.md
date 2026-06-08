@@ -24,3 +24,7 @@ Extract and consolidate business rules and tech specs from the {{.FeatureSlug}} 
 4. Compare against existing specs in docs/business-rules/ and docs/conventions/
 
 Run in non-interactive mode: auto-integrate all CROSS items. Commit with [auto-specs] tag.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}

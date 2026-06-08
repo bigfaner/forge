@@ -59,6 +59,10 @@ When this task runs as an automated pipeline task (not invoked manually by the u
 
 ## Acceptance Criteria
 
+{{.AcceptanceCriteria}}
+
+### Hard Acceptance Criteria (non-negotiable)
+
 - [ ] At least 1 Journey file generated under `docs/features/{{.FeatureSlug}}/testing/`
 - [ ] Each Journey has: name, risk level, happy path steps, edge cases, invariants
 - [ ] High-risk Journeys have edge case count >= happy path step count

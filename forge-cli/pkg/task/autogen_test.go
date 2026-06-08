@@ -2749,6 +2749,152 @@ func TestGenerateTestTasks_PassesIntent_Quick(t *testing.T) {
 	}
 }
 
+// --- Metadata parsing: context:/identity: recognition tests (gotcha-ac-rendering guard) ---
+
+func TestParseAutogenMetadata_ContextVariables(t *testing.T) {
+	content := `---
+type: test.gen-scripts
+category: test
+identity:
+  - TaskID
+  - TaskType
+  - FeatureSlug
+context:
+  - Mode
+  - SurfaceKey
+  - SurfaceType
+  - SurfaceTypes
+  - AcceptanceCriteria
+---
+Body content here.
+`
+	body, meta := parseAutogenMetadata(content)
+
+	if meta == nil {
+		t.Fatal("expected non-nil metadata")
+	}
+	if meta.Type != "test.gen-scripts" {
+		t.Errorf("Type = %q, want test.gen-scripts", meta.Type)
+	}
+	if meta.Category != "test" {
+		t.Errorf("Category = %q, want test", meta.Category)
+	}
+
+	wantVars := []string{"TaskID", "TaskType", "FeatureSlug", "Mode", "SurfaceKey", "SurfaceType", "SurfaceTypes", "AcceptanceCriteria"}
+	if len(meta.Variables) != len(wantVars) {
+		t.Fatalf("Variables = %v (len=%d), want %v (len=%d)", meta.Variables, len(meta.Variables), wantVars, len(wantVars))
+	}
+	for i, want := range wantVars {
+		if meta.Variables[i] != want {
+			t.Errorf("Variables[%d] = %q, want %q", i, meta.Variables[i], want)
+		}
+	}
+
+	if !strings.Contains(body, "Body content here.") {
+		t.Errorf("body should contain body content, got: %q", body)
+	}
+}
+
+func TestParseAutogenMetadata_VariablesSection(t *testing.T) {
+	content := `---
+type: legacy
+variables:
+  - Foo
+  - Bar
+---
+Body
+`
+	_, meta := parseAutogenMetadata(content)
+
+	if meta == nil {
+		t.Fatal("expected non-nil metadata")
+	}
+	wantVars := []string{"Foo", "Bar"}
+	if len(meta.Variables) != len(wantVars) {
+		t.Fatalf("Variables = %v, want %v", meta.Variables, wantVars)
+	}
+}
+
+func TestParseAutogenMetadata_NoFrontmatter(t *testing.T) {
+	content := "Just body text, no frontmatter."
+	body, meta := parseAutogenMetadata(content)
+
+	if meta != nil {
+		t.Error("expected nil metadata for content without frontmatter")
+	}
+	if body != content {
+		t.Errorf("body should be unchanged, got: %q", body)
+	}
+}
+
+func TestValidateAutogenTemplates_AcceptanceCriteriaRendering(t *testing.T) {
+	// ValidateAutogenTemplates should pass — all current templates render {{.AcceptanceCriteria}}
+	// when it's declared in their context: metadata.
+	if err := ValidateAutogenTemplates(); err != nil {
+		t.Fatalf("ValidateAutogenTemplates should pass for current templates: %v", err)
+	}
+}
+
+func TestValidateAutogenTemplates_MissingACRendering(t *testing.T) {
+	// Simulate a template that declares AcceptanceCriteria in context but omits {{.AcceptanceCriteria}} from body.
+	// We test the underlying validation function directly.
+	template := `---
+type: test.example
+category: test
+context:
+  - AcceptanceCriteria
+---
+Body without AC rendering.
+`
+	body, meta := parseAutogenMetadata(template)
+
+	err := validateACRendering(body, meta)
+	if err == nil {
+		t.Error("expected error when AcceptanceCriteria is declared in context but not rendered in body")
+	}
+	if !strings.Contains(err.Error(), "AcceptanceCriteria") {
+		t.Errorf("error should mention AcceptanceCriteria, got: %v", err)
+	}
+}
+
+func TestValidateAutogenTemplates_ACRenderingOK(t *testing.T) {
+	template := `---
+type: test.example
+category: test
+context:
+  - AcceptanceCriteria
+---
+Body with AC rendering.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}
+`
+	body, meta := parseAutogenMetadata(template)
+
+	err := validateACRendering(body, meta)
+	if err != nil {
+		t.Errorf("should pass when AcceptanceCriteria is rendered: %v", err)
+	}
+}
+
+func TestValidateAutogenTemplates_NoACDeclared_NoError(t *testing.T) {
+	template := `---
+type: test.example
+category: test
+context:
+  - Mode
+---
+Body without AC at all.
+`
+	body, meta := parseAutogenMetadata(template)
+
+	err := validateACRendering(body, meta)
+	if err != nil {
+		t.Errorf("should pass when AcceptanceCriteria is not declared: %v", err)
+	}
+}
+
 // Helper to collect task IDs for error messages
 func taskIDs(tasks []AutoGenTaskDef) []string {
 	ids := make([]string, len(tasks))
