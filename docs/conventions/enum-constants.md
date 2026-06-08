@@ -219,7 +219,7 @@ const unreachableDepth = 99999
 ```
 
 **No deviation** -- sentinel values have been extracted to named constants with doc comments:
-- `fallbackSortPriority = 99999` in `internal/cmd/task/list.go`
+- `fallbackSortPriority = 99999` in `internal/cmd/task/list_sort.go`
 - `unreachableDepth = 99999` in `internal/cmd/task/claim.go`
 
 **Scope**: [CROSS]
