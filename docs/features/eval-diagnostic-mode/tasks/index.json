@@ -1,0 +1,57 @@
+{
+  "feature": "eval-diagnostic-mode",
+  "proposal": "docs/proposals/eval-diagnostic-mode/proposal.md",
+  "created": "2026-06-08",
+  "tasks": {
+    "1-update-eval-templates": {
+      "id": "1",
+      "title": "Update eval templates to non-blocking diagnostic model",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-update-eval-templates.md",
+      "record": "records/1-update-eval-templates.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

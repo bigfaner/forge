@@ -26,13 +26,10 @@ ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # co
 Scan `tests/<journey>/_contracts/` for all Contract files per Journey.
 
 For each Journey's Contracts:
-1. Run `/eval --type contract` using the contract rubric (`eval/rubrics/contract.md`)
+1. Run `/eval-contract` — this resolves target score and max iterations from `forge config`
 2. Scoring dimensions: Completeness, Semantic Purity, Precondition Exclusivity, Fact Alignment, Surface Fitness, Internal Consistency
-3. Target score: 850/1000 with all dimensions above min thresholds
 
-If any Contract fails evaluation after max iterations, report the failure and abort. Do not proceed to gen-test-scripts with low-quality Contracts.
+The eval skill's scorer-gate-revise loop handles iterative improvement within its iteration budget. Scores are recorded in the eval report for informational review.
 
 ## Acceptance Criteria
-- [ ] All Contracts scored >= 850/1000
-- [ ] All dimensions above min threshold per rubric
-- [ ] Eval report written to `tests/<journey>/.eval-report.md`
+- [ ] Eval report generated for all Contracts
