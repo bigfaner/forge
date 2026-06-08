@@ -8,7 +8,7 @@
       "title": "Update eval templates to non-blocking diagnostic model",
       "priority": "P1",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "1-update-eval-templates.md",
       "record": "records/1-update-eval-templates.md",
       "type": "doc"
