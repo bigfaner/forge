@@ -6,7 +6,7 @@ For each Outcome, declare all six dimensions. Four are mandatory (non-empty), tw
 
 | Dimension | Content | Source |
 |-----------|---------|--------|
-| Preconditions | State that must hold before execution | Journey edge case preconditions + Fact Table state info |
+| Preconditions | State that must hold before execution, including `fixture_spec` (see below) | Journey edge case preconditions + Fact Table state info |
 | Input | What goes into the system | Journey user action + Fact Table command/flag/endpoint info |
 | Output | What the system produces | Journey expected result + Fact Table output patterns |
 | State | How system state changes | Fact Table state storage info + output inference |
@@ -20,6 +20,34 @@ For each Outcome, declare all six dimensions. Four are mandatory (non-empty), tw
 
 **Side-effect defaults**: When omitted, Side-effect defaults to `none`.
 **Step-level Invariants defaults**: When omitted, no step-level invariant constraint.
+
+## Preconditions Sub-Dimension: fixture_spec
+
+Every Outcome's Preconditions MUST include a `fixture_spec` field per `rules/fixture-spec.md`. This field is a structured declaration of the pre-existing data state required before the Step executes.
+
+**fixture_spec structure** (full schema in `rules/fixture-spec.md`):
+
+```yaml
+fixture_spec:
+  entities:
+    - entity_type: string
+      min_count: integer
+      relationship_type: string    # optional
+      parent_entity: string        # optional
+      field_constraints:           # optional
+        - field: string
+          value: any
+  state_requirements:              # optional
+    - description: string
+      prerequisite_entity: string
+```
+
+**Rules**:
+- `fixture_spec` is REQUIRED — a Contract without it is schema-invalid
+- `entities` MUST contain at least 1 entity declaration
+- `entity_type` should match domain model naming from PRD/Design documents
+- `relationship_type` uses generic terms: `belongs_to`, `has_many`, `has_one`
+- `field_constraints[].value` is `any` type — allows string, number, boolean, or natural language constraint descriptions
 
 # Semantic Descriptors
 

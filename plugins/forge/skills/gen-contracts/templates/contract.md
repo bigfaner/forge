@@ -55,3 +55,22 @@ last_anchor_sync: ""    # ISO-8601 timestamp of last anchor fill from handbook
 ## Journey Invariants
 
 {{JOURNEY_INVARIANTS}}
+
+## Fixture Specification
+
+This Contract requires the following pre-existing data state. See `rules/fixture-spec.md` for schema details.
+
+```yaml
+fixture_spec:
+  entities:
+    - entity_type: ""           # Required: entity type name (e.g., "Project", "Milestone")
+      min_count: 1              # Required: minimum count >= 1
+      # relationship_type: ""   # Optional: "belongs_to" | "has_many" | "has_one"
+      # parent_entity: ""       # Optional: parent entity type name
+      # field_constraints:      # Optional: field value constraints
+      #   - field: ""
+      #     value: ""
+  # state_requirements:         # Optional: system-level state
+  #   - description: ""
+  #     prerequisite_entity: ""
+```

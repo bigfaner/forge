@@ -18,7 +18,7 @@
       "title": "gen-contracts 新增 Fixture Specification 维度",
       "priority": "P0",
       "estimatedTime": "1.5h",
-      "status": "pending",
+      "status": "completed",
       "file": "2-fixture-specification.md",
       "record": "records/2-fixture-specification.md",
       "type": "doc"
