@@ -244,8 +244,23 @@ gen-journeys is the first step. It reads PRD user stories and produces Journey d
 ## Process Flow
 
 ```
-Read input sources (PRD or Proposal) -> Identify user workflows -> Classify Risk -> Generate per-Journey files -> Validate output -> Generate index
+Read input sources (PRD or Proposal) -> Classify feature complexity (see rules/golden-path.md) -> Identify user workflows (including Golden Path) -> Classify Risk -> Generate per-Journey files -> Validate output -> Generate index
 ```
+
+## Golden Path Rule
+
+**Mandatory**: Every feature MUST have at least one Golden Path Journey.
+
+Load and apply `rules/golden-path.md` before Step 2 (Identify User Workflows). The Golden Path rule requires:
+
+1. **Feature complexity classification** — classify the feature as Simple or Complex using entity relationship heuristics
+2. **Golden Path identification** — ensure at least one Journey covers the primary user story's core domain action sequence
+3. **Dual constraints** — Golden Path must span 3+ steps AND use domain terminology (not API terminology) in step descriptions
+4. **Complex feature depth** — complex features (>=2 entity types with parent-child relationships) require 5+ steps covering cross-entity interactions
+
+<HARD-RULE>
+Golden Path applies to ALL surface types. There is no surface-specific differentiation of Golden Path requirements. Entity relationship classification takes priority over workflow description — parent-child entity relationships always classify as Complex.
+</HARD-RULE>
 
 ## Step 1: Read Input Sources
 
