@@ -637,16 +637,16 @@ func TestGenerateTestTasks_MultiSurface_Expansion(t *testing.T) {
 		t.Error("T-test-run-frontend should exist for multi-surface")
 	}
 
-	// Serial chain: frontend depends on backend
+	// Interleaved wiring: test-run-frontend depends on gen-scripts-frontend (not test-run-backend)
 	frontend := byID["T-test-run-frontend"]
-	foundBackendDep := false
+	foundGenScriptsFrontend := false
 	for _, dep := range frontend.Dependencies {
-		if dep == "T-test-run-backend" {
-			foundBackendDep = true
+		if dep == "T-test-gen-scripts-frontend" {
+			foundGenScriptsFrontend = true
 		}
 	}
-	if !foundBackendDep {
-		t.Errorf("T-test-run-frontend should depend on T-test-run-backend, deps=%v", frontend.Dependencies)
+	if !foundGenScriptsFrontend {
+		t.Errorf("T-test-run-frontend should depend on T-test-gen-scripts-frontend (interleaved), deps=%v", frontend.Dependencies)
 	}
 }
 
@@ -1216,5 +1216,199 @@ func TestGenerateTestTasks_TestPipelineDependsOnAllBusinessTasks(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Interleaved gen→run dependency wiring tests
+// ---------------------------------------------------------------------------
+
+func TestGenerateTestTasks_MultiSurface_InterleavedTestRunDependsOnGenScripts(t *testing.T) {
+	// AC1: T-test-run-{surface-N} depends on T-test-gen-scripts-{surface-N}, not gen-scripts-{surface-N+1}
+	auto := allEnabledAuto
+	surfaces := map[string]string{
+		"backend":  "api",
+		"frontend": "web",
+	}
+
+	tasks := GenerateTestTasks("quick", surfaces, []string{"backend", "frontend"}, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+
+	// T-test-run-backend must depend on T-test-gen-scripts-backend
+	runBackend := byID["T-test-run-backend"]
+	assertContainsDep(t, "T-test-run-backend", runBackend.Dependencies, "T-test-gen-scripts-backend")
+
+	// T-test-run-frontend must depend on T-test-gen-scripts-frontend
+	runFrontend := byID["T-test-run-frontend"]
+	assertContainsDep(t, "T-test-run-frontend", runFrontend.Dependencies, "T-test-gen-scripts-frontend")
+
+	// T-test-run-frontend must NOT depend on T-test-run-backend (old serial chain)
+	assertNotContainsDep(t, "T-test-run-frontend", runFrontend.Dependencies, "T-test-run-backend")
+}
+
+func TestGenerateTestTasks_MultiSurface_InterleavedGenScriptsDependsOnPrevRunTest(t *testing.T) {
+	// AC2: T-test-gen-scripts-{surface-N} (N>0) depends on T-test-run-{surface-N-1}, not gen-scripts-{surface-N-1}
+	auto := allEnabledAuto
+	surfaces := map[string]string{
+		"backend":  "api",
+		"frontend": "web",
+	}
+
+	tasks := GenerateTestTasks("quick", surfaces, []string{"backend", "frontend"}, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+
+	// T-test-gen-scripts-frontend (N=1) must depend on T-test-run-backend (N-1=0)
+	genFrontend := byID["T-test-gen-scripts-frontend"]
+	assertContainsDep(t, "T-test-gen-scripts-frontend", genFrontend.Dependencies, "T-test-run-backend")
+
+	// T-test-gen-scripts-frontend must NOT depend on T-test-gen-scripts-backend (old serial chain)
+	assertNotContainsDep(t, "T-test-gen-scripts-frontend", genFrontend.Dependencies, "T-test-gen-scripts-backend")
+}
+
+func TestGenerateTestTasks_MultiSurface_ThreeSurfacesInterleaved(t *testing.T) {
+	// Test with three surfaces: api -> web -> cli
+	auto := allEnabledAuto
+	surfaces := map[string]string{
+		"backend":  "api",
+		"frontend": "web",
+		"cli":      "cli",
+	}
+
+	tasks := GenerateTestTasks("quick", surfaces, []string{"backend", "frontend", "cli"}, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+
+	// gen-scripts-backend (N=0): depends on upstream (unchanged)
+	genBackend := byID["T-test-gen-scripts-backend"]
+	if len(genBackend.Dependencies) == 0 {
+		t.Error("T-test-gen-scripts-backend should have dependencies (upstream)")
+	}
+
+	// gen-scripts-frontend (N=1): depends on run-backend
+	assertContainsDep(t, "T-test-gen-scripts-frontend", byID["T-test-gen-scripts-frontend"].Dependencies, "T-test-run-backend")
+
+	// gen-scripts-cli (N=2): depends on run-frontend
+	assertContainsDep(t, "T-test-gen-scripts-cli", byID["T-test-gen-scripts-cli"].Dependencies, "T-test-run-frontend")
+
+	// run-backend depends on gen-scripts-backend
+	assertContainsDep(t, "T-test-run-backend", byID["T-test-run-backend"].Dependencies, "T-test-gen-scripts-backend")
+
+	// run-frontend depends on gen-scripts-frontend
+	assertContainsDep(t, "T-test-run-frontend", byID["T-test-run-frontend"].Dependencies, "T-test-gen-scripts-frontend")
+
+	// run-cli depends on gen-scripts-cli
+	assertContainsDep(t, "T-test-run-cli", byID["T-test-run-cli"].Dependencies, "T-test-gen-scripts-cli")
+}
+
+func TestGenerateTestTasks_SingleSurface_DepsUnchanged(t *testing.T) {
+	// AC3: Single-surface project dependency chain unchanged
+	auto := allEnabledAuto
+	tasks := GenerateTestTasks("quick", scalarSurface("api"), nil, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	byID := make(map[string]AutoGenTaskDef)
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+
+	// Single surface: T-test-run depends on T-test-gen-scripts (both without suffix)
+	runTask, ok := byID["T-test-run"]
+	if !ok {
+		t.Fatal("T-test-run not found for single surface")
+	}
+	assertContainsDep(t, "T-test-run", runTask.Dependencies, "T-test-gen-scripts")
+
+	// T-test-gen-scripts depends on upstream (not on any test-run)
+	genTask, ok := byID["T-test-gen-scripts"]
+	if !ok {
+		t.Fatal("T-test-gen-scripts not found for single surface")
+	}
+	for _, dep := range genTask.Dependencies {
+		if strings.HasPrefix(dep, "T-test-run") {
+			t.Errorf("T-test-gen-scripts should NOT depend on T-test-run in single-surface, got dep=%q", dep)
+		}
+	}
+}
+
+func TestGenerateTestTasks_MultiSurface_NoCycles(t *testing.T) {
+	// Verify interleaved wiring produces no cycles
+	auto := allEnabledAuto
+	surfaces := map[string]string{
+		"backend":  "api",
+		"frontend": "web",
+	}
+
+	tasks := GenerateTestTasks("quick", surfaces, []string{"backend", "frontend"}, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	if err := checkNoCycles(tasks); err != nil {
+		t.Errorf("interleaved wiring should not create cycles: %v", err)
+	}
+}
+
+func TestGenerateTestTasks_MultiSurface_GenScriptsMapPopulated(t *testing.T) {
+	// Verify GenScriptsMap is correctly populated
+	auto := allEnabledAuto
+	surfaces := map[string]string{
+		"backend":  "api",
+		"frontend": "web",
+	}
+
+	tasks := GenerateTestTasks("quick", surfaces, []string{"backend", "frontend"}, auto, "",
+		[]Task{{ID: "1", Type: TypeCodingFeature}}, nil)
+
+	// Verify gen-scripts and test-run tasks exist with correct IDs
+	byID := make(map[string]AutoGenTaskDef)
+	for _, task := range tasks {
+		byID[task.ID] = task
+	}
+
+	if _, ok := byID["T-test-gen-scripts-backend"]; !ok {
+		t.Error("T-test-gen-scripts-backend should exist")
+	}
+	if _, ok := byID["T-test-gen-scripts-frontend"]; !ok {
+		t.Error("T-test-gen-scripts-frontend should exist")
+	}
+	if _, ok := byID["T-test-run-backend"]; !ok {
+		t.Error("T-test-run-backend should exist")
+	}
+	if _, ok := byID["T-test-run-frontend"]; !ok {
+		t.Error("T-test-run-frontend should exist")
+	}
+}
+
+// assertContainsDep asserts that deps contains want.
+func assertContainsDep(t *testing.T, taskID string, deps []string, want string) {
+	t.Helper()
+	for _, dep := range deps {
+		if dep == want {
+			return
+		}
+	}
+	t.Errorf("%s deps = %v, want to contain %q", taskID, deps, want)
+}
+
+// assertNotContainsDep asserts that deps does NOT contain want.
+func assertNotContainsDep(t *testing.T, taskID string, deps []string, want string) {
+	t.Helper()
+	for _, dep := range deps {
+		if dep == want {
+			t.Errorf("%s deps = %v, should NOT contain %q", taskID, deps, want)
+			return
+		}
 	}
 }

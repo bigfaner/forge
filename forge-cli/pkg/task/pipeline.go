@@ -39,6 +39,8 @@ type GenContext struct {
 	UpstreamIDs    []string
 	RunTestChain   []string
 	AllGenerated   []string
+	GenScriptsMap  map[string]string // surface-key -> gen-scripts-task-ID
+	RunTestMap     map[string]string // surface-key -> test-run-task-ID
 }
 
 // PipelineNode defines a single node in the auto-generated task pipeline.
@@ -148,6 +150,15 @@ func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder [
 	}
 
 	var generated []AutoGenTaskDef
+
+	// Phase 1: Expand all nodes and apply default dependency wiring.
+	// Track gen-scripts and test-run expansions for interleaved rewiring.
+	type nodeExpansion struct {
+		nodeType string
+		indices  []int // indices into generated slice
+	}
+	var expansions []nodeExpansion
+
 	for _, node := range PipelineRegistry {
 		if node.Mode != "" && node.Mode != mode {
 			continue
@@ -171,6 +182,8 @@ func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder [
 
 		expanded := expandNode(node, surfaces, executionOrder)
 
+		startIdx := len(generated)
+		var indices []int
 		for i := range expanded {
 			if node.Expansion == "per-surface-key" && i > 0 {
 				expanded[i].Dependencies = []string{expanded[i-1].ID}
@@ -187,6 +200,7 @@ func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder [
 					}
 				}
 			}
+			indices = append(indices, startIdx+i)
 		}
 
 		ids := pipelineTaskIDs(expanded)
@@ -195,10 +209,55 @@ func GenerateTestTasks(mode string, surfaces map[string]string, executionOrder [
 		if node.Type == TypeTestRun {
 			ctx.RunTestChain = append(ctx.RunTestChain, ids...)
 		}
+
+		// Track gen-scripts and test-run expansions for interleaved rewiring.
+		if (node.Type == TypeTestGenScripts || node.Type == TypeTestRun) && node.Expansion == "per-surface-key" {
+			expansions = append(expansions, nodeExpansion{nodeType: node.Type, indices: indices})
+		}
+
 		generated = append(generated, expanded...)
 	}
 
-	// Phase 2: Dynamic validation (errors indicate programming bugs).
+	// Phase 2: Interleaved rewiring for multi-surface gen-scripts and test-run.
+	// After all nodes are expanded, we have full surface-key -> task-ID mappings.
+	if len(expansions) == 2 && !isSingleSurface(surfaces) {
+		// Build maps from the expanded tasks.
+		genScriptsMap := make(map[string]string)
+		runTestMap := make(map[string]string)
+		for _, exp := range expansions {
+			for _, idx := range exp.indices {
+				t := &generated[idx]
+				if exp.nodeType == TypeTestGenScripts && t.SurfaceKey != "" {
+					genScriptsMap[t.SurfaceKey] = t.ID
+				}
+				if exp.nodeType == TypeTestRun && t.SurfaceKey != "" {
+					runTestMap[t.SurfaceKey] = t.ID
+				}
+			}
+		}
+
+		keys := executionOrderKeys(executionOrder, surfaces)
+		for _, exp := range expansions {
+			for i, idx := range exp.indices {
+				t := &generated[idx]
+				switch {
+				// gen-scripts i>0: depend on previous surface's test-run
+				case exp.nodeType == TypeTestGenScripts && i > 0 && i-1 < len(keys):
+					prevSurfaceKey := keys[i-1]
+					if runID, ok := runTestMap[prevSurfaceKey]; ok {
+						t.Dependencies = []string{runID}
+					}
+				// test-run: depend on corresponding surface's gen-scripts
+				case exp.nodeType == TypeTestRun && t.SurfaceKey != "":
+					if genID, ok := genScriptsMap[t.SurfaceKey]; ok {
+						t.Dependencies = []string{genID}
+					}
+				}
+			}
+		}
+	}
+
+	// Phase 3: Dynamic validation (errors indicate programming bugs).
 	_ = validateGeneratedTasks(generated)
 	return generated
 }
@@ -321,6 +380,14 @@ func sortedSurfaceKeys(surfaces map[string]string) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+// executionOrderKeys returns the ordered surface keys for multi-surface expansion.
+func executionOrderKeys(executionOrder []string, surfaces map[string]string) []string {
+	if len(executionOrder) > 0 {
+		return executionOrder
+	}
+	return sortedSurfaceKeys(surfaces)
 }
 
 // pipelineTaskIDs extracts IDs from a slice of AutoGenTaskDef.

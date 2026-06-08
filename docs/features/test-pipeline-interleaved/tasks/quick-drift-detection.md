@@ -1,18 +1,15 @@
 ---
-type: doc.drift
-category: doc
-identity:
-  - TaskID
-  - TaskType
-  - FeatureSlug
-context:
-  - Mode
-  - SurfaceKey
-  - SurfaceType
-  - SurfaceTypes
-  - AcceptanceCriteria
+id: "T-quick-doc-drift"
+title: "Detect Spec Drift"
+priority: "P2"
+estimated_time: "15min"
+dependencies: ["T-test-run"]
+type: "doc.drift"
+surface-key: ""
+surface-type: ""
 ---
-Detect spec drift between existing project specs and current code for the {{.FeatureSlug}} feature.
+
+Detect spec drift between existing project specs and current code for the test-pipeline-interleaved feature.
 
 ## Discovery Strategy
 1. Run `git diff --name-only main...HEAD` to identify files changed by this feature
@@ -28,4 +25,4 @@ Auto-fix drifted specs and commit with [auto-specs] tag.
 
 ## Acceptance Criteria
 
-{{.AcceptanceCriteria}}
+- [ ] All acceptance criteria met

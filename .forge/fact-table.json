@@ -224,6 +224,87 @@
       "value": "map<string, string> mapping surface-key to surface-type, e.g., {admin-panel: web}",
       "confidence": "inferred",
       "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PIPELINE_REGISTRY_GEN_SCRIPTS_EXPANSION",
+      "source": "static",
+      "subject": "PipelineRegistry gen-scripts node expansion mode",
+      "kind": "signature",
+      "value": "per-surface-key; ID template: T-test-gen-scripts-{surface-key}; interleaved rewiring in Phase 2",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "PIPELINE_REGISTRY_RUN_TEST_EXPANSION",
+      "source": "static",
+      "subject": "PipelineRegistry test-run node expansion mode",
+      "kind": "signature",
+      "value": "per-surface-key; ID template: T-test-run-{surface-key}; depends on own gen-scripts (interleaved)",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "INTERLEAVED_REWIRING_LOGIC",
+      "source": "static",
+      "subject": "Interleaved dependency rewiring for multi-surface gen-scripts and test-run",
+      "kind": "signature",
+      "value": "Phase 2 of GenerateTestTasks: gen-scripts[i>0] depends on test-run[i-1] of previous surface; test-run depends on own surface gen-scripts; only applies when NOT single-surface",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "SINGLE_SURFACE_DEGRADATION",
+      "source": "static",
+      "subject": "Single-surface task generation behavior",
+      "kind": "signature",
+      "value": "isSingleSurface returns true for scalar form (key '.') or map with exactly 1 entry; strips -{surface-key} suffix from ID; generates exactly 2 tasks: gen-scripts + run-tests",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "EXECUTION_ORDER_RESOLVE",
+      "source": "static",
+      "subject": "Execution order resolution logic",
+      "kind": "signature",
+      "value": "explicit execution-order used as-is; otherwise default priority: api > web > cli > tui > mobile; single surface returns nil",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_INDEX_FILE_FORMAT",
+      "source": "static",
+      "subject": "Task index file format and location",
+      "kind": "signature",
+      "value": "docs/features/<slug>/tasks/index.json; JSON with Feature, Tasks map, StatusEnum, PriorityEnum",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STATUS_ENUM",
+      "source": "static",
+      "subject": "Task status enumeration values",
+      "kind": "precondition",
+      "value": "pending, in_progress, completed, blocked, suspended, skipped, rejected",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "FORGE_TASK_ADD_FIX_TASK",
+      "source": "static",
+      "subject": "forge task add for fix tasks with --block-source",
+      "kind": "signature",
+      "value": "forge task add --type <fix-type> --title <title> --source-task-id <ID> --block-source; creates fix task, blocks source, adds fix as dependency of source",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_DEPENDENCY_VALIDATION",
+      "source": "static",
+      "subject": "Task dependency validation in AddTask",
+      "kind": "precondition",
+      "value": "all dependencies must exist in the index; wildcard deps (e.g. 1.x) expand to matching business task IDs",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
     }
   ]
 }

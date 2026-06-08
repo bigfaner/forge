@@ -24,3 +24,7 @@ ls docs/features/{{.FeatureSlug}}/testing/<journey>/contracts/              # co
 ```
 
 Read the approved test cases and generate scripts using the framework from the surface.
+
+## Acceptance Criteria
+
+{{.AcceptanceCriteria}}
