@@ -1,5 +1,24 @@
 # Test Code Quality Gates
 
+## Assertion Depth Gate (Post-Compile)
+
+After compilation, verify each generated Journey's test suite meets assertion quality thresholds. Load `rules/assertion-depth.md` for full classification criteria.
+
+| Metric | Threshold | Measurement | Action on Failure |
+|--------|-----------|-------------|-------------------|
+| Behavioral assertion ratio | >=80% of total assertions | `count(behavioral) / count(all)` per Journey | Supplement with behavioral assertions from Contract Outcomes (State, Side-effect, Invariants) |
+| Deep assertion ratio | >=30% of behavioral assertions | `count(deep) / count(behavioral)` per Journey | Supplement with cross-entity relationship assertions and state transition assertions |
+| Per-function behavioral minimum | >=1 behavioral assertion per test function | Count per function | Function with 0 behavioral assertions is vacuous — regenerate |
+
+**Exemptions**: Journeys that only test health check / readiness endpoints are exempt from assertion depth thresholds. Exempt test files MUST contain header: `// ASSERTION_DEPTH_EXEMPT: health check / readiness Journey`.
+
+**Enforcement flow**:
+1. After compile succeeds, scan all generated test files for the target Journey
+2. Count and classify assertions using the criteria from `rules/assertion-depth.md`
+3. Output summary: `"Assertion depth: {behavioral_count}/{total_count} behavioral ({ratio}%), {deep_count}/{behavioral_count} deep ({deep_ratio}%)"`
+4. If any threshold fails and no exemption header exists, regenerate the failing test functions with supplemented assertions
+5. Re-verify after regeneration (at most 1 retry)
+
 ## Antipattern Guard (Post-Compile)
 
 Verify each generated test function does not match any forbidden pattern:

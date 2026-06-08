@@ -11,6 +11,33 @@ Framework-agnostic principles that apply to **all** interface types (CLI, TUI, W
 
 **Test type terminology**: Each surface maps to a specific test type name — cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test. The generic "e2e" label is NOT used as a blanket term -- "e2e" applies only to Web and Mobile surfaces.
 
+## Fixture Specification Consumption
+
+When generating test code, the agent MUST read the Contract's `fixture_spec` from Preconditions to determine test data requirements. See `rules/fixture-from-spec.md` for the complete fixture generation rules.
+
+### Forward Behavior (fixture_spec present)
+
+When the Contract's Preconditions contain a `fixture_spec` field:
+
+1. Parse `fixture_spec.entities` to identify required entity types and counts
+2. Generate fixture setup code that creates >= `min_count` entities per type
+3. Handle `relationship_type` and `parent_entity` for entity relationships
+4. Apply `field_constraints` when creating entity payloads
+5. Verify `state_requirements` are established before test action
+
+### Backward Compatibility (fixture_spec absent)
+
+When the Contract's Preconditions do NOT contain a `fixture_spec` field:
+
+1. **Fallback to implicit inference mode**: Infer fixture needs from the Contract's other dimensions (Input, Preconditions description, Outcomes)
+2. **Output warning**: Include in test file header: `// FIXTURE_WARNING: Contract lacks fixture_spec. Using implicit inference for test data. Run /gen-contracts to generate fixture_spec for richer test data.`
+3. **Conservative data generation**: Create minimal fixture data that satisfies the Contract's explicit Preconditions description. Do NOT fabricate entity relationships or state requirements not mentioned in the Contract.
+4. **Assertion depth impact**: Without `fixture_spec`, deep assertion opportunities may be limited. The agent should still attempt to generate behavioral assertions from Contract Outcomes (State, Side-effect, Invariants), but the >=30% deep assertion requirement may be harder to meet. Document in the test file if deep assertion threshold cannot be met due to missing `fixture_spec`.
+
+<HARD-RULE>
+**Missing fixture_spec is non-blocking**: The pipeline MUST NOT abort or fail when `fixture_spec` is absent. It degrades gracefully to implicit inference with a warning. Existing projects with Contracts generated before `fixture_spec` support continue to work without modification.
+</HARD-RULE>
+
 ## Output Directory: Adaptive Per Surface Count
 
 Test output directory adapts to the project's surface count:
