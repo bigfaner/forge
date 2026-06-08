@@ -14,6 +14,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"forge-cli/pkg/types"
 )
@@ -764,6 +765,102 @@ func TestFetchLatestReleaseImpl_HTTPError(t *testing.T) {
 	}
 }
 
+func TestFetchLatestReleaseImpl_RateLimitError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("X-RateLimit-Reset", "1735689600") // 2025-01-01 00:00:00 UTC
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"API rate limit exceeded for 1.2.3.4."}`))
+	}))
+	defer server.Close()
+
+	_, err := fetchLatestReleaseImpl(server.URL)
+	if err == nil {
+		t.Fatal("expected error for 403 rate limit")
+	}
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "429") {
+		t.Errorf("expected '429' in error, got: %v", errMsg)
+	}
+	if !strings.Contains(errMsg, "rate limit") {
+		t.Errorf("expected 'rate limit' in error, got: %v", errMsg)
+	}
+	if !strings.Contains(errMsg, "GITHUB_TOKEN") {
+		t.Errorf("expected 'GITHUB_TOKEN' suggestion in error, got: %v", errMsg)
+	}
+}
+
+func TestFetchLatestReleaseImpl_RateLimitError_NoResetHeader(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		// No X-RateLimit-Reset header
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"message":"API rate limit exceeded for 1.2.3.4."}`))
+	}))
+	defer server.Close()
+
+	_, err := fetchLatestReleaseImpl(server.URL)
+	if err == nil {
+		t.Fatal("expected error for 403 rate limit")
+	}
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "a few minutes") {
+		t.Errorf("expected fallback 'a few minutes' when no reset header, got: %v", errMsg)
+	}
+}
+
+func TestFetchLatestReleaseImpl_UsesGitHubToken(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "test-token-123")
+
+	var receivedToken string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedToken = r.Header.Get("Authorization")
+		release := githubRelease{TagName: "forge-cli/v5.17.0"}
+		data, _ := json.Marshal(release)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	}))
+	defer server.Close()
+
+	body, err := fetchLatestReleaseImpl(server.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedToken != "Bearer test-token-123" {
+		t.Errorf("expected Authorization 'Bearer test-token-123', got %q", receivedToken)
+	}
+
+	var release githubRelease
+	if err := json.Unmarshal(body, &release); err != nil {
+		t.Fatalf("failed to parse response: %v", err)
+	}
+	if release.TagName != "forge-cli/v5.17.0" {
+		t.Errorf("expected tag 'forge-cli/v5.17.0', got %q", release.TagName)
+	}
+}
+
+func TestFetchLatestReleaseImpl_NoTokenSent(t *testing.T) {
+	t.Setenv("GITHUB_TOKEN", "")
+
+	var receivedToken string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedToken = r.Header.Get("Authorization")
+		release := githubRelease{TagName: "forge-cli/v5.17.0"}
+		data, _ := json.Marshal(release)
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	}))
+	defer server.Close()
+
+	_, err := fetchLatestReleaseImpl(server.URL)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if receivedToken != "" {
+		t.Errorf("expected no Authorization header when GITHUB_TOKEN is empty, got %q", receivedToken)
+	}
+}
+
 // --- Download and replace integration test ---
 
 func TestDownloadAndReplace_Integration(t *testing.T) {
@@ -830,6 +927,38 @@ func TestDownloadAndReplace_404Error(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "HTTP 404") {
 		t.Errorf("expected HTTP 404 error, got: %v", err)
+	}
+}
+
+// --- Rate limit reset formatting tests ---
+
+func TestFormatRateLimitReset(t *testing.T) {
+	tests := []struct {
+		name     string
+		epochStr string
+		want     string
+	}{
+		{"empty string", "", "a few minutes"},
+		{"invalid number", "not-a-number", "a few minutes"},
+		{"zero", "0", "a few minutes"},
+		{"past epoch", "1000000000", "a moment"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := formatRateLimitReset(tt.epochStr)
+			if got != tt.want {
+				t.Errorf("formatRateLimitReset(%q) = %q, want %q", tt.epochStr, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestFormatRateLimitReset_FutureEpoch(t *testing.T) {
+	future := time.Now().Add(37 * time.Minute).Unix()
+	got := formatRateLimitReset(fmt.Sprintf("%d", future))
+	if !strings.Contains(got, "m") {
+		t.Errorf("expected duration with minutes, got %q", got)
 	}
 }
 

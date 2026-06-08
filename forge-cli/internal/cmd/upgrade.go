@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -228,23 +229,58 @@ func pluginInstalledImpl() bool {
 }
 
 // fetchLatestReleaseImpl performs the actual HTTP GET to the GitHub Release API.
+// Supports GITHUB_TOKEN environment variable for authenticated requests (higher rate limit).
 func fetchLatestReleaseImpl(url string) ([]byte, error) {
-	resp, err := httpGet(url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	client := &http.Client{Timeout: downloadTimeout}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("GitHub API returned status %d", resp.StatusCode)
-	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read response: %w", err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, formatAPIError(resp.StatusCode, body, resp.Header)
+	}
+
 	return body, nil
+}
+
+// formatAPIError produces a human-friendly error from a GitHub API error response.
+func formatAPIError(statusCode int, body []byte, headers http.Header) error {
+	bodyStr := string(body)
+	if statusCode == http.StatusForbidden && strings.Contains(strings.ToLower(bodyStr), "rate limit") {
+		waitHint := formatRateLimitReset(headers.Get("X-RateLimit-Reset"))
+		return fmt.Errorf("GitHub API rate limit (429) exceeded. Try again in %s, or set GITHUB_TOKEN for higher limits (5000 vs 60 req/hr)", waitHint)
+	}
+	return fmt.Errorf("GitHub API returned status %d: %s", statusCode, bodyStr)
+}
+
+// formatRateLimitReset parses the X-RateLimit-Reset epoch and returns a human-readable duration.
+func formatRateLimitReset(epochStr string) string {
+	epoch, err := strconv.ParseInt(epochStr, 10, 64)
+	if err != nil || epoch == 0 {
+		return "a few minutes"
+	}
+	remaining := time.Until(time.Unix(epoch, 0)).Round(time.Minute)
+	if remaining <= 0 {
+		return "a moment"
+	}
+	return remaining.String()
 }
 
 // parseVersionFromTag extracts version number from a GitHub tag.
