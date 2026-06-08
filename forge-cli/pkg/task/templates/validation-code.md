@@ -14,8 +14,11 @@ context:
 ---
 Validate code quality for the {{.FeatureSlug}} feature.
 
-## Validation Criteria
+## Acceptance Criteria
+
 {{.AcceptanceCriteria}}
+
+## Validation Criteria
 
 ## Additional Checks
 - Check docs/conventions/ for project-specific quality standards (read each file's `domains` frontmatter to determine relevance)

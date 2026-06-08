@@ -14,8 +14,11 @@ context:
 ---
 Validate user experience for the {{.FeatureSlug}} feature.
 
-## Validation Criteria
+## Acceptance Criteria
+
 {{.AcceptanceCriteria}}
+
+## Validation Criteria
 
 ## Additional Checks
 - Read the UI design spec (if exists) at docs/features/{{.FeatureSlug}}/design/ui-design.md

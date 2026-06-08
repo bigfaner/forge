@@ -28,3 +28,9 @@ Run in non-interactive mode: auto-integrate all CROSS items. Commit with [auto-s
 ## Acceptance Criteria
 
 {{.AcceptanceCriteria}}
+
+### Hard Acceptance Criteria (non-negotiable)
+
+- [ ] Business rules extracted to docs/business-rules/ with correct domains frontmatter
+- [ ] Tech specs extracted to docs/conventions/ with correct domains frontmatter
+- [ ] All CROSS items auto-integrated and committed with [auto-specs] tag

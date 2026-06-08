@@ -24,3 +24,8 @@ Do NOT clean up files outside this feature's scope.
 ## Acceptance Criteria
 
 {{.AcceptanceCriteria}}
+
+### Hard Acceptance Criteria (non-negotiable)
+
+- [ ] Code simplified without changing external behavior
+- [ ] No files cleaned outside this feature's scope (git diff boundaries)
