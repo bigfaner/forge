@@ -58,8 +58,13 @@ func TestJourney_IdempotentStart(t *testing.T) {
 
 	// ---- Step 3: Verify git state ----
 	listOutput := string(execGit(projectRoot, "worktree", "list"))
-	slugCount := strings.Count(listOutput, slug)
-	assert.Equal(t, 1, slugCount,
+	slugLines := 0
+	for _, line := range strings.Split(listOutput, "\n") {
+		if strings.Contains(line, slug) {
+			slugLines++
+		}
+	}
+	assert.Equal(t, 1, slugLines,
 		"step 3: expected exactly one worktree entry, got:\n%s", listOutput)
 
 	// Verify .git file is valid

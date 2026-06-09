@@ -22,7 +22,7 @@ func TestStep3_NonTTY_ReturnsError(t *testing.T) {
 	projectRoot := setupGitRepoWithForge(t)
 
 	// Execute: forge worktree start --interactive --no-launch (non-TTY, piped stdin)
-	stdout, stderr, exitCode := runForgeStartInteractive(t, projectRoot)
+	stdout, stderr, exitCode := runForgeStartInteractiveNonTTY(t, projectRoot)
 
 	// Assert: exit code is non-zero
 	assert.NotEqual(t, 0, exitCode,
@@ -74,7 +74,7 @@ func TestStep3_Success_RequiresTTY(t *testing.T) {
 
 	// The interactive mode requires TTY which we can't provide in tests.
 	// Verify the non-TTY error is returned when trying interactive mode.
-	_, stderr2, exitCode2 := runForgeStartInteractive(t, projectRoot)
+	_, stderr2, exitCode2 := runForgeStartInteractiveNonTTY(t, projectRoot)
 	assert.NotEqual(t, 0, exitCode2, "interactive should fail in non-TTY")
 	assert.True(t, strings.Contains(stderr2, "interactive mode requires a terminal") || strings.Contains(stderr2, "TTY"),
 		"expected TTY requirement error, got: %s", stderr2)

@@ -149,12 +149,59 @@ func runForgeStartNoLaunch(t *testing.T, projectRoot, slug string, extraArgs ...
 }
 
 // runForgeStartInteractive runs forge worktree start with --interactive.
+// Inherits parent stdin (TTY-aware): works correctly for tests that expect TTY behavior.
 func runForgeStartInteractive(t *testing.T, projectRoot string, extraArgs ...string) (string, string, int) {
 	t.Helper()
 	args := []string{"worktree", "start", "--interactive", "--no-launch"}
 	args = append(args, extraArgs...)
 	cmd := exec.Command(testkit.ForgeBinary, args...)
 	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
+
+	stdoutPipe, _ := cmd.StdoutPipe()
+	stderrPipe, _ := cmd.StderrPipe()
+	_ = cmd.Start()
+
+	var stdoutBuf, stderrBuf []byte
+	done := make(chan struct{})
+	go func() {
+		stdoutBuf, _ = io.ReadAll(stdoutPipe)
+		stderrBuf, _ = io.ReadAll(stderrPipe)
+		close(done)
+	}()
+	<-done
+
+	exitCode := 0
+	if err := cmd.Wait(); err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			exitCode = 1
+		}
+	}
+	return string(stdoutBuf), string(stderrBuf), exitCode
+}
+
+// runForgeStartInteractiveNonTTY runs forge worktree start with --interactive
+// with stdin piped to force non-TTY detection.
+func runForgeStartInteractiveNonTTY(t *testing.T, projectRoot string, extraArgs ...string) (string, string, int) {
+	t.Helper()
+	args := []string{"worktree", "start", "--interactive", "--no-launch"}
+	args = append(args, extraArgs...)
+	cmd := exec.Command(testkit.ForgeBinary, args...)
+	cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+projectRoot)
+	// Use an os.Pipe (not /dev/null) to force non-TTY detection.
+	// On macOS, /dev/null is a char device and would pass the TTY check.
+	// An os.Pipe creates a regular pipe (not char device), so os.Stdin.Stat()
+	// in the subprocess will NOT have ModeCharDevice set.
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("failed to create pipe: %v", err)
+	}
+	defer pr.Close()
+	defer pw.Close()
+	cmd.Stdin = pr
+	// Close write end in the parent so the subprocess reads EOF immediately
+	pw.Close()
 
 	stdoutPipe, _ := cmd.StdoutPipe()
 	stderrPipe, _ := cmd.StderrPipe()

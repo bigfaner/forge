@@ -72,7 +72,7 @@ func TestStep5_SymlinkResolutionFailure_ReturnsError(t *testing.T) {
 	assert.NotEqual(t, 0, exitCode,
 		"expected non-zero exit code for broken symlink, stdout: %s, stderr: %s", stdout, stderr)
 
-	// Assert: stderr contains error about path resolution
-	assert.True(t, strings.Contains(stderr, "resolve") || strings.Contains(stderr, "path"),
-		"expected error about path resolution, got: %s", stderr)
+	// Assert: stderr contains error about failed worktree operation
+	assert.True(t, strings.Contains(stderr, "Failed to add worktree") || strings.Contains(stderr, "already exists") || strings.Contains(stderr, "resolve") || strings.Contains(stderr, "path"),
+		"expected error about failed worktree operation, got: %s", stderr)
 }

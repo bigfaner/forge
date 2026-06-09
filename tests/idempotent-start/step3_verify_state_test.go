@@ -32,8 +32,13 @@ func TestStep3_SingleEntry_AfterCreateAndReentry(t *testing.T) {
 
 	// Assert: git worktree list shows exactly one entry for slug
 	listOutput := string(execGit(projectRoot, "worktree", "list"))
-	slugCount := strings.Count(listOutput, slug)
-	assert.Equal(t, 1, slugCount,
+	slugLines := 0
+	for _, line := range strings.Split(listOutput, "\n") {
+		if strings.Contains(line, slug) {
+			slugLines++
+		}
+	}
+	assert.Equal(t, 1, slugLines,
 		"expected exactly one worktree entry for %s, got:\n%s", slug, listOutput)
 
 	// Assert: entry has a valid path (behavioral: proves git worktree is registered)

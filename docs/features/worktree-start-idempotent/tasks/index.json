@@ -45,6 +45,18 @@
       "type": "coding.enhancement",
       "complexity": "medium"
     },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: forge worktree remove fails on corrupted worktrees",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-test-run",
+      "type": "coding.fix"
+    },
     "gen-contracts": {
       "id": "T-test-gen-contracts",
       "title": "Generate Test Contracts",
@@ -95,7 +107,7 @@
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "T-test-run"
+        "fix-1"
       ],
       "status": "pending",
       "file": "quick-drift-detection.md",
