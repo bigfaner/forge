@@ -125,14 +125,20 @@ func needsFullLifecycle(surfaceType types.SurfaceType) bool {
 	return surfaceType == types.SurfaceWeb || surfaceType == types.SurfaceAPI || surfaceType == types.SurfaceMobile
 }
 
-// resolveRecipe attempts to find a surface-specific recipe (e.g., "web-dev"),
-// falling back to the generic recipe (e.g., "dev") if not found.
-// Returns the recipe name to use, or empty string if neither exists.
+// resolveRecipe resolves a recipe name using surface-type prefix.
+// When surfaceType is non-empty, it returns "<surfaceType>-<recipe>" if that
+// prefixed recipe exists, or empty string if it does not (no fallback to generic).
+// When surfaceType is empty, it returns the generic recipe name if it exists.
 func resolveRecipe(projectRoot, surfaceType, genericRecipe string) string {
-	specificRecipe := surfaceType + "-" + genericRecipe
-	if just.HasRecipe(projectRoot, specificRecipe) {
-		return specificRecipe
+	if surfaceType != "" {
+		specificRecipe := surfaceType + "-" + genericRecipe
+		if just.HasRecipe(projectRoot, specificRecipe) {
+			return specificRecipe
+		}
+		// Prefixed recipe not found — no fallback to generic.
+		return ""
 	}
+	// No surface type — use generic recipe name.
 	if just.HasRecipe(projectRoot, genericRecipe) {
 		return genericRecipe
 	}

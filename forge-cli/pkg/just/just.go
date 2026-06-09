@@ -96,22 +96,28 @@ func ResolveScope(projectRoot, scope string) string {
 }
 
 // ResolvePrefixedRecipe resolves a recipe name using prefix-based scoping.
-// When scope is non-empty, it probes for a prefixed recipe (e.g., "backend-compile").
-// Falls back to the generic recipe name (e.g., "compile") when the prefixed recipe
-// does not exist or scope is empty. Returns empty string if neither exists.
-// When no justfile is present, returns the generic recipe name (no probing).
+// When scope is non-empty and a justfile exists, it returns "<scope>-<recipe>"
+// if that prefixed recipe exists, or empty string if it does not (no fallback
+// to generic recipe). When scope is empty, it returns the generic recipe name
+// if it exists. When no justfile is present, returns the generic recipe name
+// (no probing).
 func ResolvePrefixedRecipe(projectRoot, scope, recipe string) string {
-	if scope != "" && HasJustfile(projectRoot) {
+	if scope != "" {
+		if !HasJustfile(projectRoot) {
+			// No justfile at all — return generic name (RunGate handles the no-justfile case).
+			return recipe
+		}
 		prefixed := scope + "-" + recipe
 		if HasRecipe(projectRoot, prefixed) {
 			return prefixed
 		}
+		// Prefixed recipe not found — no fallback to generic.
+		return ""
 	}
-	// Fallback: return generic recipe name if it exists, or empty string if not.
+	// No scope — use generic recipe name.
 	if HasRecipe(projectRoot, recipe) {
 		return recipe
 	}
-	// No justfile at all — return generic name (RunGate handles the no-justfile case).
 	if !HasJustfile(projectRoot) {
 		return recipe
 	}
@@ -120,8 +126,9 @@ func ResolvePrefixedRecipe(projectRoot, scope, recipe string) string {
 
 // RunGate executes the gate sequence in order.
 // scope: task surface-key (e.g., "backend", "frontend", or empty).
-// Uses prefixed recipe resolution: when scope is set, tries "<scope>-<recipe>"
-// first (e.g., "backend-compile"), falling back to generic recipe (e.g., "compile").
+// Uses prefixed recipe resolution: when scope is set, uses "<scope>-<recipe>"
+// (e.g., "backend-compile"); when scope is empty, uses generic recipe (e.g., "compile").
+// No fallback from prefixed to generic recipe — if prefixed is missing, the step fails.
 // onFail: called when a blocking step fails. Receives resolved recipe name and output.
 // Returns true if all steps passed (or skipped gracefully).
 func RunGate(projectRoot, scope string, steps []GateRecipe, onFail func(step, output string)) bool {

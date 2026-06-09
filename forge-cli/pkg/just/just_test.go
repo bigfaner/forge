@@ -446,15 +446,21 @@ func TestRunGate(t *testing.T) {
 		}
 	})
 
-	t.Run("prefixed recipe not found falls back to generic", func(t *testing.T) {
+	t.Run("prefixed recipe not found does not fall back to generic", func(t *testing.T) {
 		dir := t.TempDir()
 		writeJustfile(t, dir, "compile:\n  echo compile-ok\n")
 		steps := []GateRecipe{
 			{Name: "compile", Optional: false, Blocking: true},
 		}
-		passed := RunGate(dir, "backend", steps, nil)
-		if !passed {
-			t.Error("expected true when generic recipe is used as fallback")
+		var failStep string
+		passed := RunGate(dir, "backend", steps, func(step, _ string) {
+			failStep = step
+		})
+		if passed {
+			t.Error("expected false when prefixed recipe is missing (no fallback to generic)")
+		}
+		if failStep != "compile" {
+			t.Errorf("expected onFail step 'compile', got %q", failStep)
 		}
 	})
 
@@ -485,7 +491,7 @@ func TestRunGate(t *testing.T) {
 		}
 	})
 
-	t.Run("generic fallback failure onFail step name is original recipe", func(t *testing.T) {
+	t.Run("scope with generic recipe but no prefixed reports missing", func(t *testing.T) {
 		dir := t.TempDir()
 		writeJustfile(t, dir, "compile:\n  exit 1\n")
 		var failStep string
@@ -496,7 +502,7 @@ func TestRunGate(t *testing.T) {
 			failStep = step
 		})
 		if failStep != "compile" {
-			t.Errorf("expected onFail step 'compile' (generic fallback), got %q", failStep)
+			t.Errorf("expected onFail step 'compile' (no prefixed recipe), got %q", failStep)
 		}
 	})
 
@@ -518,14 +524,14 @@ func TestRunGate(t *testing.T) {
 
 	t.Run("mixed prefixed resolution per step", func(t *testing.T) {
 		dir := t.TempDir()
-		writeJustfile(t, dir, "backend-compile:\n  echo backend-ok\nlint:\n  echo lint-ok\n")
+		writeJustfile(t, dir, "backend-compile:\n  echo backend-ok\nbackend-lint:\n  echo lint-ok\n")
 		steps := []GateRecipe{
 			{Name: "compile", Optional: false, Blocking: true},
 			{Name: "lint", Optional: true, Blocking: true},
 		}
 		passed := RunGate(dir, "backend", steps, nil)
 		if !passed {
-			t.Error("expected true with mixed prefixed/generic resolution")
+			t.Error("expected true with all prefixed recipes")
 		}
 	})
 }
@@ -549,12 +555,12 @@ func TestResolvePrefixedRecipe(t *testing.T) {
 		}
 	})
 
-	t.Run("scope without prefixed recipe returns generic", func(t *testing.T) {
+	t.Run("scope without prefixed recipe returns empty (no fallback)", func(t *testing.T) {
 		dir := t.TempDir()
 		writeJustfile(t, dir, "compile:\n  echo ok\n")
 		got := ResolvePrefixedRecipe(dir, "backend", "compile")
-		if got != "compile" {
-			t.Errorf("expected 'compile' (fallback), got %q", got)
+		if got != "" {
+			t.Errorf("expected empty string (no fallback to generic), got %q", got)
 		}
 	})
 

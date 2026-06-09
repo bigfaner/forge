@@ -83,7 +83,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "6-update-quality-gate-consumers.md",
       "record": "records/6-update-quality-gate-consumers.md",
       "surface-type": "cli",
