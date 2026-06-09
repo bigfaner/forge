@@ -38,7 +38,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-idempotent-start-flags.md",
       "record": "records/3-idempotent-start-flags.md",
       "surface-type": "cli",

@@ -4450,6 +4450,98 @@ func TestWorktreeStart_InteractiveSelectsProposal(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
+// interactive mode: selecting a slug whose worktree already exists (AC-3)
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveExistingWorktreeEntersIdempotent(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	// Override isTerminal to return true
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return true }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	// Mock stdin to return "1"
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "1", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a proposal so interactive mode has something to list
+	slug := "interactive-existing"
+	proposalDir := filepath.Join(dir, "docs", "proposals", slug)
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Test"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pre-create the worktree (so it already exists when interactive selects it)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "-i"})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	// Should output "entering existing worktree" on stderr
+	output := buf.String()
+	if !strings.Contains(output, "entering existing worktree") {
+		t.Errorf("output should mention 'entering existing worktree', got: %s", output)
+	}
+
+	// Should launch claude with fresh session args (same as explicit slug)
+	if len(capturedArgs) == 0 {
+		t.Fatal("claude should have been launched")
+	}
+	if capturedArgs[0] != "--dangerously-skip-permissions" {
+		t.Errorf("first arg should be --dangerously-skip-permissions, got %q", capturedArgs[0])
+	}
+}
+
+// ---------------------------------------------------------------------------
 // interactive mode: no slug and no -i
 // ---------------------------------------------------------------------------
 
