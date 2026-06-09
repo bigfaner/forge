@@ -19,7 +19,7 @@ intent: "enhancement"  # 修改 start 命令的现有语义，使其幂等；重
 1. `start` 在 `.forge/worktrees/<slug>` 已存在时直接报错：`worktree already exists, use "resume" instead`
 2. `resume` 使用 `claude -c` 恢复上一次会话，无法开启全新会话
 3. 手动 `cd .forge/worktrees/<slug> && claude --dangerously-skip-permissions` 可行但破坏了统一的 CLI 入口
-4. `copy-files` 命名在功能扩展时显得局限（如果未来支持 glob 模式或目录，"copy-files" 不再准确）
+4. Claude Code 采用 `.worktreeinclude` 文件表达意图（"包含什么"），而 forge 的 `copy-files` 描述实现行为（"复制文件"），命名风格不一致
 
 ### Urgency
 
@@ -52,33 +52,41 @@ intent: "enhancement"  # 修改 start 命令的现有语义，使其幂等；重
 3. **已有 worktree 但用了 `--source-branch`** → 忽略该 flag（worktree 已存在，分支已确定），输出提示信息
 4. **已有 worktree 但配置了 `includes`** → 跳过文件复制（文件应已在首次创建时复制）
 5. **`--no-launch` + worktree 已存在** → 仅验证 worktree 存在并输出路径，不启动 Claude
-6. **`--interactive` + worktree 已存在** → 正常进入，因为 slug 来自交互选择
+6. **`--interactive` + worktree 已存在** → 正常进入该 worktree 并启动全新 Claude 会话，输出与显式指定 slug 一致
+7. **worktree 目录存在但无效**（`.git` 文件缺失或损坏）→ 报错退出，提示 worktree 已损坏，建议 `forge worktree remove` 后重建
 
 ### Non-Functional Requirements
 
-- 向后兼容：`start` 在 worktree 不存在时的行为完全不变
+- 行为兼容：`start` 在 worktree 不存在时的行为完全不变；配置重命名为 breaking change，需在 release notes 中明确标注迁移步骤（`copy-files` → `includes`）
 - 性能：无影响（只是跳过了创建步骤）
+- 可观测性：所有路径决策（新建 / 进入已有）通过 stderr 输出结构化提示，包含明确的关键词前缀（`created` / `entering`），便于脚本解析和用户区分
 
 ### Constraints & Dependencies
 
-- 修改 `forge-cli/internal/cmd/worktree/cmd_start.go`（幂等逻辑）
-- 修改 `forge-cli/pkg/forgeconfig/` 中的配置结构体（`CopyFiles` → `Includes` + 兼容读取）
-- 依赖现有的 worktree 验证逻辑（resume 已有实现可复用）
+- 修改 `forge-cli/internal/cmd/worktree/cmd_start.go`（幂等逻辑，复用 `cmd_resume.go` 的 worktree 验证：symlink 解析 + `.git` 文件检查）
+- 修改 `forge-cli/pkg/forgeconfig/config.go` 中的配置结构体（`CopyFiles` → `Includes`，YAML tag `copy-files` → `includes`）
+- 修改 `forge-cli/internal/cmd/worktree/helpers.go`（函数重命名 `validateCopyFiles` → `validateIncludes`、`copyFilesToWorktree` → `copyIncludesToWorktree`）
+- 修改 `forge-cli/internal/cmd/init_config.go`（初始化逻辑适配）
+- 修改 `forge-cli/internal/cmd/testdata/forge-config.schema.json`（JSON schema 更新）
+- 修改 `forge-cli/internal/cmd/testdata/forge-config.example.yaml`（示例更新）
+- 全量搜索替换所有 `copy-files` / `CopyFiles` 引用（测试文件 57 处）
 
 ## Alternatives & Industry Benchmarking
 
 ### Industry Solutions
 
-幂等 CLI 命令是常见模式：`kubectl apply`、`terraform plan` 都采用「已存在则跳过」的策略。
+**幂等操作模式**：`kubectl apply`、`terraform plan` 都采用「已存在则跳过」的策略。Go 标准库的 `os.MkdirAll` 和 Unix 的 `touch` 是最常见的幂等 CLI 原语。
+
+**配置字段重命名**：Terraform 在 0.12→0.13 版本中将 `provider` 块从 resource 内联迁移到独立块时采用了 `terraform 0.13upgrade` 自动迁移工具。Cargo 在 edition 2018→2021 中通过 `cargo fix --edition` 自动迁移配置。本提案因用户决策不做自动迁移，仅在 release notes 标注手动迁移步骤。
 
 ### Comparison Table
 
 | Approach | Source | Pros | Cons | Verdict |
 |----------|--------|------|------|---------|
 | Do nothing | — | 零成本 | 持续的体验摩擦，手动 cd 或被迫 resume | Rejected: 高频痛点 |
-| 新增 `open` 子命令 | — | 职责分离清晰 | 增加命令数量，用户需记住 start vs open 的区别 | Rejected: 认知负担大于收益 |
+| 新增 `open` 子命令 | — | 职责分离清晰，避免改变 start 语义 | 增加命令数量，用户需记住 start/open/resume 三者的区别 | Rejected: 三个命令的认知负担超过幂等 start 的语义变更风险 |
 | 给 `resume` 加 `--fresh` flag | — | 不增加命令 | 语义矛盾（resume + fresh 自相矛盾） | Rejected: 命名不直观 |
-| **幂等 `start`** | `mkdir -p` 模式 | 零新命令、直觉行为、幂等 | 轻微改变 start 的现有语义 | **Selected: 最符合「最小惊讶原则」** |
+| **幂等 `start`** | `mkdir -p` 模式 | 零新命令、直觉行为、幂等 | 改变 start 的现有语义，可能影响依赖报错行为的脚本 | **Selected: 最符合「最小惊讶原则」，风险可控（见 Risk Assessment）** |
 
 ## Feasibility Assessment
 
@@ -88,7 +96,7 @@ intent: "enhancement"  # 修改 start 命令的现有语义，使其幂等；重
 
 ### Resource & Timeline
 
-改动范围较小（2-3 个文件，约 40 行变更），预计 1 小时内完成。
+改动范围中等（6 个源文件 + 测试文件，约 100 行变更）。涉及 `cmd_start.go`、`helpers.go`、`config.go`、`init_config.go`、`forge-config.schema.json`、`forge-config.example.yaml`，以及测试文件中 57 处引用更新。预计 2 小时内完成。
 
 ### Dependency Readiness
 
@@ -126,19 +134,24 @@ intent: "enhancement"  # 修改 start 命令的现有语义，使其幂等；重
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| 用户脚本依赖「已存在则报错」的行为 | L | M | 在 release notes 中标注行为变更；日志明确输出"已存在，跳过创建" |
+| 用户脚本依赖「已存在则报错」的行为 | M | M | 在 release notes 中标注行为变更；日志明确输出"已存在，跳过创建" |
 | `--source-branch` 被静默忽略导致困惑 | M | L | 输出 warning: "worktree already exists, ignoring --source-branch" |
 | `includes` 被跳过但用户预期更新 | L | L | 首次创建时已复制，后续不应再覆盖（会丢失 worktree 内的修改） |
+| 现有 `copy-files` 配置在升级后失效 | H | M | release notes 中明确标注迁移步骤；YAML 解析器不报错，用户需手动将 `copy-files` 改为 `includes` |
+| worktree 目录存在但已损坏 | L | M | 复用 `cmd_resume.go` 的验证逻辑（`.git` 文件检查），损坏时报错并建议 `remove` 后重建 |
 
 ## Success Criteria
 
 - [ ] `forge worktree start <slug>` 在 worktree 已存在时不再报错，而是直接启动全新 Claude 会话
-- [ ] 已存在时输出明确的提示信息，区分「新建」和「进入」两种路径
+- [ ] 已存在时 stderr 输出包含关键词 `entering existing worktree`；新建时 stderr 输出包含关键词 `created new worktree`
 - [ ] `--source-branch` 在 worktree 已存在时被忽略并输出 warning
 - [ ] `includes` 在 worktree 已存在时被跳过
 - [ ] worktree 不存在时的行为与当前完全一致（回归测试通过）
-- [ ] `worktree.includes` 配置项正常工作
-- [ ] 代码中不存在任何 `copy-files` / `CopyFiles` 兼容逻辑
+- [ ] `worktree.includes` 配置项列出的文件在创建新 worktree 时被正确复制到 worktree 目录
+- [ ] `grep -r "copy-files\|CopyFiles\|copy_files" forge-cli/ --include="*.go"` 返回零结果
+- [ ] worktree 目录存在但 `.git` 文件缺失时，`start` 报错退出并提示建议 `forge worktree remove`
+- [ ] `--no-launch` + worktree 已存在时，仅输出 worktree 路径（stdout），不启动 Claude，退出码 0
+- [ ] `--interactive` + worktree 已存在时，正常进入该 worktree 并启动全新 Claude 会话，行为与显式指定 slug 一致
 
 ## Next Steps
 
