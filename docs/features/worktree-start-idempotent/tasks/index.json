@@ -23,7 +23,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "2-idempotent-start-core.md",
       "record": "records/2-idempotent-start-core.md",
       "surface-type": "cli",

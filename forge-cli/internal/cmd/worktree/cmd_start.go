@@ -103,12 +103,46 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return base.NewAIError(base.ErrInvalidInput, fmt.Sprintf("Failed to create worktrees directory: %v", err), "Could not create .forge/worktrees directory", "Check filesystem permissions", "mkdir -p .forge/worktrees")
 	}
 
-	// Check if target directory already exists
+	// Check if target directory already exists (idempotent: skip creation if valid)
 	if info, err := os.Stat(targetDir); err == nil && info.IsDir() {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: target directory already exists: %s\n", targetDir)
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: use 'forge worktree resume %s' to re-open an existing worktree\n", slug)
-		return fmt.Errorf("target directory already exists: %s", targetDir)
+		// Validate existing worktree: resolve symlinks and check .git
+		resolvedDir, resolveErr := filepath.EvalSymlinks(targetDir)
+		if resolveErr != nil {
+			return base.NewAIError(base.ErrInvalidInput, fmt.Sprintf("Unable to resolve target path: %v", resolveErr), "Failed to resolve the worktree directory path", "Check that the path is valid", "forge worktree list")
+		}
+		gitFile := filepath.Join(resolvedDir, ".git")
+		if _, statErr := os.Stat(gitFile); os.IsNotExist(statErr) {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: worktree directory exists but is not a valid git worktree: %s\n", targetDir)
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: run 'forge worktree remove %s' and try again\n", slug)
+			return fmt.Errorf("worktree directory exists but .git file missing or corrupt: %s", targetDir)
+		}
+
+		// Warn if --source-branch was specified (it's ignored when worktree exists)
+		if cmd.Flags().Changed("source-branch") {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: worktree already exists, ignoring --source-branch\n")
+		}
+
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "entering existing worktree: %s\n", slug)
+
+		// --no-launch: print path and exit
+		if noLaunch {
+			_, _ = fmt.Fprintf(cmd.OutOrStdout(), "worktree path: %s\n", resolvedDir)
+			return nil
+		}
+
+		// Launch claude in the existing worktree (fresh session, no -c)
+		origDir, _ := os.Getwd()
+		defer func() { _ = os.Chdir(origDir) }()
+
+		if err := os.Chdir(resolvedDir); err != nil {
+			return base.NewAIError(base.ErrInvalidInput, fmt.Sprintf("Failed to change to worktree directory: %v", err), "Could not change directory", "Check that the worktree path is accessible", "ls .forge/worktrees/")
+		}
+
+		allArgs := []string{"--dangerously-skip-permissions"}
+		return runClaudeFunc(allArgs)
 	}
+
+	// --- Worktree does not exist: create it (original behavior) ---
 
 	// Load config for source-branch and includes
 	cfg, _ := forgeconfig.ReadConfig(projectRoot)
@@ -199,6 +233,8 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	if err := copyIncludesToWorktree(projectRoot, targetDir, includes); err != nil {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: includes copy failed: %v\n", err)
 	}
+
+	_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "created new worktree: %s\n", slug)
 
 	// --no-launch: print path and exit without launching claude
 	if noLaunch {
