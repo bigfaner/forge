@@ -72,7 +72,7 @@
       "file": "5-simplify-skill-and-delete-rules.md",
       "record": "records/5-simplify-skill-and-delete-rules.md",
       "surface-type": "cli",
-      "type": "doc",
+      "type": "coding.feature",
       "complexity": "medium"
     },
     "6-update-quality-gate-consumers": {
@@ -87,7 +87,7 @@
       "file": "6-update-quality-gate-consumers.md",
       "record": "records/6-update-quality-gate-consumers.md",
       "surface-type": "cli",
-      "type": "coding.enhancement",
+      "type": "coding.feature",
       "complexity": "medium"
     },
     "fix-1": {
@@ -98,6 +98,19 @@
       "status": "completed",
       "file": "fix-1.md",
       "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
       "breaking": true,
       "surface-key": ".",
       "surface-type": "cli",

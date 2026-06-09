@@ -5,7 +5,9 @@ package idempotentstart
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,6 +64,9 @@ func TestStep5_SymlinkResolutionFailure_ReturnsError(t *testing.T) {
 	// Create symlink pointing to non-existent target
 	nonExistentTarget := filepath.Join(t.TempDir(), "nonexistent")
 	if err := os.Symlink(nonExistentTarget, wtDir); err != nil {
+		if isPrivilegeError(err) {
+			t.Skipf("skipping: symlink creation requires elevated privileges on this platform: %v", err)
+		}
 		t.Fatalf("failed to create broken symlink: %v", err)
 	}
 
@@ -75,4 +80,19 @@ func TestStep5_SymlinkResolutionFailure_ReturnsError(t *testing.T) {
 	// Assert: stderr contains error about failed worktree operation
 	assert.True(t, strings.Contains(stderr, "Failed to add worktree") || strings.Contains(stderr, "already exists") || strings.Contains(stderr, "resolve") || strings.Contains(stderr, "path"),
 		"expected error about failed worktree operation, got: %s", stderr)
+}
+
+// isPrivilegeError returns true if the error indicates insufficient OS privileges
+// to create symlinks (common on Windows without SeCreateSymbolicLinkPrivilege).
+func isPrivilegeError(err error) bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	// ERROR_PRIVILEGE_NOT_HELD = 1314
+	if err == syscall.Errno(1314) {
+		return true
+	}
+	// Also check wrapped errors and string match for robustness
+	return strings.Contains(err.Error(), "privilege") ||
+		strings.Contains(err.Error(), "ERROR_PRIVILEGE_NOT_HELD")
 }
