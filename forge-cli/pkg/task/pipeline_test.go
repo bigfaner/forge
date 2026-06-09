@@ -277,6 +277,54 @@ func TestCondAlways(t *testing.T) {
 	}
 }
 
+func TestCondHasProtocolSurfaceTask(t *testing.T) {
+	tests := []struct {
+		name  string
+		tasks []Task
+		want  bool
+	}{
+		{"nil tasks returns true (conservative)", nil, true},
+		{"empty tasks returns true (conservative)", []Task{}, true},
+		{"pure web tasks returns false", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "web"},
+			{ID: "2", Type: TypeCodingFeature, SurfaceType: "web"},
+		}, false},
+		{"pure mobile tasks returns false", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "mobile"},
+		}, false},
+		{"web and mobile only returns false", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "web"},
+			{ID: "2", Type: TypeCodingFeature, SurfaceType: "mobile"},
+		}, false},
+		{"api task returns true", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "api"},
+		}, true},
+		{"cli task returns true", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "cli"},
+		}, true},
+		{"tui task returns true", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "tui"},
+		}, true},
+		{"mixed api+web returns true", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "api"},
+			{ID: "2", Type: TypeCodingFeature, SurfaceType: "web"},
+		}, true},
+		{"empty surface-type returns true (conservative)", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: ""},
+		}, true},
+		{"unknown surface-type returns true (conservative)", []Task{
+			{ID: "1", Type: TypeCodingFeature, SurfaceType: "desktop"},
+		}, true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := CondHasProtocolSurfaceTask(tt.tasks); got != tt.want {
+				t.Errorf("CondHasProtocolSurfaceTask() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 // ---------------------------------------------------------------------------
 // Dependency resolver function tests
 // ---------------------------------------------------------------------------

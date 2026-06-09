@@ -242,6 +242,28 @@ The cross-validation MUST capture the lesson scenario from the proposal evidence
 
 **Optional -- Run-to-Learn (R2L)**: If R2L is enabled in `.forge/config.yaml`, execute the R2L loop between Step 1 and Step 3. Load: `rules/run-to-learn.md` for the complete R2L mechanism (skeleton test generation, runtime fact enrichment, graceful degradation).
 
+### 2.0 Route Decision: Contract Path vs Direct Path
+
+Before loading Contract files, determine the generation path for each Journey:
+
+1. Read `docs/features/<slug>/testing/<journey>/journey.md` and extract the `surface_types` field.
+2. Check whether Contract files exist: glob `docs/features/<slug>/testing/<journey>/contracts/step-*.md`.
+
+**Routing logic**:
+
+| Condition | Path |
+|-----------|------|
+| Contract files exist | **Contract Path** (existing flow, Step 2.1) |
+| `surface_types` contains only `web` and/or `mobile`, AND no Contract files | **Direct Path** (Step 2.2) |
+| `surface_types` contains protocol-level (`cli`/`tui`/`api`) AND no Contract files | **Error**: protocol-level surfaces require Contracts. Output: `Direct path generation failed for <journey>: surface_types include protocol-level types [types] but no contracts found. Run /gen-contracts first.` |
+| `surface_types` field missing or empty AND no Contract files | **Error**: cannot determine path. Output: `Direct path generation failed for <journey>: surface_types field missing in journey.md and no contracts found.` |
+
+<HARD-RULE>
+**Direct path is exclusively for web/mobile-only journeys**. Protocol-level surfaces (cli/tui/api) ALWAYS require Contracts. When a journey has mixed surface types (e.g., both web and api), the Contract path must be used — the api surface demands Contracts.
+</HARD-RULE>
+
+### 2.1 Contract Path (Existing Flow)
+
 **Input discovery** -- find the Contract files for the target Journey:
 
 1. Glob `docs/features/<slug>/testing/<journey>/contracts/step-*.md` for the target Journey.
@@ -252,7 +274,7 @@ The cross-validation MUST capture the lesson scenario from the proposal evidence
 **Batch generation**: Generate tests for one Journey at a time (happy path + edge cases). If the user wants multiple Journeys, process them sequentially.
 </HARD-RULE>
 
-### Contract Parsing
+#### Contract Parsing
 
 Each Contract file has this structure:
 
@@ -286,6 +308,70 @@ step-action: "forge task claim"
 **Single Journey per invocation**: Do not attempt to process multiple Journeys in one gen-test-scripts invocation. If Contracts span multiple Journeys, abort and ask the user to specify which Journey to generate.
 </HARD-RULE>
 
+### 2.2 Direct Path (Web/Mobile-Only, No Contracts)
+
+When the routing decision selects the Direct Path, test scripts are generated directly from `journey.md` combined with type-specific rules (`types/web.md` or `types/mobile.md`), bypassing Contract files entirely.
+
+Output: `Generating test scripts for <journey> via direct path (surface: <type>, no contract required)`
+
+#### 2.2.1 Extract Journey Steps
+
+Read `journey.md` and extract structured test generation data from each step:
+
+| Journey Step Field | Maps To | Description |
+|-------------------|---------|-------------|
+| Step description (prose) | `step-action` | User action: click, type, navigate, select, etc. |
+| Preconditions / setup context | `fixture_spec` | Required application state before the step |
+| Expected result / verification | `Outcome` | Visual assertions: assertVisible, assertText, assertNotVisible |
+
+**Mapping rules**:
+
+1. **Step description to step-action**: Identify the primary user interaction verb in the step description.
+   - "Click the Submit button" -> `step-action: click` with target "Submit button"
+   - "Type 'hello' in the search field" -> `step-action: type` with target "search field" and value "hello"
+   - "Navigate to /dashboard" -> `step-action: navigate` with target "/dashboard"
+   - "Select 'Option A' from dropdown" -> `step-action: select` with target "dropdown" and value "Option A"
+
+2. **Preconditions to fixture_spec**: Convert setup context into required application state.
+   - "User is logged in" -> `fixture_spec: { auth_state: authenticated }`
+   - "A project exists with 3 items" -> `fixture_spec: { entities: [{ type: project, count: 3 }] }`
+
+3. **Expected result to Outcome**: Convert verification descriptions into visual assertions.
+   - "The confirmation dialog appears" -> `Outcome: assertVisible("confirmation dialog")`
+   - "The page shows 'Welcome, User'" -> `Outcome: assertText("Welcome, User")`
+   - "The loading spinner is no longer visible" -> `Outcome: assertNotVisible("loading spinner")`
+
+<HARD-RULE>
+**Every direct-path generated test MUST include at least one visual assertion** (assertVisible, assertText, or assertNotVisible). Tests with only navigation actions and no assertions are invalid. Additionally, at least one assertion per test must be a non-trivial visual check — not merely "page is non-empty" or "skeleton is visible", but meaningful content verification (e.g., specific text present, element in expected state).
+</HARD-RULE>
+
+#### 2.2.2 Load Direct Path Type Rules
+
+Load the direct path generation rules from the corresponding type file:
+
+- For `web` surface: load "Direct Path Generation Rules" section from `types/web.md`
+- For `mobile` surface: load "Direct Path Generation Rules" section from `types/mobile.md`
+
+These sections define the step-to-test-action mapping templates and assertion patterns specific to each surface.
+
+<HARD-RULE>
+Direct path generation uses the mapping templates from `types/web.md` or `types/mobile.md` "Direct Path Generation Rules" sections as the authoritative mapping guide. When journey step descriptions are ambiguous, apply the most specific matching template. If no template matches, use the generic action categories from the type file's Golden Rules.
+</HARD-RULE>
+
+#### 2.2.3 Generate Direct Path Tests
+
+Using the extracted step data and type-specific mapping rules, generate test code:
+
+1. For each step, create a test function that performs the mapped user action and asserts the expected visual outcome.
+2. Generate exactly one Journey smoke test covering all steps in sequence (happy path).
+3. Apply all relevant Golden Rules from the loaded type file (Session Reuse, Viewport Management, Element Location Strategy for web; App State Reset, Permission Handling, Screen Transition Assertions for mobile).
+
+**Failure handling**: If journey.md lacks sufficient information to map a step to a test action, output: `Direct path generation failed for <journey>: step <N> could not be mapped — <reason>`. Do NOT silently skip the step or generate placeholder code without meaningful assertions.
+
+<HARD-RULE>
+**Direct path is a first-class generation route**, not a degraded fallback. Generated tests must meet the same quality standards as Contract-path tests: meaningful assertions, proper isolation, correct test type tags, and traceability comments linking back to journey.md step numbers.
+</HARD-RULE>
+
 ## Step 2.5: Load Type Rules
 
 After reading Contract files (Step 2) and before generating test code (Step 3), load type-specific Golden Rules that constrain generation.
@@ -298,11 +384,21 @@ types/ Golden Rules define non-overridable principle constraints. Convention pro
 Reconnaissance Hints in type files are discovery aids only. Information discovered via Hints must be converted to Fact Table values, not used directly in generation instructions.
 </HARD-RULE>
 
-### 2.5.1 Extract Interface Types from Contracts
+### 2.5.1 Extract Interface Types
+
+Interface types are extracted differently depending on the generation path:
+
+**Contract Path**: Extract from Contract files:
 
 1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, Web interactions, TUI rendering, mobile gestures).
 2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> Web/TUI/Mobile).
 3. Record the detected type set (e.g., `{CLI, API}`).
+
+**Direct Path**: Extract from `journey.md` `surface_types` field:
+
+1. Read the `surface_types` array from `journey.md` frontmatter.
+2. Map each entry directly to its type file: `web` -> `types/web.md`, `mobile` -> `types/mobile.md`.
+3. Record the detected type set (e.g., `{Web}`, `{Web, Mobile}`).
 
 ### 2.5.2 Load Shared Principles
 
@@ -530,6 +626,69 @@ If all compile attempts fail:
 - **Antipattern Guard & Duplicate Name Check**: See `rules/quality-gates.md`.
 - **Assertion Depth Check**: See `rules/assertion-depth.md` — verify >=80% behavioral assertion threshold and >=30% deep assertion requirement are met per Journey. If thresholds are not met and no exemption header exists, regenerate with supplemented assertions.
 - **Fixture Spec Compliance**: See `rules/fixture-from-spec.md` — verify that when Contract contains `fixture_spec.entities`, the generated test creates >= `min_count` entities with correct relationships.
+
+## Step 5: Coverage Self-Check
+
+After all test generation and compile gates complete, verify coverage completeness by surface type.
+
+### 5.1 Coverage Verification
+
+For each surface type present in the feature's journeys:
+
+1. Count journeys of each surface type: iterate `docs/features/<slug>/testing/*/journey.md`, extract `surface_types` from each.
+2. Count generated test scripts of each surface type: scan the output directory (`tests/`) for test files, classify by surface type using the Surface -> Test Type mapping.
+3. Verify: `count(journeys_of_type) == count(test_scripts_of_type)` for each surface type.
+
+**Surface -> Test Type mapping** (defined here as the authoritative source):
+
+| Surface | Test Type | Tag |
+|---------|-----------|-----|
+| `cli` | CLI Functional Test | `@cli-functional` |
+| `tui` | Terminal Functional Test | `@tui-functional` |
+| `api` | API Functional Test | `@api-functional` |
+| `web` | Web E2E Test | `@web-e2e` |
+| `mobile` | Mobile E2E Test | `@mobile-e2e` |
+
+### 5.2 Coverage Report
+
+Output a coverage report:
+
+```
+=== Coverage Self-Check ===
+Surface: web
+  - Journeys: 3
+  - Test scripts generated: 3
+  - Status: PASS
+
+Surface: api
+  - Journeys: 2
+  - Test scripts generated: 2
+  - Status: PASS
+
+Summary: 5/5 journeys covered, 0 gaps
+```
+
+### 5.3 Failure Handling
+
+If any surface type shows a gap:
+
+1. Output FAIL status for that surface type.
+2. List the gap details:
+   ```
+   Surface: web
+     - Journeys: 5
+     - Test scripts generated: 3
+     - Status: FAIL
+     - Missing journeys:
+       - user-onboarding (no test script generated)
+       - dashboard-interaction (no test script generated)
+   ```
+3. If a missing journey had a direct path generation failure in Step 2.2.3, include the failure reason.
+4. The overall pipeline status is FAIL — do not silently proceed with coverage gaps.
+
+<HARD-RULE>
+**Coverage gaps are hard failures**. If `count(journeys_of_type) != count(test_scripts_of_type)` for any surface type, the generation is incomplete. Output the gap list and FAIL. Do NOT suppress or downgrade the failure.
+</HARD-RULE>
 
 ## Error Handling
 

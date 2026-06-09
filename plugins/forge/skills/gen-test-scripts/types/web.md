@@ -195,3 +195,68 @@ Web surface targets a **balanced 50/50** ratio between Contract tests and Journe
 ## Output
 
 Web test scripts are written to the adaptive output directory: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects use `tests/<journey>/`. Each test file includes a traceability comment linking back to the source Contract step.
+
+## Direct Path Generation Rules
+
+When a Web journey has no Contract files (Direct Path in SKILL.md Step 2.2), use these rules to map journey step descriptions directly to test actions and assertions.
+
+### Step-to-Action Mapping Templates
+
+Each journey step description is parsed for user interaction verbs and mapped to a test action:
+
+| Journey Step Pattern | Test Action | Locator Strategy | Assertion |
+|---------------------|-------------|-----------------|-----------|
+| "Click/tap/press [element]" | `click` | Locate element by testid > role+name > label > text | `assertVisible` on target element after click |
+| "Type/enter/fill [value] in/into [field]" | `type` | Locate field by testid > label > placeholder | `assertText` confirming value is set |
+| "Navigate to/go to/visit [route]" | `navigate` | URL route from step | `assertVisible` on target page landmark element |
+| "Select/choose [option] from [dropdown]" | `select` | Locate dropdown by testid > label | `assertText` confirming selected value |
+| "Submit [form]" | `click` (submit button) | Locate submit button by testid > role "button" + name | `assertVisible` on success indicator or `assertText` on confirmation message |
+| "Wait for [element] to appear/disappear" | `waitFor` | Locate element by testid > role+name | `assertVisible` or `assertNotVisible` |
+| "Hover over [element]" | `hover` | Locate element by testid > role+name | `assertVisible` on hover-revealed content |
+| "Check/toggle [checkbox/switch]" | `click` | Locate toggle by testid > role "checkbox/switch" + name | `assertVisible` on checked state indicator |
+
+### Precondition-to-Fixture Mapping
+
+| Precondition Pattern | Fixture Setup |
+|---------------------|---------------|
+| "User is logged in/authenticated" | Perform login via session reuse (see Golden Rule: Session Reuse). Establish authenticated session before first test. |
+| "Data exists: [N] [items]" | Create N items via API or database fixture before test suite. Use deterministic test data. |
+| "User is on [page]" | Navigate to the target page as a pre-step. Assert page landmark element is visible. |
+| "Form is pre-filled with [data]" | Populate form fields with fixture data before the test step. |
+| "No [items] exist" | Ensure clean state — clear relevant data before test (isolation principle). |
+
+### Expected-Result-to-Assertion Mapping
+
+| Expected Result Pattern | Assertion | Depth |
+|------------------------|-----------|-------|
+| "[Element] is visible/appears/shows" | `assertVisible(element)` | Behavioral — visual presence |
+| "[Element] is not visible/disappears/hidden" | `assertNotVisible(element)` | Behavioral — visual absence |
+| "Page displays/shows [text]" | `assertText(selector, text)` | Behavioral — content verification |
+| "URL changes to [path]" | Assert current URL matches expected path | Behavioral — navigation verification |
+| "[Element] contains [text]" | `assertText(element, expectedText)` | Behavioral — content verification |
+| "Error message appears: [text]" | `assertVisible(errorElement)` + `assertText(errorElement, expectedError)` | Deep — compound assertion |
+| "Loading state completes" | `assertNotVisible(loadingIndicator)` + `assertVisible(contentElement)` | Deep — state transition |
+| "List shows [N] items" | Assert count of rendered list items equals N | Behavioral — structural count |
+| "Modal/dialog opens" | `assertVisible(dialogOverlay)` + `assertVisible(dialogContent)` | Deep — compound assertion |
+
+### Minimum Assertion Requirements
+
+Every direct-path Web test MUST satisfy:
+
+1. **At least one visual assertion per step** (`assertVisible`, `assertText`, or `assertNotVisible`).
+2. **At least one non-trivial assertion per test** — not merely "page loaded" or "element exists", but specific content or state verification (e.g., correct text displayed, expected element in correct state).
+3. **Journey smoke test** must assert visual state after every step, not just the final step.
+
+### Traceability
+
+Direct-path generated tests include a traceability comment at the top of each test function:
+
+```
+// Journey: <journey-name> | Step: <N> | Source: journey.md (direct path, surface: web)
+```
+
+Journey smoke tests include:
+
+```
+// Journey: <journey-name> | Smoke Test | Source: journey.md (direct path, surface: web)
+```

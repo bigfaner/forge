@@ -208,6 +208,71 @@ Beyond the shared antipattern guards in `_shared.md` (Sleep-Based Waits, Hardcod
 
 Mobile test scripts are written to the adaptive output directory: multi-surface projects use `tests/<surfaceKey>/<journey>/`, single-surface projects use `tests/<journey>/`. Each test file includes a traceability comment linking back to the source Contract step.
 
+## Direct Path Generation Rules
+
+When a Mobile journey has no Contract files (Direct Path in SKILL.md Step 2.2), use these rules to map journey step descriptions directly to test actions and assertions.
+
+### Step-to-Action Mapping Templates
+
+Each journey step description is parsed for user interaction verbs and mapped to a mobile test action:
+
+| Journey Step Pattern | Test Action | Locator Strategy | Assertion |
+|---------------------|-------------|-----------------|-----------|
+| "Tap/click/press [element]" | `tap` | Locate by accessibility ID > resource ID > text | `assertVisible` on target element after tap |
+| "Type/enter [value] in/into [field]" | `inputText` | Locate field by accessibility ID > resource ID > label | `assertVisible` confirming field contains value |
+| "Navigate/go to [screen]" | `navigate` (in-app or deep link) | Deep link URL or navigation target | `assertVisible` on target screen landmark element |
+| "Swipe left/right/up/down on [element]" | `swipe` | Direction: left/right/up/down | `assertVisible` on revealed content or `assertNotVisible` on swiped-away element |
+| "Scroll to [element/content]" | `scroll` | Locate target element by accessibility ID > text | `assertVisible` on scrolled-to element |
+| "Select [option] from [picker/dropdown]" | `tap` (option) | Locate picker then option by accessibility ID > text | `assertVisible` on selected state |
+| "Pull to refresh" | `swipe` (down from top) | N/A (gesture on scroll container) | `assertVisible` on refreshed content indicator |
+| "Long press on [element]" | `longPress` | Locate element by accessibility ID > resource ID | `assertVisible` on context menu or action sheet |
+
+### Precondition-to-Fixture Mapping
+
+| Precondition Pattern | Fixture Setup |
+|---------------------|---------------|
+| "User is logged in/authenticated" | Establish authenticated session via deep link or API token injection. See Golden Rule: App State Reset for cleanup. |
+| "App shows [screen]" | Navigate to screen via deep link or in-app navigation. Assert screen landmark is visible. |
+| "Data exists: [N] [items]" | Seed data via API or database fixture before test. Use deterministic test data. |
+| "Permissions granted: [permission]" | Pre-authorize permissions before test. See Golden Rule: Permission Handling. |
+| "No [items] exist / clean state" | Kill and clear app data before test. See Golden Rule: App State Reset. |
+
+### Expected-Result-to-Assertion Mapping
+
+| Expected Result Pattern | Assertion | Depth |
+|------------------------|-----------|-------|
+| "[Screen/element] is visible/appears" | `assertVisible(element)` | Behavioral — visual presence |
+| "[Screen/element] is not visible/disappears" | `assertNotVisible(element)` | Behavioral — visual absence |
+| "Screen shows/displays [text]" | `assertVisible` containing element + text match | Behavioral — content verification |
+| "Navigation reaches [screen]" | `assertVisible(screenLandmark)` after navigation action | Behavioral — navigation verification |
+| "Dialog/sheet appears with [content]" | `assertVisible(dialog)` + text content verification | Deep — compound assertion |
+| "List contains [N] items" | Count visible list items, assert equals N | Behavioral — structural count |
+| "Loading indicator disappears" | `assertNotVisible(loadingIndicator)` + `assertVisible(content)` | Deep — state transition |
+| "Toast/snackbar shows [message]" | `assertVisible(toast)` + text verification (toast may be transient) | Behavioral — transient notification |
+
+### Minimum Assertion Requirements
+
+Every direct-path Mobile test MUST satisfy:
+
+1. **At least one visual assertion per step** (`assertVisible` or `assertNotVisible`).
+2. **At least one non-trivial assertion per test** — not merely "app launched" or "screen exists", but specific content or state verification.
+3. **Screen Transition Assertion** after every navigation step (see Golden Rule: Screen Transition Assertions).
+4. **Journey smoke test** must assert screen state after every step, not just the final step.
+
+### Traceability
+
+Direct-path generated tests include a traceability comment at the top of each test function:
+
+```
+# Journey: <journey-name> | Step: <N> | Source: journey.md (direct path, surface: mobile)
+```
+
+Journey smoke tests include:
+
+```
+# Journey: <journey-name> | Smoke Test | Source: journey.md (direct path, surface: mobile)
+```
+
 ## Test Ratio Constraint (Best-Effort)
 
 Mobile surface follows a **best-effort** strategy — not measured by Contract test ratio.

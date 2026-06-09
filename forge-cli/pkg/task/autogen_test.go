@@ -2903,3 +2903,174 @@ func taskIDs(tasks []AutoGenTaskDef) []string {
 	}
 	return ids
 }
+
+// ---------------------------------------------------------------------------
+// CondHasProtocolSurfaceTask: pipeline skip tests
+// ---------------------------------------------------------------------------
+
+func TestGenerateTestTasks_PureWeb_SkipsContracts(t *testing.T) {
+	// SC-1: pure web feature skips gen-contracts and eval-contract
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: "web"},
+		{ID: "2", Type: TypeCodingFeature, SurfaceType: "web"},
+	}
+	tasks := GenerateTestTasks("breakdown", scalarSurface("web"), nil, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// gen-contracts and eval-contract must NOT be present
+	if _, ok := byID["T-test-gen-contracts"]; ok {
+		t.Error("pure web feature should NOT generate T-test-gen-contracts")
+	}
+	if _, ok := byID["T-eval-contract"]; ok {
+		t.Error("pure web feature should NOT generate T-eval-contract")
+	}
+
+	// gen-journeys and gen-scripts must be present
+	if _, ok := byID["T-test-gen-journeys"]; !ok {
+		t.Error("pure web feature should generate T-test-gen-journeys")
+	}
+	if _, ok := byID["T-test-gen-scripts"]; !ok {
+		t.Error("pure web feature should generate T-test-gen-scripts")
+	}
+
+	// gen-scripts should depend on gen-journeys (upstream degraded from gen-contracts)
+	gsDeps := byID["T-test-gen-scripts"].Dependencies
+	if len(gsDeps) == 0 {
+		t.Fatal("gen-scripts should have dependencies")
+	}
+	// ResolveUpstream returns the last generated node's IDs.
+	// When gen-contracts/eval-contract are skipped, the last node before gen-scripts
+	// is T-eval-journey (or T-test-gen-journeys in quick mode).
+	// In breakdown mode: eval-journey depends on gen-journeys,
+	// gen-scripts uses ResolveUpstream which resolves to eval-journey IDs.
+	if gsDeps[0] != "T-eval-journey" && gsDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("gen-scripts should depend on gen-journeys or eval-journey (upstream), got %v", gsDeps)
+	}
+}
+
+func TestGenerateTestTasks_PureMobile_SkipsContracts(t *testing.T) {
+	// SC-2: pure mobile feature skips gen-contracts and eval-contract
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: "mobile"},
+	}
+	tasks := GenerateTestTasks("breakdown", scalarSurface("mobile"), nil, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	if _, ok := byID["T-test-gen-contracts"]; ok {
+		t.Error("pure mobile feature should NOT generate T-test-gen-contracts")
+	}
+	if _, ok := byID["T-eval-contract"]; ok {
+		t.Error("pure mobile feature should NOT generate T-eval-contract")
+	}
+	if _, ok := byID["T-test-gen-scripts"]; !ok {
+		t.Error("pure mobile feature should generate T-test-gen-scripts")
+	}
+}
+
+func TestGenerateTestTasks_MixedApiWeb_GeneratesContracts(t *testing.T) {
+	// SC-3: mixed surface feature (api + web) generates gen-contracts and eval-contract
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: "api"},
+		{ID: "2", Type: TypeCodingFeature, SurfaceType: "web"},
+	}
+	surfaces := multiSurface("backend", "api", "frontend", "web")
+	execOrder := []string{"backend", "frontend"}
+	tasks := GenerateTestTasks("breakdown", surfaces, execOrder, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	// gen-contracts and eval-contract MUST be present
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("mixed api+web feature SHOULD generate T-test-gen-contracts")
+	}
+	if _, ok := byID["T-eval-contract"]; !ok {
+		t.Error("mixed api+web feature SHOULD generate T-eval-contract")
+	}
+}
+
+func TestGenerateTestTasks_PureApi_GeneratesContracts(t *testing.T) {
+	// SC-7: existing API pipeline behavior unchanged
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: "api"},
+	}
+	tasks := GenerateTestTasks("breakdown", scalarSurface("api"), nil, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("pure api feature SHOULD generate T-test-gen-contracts")
+	}
+	if _, ok := byID["T-eval-contract"]; !ok {
+		t.Error("pure api feature SHOULD generate T-eval-contract")
+	}
+}
+
+func TestGenerateTestTasks_EmptySurfaceType_GeneratesContracts(t *testing.T) {
+	// surface-type missing/empty: conservative, do not skip
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: ""},
+	}
+	tasks := GenerateTestTasks("breakdown", scalarSurface("web"), nil, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("empty surface-type should generate T-test-gen-contracts (conservative)")
+	}
+}
+
+func TestGenerateTestTasks_UnknownSurfaceType_GeneratesContracts(t *testing.T) {
+	// unknown surface-type: conservative, do not skip
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: "desktop"},
+	}
+	tasks := GenerateTestTasks("breakdown", scalarSurface("web"), nil, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	if _, ok := byID["T-test-gen-contracts"]; !ok {
+		t.Error("unknown surface-type should generate T-test-gen-contracts (conservative)")
+	}
+}
+
+func TestGenerateTestTasks_PureWebQuickMode_SkipsContracts(t *testing.T) {
+	// Quick mode with pure web tasks also skips gen-contracts
+	biz := []Task{
+		{ID: "1", Type: TypeCodingFeature, SurfaceType: "web"},
+	}
+	tasks := GenerateTestTasks("quick", scalarSurface("web"), nil, allEnabledAuto, "", biz, nil)
+	byID := make(map[string]AutoGenTaskDef)
+	for _, t := range tasks {
+		byID[t.ID] = t
+	}
+
+	if _, ok := byID["T-test-gen-contracts"]; ok {
+		t.Error("pure web quick mode should NOT generate T-test-gen-contracts")
+	}
+	if _, ok := byID["T-test-gen-scripts"]; !ok {
+		t.Error("pure web quick mode should generate T-test-gen-scripts")
+	}
+
+	// gen-scripts should depend on gen-journeys (upstream degraded)
+	gsDeps := byID["T-test-gen-scripts"].Dependencies
+	if len(gsDeps) == 0 {
+		t.Fatal("gen-scripts should have dependencies")
+	}
+	if gsDeps[0] != "T-test-gen-journeys" {
+		t.Errorf("gen-scripts should depend on gen-journeys (upstream), got %v", gsDeps)
+	}
+}
