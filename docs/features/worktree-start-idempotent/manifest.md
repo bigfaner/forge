@@ -1,7 +1,7 @@
 ---
 feature: "worktree-start-idempotent"
 created: "2026-06-09"
-status: tasks
+status: completed
 mode: quick
 ---
 
