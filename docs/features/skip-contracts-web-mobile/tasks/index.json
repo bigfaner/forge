@@ -1,0 +1,74 @@
+{
+  "feature": "skip-contracts-web-mobile",
+  "proposal": "docs/proposals/skip-contracts-web-mobile/proposal.md",
+  "created": "2026-06-09",
+  "tasks": {
+    "1-add-protocol-surface-condition": {
+      "id": "1",
+      "title": "Add protocol surface condition to skip gen-contracts pipeline",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "pending",
+      "file": "1-add-protocol-surface-condition.md",
+      "record": "records/1-add-protocol-surface-condition.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "high"
+    },
+    "2-skill-direct-path-web-mobile": {
+      "id": "2",
+      "title": "Add direct test generation path for web/mobile journeys in gen-test-scripts",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-skill-direct-path-web-mobile.md",
+      "record": "records/2-skill-direct-path-web-mobile.md",
+      "surface-type": "cli",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
