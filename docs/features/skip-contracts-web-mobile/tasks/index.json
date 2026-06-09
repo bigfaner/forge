@@ -12,7 +12,7 @@
       "file": "1-add-protocol-surface-condition.md",
       "record": "records/1-add-protocol-surface-condition.md",
       "surface-type": "cli",
-      "type": "coding.enhancement",
+      "type": "coding.feature",
       "complexity": "high"
     },
     "2-skill-direct-path-web-mobile": {
@@ -27,8 +27,34 @@
       "file": "2-skill-direct-path-web-mobile.md",
       "record": "records/2-skill-direct-path-web-mobile.md",
       "surface-type": "cli",
-      "type": "doc",
+      "type": "coding.feature",
       "complexity": "medium"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
@@ -51,7 +77,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "type": "doc.review"
