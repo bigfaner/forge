@@ -8,7 +8,7 @@
       "title": "Add protocol surface condition to skip gen-contracts pipeline",
       "priority": "P0",
       "estimatedTime": "1-2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-add-protocol-surface-condition.md",
       "record": "records/1-add-protocol-surface-condition.md",
       "surface-type": "cli",

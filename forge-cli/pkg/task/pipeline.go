@@ -136,6 +136,40 @@ func CondHasDocTasks(tasks []Task) bool {
 // CondAlways returns true unconditionally.
 func CondAlways(_ []Task) bool { return true }
 
+// protocolSurfaceTypes is the set of surface types that use protocol-level
+// contracts (API, CLI, TUI). Web and Mobile are interaction-level surfaces
+// that do not produce meaningful contract files.
+var protocolSurfaceTypes = map[types.SurfaceType]bool{
+	types.SurfaceAPI: true,
+	types.SurfaceCLI: true,
+	types.SurfaceTUI: true,
+}
+
+// CondHasProtocolSurfaceTask returns true when any business task has a
+// protocol-level surface type (api/cli/tui). Returns true conservatively
+// when tasks is nil/empty or when any task has an unknown/empty surface type.
+// Returns false only when ALL tasks have explicitly interaction-level surfaces
+// (web/mobile).
+func CondHasProtocolSurfaceTask(tasks []Task) bool {
+	if len(tasks) == 0 {
+		return true // conservative: no tasks = don't skip
+	}
+	for _, t := range tasks {
+		st := types.SurfaceType(t.SurfaceType)
+		if st == "" {
+			return true // conservative: unknown = don't skip
+		}
+		if _, ok := protocolSurfaceTypes[st]; ok {
+			return true // has protocol surface
+		}
+		// If it's not a protocol type and not a known interaction type, conservative
+		if st != types.SurfaceWeb && st != types.SurfaceMobile {
+			return true // unknown surface type = don't skip
+		}
+	}
+	return false // all tasks are interaction-level (web/mobile only)
+}
+
 // ---------------------------------------------------------------------------
 // GenerateTestTasks — registry-driven task generation
 // ---------------------------------------------------------------------------
