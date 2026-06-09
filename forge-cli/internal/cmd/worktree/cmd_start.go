@@ -110,15 +110,15 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("target directory already exists: %s", targetDir)
 	}
 
-	// Load config for source-branch and copy-files
+	// Load config for source-branch and includes
 	cfg, _ := forgeconfig.ReadConfig(projectRoot)
 
-	// Pre-validate copy-files BEFORE git worktree add (to avoid orphan worktrees)
-	var copyFiles []string
+	// Pre-validate includes BEFORE git worktree add (to avoid orphan worktrees)
+	var includes []string
 	if cfg != nil && cfg.Worktree != nil {
-		copyFiles = cfg.Worktree.CopyFiles
+		includes = cfg.Worktree.Includes
 	}
-	if err := validateCopyFiles(projectRoot, copyFiles); err != nil {
+	if err := validateIncludes(projectRoot, includes); err != nil {
 		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "error: %v\n", err)
 		return err
 	}
@@ -196,8 +196,8 @@ func runWorktreeStart(cmd *cobra.Command, args []string) error {
 	}
 
 	// Copy configured files from project root to worktree
-	if err := copyFilesToWorktree(projectRoot, targetDir, copyFiles); err != nil {
-		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: copy-files failed: %v\n", err)
+	if err := copyIncludesToWorktree(projectRoot, targetDir, includes); err != nil {
+		_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: includes copy failed: %v\n", err)
 	}
 
 	// --no-launch: print path and exit without launching claude

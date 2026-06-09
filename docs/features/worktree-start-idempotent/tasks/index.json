@@ -8,7 +8,7 @@
       "title": "Rename `copy-files` → `includes` across codebase",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-rename-copy-files-to-includes.md",
       "record": "records/1-rename-copy-files-to-includes.md",
       "surface-type": "cli",

@@ -2121,10 +2121,10 @@ func initGitRepoForWorktree(t *testing.T) string {
 }
 
 // ---------------------------------------------------------------------------
-// validateCopyFilePath: path validation
+// validateIncludePath: path validation
 // ---------------------------------------------------------------------------
 
-func TestValidateCopyFilePath(t *testing.T) {
+func TestValidateIncludePath(t *testing.T) {
 	tests := []struct {
 		name    string
 		path    string
@@ -2142,19 +2142,19 @@ func TestValidateCopyFilePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateCopyFilePath(tt.path)
+			err := validateIncludePath(tt.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("validateCopyFilePath(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
+				t.Errorf("validateIncludePath(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
 			}
 		})
 	}
 }
 
 // ---------------------------------------------------------------------------
-// copyFilesToWorktree: file copy logic
+// copyIncludesToWorktree: file copy logic
 // ---------------------------------------------------------------------------
 
-func TestCopyFilesToWorktree_CopiesSingleFile(t *testing.T) {
+func TestCopyIncludesToWorktree_CopiesSingleFile(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2163,7 +2163,7 @@ func TestCopyFilesToWorktree_CopiesSingleFile(t *testing.T) {
 		t.Fatalf("write .env: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{".env"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{".env"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2178,7 +2178,7 @@ func TestCopyFilesToWorktree_CopiesSingleFile(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_CopiesMultipleFiles(t *testing.T) {
+func TestCopyIncludesToWorktree_CopiesMultipleFiles(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2190,7 +2190,7 @@ func TestCopyFilesToWorktree_CopiesMultipleFiles(t *testing.T) {
 		t.Fatalf("write .env.local: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{".env", ".env.local"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{".env", ".env.local"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2202,7 +2202,7 @@ func TestCopyFilesToWorktree_CopiesMultipleFiles(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_OverwritesExistingFile(t *testing.T) {
+func TestCopyIncludesToWorktree_OverwritesExistingFile(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2215,7 +2215,7 @@ func TestCopyFilesToWorktree_OverwritesExistingFile(t *testing.T) {
 		t.Fatalf("write old .env: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{".env"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{".env"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2229,7 +2229,7 @@ func TestCopyFilesToWorktree_OverwritesExistingFile(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_CopiesNestedFile(t *testing.T) {
+func TestCopyIncludesToWorktree_CopiesNestedFile(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2242,7 +2242,7 @@ func TestCopyFilesToWorktree_CopiesNestedFile(t *testing.T) {
 		t.Fatalf("write app.conf: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{"config/app.conf"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{"config/app.conf"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2256,21 +2256,21 @@ func TestCopyFilesToWorktree_CopiesNestedFile(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_ErrorOnInvalidPath(t *testing.T) {
+func TestCopyIncludesToWorktree_ErrorOnInvalidPath(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{"../../etc/passwd"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{"../../etc/passwd"})
 	if err == nil {
 		t.Error("expected error for path traversal")
 	}
 }
 
 // ---------------------------------------------------------------------------
-// validateCopyFiles: pre-validation of all copy-files
+// validateIncludes: pre-validation of all includes
 // ---------------------------------------------------------------------------
 
-func TestValidateCopyFiles_AllFilesExist(t *testing.T) {
+func TestValidateIncludes_AllFilesExist(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create files
@@ -2281,13 +2281,13 @@ func TestValidateCopyFiles_AllFilesExist(t *testing.T) {
 		t.Fatalf("write .env.local: %v", err)
 	}
 
-	err := validateCopyFiles(dir, []string{".env", ".env.local"})
+	err := validateIncludes(dir, []string{".env", ".env.local"})
 	if err != nil {
 		t.Errorf("expected no error when all files exist, got: %v", err)
 	}
 }
 
-func TestValidateCopyFiles_MissingFile(t *testing.T) {
+func TestValidateIncludes_MissingFile(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create only one of two files
@@ -2295,38 +2295,38 @@ func TestValidateCopyFiles_MissingFile(t *testing.T) {
 		t.Fatalf("write .env: %v", err)
 	}
 
-	err := validateCopyFiles(dir, []string{".env", ".env.missing"})
+	err := validateIncludes(dir, []string{".env", ".env.missing"})
 	if err == nil {
-		t.Error("expected error when a copy-file is missing")
+		t.Error("expected error when an include file is missing")
 	}
 	if !strings.Contains(err.Error(), ".env.missing") {
 		t.Errorf("error should mention the missing file, got: %v", err)
 	}
 }
 
-func TestValidateCopyFiles_InvalidPathRejected(t *testing.T) {
+func TestValidateIncludes_InvalidPathRejected(t *testing.T) {
 	dir := t.TempDir()
 
-	err := validateCopyFiles(dir, []string{"/etc/passwd"})
+	err := validateIncludes(dir, []string{"/etc/passwd"})
 	if err == nil {
 		t.Error("expected error for absolute path")
 	}
 }
 
-func TestValidateCopyFiles_EmptyList(t *testing.T) {
+func TestValidateIncludes_EmptyList(t *testing.T) {
 	dir := t.TempDir()
 
-	err := validateCopyFiles(dir, nil)
+	err := validateIncludes(dir, nil)
 	if err != nil {
 		t.Errorf("expected no error for empty list, got: %v", err)
 	}
 }
 
 // ---------------------------------------------------------------------------
-// worktree start: copy-files integration
+// worktree start: includes integration
 // ---------------------------------------------------------------------------
 
-func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
+func TestWorktreeStart_IncludesFromConfig(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -2352,17 +2352,17 @@ func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
 		t.Fatalf("write .env: %v", err)
 	}
 
-	// Create .forge/config.yaml with copy-files
+	// Create .forge/config.yaml with includes
 	forgeDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatalf("mkdir .forge: %v", err)
 	}
-	configContent := "worktree:\n  copy-files:\n    - .env\n"
+	configContent := "worktree:\n  includes:\n    - .env\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.yaml: %v", err)
 	}
 
-	slug := "copy-files-test"
+	slug := "includes-test"
 	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
@@ -2389,7 +2389,7 @@ func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
 	}
 }
 
-func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
+func TestWorktreeStart_AbortsWhenIncludeFileMissing(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -2408,12 +2408,12 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 
 	// .env does NOT exist in project root
 
-	// Create .forge/config.yaml with copy-files
+	// Create .forge/config.yaml with includes
 	forgeDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatalf("mkdir .forge: %v", err)
 	}
-	configContent := "worktree:\n  copy-files:\n    - .env\n"
+	configContent := "worktree:\n  includes:\n    - .env\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.yaml: %v", err)
 	}
@@ -2425,7 +2425,7 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 
 	err := Cmd.Execute()
 	if err == nil {
-		t.Error("expected error when copy-file is missing from project root")
+		t.Error("expected error when include file is missing from project root")
 	}
 	stderr := buf.String()
 	if !strings.Contains(stderr, ".env") {
@@ -2439,7 +2439,7 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 		// Clean up any orphan worktree
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
-		t.Error("worktree should NOT have been created when copy-file is missing")
+		t.Error("worktree should NOT have been created when include file is missing")
 	}
 }
 
@@ -2489,7 +2489,7 @@ func TestWorktreeStart_NoCopyWhenConfigAbsent(t *testing.T) {
 	}
 }
 
-func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
+func TestWorktreeStart_NoCopyWhenIncludesEmpty(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -2510,12 +2510,12 @@ func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Create .forge/config.yaml with empty copy-files
+	// Create .forge/config.yaml with empty includes
 	forgeDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatalf("mkdir .forge: %v", err)
 	}
-	configContent := "worktree:\n  copy-files: []\n"
+	configContent := "worktree:\n  includes: []\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.yaml: %v", err)
 	}

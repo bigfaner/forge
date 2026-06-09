@@ -671,7 +671,7 @@ func TestInitConfigWithWorktree(t *testing.T) {
 				Auto: auto,
 				Worktree: &forgeconfig.WorktreeConfig{
 					SourceBranch: "main",
-					CopyFiles:    []string{".env", ".env.local"},
+					Includes:     []string{".env", ".env.local"},
 				},
 			}
 			if err := writeConfigFile(configFile, &cfg); err != nil {
@@ -705,7 +705,7 @@ func TestInitConfigWithWorktree(t *testing.T) {
 			t.Errorf("expected 'source-branch: main' in config, got %q", content)
 		}
 		if !strings.Contains(content, ".env") {
-			t.Errorf("expected '.env' in copy-files, got %q", content)
+			t.Errorf("expected '.env' in includes, got %q", content)
 		}
 	})
 
@@ -912,7 +912,7 @@ func TestWorktreeConfigRoundTrip(t *testing.T) {
 			}(),
 			Worktree: &forgeconfig.WorktreeConfig{
 				SourceBranch: "develop",
-				CopyFiles:    []string{".env", ".env.local"},
+				Includes:     []string{".env", ".env.local"},
 			},
 		}
 
@@ -932,11 +932,11 @@ func TestWorktreeConfigRoundTrip(t *testing.T) {
 		if read.Worktree.SourceBranch != "develop" {
 			t.Errorf("expected source-branch 'develop', got %q", read.Worktree.SourceBranch)
 		}
-		if len(read.Worktree.CopyFiles) != 2 {
-			t.Errorf("expected 2 copy-files, got %d", len(read.Worktree.CopyFiles))
+		if len(read.Worktree.Includes) != 2 {
+			t.Errorf("expected 2 includes, got %d", len(read.Worktree.Includes))
 		}
-		if read.Worktree.CopyFiles[0] != ".env" || read.Worktree.CopyFiles[1] != ".env.local" {
-			t.Errorf("copy-files mismatch: %v", read.Worktree.CopyFiles)
+		if read.Worktree.Includes[0] != ".env" || read.Worktree.Includes[1] != ".env.local" {
+			t.Errorf("includes mismatch: %v", read.Worktree.Includes)
 		}
 	})
 }

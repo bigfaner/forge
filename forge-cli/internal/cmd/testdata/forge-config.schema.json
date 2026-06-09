@@ -134,9 +134,9 @@
           "type": "string",
           "description": "Default source branch for worktree creation. Used when no --source-branch flag is provided."
         },
-        "copy-files": {
+        "includes": {
           "type": "array",
-          "description": "List of files to copy from project root to worktree after creation. Must be relative paths within the project root.",
+          "description": "List of files to include from project root to worktree after creation. Must be relative paths within the project root.",
           "items": {
             "type": "string"
           }

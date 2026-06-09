@@ -71,7 +71,7 @@ func (e *EvalConfig) UnmarshalYAML(value *yaml.Node) error {
 // WorktreeConfig controls worktree creation behavior.
 type WorktreeConfig struct {
 	SourceBranch string   `yaml:"source-branch"`
-	CopyFiles    []string `yaml:"copy-files"`
+	Includes     []string `yaml:"includes"`
 }
 
 // CoverageStrategy defines the coverage strategy for a single task type.

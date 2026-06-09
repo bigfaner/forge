@@ -356,13 +356,13 @@ func TestConfigGetCommand(t *testing.T) {
 		}
 	})
 
-	t.Run("worktree.copy-files returns one per line", func(t *testing.T) {
-		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n    - .env.local\n")
+	t.Run("worktree.includes returns one per line", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  includes:\n    - .env\n    - .env.local\n")
 
 		var stdout bytes.Buffer
 		rootCmd.SetOut(&stdout)
 		rootCmd.SetErr(os.Stderr)
-		rootCmd.SetArgs([]string{"config", "get", "worktree.copy-files", "--project-root", dir})
+		rootCmd.SetArgs([]string{"config", "get", "worktree.includes", "--project-root", dir})
 
 		err := rootCmd.Execute()
 		if err != nil {
