@@ -12,7 +12,7 @@
       "file": "1-rename-copy-files-to-includes.md",
       "record": "records/1-rename-copy-files-to-includes.md",
       "surface-type": "cli",
-      "type": "coding.cleanup",
+      "type": "coding.feature",
       "complexity": "medium"
     },
     "2-idempotent-start-core": {
@@ -27,7 +27,7 @@
       "file": "2-idempotent-start-core.md",
       "record": "records/2-idempotent-start-core.md",
       "surface-type": "cli",
-      "type": "coding.enhancement",
+      "type": "coding.feature",
       "complexity": "high"
     },
     "3-idempotent-start-flags": {
@@ -42,7 +42,7 @@
       "file": "3-idempotent-start-flags.md",
       "record": "records/3-idempotent-start-flags.md",
       "surface-type": "cli",
-      "type": "coding.enhancement",
+      "type": "coding.feature",
       "complexity": "medium"
     },
     "fix-1": {
@@ -55,6 +55,19 @@
       "record": "records/fix-1.md",
       "breaking": true,
       "sourceTaskID": "T-test-run",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
       "type": "coding.fix"
     },
     "gen-contracts": {
