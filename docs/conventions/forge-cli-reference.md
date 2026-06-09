@@ -101,6 +101,15 @@ domains: [cli, commands, reference, skills, task-list, validate]
 | `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic/extract.go` |
 | `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic/subagents.go` |
 
+### forge justfile — Justfile 管理
+
+源文件：`justfile.go`、`scaffold/` 目录（`scaffold/register.go`、`scaffold/generate.go`、`scaffold/types.go`）
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge justfile scaffold --type <type> --key <key>` | 为单个 surface 生成完整 recipe 集（lifecycle + quality），输出到 stdout | `scaffold/generate.go` |
+| `forge justfile scaffold --aggregate` | 生成跨 surface 聚合 recipe（install / ci / clean），读取 `forge surfaces` 获取全部 surface | `scaffold/generate.go` |
+
 ### forge fact — 项目事实管理
 
 源文件：`fact/parent.go`
