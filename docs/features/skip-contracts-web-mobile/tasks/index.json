@@ -56,6 +56,32 @@
       "surface-type": "cli",
       "type": "coding.fix"
     },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "pending",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
       "title": "Detect Spec Drift",
