@@ -1,5 +1,5 @@
 ---
-id: "4"
+id: "5"
 title: "精简 SKILL.md 并删除废弃 rule 文件"
 priority: "P0"
 estimated_time: "1h"
@@ -12,7 +12,7 @@ type: "doc"
 mainSession: false
 ---
 
-# 4: 精简 SKILL.md 并删除废弃 rule 文件
+# 5: 精简 SKILL.md 并删除废弃 rule 文件
 
 ## Description
 

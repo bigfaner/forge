@@ -1,5 +1,5 @@
 ---
-id: "5"
+id: "6"
 title: "更新 quality gate 下游 consumer"
 priority: "P1"
 estimated_time: "1h"
@@ -12,7 +12,7 @@ type: "coding.enhancement"
 mainSession: false
 ---
 
-# 5: 更新 quality gate 下游 consumer
+# 6: 更新 quality gate 下游 consumer
 
 ## Description
 
@@ -40,9 +40,6 @@ mainSession: false
 - 当前 `ResolvePrefixedRecipe` 逻辑：有 scope 时先尝试 `<scope>-<recipe>`，不存在则 fallback 到 `recipe`；需改为有 scope 时仅返回 `<scope>-<recipe>` 或空字符串
 - 当前 `resolveRecipe` 逻辑同上，需保持两个函数行为一致
 - scalar surface（scope 为空）走原有无前缀路径，不受影响
-- 相关测试文件需同步更新：
-  - `forge-cli/pkg/just/just_test.go`（TestRunGate 中有 scope fallback 相关用例）
-  - `forge-cli/internal/cmd/qualitygate/quality_gate_test.go`（gate sequence 相关断言）
 
 ### Test Impact
 - Affected test suite(s): `forge-cli/pkg/just/`, `forge-cli/internal/cmd/qualitygate/`

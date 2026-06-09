@@ -3,50 +3,65 @@
   "proposal": "docs/proposals/init-justfile-slim/proposal.md",
   "created": "2026-06-09",
   "tasks": {
-    "1-implement-scaffold-single-surface": {
+    "1-scaffold-core-simple-surfaces": {
       "id": "1",
-      "title": "实现 scaffold 单 surface recipe 生成",
+      "title": "Scaffold 核心框架 + cli/tui 模板",
       "priority": "P0",
-      "estimatedTime": "3h",
+      "estimatedTime": "2h",
       "status": "pending",
-      "file": "1-implement-scaffold-single-surface.md",
-      "record": "records/1-implement-scaffold-single-surface.md",
+      "file": "1-scaffold-core-simple-surfaces.md",
+      "record": "records/1-scaffold-core-simple-surfaces.md",
       "surface-type": "cli",
       "type": "coding.feature",
       "complexity": "high"
     },
-    "2-implement-scaffold-aggregate": {
+    "2-scaffold-service-surfaces": {
       "id": "2",
-      "title": "实现 scaffold aggregate 聚合模式",
+      "title": "api/web/mobile service surface 模板",
       "priority": "P0",
       "estimatedTime": "2h",
       "dependencies": [
         "1"
       ],
       "status": "pending",
-      "file": "2-implement-scaffold-aggregate.md",
-      "record": "records/2-implement-scaffold-aggregate.md",
+      "file": "2-scaffold-service-surfaces.md",
+      "record": "records/2-scaffold-service-surfaces.md",
       "surface-type": "cli",
       "type": "coding.feature",
       "complexity": "high"
     },
-    "3-scaffold-unit-tests": {
+    "3-scaffold-aggregate": {
       "id": "3",
-      "title": "scaffold 命令单元测试",
-      "priority": "P1",
-      "estimatedTime": "2h",
+      "title": "实现 scaffold aggregate 聚合模式",
+      "priority": "P0",
+      "estimatedTime": "1h",
       "dependencies": [
         "2"
       ],
       "status": "pending",
-      "file": "3-scaffold-unit-tests.md",
-      "record": "records/3-scaffold-unit-tests.md",
+      "file": "3-scaffold-aggregate.md",
+      "record": "records/3-scaffold-aggregate.md",
       "surface-type": "cli",
       "type": "coding.feature",
       "complexity": "medium"
     },
-    "4-simplify-skill-and-delete-rules": {
+    "4-scaffold-unit-tests": {
       "id": "4",
+      "title": "scaffold 命令单元测试",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "pending",
+      "file": "4-scaffold-unit-tests.md",
+      "record": "records/4-scaffold-unit-tests.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "5-simplify-skill-and-delete-rules": {
+      "id": "5",
       "title": "精简 SKILL.md 并删除废弃 rule 文件",
       "priority": "P0",
       "estimatedTime": "1h",
@@ -54,14 +69,14 @@
         "1"
       ],
       "status": "pending",
-      "file": "4-simplify-skill-and-delete-rules.md",
-      "record": "records/4-simplify-skill-and-delete-rules.md",
+      "file": "5-simplify-skill-and-delete-rules.md",
+      "record": "records/5-simplify-skill-and-delete-rules.md",
       "surface-type": "cli",
       "type": "doc",
       "complexity": "medium"
     },
-    "5-update-quality-gate-consumers": {
-      "id": "5",
+    "6-update-quality-gate-consumers": {
+      "id": "6",
       "title": "更新 quality gate 下游 consumer",
       "priority": "P1",
       "estimatedTime": "1h",
@@ -69,8 +84,8 @@
         "2"
       ],
       "status": "pending",
-      "file": "5-update-quality-gate-consumers.md",
-      "record": "records/5-update-quality-gate-consumers.md",
+      "file": "6-update-quality-gate-consumers.md",
+      "record": "records/6-update-quality-gate-consumers.md",
       "surface-type": "cli",
       "type": "coding.enhancement",
       "complexity": "medium"
@@ -81,7 +96,7 @@
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "1"
+        "6"
       ],
       "status": "pending",
       "file": "quick-drift-detection.md",
@@ -94,7 +109,7 @@
       "priority": "P1",
       "estimatedTime": "30min",
       "dependencies": [
-        "4"
+        "5"
       ],
       "status": "pending",
       "file": "review-doc.md",

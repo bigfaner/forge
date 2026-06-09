@@ -1,10 +1,10 @@
 ---
-id: "3"
+id: "4"
 title: "scaffold 命令单元测试"
 priority: "P1"
 estimated_time: "2h"
 complexity: "medium"
-dependencies: [2]
+dependencies: [3]
 surface-key: ""
 surface-type: "cli"
 breaking: false
@@ -12,7 +12,7 @@ type: "coding.feature"
 mainSession: false
 ---
 
-# 3: scaffold 命令单元测试
+# 4: scaffold 命令单元测试
 
 ## Description
 
@@ -20,7 +20,7 @@ mainSession: false
 
 ## Reference Files
 - `docs/proposals/init-justfile-slim/proposal.md` — 成功标准 (#3)
-- `forge-cli/internal/cmd/scaffold/` — 被测代码（Task 1、2 产出）
+- `forge-cli/internal/cmd/scaffold/` — 被测代码（Task 1-3 产出）
 - `forge-cli/internal/cmd/qualitygate/quality_gate_test.go` — 现有测试风格参考
 
 ## Acceptance Criteria
@@ -33,4 +33,4 @@ mainSession: false
 ## Implementation Notes
 - 遵循 forge-cli CLAUDE.md 的 TDD 规范：table-driven tests，coverage target 80%+
 - 参考 `quality_gate_test.go` 中的测试风格
-- 建议使用 `golden file` 或字符串断言验证 recipe 输出
+- 建议使用 golden file 或字符串断言验证 recipe 输出

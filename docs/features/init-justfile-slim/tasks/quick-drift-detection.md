@@ -3,7 +3,7 @@ id: "T-quick-doc-drift"
 title: "Detect Spec Drift"
 priority: "P2"
 estimated_time: "15min"
-dependencies: ["1"]
+dependencies: ["6"]
 type: "doc.drift"
 surface-key: ""
 surface-type: ""
