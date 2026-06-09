@@ -166,7 +166,7 @@ func TestReadConfig(t *testing.T) {
 	})
 
 	t.Run("worktree block parsed", func(t *testing.T) {
-		dir := setupConfig(t, "worktree:\n  source-branch: develop\n  copy-files:\n    - .env\n    - .env.local\n")
+		dir := setupConfig(t, "worktree:\n  source-branch: develop\n  includes:\n    - .env\n    - .env.local\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -177,8 +177,8 @@ func TestReadConfig(t *testing.T) {
 		if cfg.Worktree.SourceBranch != "develop" {
 			t.Errorf("expected source-branch 'develop', got %q", cfg.Worktree.SourceBranch)
 		}
-		if len(cfg.Worktree.CopyFiles) != 2 || cfg.Worktree.CopyFiles[0] != ".env" || cfg.Worktree.CopyFiles[1] != ".env.local" {
-			t.Errorf("expected [.env .env.local], got %v", cfg.Worktree.CopyFiles)
+		if len(cfg.Worktree.Includes) != 2 || cfg.Worktree.Includes[0] != ".env" || cfg.Worktree.Includes[1] != ".env.local" {
+			t.Errorf("expected [.env .env.local], got %v", cfg.Worktree.Includes)
 		}
 	})
 
@@ -380,9 +380,9 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("worktree.copy-files returns joined list", func(t *testing.T) {
-		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n    - .env.local\n")
-		val, err := GetConfigValue(dir, "worktree.copy-files")
+	t.Run("worktree.includes returns joined list", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  includes:\n    - .env\n    - .env.local\n")
+		val, err := GetConfigValue(dir, "worktree.includes")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -400,9 +400,9 @@ func TestGetConfigValue(t *testing.T) {
 		}
 	})
 
-	t.Run("worktree.copy-files absent returns error", func(t *testing.T) {
+	t.Run("worktree.includes absent returns error", func(t *testing.T) {
 		dir := setupConfig(t, "auto:\n  gitPush: true\n")
-		_, err := GetConfigValue(dir, "worktree.copy-files")
+		_, err := GetConfigValue(dir, "worktree.includes")
 		if err != errKeyNotFound {
 			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
@@ -444,16 +444,16 @@ func TestGetConfigValue(t *testing.T) {
 	})
 
 	t.Run("worktree present but source-branch empty returns error", func(t *testing.T) {
-		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n")
+		dir := setupConfig(t, "worktree:\n  includes:\n    - .env\n")
 		_, err := GetConfigValue(dir, "worktree.source-branch")
 		if err != errKeyNotFound {
 			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
 	})
 
-	t.Run("worktree present but copy-files empty returns error", func(t *testing.T) {
+	t.Run("worktree present but includes empty returns error", func(t *testing.T) {
 		dir := setupConfig(t, "worktree:\n  source-branch: develop\n")
-		_, err := GetConfigValue(dir, "worktree.copy-files")
+		_, err := GetConfigValue(dir, "worktree.includes")
 		if err != errKeyNotFound {
 			t.Errorf("expected errKeyNotFound, got %v", err)
 		}
@@ -694,13 +694,13 @@ func TestWorktreeConfig(t *testing.T) {
 		if cfg.Worktree.SourceBranch != "main" {
 			t.Errorf("expected 'main', got %q", cfg.Worktree.SourceBranch)
 		}
-		if cfg.Worktree.CopyFiles != nil {
-			t.Errorf("expected CopyFiles nil, got %v", cfg.Worktree.CopyFiles)
+		if cfg.Worktree.Includes != nil {
+			t.Errorf("expected Includes nil, got %v", cfg.Worktree.Includes)
 		}
 	})
 
-	t.Run("only copy-files", func(t *testing.T) {
-		dir := setupConfig(t, "worktree:\n  copy-files:\n    - .env\n")
+	t.Run("only includes", func(t *testing.T) {
+		dir := setupConfig(t, "worktree:\n  includes:\n    - .env\n")
 		cfg, err := ReadConfig(dir)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
@@ -708,8 +708,8 @@ func TestWorktreeConfig(t *testing.T) {
 		if cfg.Worktree.SourceBranch != "" {
 			t.Errorf("expected empty source-branch, got %q", cfg.Worktree.SourceBranch)
 		}
-		if len(cfg.Worktree.CopyFiles) != 1 || cfg.Worktree.CopyFiles[0] != ".env" {
-			t.Errorf("expected [.env], got %v", cfg.Worktree.CopyFiles)
+		if len(cfg.Worktree.Includes) != 1 || cfg.Worktree.Includes[0] != ".env" {
+			t.Errorf("expected [.env], got %v", cfg.Worktree.Includes)
 		}
 	})
 }

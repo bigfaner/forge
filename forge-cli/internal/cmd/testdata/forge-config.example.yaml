@@ -61,10 +61,10 @@ auto:
 
 # Worktree creation configuration (optional — omit the block for default behavior)
 # source-branch: default branch to create worktrees from (defaults to HEAD)
-# copy-files: files to copy from project root into new worktrees (e.g., .env files)
+# includes: files to include from project root into new worktrees (e.g., .env files)
 # worktree:
 #   source-branch: develop
-#   copy-files:
+#   includes:
 #     - .env
 #     - .env.local
 

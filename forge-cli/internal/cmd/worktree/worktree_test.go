@@ -102,7 +102,7 @@ func TestWorktreeStart_ErrorWhenClaudeNotInPath(t *testing.T) {
 // worktree start: directory conflict checks
 // ---------------------------------------------------------------------------
 
-func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
+func TestWorktreeStart_EntersExistingWorktree(t *testing.T) {
 	resetSourceBranchFlag(t)
 
 	// Make claude available
@@ -115,7 +115,117 @@ func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
 	}
 	defer func() { lookPathFunc = origLookPath }()
 
-	// Don't actually launch claude
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real git worktree at .forge/worktrees/<slug>
+	slug := "test-slug"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error when worktree already exists, got: %v", err)
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "entering existing worktree") {
+		t.Errorf("stderr should mention 'entering existing worktree', got: %s", stderr)
+	}
+
+	// Verify claude was launched with fresh session args (no -c)
+	if len(capturedArgs) == 0 {
+		t.Fatal("claude should have been launched")
+	}
+	if capturedArgs[0] != "--dangerously-skip-permissions" {
+		t.Errorf("first arg should be --dangerously-skip-permissions, got %q", capturedArgs[0])
+	}
+}
+
+func TestWorktreeStart_ErrorWhenExistingDirMissingGitFile(t *testing.T) {
+	resetSourceBranchFlag(t)
+
+	// Make claude available
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a directory but WITHOUT .git file (corrupt worktree)
+	slug := "corrupt-slug"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(targetDir, 0o755); err != nil {
+		t.Fatalf("create target dir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(filepath.Dir(targetDir))) })
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Error("expected error when .git file is missing")
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "not a valid git worktree") {
+		t.Errorf("error should mention 'not a valid git worktree', got: %s", stderr)
+	}
+	if !strings.Contains(stderr, "forge worktree remove") {
+		t.Errorf("error should suggest 'forge worktree remove', got: %s", stderr)
+	}
+}
+
+func TestWorktreeStart_IgnoresSourceBranchWhenExisting(t *testing.T) {
+	resetSourceBranchFlag(t)
+
+	// Make claude available
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
 	origRunClaude := runClaudeFunc
 	runClaudeFunc = func(_ []string) error { return nil }
 	defer func() { runClaudeFunc = origRunClaude }()
@@ -126,25 +236,200 @@ func TestWorktreeStart_ErrorWhenTargetDirExists(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Create the target directory ahead of time at .forge/worktrees/<slug>
-	targetDir := filepath.Join(dir, ".forge", "worktrees", "test-slug")
-	if err := os.MkdirAll(targetDir, 0o755); err != nil {
-		t.Fatalf("create target dir: %v", err)
+	// Create a real git worktree
+	slug := "existing-wt"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
 	}
-	t.Cleanup(func() { _ = os.RemoveAll(filepath.Dir(filepath.Dir(targetDir))) })
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
 
 	buf := new(bytes.Buffer)
 	Cmd.SetOut(buf)
 	Cmd.SetErr(buf)
-	Cmd.SetArgs([]string{"start", "test-slug"})
+	Cmd.SetArgs([]string{"start", slug, "--source-branch", "master"})
 
 	err := Cmd.Execute()
-	if err == nil {
-		t.Error("expected error when target directory already exists")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 	stderr := buf.String()
-	if !strings.Contains(stderr, "already exists") {
-		t.Errorf("error should mention 'already exists', got: %s", stderr)
+	if !strings.Contains(stderr, "ignoring --source-branch") {
+		t.Errorf("stderr should warn about ignoring --source-branch, got: %s", stderr)
+	}
+}
+
+func TestWorktreeStart_NoLaunchExistingWorktree(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetNoLaunchFlag(t)
+
+	// Make claude available (won't be called due to --no-launch)
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a real git worktree
+	slug := "nolaunch-existing"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug, "--no-launch"})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	stdout := buf.String()
+	if !strings.Contains(stdout, "worktree path:") {
+		t.Errorf("stdout should contain worktree path, got: %s", stdout)
+	}
+}
+
+func TestWorktreeStart_SkipsIncludesCopyWhenExisting(t *testing.T) {
+	resetSourceBranchFlag(t)
+
+	// Make claude available
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create .forge/config.yaml with includes
+	forgeDir := filepath.Join(dir, ".forge")
+	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
+		t.Fatalf("mkdir .forge: %v", err)
+	}
+	configContent := "worktree:\n  includes:\n    - .env\n"
+	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
+		t.Fatalf("write config.yaml: %v", err)
+	}
+	// Create the .env file in project root
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte("KEY=VALUE"), 0o644); err != nil {
+		t.Fatalf("write .env: %v", err)
+	}
+
+	// Create a real git worktree
+	slug := "includes-skip-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	// Do NOT copy .env into worktree — it should NOT be copied on existing worktree
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify .env was NOT copied to worktree (includes skipped for existing worktree)
+	if _, err := os.Stat(filepath.Join(targetDir, ".env")); !os.IsNotExist(err) {
+		t.Error(".env should NOT have been copied to existing worktree")
+	}
+}
+
+func TestWorktreeStart_NewWorktreeOutputCreatedKeyword(t *testing.T) {
+	resetSourceBranchFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(_ []string) error { return nil }
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	slug := "keyword-test"
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", slug})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	stderr := buf.String()
+	if !strings.Contains(stderr, "created new worktree") {
+		t.Errorf("stderr should contain 'created new worktree', got: %s", stderr)
 	}
 }
 
@@ -2121,10 +2406,10 @@ func initGitRepoForWorktree(t *testing.T) string {
 }
 
 // ---------------------------------------------------------------------------
-// validateCopyFilePath: path validation
+// validateIncludePath: path validation
 // ---------------------------------------------------------------------------
 
-func TestValidateCopyFilePath(t *testing.T) {
+func TestValidateIncludePath(t *testing.T) {
 	tests := []struct {
 		name    string
 		path    string
@@ -2142,19 +2427,19 @@ func TestValidateCopyFilePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateCopyFilePath(tt.path)
+			err := validateIncludePath(tt.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("validateCopyFilePath(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
+				t.Errorf("validateIncludePath(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
 			}
 		})
 	}
 }
 
 // ---------------------------------------------------------------------------
-// copyFilesToWorktree: file copy logic
+// copyIncludesToWorktree: file copy logic
 // ---------------------------------------------------------------------------
 
-func TestCopyFilesToWorktree_CopiesSingleFile(t *testing.T) {
+func TestCopyIncludesToWorktree_CopiesSingleFile(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2163,7 +2448,7 @@ func TestCopyFilesToWorktree_CopiesSingleFile(t *testing.T) {
 		t.Fatalf("write .env: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{".env"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{".env"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2178,7 +2463,7 @@ func TestCopyFilesToWorktree_CopiesSingleFile(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_CopiesMultipleFiles(t *testing.T) {
+func TestCopyIncludesToWorktree_CopiesMultipleFiles(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2190,7 +2475,7 @@ func TestCopyFilesToWorktree_CopiesMultipleFiles(t *testing.T) {
 		t.Fatalf("write .env.local: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{".env", ".env.local"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{".env", ".env.local"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2202,7 +2487,7 @@ func TestCopyFilesToWorktree_CopiesMultipleFiles(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_OverwritesExistingFile(t *testing.T) {
+func TestCopyIncludesToWorktree_OverwritesExistingFile(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2215,7 +2500,7 @@ func TestCopyFilesToWorktree_OverwritesExistingFile(t *testing.T) {
 		t.Fatalf("write old .env: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{".env"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{".env"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2229,7 +2514,7 @@ func TestCopyFilesToWorktree_OverwritesExistingFile(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_CopiesNestedFile(t *testing.T) {
+func TestCopyIncludesToWorktree_CopiesNestedFile(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
@@ -2242,7 +2527,7 @@ func TestCopyFilesToWorktree_CopiesNestedFile(t *testing.T) {
 		t.Fatalf("write app.conf: %v", err)
 	}
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{"config/app.conf"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{"config/app.conf"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -2256,21 +2541,21 @@ func TestCopyFilesToWorktree_CopiesNestedFile(t *testing.T) {
 	}
 }
 
-func TestCopyFilesToWorktree_ErrorOnInvalidPath(t *testing.T) {
+func TestCopyIncludesToWorktree_ErrorOnInvalidPath(t *testing.T) {
 	projectRoot := t.TempDir()
 	worktreeDir := t.TempDir()
 
-	err := copyFilesToWorktree(projectRoot, worktreeDir, []string{"../../etc/passwd"})
+	err := copyIncludesToWorktree(projectRoot, worktreeDir, []string{"../../etc/passwd"})
 	if err == nil {
 		t.Error("expected error for path traversal")
 	}
 }
 
 // ---------------------------------------------------------------------------
-// validateCopyFiles: pre-validation of all copy-files
+// validateIncludes: pre-validation of all includes
 // ---------------------------------------------------------------------------
 
-func TestValidateCopyFiles_AllFilesExist(t *testing.T) {
+func TestValidateIncludes_AllFilesExist(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create files
@@ -2281,13 +2566,13 @@ func TestValidateCopyFiles_AllFilesExist(t *testing.T) {
 		t.Fatalf("write .env.local: %v", err)
 	}
 
-	err := validateCopyFiles(dir, []string{".env", ".env.local"})
+	err := validateIncludes(dir, []string{".env", ".env.local"})
 	if err != nil {
 		t.Errorf("expected no error when all files exist, got: %v", err)
 	}
 }
 
-func TestValidateCopyFiles_MissingFile(t *testing.T) {
+func TestValidateIncludes_MissingFile(t *testing.T) {
 	dir := t.TempDir()
 
 	// Create only one of two files
@@ -2295,38 +2580,38 @@ func TestValidateCopyFiles_MissingFile(t *testing.T) {
 		t.Fatalf("write .env: %v", err)
 	}
 
-	err := validateCopyFiles(dir, []string{".env", ".env.missing"})
+	err := validateIncludes(dir, []string{".env", ".env.missing"})
 	if err == nil {
-		t.Error("expected error when a copy-file is missing")
+		t.Error("expected error when an include file is missing")
 	}
 	if !strings.Contains(err.Error(), ".env.missing") {
 		t.Errorf("error should mention the missing file, got: %v", err)
 	}
 }
 
-func TestValidateCopyFiles_InvalidPathRejected(t *testing.T) {
+func TestValidateIncludes_InvalidPathRejected(t *testing.T) {
 	dir := t.TempDir()
 
-	err := validateCopyFiles(dir, []string{"/etc/passwd"})
+	err := validateIncludes(dir, []string{"/etc/passwd"})
 	if err == nil {
 		t.Error("expected error for absolute path")
 	}
 }
 
-func TestValidateCopyFiles_EmptyList(t *testing.T) {
+func TestValidateIncludes_EmptyList(t *testing.T) {
 	dir := t.TempDir()
 
-	err := validateCopyFiles(dir, nil)
+	err := validateIncludes(dir, nil)
 	if err != nil {
 		t.Errorf("expected no error for empty list, got: %v", err)
 	}
 }
 
 // ---------------------------------------------------------------------------
-// worktree start: copy-files integration
+// worktree start: includes integration
 // ---------------------------------------------------------------------------
 
-func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
+func TestWorktreeStart_IncludesFromConfig(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -2352,17 +2637,17 @@ func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
 		t.Fatalf("write .env: %v", err)
 	}
 
-	// Create .forge/config.yaml with copy-files
+	// Create .forge/config.yaml with includes
 	forgeDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatalf("mkdir .forge: %v", err)
 	}
-	configContent := "worktree:\n  copy-files:\n    - .env\n"
+	configContent := "worktree:\n  includes:\n    - .env\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.yaml: %v", err)
 	}
 
-	slug := "copy-files-test"
+	slug := "includes-test"
 	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
 	t.Cleanup(func() {
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
@@ -2389,7 +2674,7 @@ func TestWorktreeStart_CopyFilesFromConfig(t *testing.T) {
 	}
 }
 
-func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
+func TestWorktreeStart_AbortsWhenIncludeFileMissing(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -2408,12 +2693,12 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 
 	// .env does NOT exist in project root
 
-	// Create .forge/config.yaml with copy-files
+	// Create .forge/config.yaml with includes
 	forgeDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatalf("mkdir .forge: %v", err)
 	}
-	configContent := "worktree:\n  copy-files:\n    - .env\n"
+	configContent := "worktree:\n  includes:\n    - .env\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.yaml: %v", err)
 	}
@@ -2425,7 +2710,7 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 
 	err := Cmd.Execute()
 	if err == nil {
-		t.Error("expected error when copy-file is missing from project root")
+		t.Error("expected error when include file is missing from project root")
 	}
 	stderr := buf.String()
 	if !strings.Contains(stderr, ".env") {
@@ -2439,7 +2724,7 @@ func TestWorktreeStart_AbortsWhenCopyFileMissing(t *testing.T) {
 		// Clean up any orphan worktree
 		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
 		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
-		t.Error("worktree should NOT have been created when copy-file is missing")
+		t.Error("worktree should NOT have been created when include file is missing")
 	}
 }
 
@@ -2489,7 +2774,7 @@ func TestWorktreeStart_NoCopyWhenConfigAbsent(t *testing.T) {
 	}
 }
 
-func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
+func TestWorktreeStart_NoCopyWhenIncludesEmpty(t *testing.T) {
 	resetSourceBranchFlag(t)
 	origLookPath := lookPathFunc
 	lookPathFunc = func(name string) (string, error) {
@@ -2510,12 +2795,12 @@ func TestWorktreeStart_NoCopyWhenCopyFilesEmpty(t *testing.T) {
 	t.Cleanup(func() { _ = os.Chdir(origWd) })
 	_ = os.Chdir(dir)
 
-	// Create .forge/config.yaml with empty copy-files
+	// Create .forge/config.yaml with empty includes
 	forgeDir := filepath.Join(dir, ".forge")
 	if err := os.MkdirAll(forgeDir, 0o755); err != nil {
 		t.Fatalf("mkdir .forge: %v", err)
 	}
-	configContent := "worktree:\n  copy-files: []\n"
+	configContent := "worktree:\n  includes: []\n"
 	if err := os.WriteFile(filepath.Join(forgeDir, "config.yaml"), []byte(configContent), 0o644); err != nil {
 		t.Fatalf("write config.yaml: %v", err)
 	}
@@ -4161,6 +4446,98 @@ func TestWorktreeStart_InteractiveSelectsProposal(t *testing.T) {
 	// Verify worktree was created with the selected slug
 	if _, err := os.Stat(targetDir); os.IsNotExist(err) {
 		t.Errorf("worktree directory %s should exist", targetDir)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// interactive mode: selecting a slug whose worktree already exists (AC-3)
+// ---------------------------------------------------------------------------
+
+func TestWorktreeStart_InteractiveExistingWorktreeEntersIdempotent(t *testing.T) {
+	resetSourceBranchFlag(t)
+	resetInteractiveFlag(t)
+
+	origLookPath := lookPathFunc
+	lookPathFunc = func(name string) (string, error) {
+		if name == "claude" {
+			return "/usr/bin/claude", nil
+		}
+		return exec.LookPath(name)
+	}
+	defer func() { lookPathFunc = origLookPath }()
+
+	var capturedArgs []string
+	origRunClaude := runClaudeFunc
+	runClaudeFunc = func(args []string) error {
+		capturedArgs = args
+		return nil
+	}
+	defer func() { runClaudeFunc = origRunClaude }()
+
+	// Override isTerminal to return true
+	origIsTerminal := isTerminalFunc
+	isTerminalFunc = func() bool { return true }
+	defer func() { isTerminalFunc = origIsTerminal }()
+
+	// Mock stdin to return "1"
+	origStdin := stdinFunc
+	stdinFunc = func() (string, error) { return "1", nil }
+	defer func() { stdinFunc = origStdin }()
+
+	dir := initGitRepoForWorktree(t)
+	t.Setenv("CLAUDE_PROJECT_DIR", dir)
+	origWd, _ := os.Getwd()
+	t.Cleanup(func() { _ = os.Chdir(origWd) })
+	_ = os.Chdir(dir)
+
+	// Create a proposal so interactive mode has something to list
+	slug := "interactive-existing"
+	proposalDir := filepath.Join(dir, "docs", "proposals", slug)
+	if err := os.MkdirAll(proposalDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	content := "---\nstatus: Draft\ncreated: 2026-01-01\n---\n# Test"
+	if err := os.WriteFile(filepath.Join(proposalDir, "proposal.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Pre-create the worktree (so it already exists when interactive selects it)
+	targetDir := filepath.Join(dir, ".forge", "worktrees", slug)
+	if err := os.MkdirAll(filepath.Dir(targetDir), 0o755); err != nil {
+		t.Fatalf("mkdir .forge/worktrees: %v", err)
+	}
+	cmd := exec.Command("git", "worktree", "add", "-b", slug, targetDir)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("git worktree add: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = exec.Command("git", "worktree", "remove", targetDir, "--force").Run()
+		_ = exec.Command("git", "-C", dir, "branch", "-D", slug).Run()
+	})
+
+	buf := new(bytes.Buffer)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"start", "-i"})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+
+	// Should output "entering existing worktree" on stderr
+	output := buf.String()
+	if !strings.Contains(output, "entering existing worktree") {
+		t.Errorf("output should mention 'entering existing worktree', got: %s", output)
+	}
+
+	// Should launch claude with fresh session args (same as explicit slug)
+	if len(capturedArgs) == 0 {
+		t.Fatal("claude should have been launched")
+	}
+	if capturedArgs[0] != "--dangerously-skip-permissions" {
+		t.Errorf("first arg should be --dangerously-skip-permissions, got %q", capturedArgs[0])
 	}
 }
 

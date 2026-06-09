@@ -114,18 +114,18 @@ func init() {
 }
 
 // ---------------------------------------------------------------------------
-// File operation helpers (copy-files for worktree start)
+// File operation helpers (includes for worktree start)
 // ---------------------------------------------------------------------------
 
-// validateCopyFilePath checks that a single copy-file path is safe.
+// validateIncludePath checks that a single include path is safe.
 // Rejects absolute paths and paths containing ".." traversals.
-func validateCopyFilePath(relPath string) error {
+func validateIncludePath(relPath string) error {
 	if filepath.IsAbs(relPath) {
-		return base.NewAIError(base.ErrInvalidPath, fmt.Sprintf("Copy-file path must be relative: %s", relPath), "Absolute paths are not allowed for copy-files", "Use a relative path", "forge config set worktree.copy-files [path]")
+		return base.NewAIError(base.ErrInvalidPath, fmt.Sprintf("Include path must be relative: %s", relPath), "Absolute paths are not allowed for includes", "Use a relative path", "forge config set worktree.includes [path]")
 	}
 	// Reject Windows-style absolute paths (e.g. C:\Windows) on all platforms.
 	if len(relPath) >= 2 && relPath[1] == ':' && (relPath[2] == '\\' || relPath[2] == '/') {
-		return base.NewAIError(base.ErrInvalidPath, fmt.Sprintf("Copy-file path must be relative: %s", relPath), "Absolute paths are not allowed for copy-files", "Use a relative path", "forge config set worktree.copy-files [path]")
+		return base.NewAIError(base.ErrInvalidPath, fmt.Sprintf("Include path must be relative: %s", relPath), "Absolute paths are not allowed for includes", "Use a relative path", "forge config set worktree.includes [path]")
 	}
 	if strings.Contains(relPath, "..") {
 		return base.NewAIError(base.ErrInvalidPath, fmt.Sprintf("Copy-file path must not contain \"..\": %s", relPath), "Path traversal is not allowed", "Use a simple relative path without ..", relPath)
@@ -133,27 +133,27 @@ func validateCopyFilePath(relPath string) error {
 	return nil
 }
 
-// validateCopyFiles pre-validates that all copy-files exist in the project root
+// validateIncludes pre-validates that all includes exist in the project root
 // and have safe paths. Returns an error describing the first problem found.
-// Returns nil if copyFiles is empty or nil.
-func validateCopyFiles(projectRoot string, copyFiles []string) error {
-	for _, relPath := range copyFiles {
-		if err := validateCopyFilePath(relPath); err != nil {
+// Returns nil if includes is empty or nil.
+func validateIncludes(projectRoot string, includes []string) error {
+	for _, relPath := range includes {
+		if err := validateIncludePath(relPath); err != nil {
 			return err
 		}
 		fullPath := filepath.Join(projectRoot, relPath)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-			return base.NewAIError(base.ErrNotFound, fmt.Sprintf("Copy-file not found: %s", relPath), "The specified copy-file does not exist in the project root", "Verify the file exists", "ls "+relPath)
+			return base.NewAIError(base.ErrNotFound, fmt.Sprintf("Include file not found: %s", relPath), "The specified include file does not exist in the project root", "Verify the file exists", "ls "+relPath)
 		}
 	}
 	return nil
 }
 
-// copyFilesToWorktree copies the listed files from projectRoot to worktreeDir.
+// copyIncludesToWorktree copies the listed files from projectRoot to worktreeDir.
 // Creates parent directories as needed. Overwrites existing files.
-// Returns nil if copyFiles is empty or nil.
-func copyFilesToWorktree(projectRoot, worktreeDir string, copyFiles []string) error {
-	for _, relPath := range copyFiles {
+// Returns nil if includes is empty or nil.
+func copyIncludesToWorktree(projectRoot, worktreeDir string, includes []string) error {
+	for _, relPath := range includes {
 		src := filepath.Join(projectRoot, relPath)
 		dst := filepath.Join(worktreeDir, relPath)
 

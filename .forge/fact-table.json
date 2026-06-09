@@ -305,6 +305,168 @@
       "value": "all dependencies must exist in the index; wildcard deps (e.g. 1.x) expand to matching business task IDs",
       "confidence": "inferred",
       "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CLI_START_COMMAND",
+      "source": "static",
+      "subject": "forge worktree start command signature",
+      "kind": "signature",
+      "value": "forge worktree start [slug] [--source-branch branch] [--no-launch] [--interactive/-i]; max 1 arg; source: cmd_start.go:17-31",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CLI_REMOVE_COMMAND",
+      "source": "static",
+      "subject": "forge worktree remove command signature",
+      "kind": "signature",
+      "value": "forge worktree remove <slug> [--hard] [--force]; exactly 1 arg; source: cmd_remove.go:17-33",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_IDEMPOTENT_CHECK",
+      "source": "static",
+      "subject": "Worktree start idempotent directory check logic",
+      "kind": "signature",
+      "value": "os.Stat(targetDir) succeeds + IsDir -> validates .git file exists -> enters existing; source: cmd_start.go:107-143",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CORRUPTION_DETECTION",
+      "source": "static",
+      "subject": "Corrupted worktree detection logic",
+      "kind": "error_code",
+      "value": "directory exists but .git file missing -> stderr: 'error: worktree directory exists but is not a valid git worktree' + hint: 'forge worktree remove <slug>'; exit non-zero; source: cmd_start.go:114-118",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_SOURCE_BRANCH_WARNING",
+      "source": "static",
+      "subject": "--source-branch ignored warning on existing worktree",
+      "kind": "output_format",
+      "value": "stderr: 'warning: worktree already exists, ignoring --source-branch'; source: cmd_start.go:121-123",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_ENTERING_EXISTING",
+      "source": "static",
+      "subject": "Entering existing worktree message",
+      "kind": "output_format",
+      "value": "stderr: 'entering existing worktree: <slug>'; source: cmd_start.go:125",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CREATED_NEW",
+      "source": "static",
+      "subject": "Created new worktree message",
+      "kind": "output_format",
+      "value": "stderr: 'created new worktree: <slug>'; source: cmd_start.go:237",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_NO_LAUNCH_PATH",
+      "source": "static",
+      "subject": "--no-launch output for existing worktree",
+      "kind": "output_format",
+      "value": "stdout: 'worktree path: <resolvedDir>'; exit 0; no claude session; source: cmd_start.go:128-131",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_NO_LAUNCH_NEW",
+      "source": "static",
+      "subject": "--no-launch output for new worktree",
+      "kind": "output_format",
+      "value": "stdout: 'worktree created at <targetDir>'; exit 0; no claude session; source: cmd_start.go:240-243",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INCLUDES_CONFIG",
+      "source": "static",
+      "subject": "Worktree includes config field",
+      "kind": "signature",
+      "value": "WorktreeConfig.Includes []string yaml:includes; source: config.go:72-75",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INCLUDES_COPY",
+      "source": "static",
+      "subject": "Includes file copying behavior",
+      "kind": "side_effect",
+      "value": "copyIncludesToWorktree copies files from projectRoot to worktreeDir; creates parent dirs; overwrites existing; only during creation (not re-entry); source: helpers.go:152-174",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INCLUDES_VALIDATION",
+      "source": "static",
+      "subject": "Includes path validation rules",
+      "kind": "precondition",
+      "value": "rejects absolute paths, Windows absolute paths, paths containing '..'; verifies file exists in projectRoot; source: helpers.go:120-150",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_BRANCH_RESOLUTION",
+      "source": "static",
+      "subject": "Worktree branch resolution three-layer strategy",
+      "kind": "signature",
+      "value": "Layer 1: local branch exists -> resume; Layer 2: remote branch exists -> create from remote; Layer 3: new branch from source-branch or HEAD; source: cmd_start.go:168-227",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_REMOVE_NOT_FOUND",
+      "source": "static",
+      "subject": "Worktree remove not found error",
+      "kind": "error_code",
+      "value": "targetDir does not exist -> AIError NOT_FOUND 'Worktree not found: <path>'; source: cmd_remove.go:63",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_REMOVE_UNPUSHED",
+      "source": "static",
+      "subject": "Worktree remove unpushed commits check",
+      "kind": "precondition",
+      "value": "checks unpushed commits before removal; blocks without --force; stderr: 'error: branch has N unpushed commit(s)'; source: cmd_remove.go:79-87",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INTERACTIVE_TTY_CHECK",
+      "source": "static",
+      "subject": "Interactive mode TTY requirement",
+      "kind": "precondition",
+      "value": "-i flag requires real terminal (TTY); non-TTY -> stderr: 'error: interactive mode requires a terminal (TTY)'; source: cmd_start.go:49-52",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INTERACTIVE_NO_ITEMS",
+      "source": "static",
+      "subject": "Interactive mode when no unfinished items exist",
+      "kind": "output_format",
+      "value": "stdout: 'No unfinished proposals or features found.' + 'Create one with: forge proposal <slug> or forge feature <slug>'; exit 0; source: cmd_start.go:55-59",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_WORKTREE_LIST_PORCELAIN",
+      "source": "static",
+      "subject": "Git worktree list porcelain parsing",
+      "kind": "signature",
+      "value": "git worktree list --porcelain; ParsePorcelainWorktrees returns []WorktreeEntry with Path, HEAD, Branch, IsMain; source: worktree_list.go:25-77",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
     }
   ]
 }

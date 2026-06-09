@@ -178,15 +178,15 @@ func TestTC_001_QuickModeSingleProfileTaskCount(t *testing.T) {
 	idx := quickSlimReadIndex(t, dir, "test-qts-001")
 
 	// Count auto-generated pipeline tasks (T-test-* and T-quick-doc-drift)
-	// Quick staged topology: gen-journeys(1) + run-test-backend(1) + run-test-frontend(1) = 3 test tasks
-	// Plus quick-drift-detection(1) = 4 total auto-gen tasks
+	// Quick staged topology: gen-journeys(1) + gen-contracts(1) + gen-scripts-backend(1) + gen-scripts-frontend(1) + run-test-backend(1) + run-test-frontend(1) = 6 test tasks
+	// Plus quick-drift-detection(1) = 7 total auto-gen tasks
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-test-") || strings.HasPrefix(task.ID, "T-quick-") {
 			testTaskCount++
 		}
 	}
-	assert.Equal(t, 4, testTaskCount, "quick mode with go profile (2 surfaces) should generate exactly 4 pipeline tasks")
+	assert.Equal(t, 7, testTaskCount, "quick mode with go profile (2 surfaces) should generate exactly 7 pipeline tasks")
 }
 
 // =============================================================================
@@ -253,18 +253,40 @@ func TestTC_005_QuickModeDependencyChainCorrect(t *testing.T) {
 	}
 
 	// Verify dependency chain in quick staged topology
-	t.Run("T-test-run-backend depends on T-test-gen-journeys", func(t *testing.T) {
-		task, ok := byID["T-test-run-backend"]
-		require.True(t, ok, "T-test-run-backend should exist")
+	// Chain: gen-journeys -> gen-contracts -> gen-scripts-backend -> run-test-backend -> gen-scripts-frontend -> run-test-frontend
+	t.Run("T-test-gen-contracts depends on T-test-gen-journeys", func(t *testing.T) {
+		task, ok := byID["T-test-gen-contracts"]
+		require.True(t, ok, "T-test-gen-contracts should exist")
 		assert.Contains(t, task.Dependencies, "T-test-gen-journeys",
-			"T-test-run-backend should depend on T-test-gen-journeys")
+			"T-test-gen-contracts should depend on T-test-gen-journeys")
 	})
 
-	t.Run("T-test-run-frontend depends on T-test-run-backend (serial chain)", func(t *testing.T) {
+	t.Run("T-test-gen-scripts-backend depends on T-test-gen-contracts", func(t *testing.T) {
+		task, ok := byID["T-test-gen-scripts-backend"]
+		require.True(t, ok, "T-test-gen-scripts-backend should exist")
+		assert.Contains(t, task.Dependencies, "T-test-gen-contracts",
+			"T-test-gen-scripts-backend should depend on T-test-gen-contracts")
+	})
+
+	t.Run("T-test-run-backend depends on T-test-gen-scripts-backend", func(t *testing.T) {
+		task, ok := byID["T-test-run-backend"]
+		require.True(t, ok, "T-test-run-backend should exist")
+		assert.Contains(t, task.Dependencies, "T-test-gen-scripts-backend",
+			"T-test-run-backend should depend on T-test-gen-scripts-backend")
+	})
+
+	t.Run("T-test-gen-scripts-frontend depends on T-test-run-backend", func(t *testing.T) {
+		task, ok := byID["T-test-gen-scripts-frontend"]
+		require.True(t, ok, "T-test-gen-scripts-frontend should exist")
+		assert.Contains(t, task.Dependencies, "T-test-run-backend",
+			"T-test-gen-scripts-frontend should depend on T-test-run-backend")
+	})
+
+	t.Run("T-test-run-frontend depends on T-test-gen-scripts-frontend", func(t *testing.T) {
 		task, ok := byID["T-test-run-frontend"]
 		require.True(t, ok, "T-test-run-frontend should exist")
-		assert.Contains(t, task.Dependencies, "T-test-run-backend",
-			"T-test-run-frontend should depend on T-test-run-backend")
+		assert.Contains(t, task.Dependencies, "T-test-gen-scripts-frontend",
+			"T-test-run-frontend should depend on T-test-gen-scripts-frontend")
 	})
 
 	t.Run("T-quick-doc-drift depends on T-test-run-frontend", func(t *testing.T) {
@@ -292,17 +314,17 @@ func TestTC_006_QuickModeRunTestSerialChainFanIn(t *testing.T) {
 		byID[task.ID] = task
 	}
 
-	// First run-test depends on gen-journeys
+	// First run-test depends on gen-scripts-backend (which depends on gen-contracts -> gen-journeys)
 	task, ok := byID["T-test-run-backend"]
 	require.True(t, ok, "T-test-run-backend should exist")
-	assert.Contains(t, task.Dependencies, "T-test-gen-journeys",
-		"T-test-run-backend should depend on T-test-gen-journeys")
+	assert.Contains(t, task.Dependencies, "T-test-gen-scripts-backend",
+		"T-test-run-backend should depend on T-test-gen-scripts-backend")
 
-	// Second run-test depends on first (serial chain)
+	// Second run-test depends on gen-scripts-frontend (which depends on run-test-backend)
 	task2, ok := byID["T-test-run-frontend"]
 	require.True(t, ok, "T-test-run-frontend should exist")
-	assert.Contains(t, task2.Dependencies, "T-test-run-backend",
-		"T-test-run-frontend should depend on T-test-run-backend")
+	assert.Contains(t, task2.Dependencies, "T-test-gen-scripts-frontend",
+		"T-test-run-frontend should depend on T-test-gen-scripts-frontend")
 
 	// drift depends on last run-test
 	driftTask, ok := byID["T-quick-doc-drift"]
@@ -463,15 +485,15 @@ func TestTC_012_QuickModeSingleProfileProducesCorrectTaskCount(t *testing.T) {
 	idx := quickSlimReadIndex(t, dir, "test-qts-012")
 
 	// Quick staged topology with surfaces {backend: api, frontend: cli}:
-	// gen-journeys(1) + run-test-backend(1) + run-test-frontend(1) + drift(1) = 4
+	// gen-journeys(1) + gen-contracts(1) + gen-scripts-backend(1) + gen-scripts-frontend(1) + run-test-backend(1) + run-test-frontend(1) + drift(1) = 7
 	testTaskCount := 0
 	for _, task := range idx.Tasks {
 		if strings.HasPrefix(task.ID, "T-test-") || strings.HasPrefix(task.ID, "T-quick-") {
 			testTaskCount++
 		}
 	}
-	assert.Equal(t, 4, testTaskCount,
-		"single profile quick mode with 2 surfaces should produce exactly 4 pipeline tasks")
+	assert.Equal(t, 7, testTaskCount,
+		"single profile quick mode with 2 surfaces should produce exactly 7 pipeline tasks")
 }
 
 

@@ -96,8 +96,9 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 	// Use git worktree remove
 	_, err = git.Run(projectRoot, removeArgs...)
 	if err != nil {
-		// Check if error is due to uncommitted changes
 		errMsg := err.Error()
+
+		// Check if error is due to uncommitted changes
 		if strings.Contains(errMsg, "dirty") || strings.Contains(errMsg, "modified") ||
 			strings.Contains(errMsg, "local changes") {
 			if hard && !force {
@@ -108,7 +109,21 @@ func runWorktreeRemove(cmd *cobra.Command, args []string) error {
 			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "hint: commit or stash your changes before removing, or use --force to discard\n")
 			return fmt.Errorf("uncommitted changes in worktree: %w", err)
 		}
-		return base.NewAIError(base.ErrConflict, fmt.Sprintf("Failed to remove worktree: %v", err), "Git worktree remove command failed", "Check git status and retry", "forge worktree list")
+
+		// Fallback: handle corrupted worktrees (e.g. missing .git file)
+		// git worktree remove fails with ".git does not exist" or "not a valid working tree"
+		// In this case, manually remove the directory and prune stale administrative files.
+		if strings.Contains(errMsg, ".git") || strings.Contains(errMsg, "validation failed") ||
+			strings.Contains(errMsg, "not a valid") || strings.Contains(errMsg, "could not identify") {
+			_, _ = fmt.Fprintf(cmd.ErrOrStderr(), "warning: git worktree remove failed, falling back to manual cleanup: %v\n", err)
+			if removeErr := os.RemoveAll(targetDir); removeErr != nil {
+				return base.NewAIError(base.ErrConflict, fmt.Sprintf("Failed to remove worktree directory: %v", removeErr), "Manual worktree directory removal failed", "Check directory permissions and retry", "forge worktree list")
+			}
+			// Prune stale worktree administrative files so git no longer tracks it
+			_, _ = git.Run(projectRoot, "worktree", "prune")
+		} else {
+			return base.NewAIError(base.ErrConflict, fmt.Sprintf("Failed to remove worktree: %v", err), "Git worktree remove command failed", "Check git status and retry", "forge worktree list")
+		}
 	}
 
 	_, _ = fmt.Fprintf(cmd.OutOrStdout(), "Removed worktree %q\n", slug)

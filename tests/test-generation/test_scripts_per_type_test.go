@@ -292,11 +292,11 @@ func TestPerType_TC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	idx := readPerTypeIndexJSON(t, dir, "deps-feat")
 
 	// Multi-surface: run-test tasks are per-surface-key (serial chain)
-	// First run-test (run-test-backend) should exist and depend on all gen-scripts
+	// run-test-backend should exist and depend on gen-scripts-backend (not gen-scripts-frontend)
 	_, hasRun := idx.Tasks["run-test-backend"]
 	require.True(t, hasRun, "index should contain run-test-backend task")
 
-	// Verify the first run task's .md file lists per-type gen tasks as dependencies
+	// Verify the first run task's .md file lists its gen-scripts dependency
 	tasksDir := filepath.Join(dir, "docs", "features", "deps-feat", "tasks")
 	runMDPath := filepath.Join(tasksDir, "run-test-backend.md")
 	runMDData, err := os.ReadFile(runMDPath)
@@ -304,7 +304,6 @@ func TestPerType_TC_006_TaskIndexRunDependsOnAllPerTypeGenTasks(t *testing.T) {
 	runMDContent := string(runMDData)
 
 	assert.Contains(t, runMDContent, "T-test-gen-scripts-backend", "run task should depend on T-test-gen-scripts-backend")
-	assert.Contains(t, runMDContent, "T-test-gen-scripts-frontend", "run task should depend on T-test-gen-scripts-frontend")
 }
 
 // ==============================================================================

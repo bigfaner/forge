@@ -163,7 +163,7 @@ func askAutoBehavior() (*forgeconfig.AutoConfig, bool) {
 }
 
 // askWorktreeConfig runs the optional worktree config steps.
-// Returns nil if both source-branch and copy-files are empty (skippable).
+// Returns nil if both source-branch and includes are empty (skippable).
 // Returns (config, cancelled).
 func askWorktreeConfig() (*forgeconfig.WorktreeConfig, bool) {
 	var sourceBranch string
@@ -180,19 +180,19 @@ func askWorktreeConfig() (*forgeconfig.WorktreeConfig, bool) {
 		return nil, true
 	}
 
-	var copyFiles []string
-	// Only ask about copy-files if user provided a source branch
+	var includes []string
+	// Only ask about includes if user provided a source branch
 	if sourceBranch != "" {
 		err = huh.NewForm(huh.NewGroup(
 			huh.NewMultiSelect[string]().
-				Title("Files to copy into worktrees").
-				Description("Select files that should be copied from the source branch when creating a worktree.").
+				Title("Files to include in worktrees").
+				Description("Select files that should be included from the source branch when creating a worktree.").
 				Options(
 					huh.NewOption(".env", ".env"),
 					huh.NewOption(".env.local", ".env.local"),
 					huh.NewOption(".env.development", ".env.development"),
 				).
-				Value(&copyFiles),
+				Value(&includes),
 		)).Run()
 		if err != nil {
 			if errors.Is(err, huh.ErrUserAborted) {
@@ -203,13 +203,13 @@ func askWorktreeConfig() (*forgeconfig.WorktreeConfig, bool) {
 	}
 
 	// Both empty means no worktree config block
-	if sourceBranch == "" && len(copyFiles) == 0 {
+	if sourceBranch == "" && len(includes) == 0 {
 		return nil, false
 	}
 
 	return &forgeconfig.WorktreeConfig{
 		SourceBranch: sourceBranch,
-		CopyFiles:    copyFiles,
+		Includes:     includes,
 	}, false
 }
 
