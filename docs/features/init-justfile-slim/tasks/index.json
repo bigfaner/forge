@@ -68,7 +68,7 @@
       "dependencies": [
         "1"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "5-simplify-skill-and-delete-rules.md",
       "record": "records/5-simplify-skill-and-delete-rules.md",
       "surface-type": "cli",
