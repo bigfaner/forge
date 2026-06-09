@@ -63,7 +63,7 @@ domains: [cli, commands, reference, skills, task-list, validate]
 
 | 命令 | 用途 | 源文件 |
 |------|------|--------|
-| `forge worktree start [slug]` | 创建 worktree 并在其中启动 Claude（slug 可选，支持 `-i` 交互选择） | `worktree/cmd_start.go` |
+| `forge worktree start [slug]` | 创建 worktree 并在其中启动 Claude；幂等——若 worktree 已存在且有效则跳过创建直接启动（slug 可选，支持 `-i` 交互选择，`-b` 指定源分支，`--no-launch` 仅创建不启动） | `worktree/cmd_start.go` |
 | `forge worktree list` | 列出所有 git worktree | `worktree/cmd_list.go` |
 | `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree/cmd_remove.go` |
 | `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree/cmd_resume.go` |
