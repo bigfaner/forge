@@ -619,6 +619,31 @@ func TestGenerate_Mobile_PlaceholderSyntax(t *testing.T) {
 	}
 }
 
+func TestGenerate_WEB_PlaceholderSyntax(t *testing.T) {
+	out, err := Generate(types.SurfaceWeb, "frontend")
+	if err != nil {
+		t.Fatalf("Generate(web, frontend): %v", err)
+	}
+
+	if !strings.Contains(out, "<<") || !strings.Contains(out, ">>") {
+		t.Error("web output missing <<PLACEHOLDER>> syntax")
+	}
+	if strings.Contains(out, "{{") || strings.Contains(out, "}}") {
+		t.Error("web output contains {{...}} syntax, must use <<...>>")
+	}
+}
+
+// --- Coverage: orchestrationSteps default branch (cli/tui return nil) ---
+
+func TestOrchestrationSteps_ScalarTypesReturnNil(t *testing.T) {
+	for _, typ := range []types.SurfaceType{types.SurfaceCLI, types.SurfaceTUI} {
+		steps := orchestrationSteps(typ)
+		if steps != nil {
+			t.Errorf("orchestrationSteps(%q) = %v, want nil", typ, steps)
+		}
+	}
+}
+
 // ============================================================================
 // Task 3: scaffold --aggregate mode
 // ============================================================================

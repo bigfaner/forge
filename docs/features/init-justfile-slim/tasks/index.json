@@ -53,7 +53,7 @@
       "dependencies": [
         "3"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "4-scaffold-unit-tests.md",
       "record": "records/4-scaffold-unit-tests.md",
       "surface-type": "cli",
