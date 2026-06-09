@@ -27,7 +27,7 @@ var scaffoldType string
 var scaffoldKey string
 
 func init() {
-	Cmd.Flags().StringVar(&scaffoldType, "type", "", "surface type (cli, tui)")
+	Cmd.Flags().StringVar(&scaffoldType, "type", "", "surface type (cli, tui, api, web, mobile)")
 	Cmd.Flags().StringVar(&scaffoldKey, "key", "", "surface key (required for named surfaces)")
 	_ = Cmd.MarkFlagRequired("type")
 }

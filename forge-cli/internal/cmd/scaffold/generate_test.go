@@ -243,14 +243,16 @@ func TestValidateArgs_NamedWithoutKey(t *testing.T) {
 	}
 }
 
-func TestValidateArgs_NamedWithKey_NotYetSupported(t *testing.T) {
-	// api with key is valid for arg checking but not yet supported for generation
-	err := ValidateArgs(types.SurfaceAPI, "backend")
-	if err == nil {
-		t.Fatal("expected error for not-yet-supported type")
+func TestValidateArgs_NamedWithKey_Supported(t *testing.T) {
+	// api with key is now valid and supported for generation
+	if err := ValidateArgs(types.SurfaceAPI, "backend"); err != nil {
+		t.Errorf("api with key should be valid: %v", err)
 	}
-	if !strings.Contains(err.Error(), "not yet supported") {
-		t.Errorf("unexpected error: %v", err)
+	if err := ValidateArgs(types.SurfaceWeb, "frontend"); err != nil {
+		t.Errorf("web with key should be valid: %v", err)
+	}
+	if err := ValidateArgs(types.SurfaceMobile, "app"); err != nil {
+		t.Errorf("mobile with key should be valid: %v", err)
 	}
 }
 
@@ -297,6 +299,12 @@ func TestValidateArgs_Table(t *testing.T) {
 		{"cli with key error", types.SurfaceCLI, "app", true, "scalar"},
 		{"tui with key error", types.SurfaceTUI, "app", true, "scalar"},
 		{"unknown type error", "unknown", "", true, "unknown surface type"},
+		{"api with key ok", types.SurfaceAPI, "backend", false, ""},
+		{"web with key ok", types.SurfaceWeb, "frontend", false, ""},
+		{"mobile with key ok", types.SurfaceMobile, "app", false, ""},
+		{"api without key error", types.SurfaceAPI, "", true, "requires --key"},
+		{"web without key error", types.SurfaceWeb, "", true, "requires --key"},
+		{"mobile without key error", types.SurfaceMobile, "", true, "requires --key"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -314,5 +322,299 @@ func TestValidateArgs_Table(t *testing.T) {
 				t.Errorf("unexpected error: %v", err)
 			}
 		})
+	}
+}
+
+// ============================================================================
+// Task 2: api/web/mobile service surface templates
+// ============================================================================
+
+// --- AC-1: api surface recipe completeness with backend- prefix ---
+
+func TestGenerate_API_RecipeCompleteness(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// Lifecycle recipes
+	lifecycle := []string{"backend-dev", "backend-probe", "backend-test", "backend-teardown", "backend"}
+	for _, name := range lifecycle {
+		if !strings.Contains(out, name+" [unix]:") {
+			t.Errorf("api missing lifecycle recipe %q", name)
+		}
+		if !strings.Contains(out, name+" [windows]:") {
+			t.Errorf("api missing [windows] variant for %q", name)
+		}
+	}
+
+	// Quality recipes
+	quality := []string{"backend-compile", "backend-fmt", "backend-lint", "backend-unit-test"}
+	for _, name := range quality {
+		if !strings.Contains(out, name+" [unix]:") {
+			t.Errorf("api missing quality recipe %q", name)
+		}
+		if !strings.Contains(out, name+" [windows]:") {
+			t.Errorf("api missing [windows] variant for %q", name)
+		}
+	}
+}
+
+func TestGenerate_API_OrchestrationSequence(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// The orchestration recipe "backend" should chain: dev→probe→test→teardown
+	// Pattern: just backend-dev && just backend-probe && just backend-test; rc=$?; just backend-teardown; exit $rc
+	if !strings.Contains(out, "just backend-dev") {
+		t.Error("api orchestration missing 'just backend-dev'")
+	}
+	if !strings.Contains(out, "just backend-probe") {
+		t.Error("api orchestration missing 'just backend-probe'")
+	}
+	if !strings.Contains(out, "just backend-test") {
+		t.Error("api orchestration missing 'just backend-test'")
+	}
+	if !strings.Contains(out, "just backend-teardown") {
+		t.Error("api orchestration missing 'just backend-teardown'")
+	}
+}
+
+func TestGenerate_API_NoForbiddenRecipes(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// api should NOT have test-setup
+	if strings.Contains(out, "backend-test-setup") {
+		t.Error("api should not have test-setup recipe")
+	}
+}
+
+// --- AC-2: web same as api; mobile has extra test-setup ---
+
+func TestGenerate_WEB_SameRecipesAsAPI(t *testing.T) {
+	webOut, err := Generate(types.SurfaceWeb, "frontend")
+	if err != nil {
+		t.Fatalf("Generate(web, frontend): %v", err)
+	}
+
+	// Same lifecycle + quality recipes as api
+	required := []string{
+		"frontend-dev", "frontend-probe", "frontend-test",
+		"frontend-teardown", "frontend",
+		"frontend-compile", "frontend-fmt", "frontend-lint", "frontend-unit-test",
+	}
+	for _, name := range required {
+		if !strings.Contains(webOut, name+" [unix]:") {
+			t.Errorf("web missing recipe %q", name)
+		}
+	}
+
+	// web orchestration should also chain dev→probe→test→teardown
+	if !strings.Contains(webOut, "just frontend-dev") {
+		t.Error("web orchestration missing dev step")
+	}
+	if !strings.Contains(webOut, "just frontend-probe") {
+		t.Error("web orchestration missing probe step")
+	}
+
+	// No test-setup
+	if strings.Contains(webOut, "frontend-test-setup") {
+		t.Error("web should not have test-setup recipe")
+	}
+}
+
+func TestGenerate_MOBILE_HasTestSetup(t *testing.T) {
+	out, err := Generate(types.SurfaceMobile, "app")
+	if err != nil {
+		t.Fatalf("Generate(mobile, app): %v", err)
+	}
+
+	// mobile has all api/web recipes PLUS test-setup
+	required := []string{
+		"app-test-setup", "app-dev", "app-probe", "app-test",
+		"app-teardown", "app",
+		"app-compile", "app-fmt", "app-lint", "app-unit-test",
+	}
+	for _, name := range required {
+		if !strings.Contains(out, name+" [unix]:") {
+			t.Errorf("mobile missing recipe %q", name)
+		}
+		if !strings.Contains(out, name+" [windows]:") {
+			t.Errorf("mobile missing [windows] variant for %q", name)
+		}
+	}
+}
+
+func TestGenerate_MOBILE_OrchestrationIncludesTestSetup(t *testing.T) {
+	out, err := Generate(types.SurfaceMobile, "app")
+	if err != nil {
+		t.Fatalf("Generate(mobile, app): %v", err)
+	}
+
+	// mobile orchestration: test-setup→dev→probe→test→teardown
+	if !strings.Contains(out, "just app-test-setup") {
+		t.Error("mobile orchestration missing test-setup step")
+	}
+	if !strings.Contains(out, "just app-dev") {
+		t.Error("mobile orchestration missing dev step")
+	}
+}
+
+// --- AC-3: PID file management and health check retry ---
+
+func TestGenerate_API_PIDFileManagement(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// dev recipe must contain PID file reference
+	if !strings.Contains(out, "<<URL_KEY>>.pid") {
+		t.Error("dev recipe missing PID file path with <<URL_KEY>> placeholder")
+	}
+
+	// teardown recipe must clean up PID file
+	// Look for "rm -f" in context of pid file
+	if !strings.Contains(out, "rm -f") {
+		t.Error("teardown recipe missing PID file cleanup (rm -f)")
+	}
+}
+
+func TestGenerate_API_HealthCheckRetry(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// probe recipe must contain health check URL placeholder
+	if !strings.Contains(out, "<<HEALTH_URL>>") {
+		t.Error("probe recipe missing <<HEALTH_URL>> placeholder")
+	}
+
+	// Must contain retry loop pattern
+	if !strings.Contains(out, "max_retries") && !strings.Contains(out, "_max_retries") && !strings.Contains(out, "retry") {
+		t.Error("probe recipe missing health check retry logic")
+	}
+}
+
+func TestGenerate_API_StartCommandPlaceholder(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// dev recipe must have <<START_CMD>> placeholder
+	if !strings.Contains(out, "<<START_CMD>>") {
+		t.Error("dev recipe missing <<START_CMD>> placeholder")
+	}
+}
+
+func TestGenerate_API_IdempotentStart(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// dev recipe must check if process is already running (idempotent start)
+	if !strings.Contains(out, "already running") {
+		t.Error("dev recipe missing idempotent start check ('already running')")
+	}
+}
+
+func TestGenerate_API_WindowsTeardownUsesTaskkill(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	// windows teardown variant must use taskkill instead of kill
+	if !strings.Contains(out, "taskkill") {
+		t.Error("windows teardown missing taskkill command")
+	}
+}
+
+// --- AC-4: all recipes marked user-customized with dual-platform ---
+
+func TestGenerate_API_AllRecipesMarkedUserCustomized(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	recipes := []string{
+		"backend-dev", "backend-probe", "backend-test", "backend-teardown",
+		"backend", // orchestration recipe
+		"backend-compile", "backend-fmt", "backend-lint", "backend-unit-test",
+	}
+	for _, name := range recipes {
+		marker := "# user-customized\n" + name + " [unix]:"
+		if !strings.Contains(out, marker) {
+			t.Errorf("recipe %q missing '# user-customized' marker before [unix] variant", name)
+		}
+	}
+}
+
+func TestGenerate_WEB_AllRecipesMarkedUserCustomized(t *testing.T) {
+	out, err := Generate(types.SurfaceWeb, "frontend")
+	if err != nil {
+		t.Fatalf("Generate(web, frontend): %v", err)
+	}
+
+	recipes := []string{
+		"frontend-dev", "frontend-probe", "frontend-test", "frontend-teardown",
+		"frontend",
+		"frontend-compile", "frontend-fmt", "frontend-lint", "frontend-unit-test",
+	}
+	for _, name := range recipes {
+		marker := "# user-customized\n" + name + " [unix]:"
+		if !strings.Contains(out, marker) {
+			t.Errorf("recipe %q missing '# user-customized' marker", name)
+		}
+	}
+}
+
+func TestGenerate_MOBILE_AllRecipesMarkedUserCustomized(t *testing.T) {
+	out, err := Generate(types.SurfaceMobile, "app")
+	if err != nil {
+		t.Fatalf("Generate(mobile, app): %v", err)
+	}
+
+	recipes := []string{
+		"app-test-setup", "app-dev", "app-probe", "app-test", "app-teardown",
+		"app",
+		"app-compile", "app-fmt", "app-lint", "app-unit-test",
+	}
+	for _, name := range recipes {
+		marker := "# user-customized\n" + name + " [unix]:"
+		if !strings.Contains(out, marker) {
+			t.Errorf("recipe %q missing '# user-customized' marker", name)
+		}
+	}
+}
+
+func TestGenerate_API_PlaceholderSyntax(t *testing.T) {
+	out, err := Generate(types.SurfaceAPI, "backend")
+	if err != nil {
+		t.Fatalf("Generate(api, backend): %v", err)
+	}
+
+	if strings.Contains(out, "{{") || strings.Contains(out, "}}") {
+		t.Error("api output contains {{...}} syntax, must use <<...>>")
+	}
+}
+
+func TestGenerate_Mobile_PlaceholderSyntax(t *testing.T) {
+	out, err := Generate(types.SurfaceMobile, "app")
+	if err != nil {
+		t.Fatalf("Generate(mobile, app): %v", err)
+	}
+
+	if strings.Contains(out, "{{") || strings.Contains(out, "}}") {
+		t.Error("mobile output contains {{...}} syntax, must use <<...>>")
 	}
 }
