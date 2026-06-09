@@ -12,11 +12,13 @@
 | teardown | Cleanup complete | Cleanup failed (residual processes) | — | End |
 
 Notes:
-- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown and exit
+- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown (which is safe/idempotent — no process to clean if dev never started) and exit
 - Probe retries up to 3 times with 5-second intervals; if all 3 attempts fail, treat as exit code 1
 - Exit code 2 for test step allows re-running; the skill should prompt the user "Test environment error, consider retrying"
 
 ## Recipe Invocation Contract
+
+> **Naming convention**: Recipe names below use the surface type (`web-`) as prefix for illustration. For **named surfaces**, replace the type prefix with the surface key (e.g., `web-dev` → `frontend-dev` for `frontend=web`). For **scalar surfaces**, the prefix is omitted (e.g., `web-dev` → `dev`). See SKILL.md Standard Target Contract for the `<prefix>` definition.
 
 | Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
 |-------------|---------------|----------------------|----------------------|
@@ -45,132 +47,23 @@ Implementation constraints:
 | `@smoke` | Exact match | Smoke test, assigned to web surface |
 | Other | Ignore | Non-web journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `web-test` recipe must resolve test scripts from the correct directory:
-- **Single surface** (project has 1 surface): `tests/<journey>/`
-- **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
+When generating recipes for the web surface, the agent must follow these structural constraints. Shared constraints (naming, dual platform, exit code semantics, test directory path, gate recipes) are defined in SKILL.md's **Standard Target Contract** section — follow those rules. Below are web-specific constraints.
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `frontend=web`, the path is `tests/frontend/<journey>/`.
-</Test-Dir-Path>
+### Form → Naming
 
-```just
-# Start web development server
-# user-customized
-web-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-dev (start web dev server)" >&2; exit 1
+- Named surface (key present, e.g., `frontend=web`): `<key>-<verb>` — e.g., `frontend-dev`, `frontend-test`
+- Scalar surface (no key, e.g., bare `web`): `<verb>` — e.g., `dev`, `test`
 
-# user-customized
-web-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-dev (start web dev server)" >&2; exit 1
+### Aggregate Recipe
 
-# Health check for web server
-# user-customized
-web-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-probe (HTTP health check)" >&2; exit 1
+The `<key>` aggregate recipe (e.g., `web` for scalar, `frontend` for named) must follow the pattern:
 
-# user-customized
-web-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-probe (HTTP health check)" >&2; exit 1
-
-# Run Web E2E tests (optionally filter by journey)
-# user-customized
-web-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-test" >&2; exit 1
-
-# user-customized
-web-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-test" >&2; exit 1
-
-
-# Clean up web test artifacts
-# user-customized
-web-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-teardown" >&2; exit 1
-
-# user-customized
-web-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-teardown" >&2; exit 1
-
-# web aggregate: dev -> probe -> test -> teardown
-web:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just web-dev && just web-probe && just web-test; rc=$?; just web-teardown; exit $rc
+```
+just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardown; exit $rc
 ```
 
-# Compile ONLY the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-compile (compile web surface code only)" >&2; exit 1
+### Server Lifecycle
 
-# user-customized
-web-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-compile (compile web surface code only)" >&2; exit 1
-
-# Format ONLY the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-fmt (format web surface code only)" >&2; exit 1
-
-# user-customized
-web-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-fmt (format web surface code only)" >&2; exit 1
-
-# Lint ONLY the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-lint (lint web surface code only)" >&2; exit 1
-
-# user-customized
-web-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-lint (lint web surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the web surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-web-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-unit-test (run web surface unit tests only)" >&2; exit 1
-
-# user-customized
-web-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement web-unit-test (run web surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.
+Recipes for dev, probe, and teardown involve server process management (PID tracking, idempotent startup, health check polling). Follow the patterns defined in `rules/server-lifecycle.md` — do not inline server lifecycle bash code in the generated recipes.

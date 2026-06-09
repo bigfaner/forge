@@ -1,7 +1,7 @@
 version: "1"
 auto:
   test:
-    quick: true
+    quick: false
     full: true
   consolidateSpecs:
     quick: true
@@ -29,7 +29,7 @@ worktree:
   copy-files: []
 eval:
   proposal:
-    target: 859
+    target: 850
     iterations: 1
   prd:
     target: 900
@@ -41,8 +41,8 @@ eval:
     target: 950
     iterations: 3
   journey:
-    target: 850
-    iterations: 2
+    target: 900
+    iterations: 3
   contract:
     target: 850
     iterations: 2
