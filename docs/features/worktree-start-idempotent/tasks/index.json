@@ -81,12 +81,13 @@
       "dependencies": [
         "T-test-gen-contracts"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "gen-test-scripts.md",
       "record": "records/gen-test-scripts.md",
       "surface-key": ".",
       "surface-type": "cli",
-      "type": "test.gen-scripts"
+      "type": "test.gen-scripts",
+      "blockedReason": "Missing eval-contract reports for all 3 journeys (idempotent-start, corrupted-worktree-recovery, start-existing-flags). Skill prerequisite blocker: run 'forge eval --type contract' first. SKIP_EVAL_GATE is not set in task context."
     },
     "quick-drift-detection": {
       "id": "T-quick-doc-drift",
