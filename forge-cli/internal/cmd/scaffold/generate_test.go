@@ -618,3 +618,373 @@ func TestGenerate_Mobile_PlaceholderSyntax(t *testing.T) {
 		t.Error("mobile output contains {{...}} syntax, must use <<...>>")
 	}
 }
+
+// ============================================================================
+// Task 3: scaffold --aggregate mode
+// ============================================================================
+
+// --- AC-1: aggregate generates install, ci, clean without user-customized marker ---
+
+func TestGenerateAggregate_ThreeAggregates(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	for _, name := range []string{"install", "ci", "clean"} {
+		if !strings.Contains(out, name+" [unix]:") {
+			t.Errorf("missing aggregate recipe %q [unix]", name)
+		}
+		if !strings.Contains(out, name+" [windows]:") {
+			t.Errorf("missing aggregate recipe %q [windows]", name)
+		}
+	}
+}
+
+func TestGenerateAggregate_NoUserCustomizedMarker(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	// Aggregate recipes must NOT have # user-customized marker
+	for _, name := range []string{"install", "ci", "clean"} {
+		marker := "# user-customized\n" + name + " [unix]:"
+		if strings.Contains(out, marker) {
+			t.Errorf("aggregate recipe %q should NOT have '# user-customized' marker", name)
+		}
+	}
+}
+
+// --- AC-2: ci recipe aggregates lint + compile + unit-test, no surface-level test ---
+
+func TestGenerateAggregate_CIRecipe_ContainsLintCompileUnitTest(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	// ci should contain all lint, compile, unit-test calls for each surface
+	for _, key := range []string{"backend", "frontend"} {
+		for _, verb := range []string{"lint", "compile", "unit-test"} {
+			recipeRef := "just " + key + "-" + verb
+			if !strings.Contains(out, recipeRef) {
+				t.Errorf("ci recipe missing %q", recipeRef)
+			}
+		}
+	}
+}
+
+func TestGenerateAggregate_CIRecipe_ExcludesSurfaceTest(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	// ci recipe must NOT reference surface-level test (e.g. "just backend-test")
+	// We need to check specifically within the ci recipe section.
+	// Since the output is sequential, we extract the ci recipe block.
+	ciStart := strings.Index(out, "ci [unix]:")
+	if ciStart == -1 {
+		t.Fatal("ci recipe not found")
+	}
+	// Extract the ci block: from "ci [unix]:" up to the next top-level recipe
+	var ciBlock string
+	if idx := strings.Index(out[ciStart+1:], "\nclean"); idx != -1 {
+		ciBlock = out[ciStart : ciStart+1+idx]
+	} else {
+		ciBlock = out[ciStart:]
+	}
+
+	for _, key := range []string{"backend", "frontend"} {
+		testRef := "just " + key + "-test"
+		if strings.Contains(ciBlock, testRef) {
+			t.Errorf("ci recipe should NOT contain surface-level test %q", testRef)
+		}
+	}
+}
+
+// --- AC-3: multiple service-type surfaces generate test-setup aggregate ---
+
+func TestGenerateAggregate_MultiServiceGeneratesTestSetup(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	if !strings.Contains(out, "test-setup [unix]:") {
+		t.Error("multi-service aggregate should contain test-setup recipe")
+	}
+	if !strings.Contains(out, "test-setup [windows]:") {
+		t.Error("multi-service aggregate test-setup missing [windows] variant")
+	}
+}
+
+func TestGenerateAggregate_TestSetup_DependencyOrder(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "frontend", Type: types.SurfaceWeb},
+		{Key: "backend", Type: types.SurfaceAPI},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	// Startup order: api → web → mobile (regardless of input order)
+	// teardown is reverse: mobile → web → api
+	// So "just backend-dev" must appear before "just frontend-dev"
+	backendIdx := strings.Index(out, "just backend-dev")
+	frontendIdx := strings.Index(out, "just frontend-dev")
+	if backendIdx == -1 || frontendIdx == -1 {
+		t.Fatal("test-setup missing service dev references")
+	}
+	if backendIdx >= frontendIdx {
+		t.Error("test-setup startup order wrong: api (backend) should come before web (frontend)")
+	}
+
+	// Teardown: reverse order — frontend teardown before backend teardown
+	frontendTeardownIdx := strings.LastIndex(out, "just frontend-teardown")
+	backendTeardownIdx := strings.LastIndex(out, "just backend-teardown")
+	if frontendTeardownIdx >= backendTeardownIdx {
+		t.Error("test-setup teardown order wrong: web (frontend) teardown should come before api (backend)")
+	}
+}
+
+func TestGenerateAggregate_TestSetup_WithMobileAPIMultiService(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "app", Type: types.SurfaceMobile},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	// startup order: api → mobile
+	backendIdx := strings.Index(out, "just backend-dev")
+	appIdx := strings.Index(out, "just app-dev")
+	if backendIdx == -1 || appIdx == -1 {
+		t.Fatal("test-setup missing service references")
+	}
+	if backendIdx >= appIdx {
+		t.Error("test-setup startup order wrong: api should come before mobile")
+	}
+}
+
+// --- AC-4: pure cli/tui combo does NOT generate test-setup ---
+
+func TestGenerateAggregate_PureCLI_TUI_NoTestSetup(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "", Type: types.SurfaceCLI},
+		{Key: "tools", Type: types.SurfaceTUI},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	if strings.Contains(out, "test-setup") {
+		t.Error("pure cli/tui aggregate should NOT contain test-setup recipe")
+	}
+}
+
+func TestGenerateAggregate_SingleService_NoTestSetup(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	if strings.Contains(out, "test-setup") {
+		t.Error("single service surface should NOT generate test-setup")
+	}
+}
+
+// --- Edge cases ---
+
+func TestGenerateAggregate_EmptySurfaces(t *testing.T) {
+	out, err := GenerateAggregate(nil)
+	if err != nil {
+		t.Fatalf("GenerateAggregate(nil): %v", err)
+	}
+
+	// Should still produce install, ci, clean (empty bodies)
+	for _, name := range []string{"install", "ci", "clean"} {
+		if !strings.Contains(out, name+" [unix]:") {
+			t.Errorf("empty aggregate missing recipe %q", name)
+		}
+	}
+	if strings.Contains(out, "test-setup") {
+		t.Error("empty surfaces should not generate test-setup")
+	}
+}
+
+func TestGenerateAggregate_ScalarCLI_NoPrefix(t *testing.T) {
+	// Scalar CLI surface: key is "", recipes have no prefix
+	surfaces := []SurfaceEntry{
+		{Key: "", Type: types.SurfaceCLI},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	// ci should reference "just lint", "just compile", "just unit-test" (no prefix)
+	for _, verb := range []string{"lint", "compile", "unit-test"} {
+		if !strings.Contains(out, "just "+verb) {
+			t.Errorf("scalar ci recipe missing 'just %s'", verb)
+		}
+	}
+}
+
+func TestGenerateAggregate_InstallAggregatesAllInstalls(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	if !strings.Contains(out, "just backend-install") {
+		t.Error("install recipe missing 'just backend-install'")
+	}
+	if !strings.Contains(out, "just frontend-install") {
+		t.Error("install recipe missing 'just frontend-install'")
+	}
+}
+
+func TestGenerateAggregate_CleanAggregatesAllCleans(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	if !strings.Contains(out, "just backend-clean") {
+		t.Error("clean recipe missing 'just backend-clean'")
+	}
+	if !strings.Contains(out, "just frontend-clean") {
+		t.Error("clean recipe missing 'just frontend-clean'")
+	}
+}
+
+func TestGenerateAggregate_TestSetup_NotMarkedUserCustomized(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "backend", Type: types.SurfaceAPI},
+		{Key: "frontend", Type: types.SurfaceWeb},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+
+	marker := "# user-customized\ntest-setup [unix]:"
+	if strings.Contains(out, marker) {
+		t.Error("test-setup aggregate should NOT have '# user-customized' marker")
+	}
+}
+
+// --- Coverage: surfacesToEntries ---
+
+func TestSurfacesToEntries_ScalarDot(t *testing.T) {
+	surfaces := map[string]string{".": "cli"}
+	entries := surfacesToEntries(surfaces)
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry, got %d", len(entries))
+	}
+	if entries[0].Key != "" {
+		t.Errorf("scalar key should be empty, got %q", entries[0].Key)
+	}
+	if entries[0].Type != types.SurfaceCLI {
+		t.Errorf("expected cli type, got %q", entries[0].Type)
+	}
+}
+
+func TestSurfacesToEntries_Empty(t *testing.T) {
+	entries := surfacesToEntries(nil)
+	if entries != nil {
+		t.Errorf("expected nil for nil input, got %v", entries)
+	}
+	entries = surfacesToEntries(map[string]string{})
+	if entries != nil {
+		t.Errorf("expected nil for empty map, got %v", entries)
+	}
+}
+
+func TestSurfacesToEntries_Multiple(t *testing.T) {
+	surfaces := map[string]string{
+		"frontend": "web",
+		"backend":  "api",
+	}
+	entries := surfacesToEntries(surfaces)
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+	// Should be sorted by key: backend < frontend
+	if entries[0].Key != "backend" {
+		t.Errorf("first entry key should be 'backend', got %q", entries[0].Key)
+	}
+	if entries[1].Key != "frontend" {
+		t.Errorf("second entry key should be 'frontend', got %q", entries[1].Key)
+	}
+}
+
+// --- Coverage: isServiceType / hasMultipleServiceSurfaces ---
+
+func TestIsServiceType(t *testing.T) {
+	serviceTypes := []types.SurfaceType{types.SurfaceAPI, types.SurfaceWeb, types.SurfaceMobile}
+	for _, typ := range serviceTypes {
+		if !isServiceType(typ) {
+			t.Errorf("isServiceType(%q) = false, want true", typ)
+		}
+	}
+	nonServiceTypes := []types.SurfaceType{types.SurfaceCLI, types.SurfaceTUI}
+	for _, typ := range nonServiceTypes {
+		if isServiceType(typ) {
+			t.Errorf("isServiceType(%q) = true, want false", typ)
+		}
+	}
+}
+
+// --- Coverage: mixed surfaces (cli + api) only 1 service → no test-setup ---
+
+func TestGenerateAggregate_MixedCLI_API_NoTestSetup(t *testing.T) {
+	surfaces := []SurfaceEntry{
+		{Key: "", Type: types.SurfaceCLI},
+		{Key: "backend", Type: types.SurfaceAPI},
+	}
+	out, err := GenerateAggregate(surfaces)
+	if err != nil {
+		t.Fatalf("GenerateAggregate: %v", err)
+	}
+	if strings.Contains(out, "test-setup") {
+		t.Error("1 service + 1 cli should NOT generate test-setup")
+	}
+}

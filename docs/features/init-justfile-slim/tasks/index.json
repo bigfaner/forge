@@ -38,7 +38,7 @@
       "dependencies": [
         "2"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "3-scaffold-aggregate.md",
       "record": "records/3-scaffold-aggregate.md",
       "surface-type": "cli",

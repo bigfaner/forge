@@ -7,6 +7,12 @@ package scaffold
 
 import "forge-cli/pkg/types"
 
+// SurfaceEntry represents a single surface read from `forge surfaces`.
+type SurfaceEntry struct {
+	Key  string
+	Type types.SurfaceType
+}
+
 // RecipeKind categorizes recipes into lifecycle and quality groups.
 type RecipeKind string
 
