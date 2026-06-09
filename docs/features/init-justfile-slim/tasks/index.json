@@ -8,7 +8,7 @@
       "title": "Scaffold 核心框架 + cli/tui 模板",
       "priority": "P0",
       "estimatedTime": "2h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-scaffold-core-simple-surfaces.md",
       "record": "records/1-scaffold-core-simple-surfaces.md",
       "surface-type": "cli",
