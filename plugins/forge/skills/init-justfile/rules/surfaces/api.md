@@ -12,11 +12,13 @@
 | teardown | Cleanup complete | Cleanup failed (residual processes) | — | End |
 
 Notes:
-- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown and exit
+- When dev fails, **do not continue** with subsequent steps; proceed directly to teardown (which is safe/idempotent — no process to clean if dev never started) and exit
 - Probe retries up to 3 times with 5-second intervals; if all 3 attempts fail, treat as exit code 1
 - Exit code 2 for test step allows re-running; the skill should prompt the user "Test environment error, consider retrying"
 
 ## Recipe Invocation Contract
+
+> **Naming convention**: Recipe names below use the surface type (`api-`) as prefix for illustration. For **named surfaces**, replace the type prefix with the surface key (e.g., `api-dev` → `backend-dev` for `backend=api`). For **scalar surfaces**, the prefix is omitted (e.g., `api-dev` → `dev`). See SKILL.md Standard Target Contract for the `<prefix>` definition.
 
 | Recipe Name | just Signature | Exit Code 0 Semantics | Exit Code 1 Semantics |
 |-------------|---------------|----------------------|----------------------|
@@ -43,132 +45,23 @@ Implementation constraints:
 | `@api` | Exact match | Journey dedicated to api surface |
 | Other | Ignore | Non-api journeys are not handled by this rule |
 
-## Recipe Template (Dual Platform)
+## Recipe Generation Requirements
 
-<Test-Dir-Path>
-The `api-test` recipe must resolve test scripts from the correct directory:
-- **Single surface** (project has 1 surface): `tests/<journey>/`
-- **Multi surface** (project has 2+ surfaces): `tests/<surfaceKey>/<journey>/`
+When generating recipes for the api surface, the agent must follow these structural constraints. Shared constraints (naming, dual platform, exit code semantics, test directory path, gate recipes) are defined in SKILL.md's **Standard Target Contract** section — follow those rules. Below are api-specific constraints.
 
-When filling the recipe body, use the surface's **key** (not type) for the `<surfaceKey>` segment. Example: for `backend=api`, the path is `tests/backend/<journey>/`.
-</Test-Dir-Path>
+### Form → Naming
 
-```just
-# Start API development server
-# user-customized
-api-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-dev (start API server)" >&2; exit 1
+- Named surface (key present, e.g., `backend=api`): `<key>-<verb>` — e.g., `backend-dev`, `backend-test`
+- Scalar surface (no key, e.g., bare `api`): `<verb>` — e.g., `dev`, `test`
 
-# user-customized
-api-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-dev (start API server)" >&2; exit 1
+### Aggregate Recipe
 
-# Health check for API server
-# user-customized
-api-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-probe (HTTP GET /healthz)" >&2; exit 1
+The `<key>` aggregate recipe (e.g., `api` for scalar, `backend` for named) must follow the pattern:
 
-# user-customized
-api-probe:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-probe (HTTP GET /healthz)" >&2; exit 1
-
-# Run API functional tests (optionally filter by journey)
-# user-customized
-api-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-test" >&2; exit 1
-
-# user-customized
-api-test journey='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-test" >&2; exit 1
-
-
-# Clean up API test artifacts
-# user-customized
-api-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-teardown" >&2; exit 1
-
-# user-customized
-api-teardown:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-teardown" >&2; exit 1
-
-# api aggregate: dev -> probe -> test -> teardown
-api:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    just api-dev && just api-probe && just api-test; rc=$?; just api-teardown; exit $rc
+```
+just <key>-dev && just <key>-probe && just <key>-test; rc=$?; just <key>-teardown; exit $rc
 ```
 
-# Compile ONLY the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-compile (compile api surface code only)" >&2; exit 1
+### Server Lifecycle
 
-# user-customized
-api-compile:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-compile (compile api surface code only)" >&2; exit 1
-
-# Format ONLY the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-fmt (format api surface code only)" >&2; exit 1
-
-# user-customized
-api-fmt:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-fmt (format api surface code only)" >&2; exit 1
-
-# Lint ONLY the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-lint (lint api surface code only)" >&2; exit 1
-
-# user-customized
-api-lint:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-lint (lint api surface code only)" >&2; exit 1
-
-# Run unit tests ONLY for the api surface code
-# This recipe is invoked by the quality gate for per-task surface-scoped validation
-# user-customized
-api-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-unit-test (run api surface unit tests only)" >&2; exit 1
-
-# user-customized
-api-unit-test:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    echo "TODO: implement api-unit-test (run api surface unit tests only)" >&2; exit 1
-```
-
-**LLM Instruction**: Replace the TODO stubs with actual commands derived from language templates and Convention knowledge. The stubs above demonstrate the required recipe structure and dual-platform attribute pattern.
+Recipes for dev, probe, and teardown involve server process management (PID tracking, idempotent startup, health check polling). Follow the patterns defined in `rules/server-lifecycle.md` — do not inline server lifecycle bash code in the generated recipes.

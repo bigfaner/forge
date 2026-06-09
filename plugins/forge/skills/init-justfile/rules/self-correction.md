@@ -1,6 +1,8 @@
 # Self-Correction Rules
 
-When a recipe fails in Phase 2 (actual execution), analyze the error and apply corrections:
+When a recipe fails in Phase 3 (actual execution, see SKILL.md Step 4c), analyze the error and apply corrections:
+
+## Known Error Patterns
 
 | Error Pattern                         | Recipe                        | Fix                                                                                                                                                                                        |
 | ------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -13,8 +15,20 @@ When a recipe fails in Phase 2 (actual execution), analyze the error and apply c
 | `command not found: uvicorn`          | `dev` (python)                | Replace -> `python -m src --reload` or skip with comment, retry                                                                                                                             |
 | `command not found: ruff`             | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` -> `python -m flake8`. In `check`: replace `ruff check .` -> `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
 
+## Generic Fallback
+
+For errors not matching any known pattern above, the agent should:
+
+1. **Analyze the error output** using its own knowledge of the detected language/framework ecosystem.
+2. **Attempt a fix** based on common patterns for that ecosystem (e.g., Rust: check `Cargo.toml` for binary targets; Java: check `pom.xml` for build plugins; Ruby: check `Gemfile` for gem availability).
+3. **Apply and retry** using the same process as known patterns.
+
+If the error indicates a missing tool that cannot be substituted, generate a comment in the recipe explaining the issue and skip with `exit 0` (to avoid blocking other verification steps). Report the skip in the output.
+
+## Correction Process
+
 For each fix:
 
 1. Edit the justfile to apply the correction.
-2. Re-run the failed command (actual execution, same method as Phase 2).
+2. Re-run the failed command (actual execution, same method as Phase 3).
 3. If it still fails after 2 attempts, leave the recipe as-is and report the failure in the output.
