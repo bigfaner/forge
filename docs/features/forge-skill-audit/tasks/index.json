@@ -44,7 +44,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "12-fix-record-format-types.md",
       "record": "records/12-fix-record-format-types.md",
       "type": "doc"
