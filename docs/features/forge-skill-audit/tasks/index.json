@@ -13,6 +13,107 @@
       "record": "records/1-sync-eval-data.md",
       "type": "doc"
     },
+    "10-fix-gen-contracts-paths": {
+      "id": "10",
+      "title": "Fix gen-contracts path references (HIGH-A1, HIGH-A2, MEDIUM-A3)",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "pending",
+      "file": "10-fix-gen-contracts-paths.md",
+      "record": "records/10-fix-gen-contracts-paths.md",
+      "type": "doc"
+    },
+    "11-fix-quick-tasks-placeholders": {
+      "id": "11",
+      "title": "Fix quick-tasks placeholder mapping (MEDIUM-C1)",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "11-fix-quick-tasks-placeholders.md",
+      "record": "records/11-fix-quick-tasks-placeholders.md",
+      "type": "doc"
+    },
+    "12-fix-record-format-types": {
+      "id": "12",
+      "title": "Fix record-format type definitions (MEDIUM-D1, MINOR-D2)",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "12-fix-record-format-types.md",
+      "record": "records/12-fix-record-format-types.md",
+      "type": "doc"
+    },
+    "13-fix-extract-design-md": {
+      "id": "13",
+      "title": "Fix extract-design-md cross-references and templates (MEDIUM-A4, MINOR-C3)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "13-fix-extract-design-md.md",
+      "record": "records/13-fix-extract-design-md.md",
+      "type": "doc"
+    },
+    "14-fix-write-prd-templates": {
+      "id": "14",
+      "title": "Fix write-prd template consistency (MINOR-C4, MINOR-C5)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "14-fix-write-prd-templates.md",
+      "record": "records/14-fix-write-prd-templates.md",
+      "type": "doc"
+    },
+    "15-fix-doc-template-annotations": {
+      "id": "15",
+      "title": "Add doc template annotations (MINOR-C2, MINOR-D3)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "15-fix-doc-template-annotations.md",
+      "record": "records/15-fix-doc-template-annotations.md",
+      "type": "doc"
+    },
+    "16-add-config-guide": {
+      "id": "16",
+      "title": "Add config commands to guide.md (residual L-11)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "16-add-config-guide.md",
+      "record": "records/16-add-config-guide.md",
+      "type": "doc"
+    },
+    "17-fix-knowledge-format": {
+      "id": "17",
+      "title": "Fix knowledgeSave format description consistency (MINOR-H2)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "pending",
+      "file": "17-fix-knowledge-format.md",
+      "record": "records/17-fix-knowledge-format.md",
+      "type": "doc"
+    },
     "2-remove-dead-path": {
       "id": "2",
       "title": "Remove tech-design dead path (H-2)",
@@ -125,7 +226,7 @@
       "priority": "P2",
       "estimatedTime": "15min",
       "dependencies": [
-        "9"
+        "17"
       ],
       "status": "completed",
       "file": "quick-drift-detection.md",
@@ -138,15 +239,23 @@
       "priority": "P1",
       "estimatedTime": "30min",
       "dependencies": [
-        "1",
-        "3",
-        "4",
         "7",
         "8",
+        "9",
+        "11",
+        "13",
+        "15",
+        "3",
+        "4",
+        "6",
+        "12",
+        "14",
+        "1",
         "2",
         "5",
-        "6",
-        "9"
+        "16",
+        "10",
+        "17"
       ],
       "status": "completed",
       "file": "review-doc.md",
