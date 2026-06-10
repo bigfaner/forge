@@ -37,7 +37,6 @@ func init() {
 	Cmd.Flags().StringVar(&scaffoldType, "type", "", "surface type (cli, tui, api, web, mobile)")
 	Cmd.Flags().StringVar(&scaffoldKey, "key", "", "surface key (required for named surfaces)")
 	Cmd.Flags().BoolVar(&scaffoldAggregate, "aggregate", false, "generate cross-surface aggregate recipes (install, ci, clean)")
-	_ = Cmd.MarkFlagRequired("type")
 }
 
 // Register is a no-op placeholder for consistent sub-package convention.
@@ -47,6 +46,10 @@ func Register() {}
 func runScaffold(cmd *cobra.Command, _ []string) error {
 	if scaffoldAggregate {
 		return runAggregate(cmd)
+	}
+
+	if scaffoldType == "" {
+		return fmt.Errorf("required flag(s) \"type\" not set")
 	}
 
 	surfaceType := types.SurfaceType(scaffoldType)

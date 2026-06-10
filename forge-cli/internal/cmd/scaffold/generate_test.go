@@ -1013,3 +1013,52 @@ func TestGenerateAggregate_MixedCLI_API_NoTestSetup(t *testing.T) {
 		t.Error("1 service + 1 cli should NOT generate test-setup")
 	}
 }
+
+// ============================================================================
+// Bug fix: scaffold --aggregate should work without --type
+// ============================================================================
+
+func TestScaffold_AggregateWithoutType_Succeeds(t *testing.T) {
+	origReadSurfaces := ReadSurfacesFunc
+	ReadSurfacesFunc = func(_ string) (map[string]string, error) {
+		return map[string]string{".": "cli"}, nil
+	}
+	defer func() { ReadSurfacesFunc = origReadSurfaces }()
+
+	// Reset flags to defaults
+	_ = Cmd.Flags().Set("type", "")
+	_ = Cmd.Flags().Set("key", "")
+	_ = Cmd.Flags().Set("aggregate", "false")
+
+	buf := new(strings.Builder)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{"--aggregate"})
+
+	err := Cmd.Execute()
+	if err != nil {
+		t.Fatalf("scaffold --aggregate should work without --type: %v", err)
+	}
+
+	output := buf.String()
+	if !strings.Contains(output, "install [unix]:") {
+		t.Errorf("expected aggregate recipes in output, got: %s", output)
+	}
+}
+
+func TestScaffold_NonAggregate_RequiresType(t *testing.T) {
+	// Reset flags to defaults
+	_ = Cmd.Flags().Set("type", "")
+	_ = Cmd.Flags().Set("key", "")
+	_ = Cmd.Flags().Set("aggregate", "false")
+
+	buf := new(strings.Builder)
+	Cmd.SetOut(buf)
+	Cmd.SetErr(buf)
+	Cmd.SetArgs([]string{}) // no --type, no --aggregate
+
+	err := Cmd.Execute()
+	if err == nil {
+		t.Fatal("scaffold without --type and without --aggregate should fail")
+	}
+}
