@@ -1,60 +1,60 @@
-# Design System: {{Terminal App Name}}
+# Design System: {{TERMINAL_APP_NAME}}
 
 > Extracted from: screenshot analysis
-> Date: {{YYYY-MM-DD}}
-> Based on: {{modern-dark-tui / minimal-ascii-tui / Custom}}
+> Date: {{DATE}}
+> Based on: {{TUI_THEME_NAME_OR_CUSTOM}}
 > Note: All values are (estimated) — reverse-engineered from terminal screenshot via AI vision
 
 ## Visual Theme & Atmosphere
 
-{{2-3 sentences describing overall TUI visual style, character density, and terminal aesthetic}}
+{{TUI_VISUAL_STYLE_DESCRIPTION}}
 
 ## Color Space
 
-{{256-color (xterm-256) / 16-color (standard ANSI) / monochrome}} (estimated)
+{{COLOR_SPACE_TYPE}} (estimated)
 
 ## Character Set
 
-{{Box-drawing + block elements / Pure ASCII / Mixed}} (estimated). Leverages {{Unicode capability / ASCII only}} for visual structure.
+{{CHARACTER_SET_TYPE}} (estimated). Leverages {{UNICODE_CAPABILITY}} for visual structure.
 
 ### Character Palette Reference
 
 | Element | Character | Unicode/ASCII | Usage |
 |---------|-----------|---------------|-------|
-| Border corner TL | {{char}} | {{code}} | Panel top-left corner |
-| Border corner TR | {{char}} | {{code}} | Panel top-right corner |
-| Border corner BL | {{char}} | {{code}} | Panel bottom-left corner |
-| Border corner BR | {{char}} | {{code}} | Panel bottom-right corner |
-| Border horizontal | {{char}} | {{code}} | Panel top/bottom edges |
-| Border vertical | {{char}} | {{code}} | Panel left/right edges |
-| Divider | {{char}} | {{code}} | Section divider |
-| Bar fill | {{char}} | {{code}} | Bar chart fill |
-| Bar empty | {{char}} | {{code}} | Bar chart empty |
-| Block full | {{char}} | {{code}} | Progress bar fill |
-| Bullet | {{char}} | {{code}} | List item marker |
-| Arrow | {{char}} | {{code}} | Navigation indicator |
+| Border corner TL | {{CHAR}} | {{CODE}} | Panel top-left corner |
+| Border corner TR | {{CHAR}} | {{CODE}} | Panel top-right corner |
+| Border corner BL | {{CHAR}} | {{CODE}} | Panel bottom-left corner |
+| Border corner BR | {{CHAR}} | {{CODE}} | Panel bottom-right corner |
+| Border horizontal | {{CHAR}} | {{CODE}} | Panel top/bottom edges |
+| Border vertical | {{CHAR}} | {{CODE}} | Panel left/right edges |
+| Divider | {{CHAR}} | {{CODE}} | Section divider |
+| Bar fill | {{CHAR}} | {{CODE}} | Bar chart fill |
+| Bar empty | {{CHAR}} | {{CODE}} | Bar chart empty |
+| Block full | {{CHAR}} | {{CODE}} | Progress bar fill |
+| Bullet | {{CHAR}} | {{CODE}} | List item marker |
+| Arrow | {{CHAR}} | {{CODE}} | Navigation indicator |
 
 All characters (estimated).
 
 ## Color Palette
 
-{{Dark background / Default background}} with {{high-contrast / minimal}} semantic colors (estimated).
+{{TUI_BACKGROUND_TYPE}} with {{TUI_CONTRAST_LEVEL}} semantic colors (estimated).
 
 | Role | Color # | Preview | Usage |
 |------|---------|---------|-------|
-| Background | {{0-255}} | {{description}} | Primary surface |
-| Background Alt | {{0-255}} | {{description}} | Alternating rows, inactive panels |
-| Surface | {{0-255}} | {{description}} | Cards, focused panel bg |
-| Border | {{0-255}} | {{description}} | Panel borders, dividers |
-| Border Focus | {{0-255}} | {{description}} | Focused panel border |
-| Text Primary | {{0-255}} | {{description}} | Headings, primary text |
-| Text Secondary | {{0-255}} | {{description}} | Body text, descriptions |
-| Text Tertiary | {{0-255}} | {{description}} | Captions, placeholders |
-| Success | {{0-255}} | {{description}} | Positive values, success states |
-| Error | {{0-255}} | {{description}} | Errors, destructive actions |
-| Warning | {{0-255}} | {{description}} | Warnings, caution states |
-| Info | {{0-255}} | {{description}} | Information, links |
-| Accent | {{0-255}} | {{description}} | Highlights, selections |
+| Background | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Primary surface |
+| Background Alt | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Alternating rows, inactive panels |
+| Surface | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Cards, focused panel bg |
+| Border | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Panel borders, dividers |
+| Border Focus | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Focused panel border |
+| Text Primary | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Headings, primary text |
+| Text Secondary | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Body text, descriptions |
+| Text Tertiary | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Captions, placeholders |
+| Success | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Positive values, success states |
+| Error | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Errors, destructive actions |
+| Warning | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Warnings, caution states |
+| Info | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Information, links |
+| Accent | {{COLOR_NUMBER}} | {{COLOR_DESCRIPTION}} | Highlights, selections |
 
 All color values (estimated).
 
@@ -64,32 +64,32 @@ Monospaced font only. No proportional fonts in TUI.
 
 | Role | Style | Usage |
 |------|-------|-------|
-| Title | {{Bold, foreground #}} | Panel headers, app title |
-| Heading | {{Bold, foreground #}} | Section headings |
-| Body | {{Normal, foreground #}} | Content text |
-| Emphasis | {{Bold, foreground #}} | Important values |
-| Dim | {{Normal, foreground #}} | Labels, hints, metadata |
-| Highlight | {{Bold + reverse video}} | Search matches, cursor |
+| Title | {{TITLE_STYLE}} | Panel headers, app title |
+| Heading | {{HEADING_STYLE}} | Section headings |
+| Body | {{BODY_STYLE}} | Content text |
+| Emphasis | {{EMPHASIS_STYLE}} | Important values |
+| Dim | {{DIM_STYLE}} | Labels, hints, metadata |
+| Highlight | {{HIGHLIGHT_STYLE}} | Search matches, cursor |
 
 All styles (estimated).
 
 ## Panel Layout
 
-{{Compact / Loose}} density. {{description of overall layout}} (estimated).
+{{LAYOUT_DENSITY}} density. {{LAYOUT_DESCRIPTION}} (estimated).
 
-- Terminal size: {{rows}} rows x {{columns}} columns (estimated)
-- Visible panels: {{count}} (estimated)
+- Terminal size: {{TERMINAL_ROWS}} rows x {{TERMINAL_COLUMNS}} columns (estimated)
+- Visible panels: {{PANEL_COUNT}} (estimated)
 - Panel dimensions:
-  - {{Panel name}}: {{width}} cols x {{height}} rows (estimated)
-- Vertical spacing: {{0-1 / 1-2}} lines between items (estimated)
-- Horizontal padding: {{1-2 / 2-4}} characters (estimated)
-- Status bar: {{always visible / not present}}, {{1 row / none}} (estimated)
+  - {{PANEL_NAME}}: {{PANEL_WIDTH}} cols x {{PANEL_HEIGHT}} rows (estimated)
+- Vertical spacing: {{VERTICAL_SPACING}} lines between items (estimated)
+- Horizontal padding: {{HORIZONTAL_PADDING}} characters (estimated)
+- Status bar: {{STATUS_BAR_VISIBILITY}}, {{STATUS_BAR_ROWS}} (estimated)
 
 ## Key Bindings
 
 | Key | Action |
 |-----|--------|
-| {{key}} | {{action}} (estimated) |
+| {{KEY}} | {{KEY_ACTION}} (estimated) |
 
 Key bindings extracted from visible status bar or help panel (estimated).
 
@@ -97,13 +97,13 @@ Key bindings extracted from visible status bar or help panel (estimated).
 
 | Do | Don't |
 |----|-------|
-| Use {{box-drawing / ASCII}} chars for all borders | Use arbitrary characters for borders |
-| Use {{256-color / 16-color}} palette values | Hard-code hex colors or RGB |
-| Keep {{compact / loose}} density | Inconsistent spacing |
+| Use {{RECOMMENDED_CHAR_TYPE}} chars for all borders | Use arbitrary characters for borders |
+| Use {{RECOMMENDED_COLOR_PALETTE}} palette values | Hard-code hex colors or RGB |
+| Keep {{RECOMMENDED_DENSITY}} density | Inconsistent spacing |
 | Specify Unicode codepoint or ASCII code for every char | Leave character choices as "TBD" |
 | Use semantic colors (Success=green, Error=red) | Use arbitrary colors for status |
 
 ## Applicable Scenarios
 
-- {{scenario 1}}
-- {{scenario 2}}
+- {{SCENARIO_1}}
+- {{SCENARIO_2}}

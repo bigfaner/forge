@@ -57,7 +57,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "13-fix-extract-design-md.md",
       "record": "records/13-fix-extract-design-md.md",
       "type": "doc"
