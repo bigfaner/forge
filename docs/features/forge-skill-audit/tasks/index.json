@@ -109,7 +109,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "17-fix-knowledge-format.md",
       "record": "records/17-fix-knowledge-format.md",
       "type": "doc"
