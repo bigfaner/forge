@@ -8,7 +8,7 @@
       "title": "Sync eval ecosystem data (H-1)",
       "priority": "P0",
       "estimatedTime": "1h",
-      "status": "pending",
+      "status": "completed",
       "file": "1-sync-eval-data.md",
       "record": "records/1-sync-eval-data.md",
       "type": "doc"

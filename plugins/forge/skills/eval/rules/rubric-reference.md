@@ -1,5 +1,7 @@
 # Rubric Reference
 
+<!-- MAINTENANCE NOTE: This file is a secondary cache of rubric scale/target values. The single source of truth is each rubric's frontmatter in `rubrics/<type>.md`. Any rubric frontmatter change MUST be synced here. -->
+
 All rubrics: `rubrics/<type>.md`
 
 | Rubric | Scale | Target | Iterations | Notes |
@@ -13,5 +15,5 @@ All rubrics: `rubrics/<type>.md`
 | `consistency` | 1000 | 900 | 3 | docs/full scope modes |
 | `validate-code` | 1000 | 700 | 1 | Single-pass; scenario tracing; no reviser |
 | `validate-ux` | 1000 | 700 | 1 | Single-pass; two-phase (snapshot + score); no reviser |
-| `journey` | 1000 | 850 | 3 | Per-dimension min thresholds |
-| `contract` | 1000 | 850 | 3 | Per-dimension min thresholds; six-dimension structural integrity + Preconditions mutual exclusivity |
+| `journey` | 1150 | 975 | 3 | 7 dimensions incl. Workflow Coverage; per-dimension min thresholds |
+| `contract` | 1100 | 935 | 3 | 8 dimensions incl. Anchor Integrity + Fixture Specification; per-dimension min thresholds |

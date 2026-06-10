@@ -1,6 +1,6 @@
 ---
 name: eval
-description: Generic document evaluation with scorer→gate→revise loop. Parameterized by rubric file. Supports 100-point and 1000-point scales. Detects UI platform for eval-ui. Skips reviser when iterations ≤ 1.
+description: Generic document evaluation with scorer→gate→revise loop. Parameterized by rubric file. Supports multiple scales (1000, 1100, 1150 points). Detects UI platform for eval-ui. Skips reviser when iterations ≤ 1.
 argument-hint: "[--type <type>] [--target 900] [--iterations 3]"
 effort: high
 ---
