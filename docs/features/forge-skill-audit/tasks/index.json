@@ -31,7 +31,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "11-fix-quick-tasks-placeholders.md",
       "record": "records/11-fix-quick-tasks-placeholders.md",
       "type": "doc"
