@@ -55,7 +55,7 @@ Load: `rules/journey-contract-model.md` — core concepts (Journey, Step, Contra
 
 ### 0.1 Surface Detection
 
-<!-- INLINE:origin=gen-journeys/SKILL.md#Surface Detection -->
+<!-- INLINE from gen-journeys/SKILL.md#Surface Detection @ v3.0.0-rc.53 -->
 
 1. Run `forge surfaces` to list all configured surfaces
 2. Parse stdout using the unified text parsing rule (see Forge Guide → Surface Output Parsing)

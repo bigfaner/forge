@@ -125,7 +125,7 @@ Edit justfile to customize commands. Recipes marked `# user-customized` will be 
 - **Recipe generation**: MUST use `forge justfile scaffold` CLI. Do NOT generate PID/lifecycle code from scratch.
 - **Targets invoked by forge skills**: `compile`, `unit-test`, `<prefix>test`, `<prefix>teardown`, `install`.
 
-<!-- INLINE:origin=test-guide/references/test-type-model.md -->
+<!-- INLINE from test-guide/references/test-type-model.md @ v3.0.0-rc.53 -->
 **Surface -> Test Type mapping**:
 
 | Surface | Test Type | Verification | Execution Model |

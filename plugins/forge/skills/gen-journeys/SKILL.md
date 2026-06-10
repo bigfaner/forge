@@ -17,7 +17,7 @@ This skill only generates Journey narrative documents (per-Journey Markdown file
 
 ## Core Concepts
 
-<!-- INLINE:origin=gen-contracts/rules/journey-contract-model.md -->
+<!-- INLINE from gen-contracts/rules/journey-contract-model.md @ v3.0.0-rc.53 -->
 
 The Forge test pipeline organizes around user workflows (Journeys), defines expected behavior through six-dimension Contract declarations, and manages test lifecycles via Tag-Based Promotion.
 
