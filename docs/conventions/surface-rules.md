@@ -1,19 +1,19 @@
 ---
 title: "Surface Rule File Conventions"
-domains: [surface, rules, recipe, scalar, named, orchestration, data-propagation, naming, text-mode, parsing]
+domains: [surface, rules, recipe, scalar, named, orchestration, data-propagation, naming, text-mode, parsing, scaffold]
 ---
 
 # Surface Rule File Conventions
 
 _Source: feature/surface-aware-justfile_
 
-## Rule File Format
+## Scaffold Command
 
-### TECH-surface-rules-001: Surface Rule File Format Convention
+### TECH-surface-rules-001: Surface Recipe Generation via Scaffold CLI
 
-**Requirement**: Surface rule files follow the path pattern `rules/surfaces/<type>.md` and are consumed by both init-justfile (recipe generation) and run-tests (orchestration). Each file contains: (1) orchestration sequence table with exit code handling per step, (2) recipe invocation contract table defining just signature, exit code semantics, and (3) journey filter strategy mapping @tag to surface type. Files are loaded dynamically based on surface-type detected at runtime.
+**Requirement**: Surface recipe generation is handled by the `forge justfile scaffold` CLI command, not by surface rule files. The command generates placeholder-templated justfile recipes for a given surface type, outputting to stdout. Each surface type has a fixed recipe set: cli/tui produce test + teardown + quality recipes (compile/fmt/lint/unit-test); api/web produce dev + probe + test + teardown + orchestration + quality recipes; mobile produces test-setup + dev + probe + test + teardown + orchestration + quality recipes. The CLI command is the single source of truth for recipe generation — surface rule files (`rules/surfaces/<type>.md`) have been removed.
 **Scope**: [CROSS]
-**Source**: feature/surface-aware-justfile TECH-003
+**Source**: feature/init-justfile-slim TECH-003 (replaces feature/surface-aware-justfile TECH-003)
 
 ## Recipe Naming
 
@@ -37,7 +37,7 @@ Surface-key in recipe names must use `[a-zA-Z0-9_-]` characters only. Aggregate 
 3. Skill -> task frontmatter (YAML fields: surface-key, surface-type)
 4. Frontmatter -> index.json Task Go struct (JSON serialization)
 5. index.json -> run-tests skill (Go function call)
-6. run-tests -> execution strategy rule file (file path: `rules/surfaces/{type}.md`)
+6. run-tests -> execution via `forge quality-gate` (surface-aware lifecycle orchestration)
 7. `forge surfaces` CLI (text mode) -> init-justfile/test-guide skill (text stdout)
 
 Text mode parsing rule (unified across all skills): per line, if line contains `=`, split into key (before `=`) and type (after `=`) — named surface; otherwise key is empty and type is the line — scalar surface.

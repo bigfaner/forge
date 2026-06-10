@@ -2137,7 +2137,7 @@ func TestRunSurfaceLifecycle_TeardownAlwaysRuns(t *testing.T) {
 		helperWriteMarkerScript(t, scriptPath, markerFile)
 
 		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
-			fmt.Sprintf("dev:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+			fmt.Sprintf("web-dev:\n  exit 1\nweb-teardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
 		), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -2161,7 +2161,7 @@ func TestRunSurfaceLifecycle_TeardownAlwaysRuns(t *testing.T) {
 		helperWriteMarkerScript(t, scriptPath, markerFile)
 
 		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
-			fmt.Sprintf("dev:\n  echo dev-ok\nprobe:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+			fmt.Sprintf("web-dev:\n  echo dev-ok\nweb-probe:\n  exit 1\nweb-teardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
 		), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -2185,7 +2185,7 @@ func TestRunSurfaceLifecycle_TeardownAlwaysRuns(t *testing.T) {
 		helperWriteMarkerScript(t, scriptPath, markerFile)
 
 		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
-			fmt.Sprintf("dev:\n  echo dev-ok\nprobe:\n  echo probe-ok\ntest:\n  exit 1\nteardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
+			fmt.Sprintf("web-dev:\n  echo dev-ok\nweb-probe:\n  echo probe-ok\nweb-test:\n  exit 1\nweb-teardown:\n  bash %s\n", filepath.ToSlash(scriptPath)),
 		), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -2210,7 +2210,7 @@ func TestRunSurfaceLifecycle_TeardownAlwaysRuns(t *testing.T) {
 		helperWriteMarkerScript(t, devScript, devMarker)
 
 		if err := os.WriteFile(filepath.Join(projectRoot, "justfile"), []byte(
-			fmt.Sprintf("dev:\n  bash %s\nprobe:\n  echo probe-ok\ntest:\n  echo test-ok\nteardown:\n  echo teardown-ok\n", filepath.ToSlash(devScript)),
+			fmt.Sprintf("dev:\n  bash %s\nprobe:\n  echo probe-ok\ncli-test:\n  echo test-ok\ncli-teardown:\n  echo teardown-ok\n", filepath.ToSlash(devScript)),
 		), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -2377,7 +2377,7 @@ func TestRunSurfaceLifecycle_SurfaceSpecificRecipes(t *testing.T) {
   bash %s
 web-probe:
   bash %s
-test:
+web-test:
   bash %s
 web-teardown:
   bash %s
