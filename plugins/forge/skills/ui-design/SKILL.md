@@ -137,13 +137,28 @@ Use `templates/manifest-update-ui.md` for the update pattern.
 <EXTREMELY-IMPORTANT>
 Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-Run `forge config get auto.eval.uiDesign`. Based on the result:
-- `true` → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
-- `false` → skip eval, output "eval-ui skipped (auto.eval.uiDesign = false)", proceed to Step 8 (prototype generation)
-- unset (exit code non-zero) → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
+```bash
+# Eval auto-run check (uiDesign)
+# TODO(M-1): Rename auto.eval.uiDesign → auto.eval.ui-design pending Go config reader alias support.
+# Go EvalConfig uses yaml:"uiDesign" tag; reflection-based GetConfigValue requires exact match.
+# Track: https://github.com/bigfaner/forge/issues/TBD
+EVAL_ENABLED=$(forge config get auto.eval.uiDesign 2>/dev/null)
+if [ "$EVAL_ENABLED" = "true" ]; then
+  echo "AUTO_RUN"
+elif [ "$EVAL_ENABLED" = "false" ]; then
+  echo "SKIP"
+else
+  echo "FALLBACK_ASK"
+fi
+```
+
+Based on the output:
+- **AUTO_RUN** → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
+- **SKIP** → skip eval, output "eval-ui 已通过配置跳过", proceed to Step 8 (prototype generation)
+- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
   - **Yes** → invoke `/eval-ui` via `Skill` tool
   - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
-  - **Skip eval-ui** → proceed to Step 8 (prototype generation)
+  - **No** → proceed to Step 8 (prototype generation)
 
 After eval-ui completes, check the final score:
 
