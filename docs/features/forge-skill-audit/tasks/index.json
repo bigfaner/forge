@@ -75,7 +75,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "skipped",
       "file": "6-unify-config-keys.md",
       "record": "records/6-unify-config-keys.md",
       "type": "doc"
@@ -88,7 +88,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "7-unify-ui-design-eval.md",
       "record": "records/7-unify-ui-design-eval.md",
       "type": "doc"
@@ -101,7 +101,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "8-cleanup-orphan-files.md",
       "record": "records/8-cleanup-orphan-files.md",
       "type": "doc"
@@ -114,7 +114,7 @@
       "dependencies": [
         "5"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "9-fix-doc-completeness.md",
       "record": "records/9-fix-doc-completeness.md",
       "type": "doc"

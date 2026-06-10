@@ -3,6 +3,8 @@ name: test-isolation
 description: Testing isolation conventions for unit and surface tests -- every test must own its environment
 ---
 
+<!-- OWNER: run-tests | CONSUMERS: gen-test-scripts (INLINE) -->
+
 # Testing Isolation Conventions
 
 Every test — unit or surface — must own its environment. No test may depend on the real project's filesystem state, git state, or `.forge/` state.
