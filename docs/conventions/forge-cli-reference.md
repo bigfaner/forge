@@ -26,6 +26,7 @@ domains: [cli, commands, reference, skills, task-list, validate]
 | `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
 | `forge surfaces [path]` | 扫描项目文件检测 forge 可用的 surface；`--json` 结构化输出；`--types` 列出类型 | `surfaces.go` |
 | `forge upgrade` | 升级 CLI binary + Plugin（两阶段：CLI self-update from GitHub Releases + Plugin install/update via claude CLI） | `upgrade.go` |
+| `forge justfile` | Justfile 管理（scaffold 子命令生成 surface recipe） | `justfile.go` |
 
 ## 命令组
 

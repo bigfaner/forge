@@ -127,7 +127,7 @@
       "dependencies": [
         "9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "quick-drift-detection.md",
       "record": "records/quick-drift-detection.md",
       "type": "doc.drift"
@@ -148,7 +148,7 @@
         "6",
         "9"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "review-doc.md",
       "record": "records/review-doc.md",
       "type": "doc.review"
