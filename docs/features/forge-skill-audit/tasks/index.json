@@ -18,7 +18,7 @@
       "title": "Fix gen-contracts path references (HIGH-A1, HIGH-A2, MEDIUM-A3)",
       "priority": "P0",
       "estimatedTime": "30m",
-      "status": "pending",
+      "status": "completed",
       "file": "10-fix-gen-contracts-paths.md",
       "record": "records/10-fix-gen-contracts-paths.md",
       "type": "doc"
