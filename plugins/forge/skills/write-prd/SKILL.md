@@ -131,6 +131,21 @@ Explore context → Check proposal + detect intent → Assess scope → Ask ques
 | `prd/prd-ui-functions.md` | `templates/prd-ui-functions.md` | `new-feature` with UI surface; others only if override "用户可见行为" triggers |
 | `manifest.md` | `templates/manifest.md` | All intents |
 
+## Template Placeholder Mapping
+
+All templates under `templates/` use `{{PLACEHOLDER}}` syntax. When filling templates, replace each placeholder according to the mapping below.
+
+| Placeholder | Template(s) | Value Source | Example |
+|-------------|-------------|--------------|---------|
+| `{{FEATURE_NAME}}` | prd-spec.md, prd-user-stories.md, prd-ui-functions.md | Feature name from user input or proposal title | `"Skill Audit Pipeline"` |
+| `{{SLUG}}` | manifest.md | Feature slug (kebab-case, derived from feature name) | `"skill-audit-pipeline"` |
+| `{{DATE}}` | manifest.md | Current date in `YYYY-MM-DD` format | `"2026-06-10"` |
+| `{{DB_SCHEMA}}` | prd-spec.md | `"yes"` if feature creates/modifies DB tables, `"no"` otherwise. Default to `"yes"` when unsure. | `"yes"` |
+| `{{PRD_SUMMARY}}` | manifest.md | One-line summary of the PRD spec content | `"Define skill audit requirements and scoring"` |
+| `{{USER_STORIES_SUMMARY}}` | manifest.md | One-line summary of the user stories | `"3 stories covering audit creation and review"` |
+| `{{UI_FUNCTIONS_SUMMARY}}` | manifest.md | One-line summary of the UI functions | `"4 UI functions for audit dashboard"` |
+| `{{PLATFORM}}` | prd-ui-functions.md | Target platform, one of: `web`, `mobile`, `mini-program`, `tablet`, `tui` | `"web"` |
+
 ## Step 1: Explore Project Context
 
 Before asking questions, understand the current state:

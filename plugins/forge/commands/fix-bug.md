@@ -310,7 +310,7 @@ For new convention/business-rule files, include YAML frontmatter with `title` an
    | 0 | `false` | Present step 6 confirmation. |
    | Non-zero | — | Fallback: present step 6 confirmation. |
 
-   Mode context: `quick` via `/quick` pipeline, `full` via full pipeline. Output format: plain text key:value pairs (e.g., `quick:true full:false`).
+   Mode context: `quick` via `/quick` pipeline, `full` via full pipeline. Parse the config output format `quick:<val> full:<val>` (e.g., `quick:true full:false`) and select the value matching the current mode.
 
 6. **Present for user confirmation** (skipped when auto-save enabled) — use AskUserQuestion:
 

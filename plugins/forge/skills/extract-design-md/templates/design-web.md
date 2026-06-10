@@ -1,12 +1,12 @@
-# Design System: {{App Name or Domain}}
+# Design System: {{APP_NAME_OR_DOMAIN}}
 
 > Extracted from: {{URL}}
-> Date: {{YYYY-MM-DD}}
-> Based on: {{Built-in style name or "Custom"}}
+> Date: {{DATE}}
+> Based on: {{BUILT_IN_STYLE_NAME_OR_CUSTOM}}
 
 ## Visual Theme & Atmosphere
 
-{{2-3 sentences describing overall visual style, atmosphere, and design philosophy}}
+{{VISUAL_STYLE_DESCRIPTION}}
 
 ## Color Palette
 
@@ -39,65 +39,65 @@
 
 ### Buttons
 
-- **Primary**: {{background color, text color, border radius, padding, hover effect}}
-- **Secondary**: {{style description}}
-- **Ghost**: {{style description}}
+- **Primary**: {{PRIMARY_BUTTON_STYLE}}
+- **Secondary**: {{SECONDARY_BUTTON_STYLE}}
+- **Ghost**: {{GHOST_BUTTON_STYLE}}
 - **Sizes**: sm / md / lg corresponding padding and font size
 
 ### Cards
 
-- Background: {{value}}
-- Border: {{value}}
-- Border Radius: {{value}}
-- Padding: {{value}}
-- Shadow: {{value}}
-- Hover: {{hover effect}}
+- Background: {{CARD_BACKGROUND}}
+- Border: {{CARD_BORDER}}
+- Border Radius: {{CARD_BORDER_RADIUS}}
+- Padding: {{CARD_PADDING}}
+- Shadow: {{CARD_SHADOW}}
+- Hover: {{CARD_HOVER_EFFECT}}
 
 ### Inputs
 
-- Background: {{value}}
-- Border: {{value}}
-- Border Radius: {{value}}
-- Height: {{value}}
-- Padding: {{value}}
-- Focus: {{focus state description}}
+- Background: {{INPUT_BACKGROUND}}
+- Border: {{INPUT_BORDER}}
+- Border Radius: {{INPUT_BORDER_RADIUS}}
+- Height: {{INPUT_HEIGHT}}
+- Padding: {{INPUT_PADDING}}
+- Focus: {{INPUT_FOCUS_STATE}}
 
 ### Navigation
 
-- Layout: {{top nav / sidebar / other}}
-- Background: {{value}}
-- Active state: {{active item style}}
-- Responsive: {{mobile behavior}}
+- Layout: {{NAVIGATION_LAYOUT_TYPE}}
+- Background: {{NAVIGATION_BACKGROUND}}
+- Active state: {{NAVIGATION_ACTIVE_STYLE}}
+- Responsive: {{NAVIGATION_MOBILE_BEHAVIOR}}
 
 ## Layout
 
-- Max content width: {{value}}
-- Grid: {{columns}} columns, {{gap}} gap
-- Section padding: {{desktop}} desktop / {{mobile}} mobile
-- Component spacing: {{spacing system description}}
+- Max content width: {{MAX_CONTENT_WIDTH}}
+- Grid: {{GRID_COLUMNS}} columns, {{GRID_GAP}} gap
+- Section padding: {{SECTION_PADDING_DESKTOP}} desktop / {{SECTION_PADDING_MOBILE}} mobile
+- Component spacing: {{SPACING_SYSTEM_DESCRIPTION}}
 
 ## Depth & Elevation
 
 | Level | Shadow | Usage |
 |-------|--------|-------|
 | 0 | none | Flat elements |
-| 1 | {{value}} | Cards, dropdowns |
-| 2 | {{value}} | Modals, popovers |
+| 1 | {{ELEVATION_LEVEL_1_SHADOW}} | Cards, dropdowns |
+| 2 | {{ELEVATION_LEVEL_2_SHADOW}} | Modals, popovers |
 
 ## Do's and Don'ts
 
 | Do | Don't |
 |----|-------|
-| {{correct practice}} | {{incorrect practice}} |
+| {{CORRECT_PRACTICE}} | {{INCORRECT_PRACTICE}} |
 
 ## Responsive Behavior
 
 | Breakpoint | Behavior |
 |-----------|---------|
-| Mobile (<768px) | {{description}} |
-| Tablet (768-1024px) | {{description}} |
-| Desktop (>1024px) | {{description}} |
+| Mobile (<768px) | {{RESPONSIVE_MOBILE}} |
+| Tablet (768-1024px) | {{RESPONSIVE_TABLET}} |
+| Desktop (>1024px) | {{RESPONSIVE_DESKTOP}} |
 
 ## Signature Patterns
 
-{{2-5 signature visual patterns of this design system}}
+{{SIGNATURE_PATTERNS_DESCRIPTION}}

@@ -34,7 +34,7 @@ SKILL.md 文件采用三层结构：流程骨架（SKILL.md）+ 规则细节（r
 
 ### 约束
 
-- 每个 SKILL.md 行数不超过 500 行（放宽自 350 行，因复杂 skill 的流程骨架天然较长；3 个已知超标文件待拆分：gen-test-scripts 536 行, init-justfile 526 行, gen-journeys 454 行）
+- 每个 SKILL.md 行数不超过 500 行（放宽自 350 行，因复杂 skill 的流程骨架天然较长；1 个已知超标文件待拆分：gen-test-scripts 695 行）
 - 辅助文件位于 skill 目录内的以下子目录类型中：`rules/`（规则细节）、`templates/`（模板资源）、`experts/`（领域专家定义）、`rubrics/`（评分标准）、`references/`（参考文档）、`data/`（静态数据）、`types/`（类型定义）、`examples/`（示例文件）
 - SKILL.md 必须包含完整流程步骤（遵守 skill-self-containment 原则）
 - 不改变 skill 的输入/输出契约

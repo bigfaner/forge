@@ -121,7 +121,7 @@ For `--platform tui`, the match strategy differs from web/mobile. Follow the com
 | Match closest built-in TUI theme, customize on top | Identify the closest built-in TUI theme (modern-dark-tui or minimal-ascii-tui), override differences with extracted tokens |
 | Fully custom from screenshot analysis | Generate an independent TUI DESIGN.md entirely from analysis results |
 
-If "match built-in" is chosen, match against TUI theme characteristics per `rules/style-matching.md` and read the corresponding style file from `ui-design/templates/styles/<name>.md`.
+If "match built-in" is chosen, match against TUI theme characteristics per `rules/style-matching.md` and read the corresponding style file from `ui-design/templates/styles/<name>.md`. This file is in the `ui-design` skill directory; in Forge distribution, resolve the path relative to the skills parent directory (i.e., traverse up from this skill's directory to `skills/`, then into `ui-design/templates/styles/`).
 
 ## Step 4: Build Design Tokens
 

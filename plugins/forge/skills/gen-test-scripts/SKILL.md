@@ -450,7 +450,7 @@ Apply the surface type detected in Step 0.5 to constrain the generation plan. Lo
 
 **Test isolation**: Every test — unit or surface — must own its environment. No test may depend on the real project's filesystem state, git state, or `.forge/` state.
 
-<!-- INLINE:origin=run-tests/rules/test-isolation.md -->
+<!-- INLINE from run-tests/rules/test-isolation.md @ v3.0.0-rc.53 -->
 
 | Rule ID | Scope | Requirement | Pattern |
 |---------|-------|-------------|---------|

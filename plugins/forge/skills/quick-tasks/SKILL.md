@@ -83,6 +83,8 @@ Read the appropriate template for task content structure. Create one task file p
 | `{{ACCEPTANCE_CRITERIA}}` | Derived from Success Criteria as `- [ ]` checklist items |
 | `{{HARD_RULES}}` | Critical constraints only; leave empty for normal tasks |
 | `{{NOTES}}` | Implementation notes from Key Risks |
+| `{{COMPLEXITY}}` | `low` / `medium` / `high` — see Step 2 Complexity判定 |
+| `{{TYPE}}` | Task type — see Step 3 Type Assignment table |
 | `{{SURFACE_KEY}}` | Surface key (coding tasks only) |
 | `{{SURFACE_TYPE}}` | Surface type (coding tasks only) |
 | `{{NEW_FILES}}` / `{{MODIFIED_FILES}}` / `{{DELETED_FILES}}` | File scope for doc tasks |

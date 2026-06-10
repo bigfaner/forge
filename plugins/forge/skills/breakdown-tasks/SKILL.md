@@ -158,7 +158,7 @@ Non-compilable files (`.md`, `.sql`, `.yaml`, `.json`, `.toml`, `.graphql`, etc.
 
 ### Intent Propagation
 
-If `proposal.md` has `intent`, use as default type. 1:1 mapping: `new-feature`→`coding.feature`, `enhancement`→`coding.enhancement`, `refactor`→`coding.refactor`, `cleanup`→`coding.cleanup`, `fix`→`coding.fix`, `doc`→`doc`. Individual task `type` overrides. `doc.consolidate` and `doc.drift` are auto-generated, unified under `doc`.
+If `docs/proposals/<slug>/proposal.md` has `intent`, use as default type. 1:1 mapping: `new-feature`→`coding.feature`, `enhancement`→`coding.enhancement`, `refactor`→`coding.refactor`, `cleanup`→`coding.cleanup`, `fix`→`coding.fix`, `doc`→`doc`. Individual task `type` overrides. `doc.consolidate` and `doc.drift` are auto-generated, unified under `doc`.
 
 ### Template Selection
 

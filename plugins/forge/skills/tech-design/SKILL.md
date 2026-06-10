@@ -44,7 +44,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ## Intent Detection
 
-Read the `intent` field from `docs/features/<slug>/proposal.md` (or `docs/proposals/<slug>/proposal.md`) frontmatter before starting the process. This determines the design focus via the Pipeline Configuration table below.
+Read the `intent` field from `docs/proposals/<slug>/proposal.md` frontmatter before starting the process. This determines the design focus via the Pipeline Configuration table below.
 
 ### Pipeline Configuration
 
@@ -329,6 +329,9 @@ Run the following config check sequence via Bash tool:
 
 ```bash
 # Eval auto-run check (techDesign)
+# TODO(M-1): Rename auto.eval.techDesign → auto.eval.tech-design pending Go config reader alias support.
+# Go EvalConfig uses yaml:"techDesign" tag; reflection-based GetConfigValue requires exact match.
+# Track: https://github.com/bigfaner/forge/issues/TBD
 EVAL_ENABLED=$(forge config get auto.eval.techDesign 2>/dev/null)
 if [ "$EVAL_ENABLED" = "true" ]; then
   echo "AUTO_RUN"

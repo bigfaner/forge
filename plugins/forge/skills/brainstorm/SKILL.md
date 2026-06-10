@@ -115,6 +115,8 @@ Use `AskUserQuestion` to present the inferred intent to the user:
 
 Save to `docs/proposals/<slug>/proposal.md` using `templates/proposal.md`.
 
+Set `{{AUTHOR}}` to `git config user.name` output, or ask user if not available.
+
 ### SC Consistency Check (mandatory)
 
 After writing **Success Criteria** and **In Scope** sections, execute the SC consistency check defined in `rules/sc-consistency.md`. This is a mandatory step — the proposal must not proceed to Quality Standards without it. The check detects logical contradictions within SC entries (SC-to-SC) and between SC and InScope entries (SC-to-InScope) through clustering and bidirectional satisfiability proof. If conflicts are found, present them to the user and resolve before continuing.
