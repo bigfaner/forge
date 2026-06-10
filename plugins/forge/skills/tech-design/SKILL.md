@@ -44,7 +44,7 @@ ls docs/features/<slug>/prd/prd-spec.md
 
 ## Intent Detection
 
-Read the `intent` field from `docs/features/<slug>/proposal.md` (or `docs/proposals/<slug>/proposal.md`) frontmatter before starting the process. This determines the design focus via the Pipeline Configuration table below.
+Read the `intent` field from `docs/proposals/<slug>/proposal.md` frontmatter before starting the process. This determines the design focus via the Pipeline Configuration table below.
 
 ### Pipeline Configuration
 
