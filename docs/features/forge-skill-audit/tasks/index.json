@@ -70,7 +70,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "14-fix-write-prd-templates.md",
       "record": "records/14-fix-write-prd-templates.md",
       "type": "doc"

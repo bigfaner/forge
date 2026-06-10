@@ -14,7 +14,7 @@ feature: "{{FEATURE_NAME}}"
 
 <!-- Define page relationships and navigation structure BEFORE individual UI Functions -->
 
-- **Platform**: {{web | mobile | mini-program | tablet | tui}}
+- **Platform**: {{PLATFORM}} <!-- Valid values: web | mobile | mini-program | tablet | tui -->
 
 <!-- IF platform=tui: render the TUI Navigation section below. -->
 <!-- IF platform=web|mobile|mini-program|tablet: render the Pointer-Driven Navigation section below. -->
