@@ -96,7 +96,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "16-add-config-guide.md",
       "record": "records/16-add-config-guide.md",
       "type": "doc"

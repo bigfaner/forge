@@ -55,6 +55,13 @@ Use these for ad-hoc lookups when a user mentions a slug:
 - `forge feature complete --if-done` — mark feature completed if all tasks done (stop hook)
 - `forge feature list` — list all features with status, progress, and scores
 
+### Config Management
+
+- `forge config get <key>` — get a config value from `.forge/config.yaml` (plain text output; exit code 1 if key missing)
+- `forge config set <key> <value>` — set a config value in `.forge/config.yaml` (supports dot-notation for nested keys)
+
+Config keys use dot-notation for nested values (e.g. `eval.pr.target`, `auto.runTasks`). Skills use `forge config get` as the standard mechanism to read project-level settings — always redirect stderr (`2>/dev/null`) and check exit code / empty output to handle missing keys gracefully.
+
 ### Pipeline Utilities
 
 - `forge prompt get-by-task-id <id>` — retrieve task execution prompt (dispatcher/agent entry point)
