@@ -83,7 +83,7 @@
       "dependencies": [
         "10"
       ],
-      "status": "pending",
+      "status": "completed",
       "file": "15-fix-doc-template-annotations.md",
       "record": "records/15-fix-doc-template-annotations.md",
       "type": "doc"
