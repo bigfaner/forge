@@ -1,7 +1,7 @@
 ---
 feature: "forge-skill-audit"
 created: "2026-06-10"
-status: in-progress
+status: completed
 mode: quick
 ---
 
