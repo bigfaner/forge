@@ -11,7 +11,7 @@ auto:
     full: true
   validation:
     quick: false
-    full: true
+    full: false
   runTasks:
     quick: true
     full: false
@@ -25,8 +25,8 @@ auto:
     uiDesign: true
     techDesign: true
 worktree:
-  source-branch: v3.0.0
-  copy-files: []
+  source-branch: main
+  includes: []
 eval:
   proposal:
     target: 850
