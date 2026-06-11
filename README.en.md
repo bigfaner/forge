@@ -1,6 +1,6 @@
 # Forge
 
-> Structured AI coding workflow — turning Claude Code from "chat" into "engineering"
+> **Spec Driven Development** toolkit — turning Claude Code from "chat" into "engineering"
 
 [![Version](https://img.shields.io/badge/Version-3.0.0-blue.svg)](https://github.com/bigfaner/forge)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
@@ -13,7 +13,7 @@ If you've been coding with AI, you know the pain:
 - A bug you fixed yesterday came back today because the AI simply doesn't remember
 - Every new session means re-teaching the AI your project conventions from scratch
 
-**Forge** is a structured workflow toolkit built for Claude Code. It replaces ad-hoc prompting with a disciplined pipeline: `brainstorm -> PRD -> design -> tasks -> auto-execute`. No more guessing. Just engineering-grade delivery.
+**Forge** is a **Spec Driven Development (SDD)** toolkit built for Claude Code, powered by **Harness Engineering** — turning free-form AI conversations into controlled engineering pipelines. It replaces ad-hoc prompting with a disciplined pipeline: `brainstorm -> PRD -> design -> tasks -> auto-execute`. No more guessing. Just engineering-grade delivery.
 
 ---
 
@@ -36,9 +36,26 @@ If you've been coding with AI, you know the pain:
 
 ## Core Features
 
-### Quality Gates
+### Structured Pipeline
 
-Every step comes with automated quality checks. The `compile -> fmt -> lint -> test` four-layer gate ensures AI-generated code actually works — not just looks right. Quality Gates run automatically at task submission and phase transitions. If it doesn't pass, it goes back.
+Two modes for different scales of work:
+
+| Mode | Flow | Best For |
+|------|------|----------|
+| Full Mode | brainstorm → PRD → tech design → task breakdown → auto-execute | Complex features (>10 tasks) |
+| Quick Mode | brainstorm → direct task generation → auto-execute | Small features (1–10 tasks) |
+
+### Adversarial Evaluation System
+
+8 specialized evaluators (PRD, tech design, UI design, Proposal, Journey, Contract, etc.) using **expert personas + 1000+ point rubrics** for multi-round iterative revision. Supports cross-document consistency checks (PRD → design → task alignment), ensuring document quality from the source.
+
+### Autonomous Task Execution Engine
+
+`/run-tasks` continuously dispatches tasks to subagents, each strictly following **TDD protocol** (RED → GREEN → REFACTOR). Features a **dynamic fix chain**: failed tasks automatically create fix tasks, which restore the original task upon completion. 7-state task machine (pending → in_progress → completed / blocked / suspended, etc.) with Quality Gate (`compile → fmt → lint → test`) enforcement at every step.
+
+### Journey-Contract Test Model
+
+Extract **Journeys** (user flows + risk ratings) from PRD user stories, generate six-dimension **Contracts** (behavioral specs) from Journeys, and produce executable **Surface-aware test scripts** (web / api / cli / tui / mobile) from Contracts.
 
 ### Persistent Context
 
@@ -46,11 +63,13 @@ Every step comes with automated quality checks. The `compile -> fmt -> lint -> t
 
 ### Knowledge Capture
 
-`/learn` distills design decisions, lessons learned, and technical conventions into reusable knowledge artifacts. New sessions and new contributors build on accumulated experience instead of starting from zero every time.
+`/learn` distills design decisions, lessons learned, and technical conventions into reusable knowledge artifacts. `/consolidate-specs` automatically detects and fixes spec-code drift. New sessions and new contributors build on accumulated experience instead of starting from zero every time.
 
-### Agent Orchestration
+---
 
-`/run-tasks` automatically claims, dispatches, and executes tasks. Each task runs through an independent task-executor agent following a TDD workflow, producing traceable execution records. From decomposition to delivery — hands-free.
+## Engineering Scale
+
+**21 Skills** · **16 Slash Commands** · **1 Subagent** · **20 Task Types** · **Go CLI** (19 commands) + **Claude Code Plugin** · Hooks system for automatic session-level context injection and cleanup
 
 ---
 
@@ -116,6 +135,8 @@ Building from source: `git clone` -> `cd forge-cli && bash scripts/install-local
 - [Environment Setup](docs/user-guide/environment-setup.md) — Setting up your Forge development environment from scratch
 
 ---
+
+## Contributing
 
 ```bash
 git clone git@github.com:bigfaner/forge.git && cd forge

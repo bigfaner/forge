@@ -1,6 +1,6 @@
 # Forge
 
-> 结构化 AI 编程工具链 — 让 Claude Code 从"聊天"变成"工程"
+> **Spec Driven Development** 工具链 — 让 Claude Code 从"聊天"变成"工程"
 
 [![Version](https://img.shields.io/badge/Version-3.0.0-blue.svg)](https://github.com/bigfaner/forge)
 [![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?style=flat&logo=go)](https://golang.org/)
@@ -13,7 +13,7 @@
 - 昨天修的 bug，今天 AI 又改回来，因为它根本不记得
 - 每次开新会话都要重新教 AI 项目规范和决策上下文
 
-**Forge** 是为 Claude Code 打造的结构化工作流工具链。它用 `brainstorm → PRD → 设计 → 任务 → 自动执行` 的工程化流程，把 AI 编程从"凭感觉聊天"变成"按规范交付"。
+**Forge** 是为 Claude Code 打造的 **Spec Driven Development（SDD）** 工具链，核心理念是 **Harness Engineering**——将 AI 编程从自由对话变为受控的工程流水线。它用 `brainstorm → PRD → 设计 → 任务 → 自动执行` 的工程化流程，把 AI 编程从"凭感觉聊天"变成"按规范交付"。
 
 ---
 
@@ -36,9 +36,26 @@
 
 ## 核心特性
 
-### 质量门控
+### 结构化 Pipeline
 
-每一步都有自动化的质量检查。`compile → fmt → lint → test` 四层门控确保 AI 产出的代码不会"看起来对、跑起来崩"。Quality Gate 在任务提交和阶段退出时自动执行，不合格就打回。
+两种模式覆盖不同规模的需求：
+
+| 模式 | 流程 | 适用场景 |
+|------|------|----------|
+| 完整模式 | brainstorm → PRD → 技术设计 → 任务拆分 → 自动执行 | 复杂特性（>10 个任务） |
+| 快速模式 | brainstorm → 任务直接生成 → 自动执行 | 小特性（1-10 个任务） |
+
+### 对抗式评估体系
+
+8 种专属评估器（PRD、技术设计、UI 设计、Proposal、Journey、Contract 等），采用**专家角色 + 1000+ 分制评分表**进行多轮迭代修订，支持跨文档一致性校验（PRD → 设计 → 任务对齐），从源头保障文档质量。
+
+### 自主任务执行引擎
+
+`/run-tasks` 自动循环分发任务至 Subagent，每个 Subagent 严格遵循 **TDD 协议**（RED → GREEN → REFACTOR）。支持**动态修复链**：失败任务自动创建修复任务，修复完成后恢复原任务。7 种任务状态机管控（pending → in_progress → completed / blocked / suspended 等），每步都有 Quality Gate（`compile → fmt → lint → test`）自动拦截。
+
+### Journey-Contract 测试模型
+
+从 PRD 用户故事提取 **Journey**（用户流程 + 风险分级），从 Journey 生成六维度 **Contract**（行为契约），从 Contract 生成可执行的 **Surface 感知测试脚本**（web / api / cli / tui / mobile）。
 
 ### 上下文持久化
 
@@ -46,11 +63,13 @@
 
 ### 知识沉淀
 
-`/learn` 把项目中的设计决策、经验教训、技术规范沉淀为可复用的知识。新的会话、新的贡献者都能站在前人的肩膀上，而不是每次从零开始。
+`/learn` 把项目中的设计决策、经验教训、技术规范沉淀为可复用的知识。`/consolidate-specs` 自动检测规范与代码的漂移并修复。新的会话、新的贡献者都能站在前人的肩膀上，而不是每次从零开始。
 
-### Agent 自动编排
+---
 
-`/run-tasks` 自动认领、分发、执行任务，每个任务由独立的 task-executor agent 以 TDD 方式完成，产出可追溯的执行记录。复杂功能从拆解到交付，无需人工干预每个步骤。
+## 工程规模
+
+**21 个 Skill** · **16 个 Slash Command** · **1 个 Subagent** · **20 种任务类型** · **Go CLI**（19 个命令） + **Claude Code Plugin** · Hooks 系统实现会话级自动上下文注入与清理
 
 ---
 
