@@ -1,6 +1,6 @@
 # 架构概览
 
-> 最后更新：2026-05-30 | 对应版本：v3.0.0
+> 最后更新：2026-06-11
 
 本文档从用户视角介绍 Forge 的架构设计。理解这些概念后，你将知道 Forge 是如何组织的、各组件做什么、以及数据在你的项目中如何流转。
 
@@ -362,7 +362,7 @@ Forge 提供两种工作模式，根据功能复杂度选择：
 │                                                     │
 │ /consolidate-specs  /learn  /forensic  /deep-research│
 │ /clean-code  /gen-web-sitemap  /test-guide           │
-│ /init-justfile  /extract-design-md  /eval            │
+│ /init-justfile  /extract-design-md  /eval  /fix-bug  │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```

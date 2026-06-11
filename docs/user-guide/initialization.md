@@ -1,6 +1,6 @@
 # 初始化指南
 
-> 最后更新：2026-05-30 | 版本：v3.0.0
+> 最后更新：2026-06-11
 
 本文档说明如何从零开始初始化一个 Forge 项目，包括 `forge init` 的完整流程、配置文件全字段参考和 Surface 检测机制。
 
@@ -160,7 +160,7 @@ auto:
   gitPush: true
   knowledgeSave:
     quick: true
-    full: true
+    full: false
   eval:
     proposal: true
     prd: false
