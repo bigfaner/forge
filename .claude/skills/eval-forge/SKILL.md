@@ -50,7 +50,7 @@ flowchart TD
 
 <EXTREMELY-IMPORTANT>
 1. Main session controls the loop — NEVER delegate the entire audit to a single agent
-2. Only 3 actions per iteration: scan → score → gate → fix
+2. Main session owns the loop: scan → score → gate → classify → fix (Steps 1-5)
 3. Gate (Step 3) runs in main session — never inside a subagent
 4. Scorer and reviser use `general-purpose` agent type with specialized prompts — do NOT use `forge:doc-scorer` or `forge:doc-reviser`
 5. The scorer receives NO hints about what was fixed. It audits the plugin as-is.
@@ -80,10 +80,12 @@ Gather the full plugin structure for the scorer:
 2. List `plugins/forge/commands/` files
 3. List `plugins/forge/agents/` files
 4. Read `plugins/forge/.claude-plugin/plugin.json`
-5. Run `task -h` to capture available CLI commands
-6. For each `task <cmd>`, run `task <cmd> -h` to capture flags
+5. Run `forge -h` to capture available CLI commands. If forge CLI is not installed, note this and skip CLI verification.
+6. For each `forge <cmd>`, run `forge <cmd> -h` to capture flags (skip if forge unavailable)
 7. Read `plugins/forge/hooks/guide.md`
 8. Scan all template files under `plugins/forge/skills/*/templates/*`
+9. Verify eval structure: `skills/eval/SKILL.md` exists and `skills/eval/rubrics/` contains rubric files for each eval type
+10. Verify eval command wrappers: for each `/eval-*` command, the corresponding `commands/eval-*.md` delegates to `Skill("eval", ...)`
 
 ## Step 2: Invoke Scorer (Custom Subagent)
 
@@ -106,6 +108,8 @@ After the scorer returns, parse its output:
 2. Extract per-dimension scores
 3. Extract attack points
 
+If iteration > 1, compare current attack points with previous iteration report (`docs/self-evolution/{seq}/iteration-{prev}.md`). Fill the "Previous Issues Check" table in the current iteration report. This comparison is done by the orchestrator, NOT by the scorer — the scorer always scores blind.
+
 ## Step 3: Decision Gate (Main Session)
 
 <HARD-GATE>
@@ -117,6 +121,7 @@ This decision is made in the MAIN SESSION. This gate fires unconditionally after
 | Score >= target                            | Skip to Step 6 (final report)   |
 | Score < target AND iterations remaining    | Proceed to Step 4               |
 | Score < target AND no iterations remaining | Skip to Step 6 (report failure) |
+| Score < target AND zero attack points      | Skip to Step 6 (no fixable issues found — report failure) |
 
 Report to user:
 
@@ -139,9 +144,16 @@ For each attack point, classify fixability:
 | Invalid CLI flag                  | Skill uses non-existent CLI flag       | Yes — fix the flag                  |
 | Invalid status value              | Skill uses wrong status value          | Yes — fix the status                |
 | Schema-code mismatch              | Schema field missing from Go code      | Partial — depends on direction      |
-| Missing eval template             | eval-\* missing rubric.md or report.md | No — requires content creation      |
-| Missing Iron Laws                 | eval-\* missing orchestrator section   | Partial — requires domain knowledge |
+| Missing eval template             | eval skill or rubrics missing required files | No — requires content creation      |
+| Missing Iron Laws                 | eval skill missing orchestrator section   | Partial — requires domain knowledge |
 | Dangling guide reference          | guide.md references non-existent skill | Yes — remove or update reference    |
+| D2 ARCHITECTURAL bypass           | Scorer marks `[ARCHITECTURAL]`         | No — requires code-level change     |
+| Graph breakpoint (D1a/D1b/D1e)    | Missing prerequisite skill or broken test chain | No — requires skill creation |
+| Step ambiguity (D3b)              | Vague verbs, missing tool specs        | No — requires understanding skill intent |
+
+Skip `[ARCHITECTURAL]` D2 bypasses — they are scored and reported but cannot be fixed by text changes. Only pass `[TEXT-FIXABLE]` D2 bypasses to the reviser.
+
+If no auto-fixable attack points remain (all are No/Partial/ARCHITECTURAL), skip to Step 6 (final report). Do not burn iterations on empty reviser runs.
 
 ## Step 5: Invoke Reviser (Custom Subagent)
 
@@ -181,18 +193,12 @@ After the reviser completes:
 ### Dimension Breakdown (final)
 | Dimension | Score | Max |
 |-----------|-------|-----|
-| 1. Directory-Name Alignment | {{d1}} | 40 |
-| 2. Agent Reference Integrity | {{d2}} | 100 |
-| 3. Reference Integrity | {{d3}} | 80 |
-| 4. Frontmatter Completeness | {{d4}} | 110 |
-| 5. Eval Template Convention | {{d5}} | 100 |
-| 6. Orchestrator Convention | {{d6}} | 40 |
-| 7. Task CLI Alignment | {{d7}} | 240 |
-| 8. Hook Wiring Integrity | {{d8}} | 70 |
-| 9. Guide Coverage+Conciseness | {{d9}} | 70 |
-| 10. Command Metadata | {{d10}} | 60 |
-| 11. Plugin Metadata | {{d11}} | 40 |
-| 12. Safety Marker Consistency | {{d12}} | 50 |
+| 1. Workflow Completeness | {{d1}} | 280 |
+| 2. Bypass Resistance | {{d2}} | 280 |
+| 3. Instruction Precision | {{d3}} | 280 |
+| 4. Cross-file Dedup | {{d4}} | 30 |
+| 5. Reference Integrity | {{d5}} | 80 |
+| 6. Structural Convention | {{d6}} | 50 |
 
 ### Files Modified
 | File | Changes |

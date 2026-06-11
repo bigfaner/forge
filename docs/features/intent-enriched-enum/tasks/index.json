@@ -1,0 +1,120 @@
+{
+  "feature": "intent-enriched-enum",
+  "proposal": "docs/proposals/intent-enriched-enum/proposal.md",
+  "created": "2026-05-31",
+  "tasks": {
+    "1-update-brainstorm-intent-mapping": {
+      "id": "1",
+      "title": "Update brainstorm intent mapping to 6-value enum",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-update-brainstorm-intent-mapping.md",
+      "record": "records/1-update-brainstorm-intent-mapping.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "2-update-write-prd-pipeline-config": {
+      "id": "2",
+      "title": "Update write-prd pipeline configuration for 6 intents with override signals",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-update-write-prd-pipeline-config.md",
+      "record": "records/2-update-write-prd-pipeline-config.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "3-update-tech-design-pipeline-config": {
+      "id": "3",
+      "title": "Update tech-design pipeline configuration for 6 intents with override signals",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-tech-design-pipeline-config.md",
+      "record": "records/3-update-tech-design-pipeline-config.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "4-update-breakdown-tasks-intent-propagation": {
+      "id": "4",
+      "title": "Update breakdown-tasks intent propagation to 1:1 mapping",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-update-breakdown-tasks-intent-propagation.md",
+      "record": "records/4-update-breakdown-tasks-intent-propagation.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "5-update-quick-tasks-intent-propagation": {
+      "id": "5",
+      "title": "Update quick-tasks intent propagation to 1:1 mapping",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-update-quick-tasks-intent-propagation.md",
+      "record": "records/5-update-quick-tasks-intent-propagation.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

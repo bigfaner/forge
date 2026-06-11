@@ -1,0 +1,89 @@
+{
+  "feature": "pipeline-integration-stitch",
+  "proposal": "docs/proposals/pipeline-integration-stitch/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-prompt-templates-category-eval": {
+      "id": "1",
+      "title": "创建 prompt 模板 + CategoryEval + eval record/validation 系统",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "status": "completed",
+      "file": "1-prompt-templates-category-eval.md",
+      "record": "records/1-prompt-templates-category-eval.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2-harden-deps": {
+      "id": "2",
+      "title": "加固依赖注入：合并 resolveTestDepsAndInjectReviewDoc + 更新 findFirstTestTaskIdx",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-harden-deps.md",
+      "record": "records/2-harden-deps.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "3-remove-gen-and-run": {
+      "id": "3",
+      "title": "移除 test.gen-and-run 废弃代码 + 更新测试文件",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-remove-gen-and-run.md",
+      "record": "records/3-remove-gen-and-run.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "4-update-record-format-test": {
+      "id": "4",
+      "title": "更新 record-format-test.md：替换废弃类型列表",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-update-record-format-test.md",
+      "record": "records/4-update-record-format-test.md",
+      "type": "doc"
+    },
+    "5-update-active-docs": {
+      "id": "5",
+      "title": "更新活跃文档：移除 gen-and-run 引用",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "5-update-active-docs.md",
+      "record": "records/5-update-active-docs.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

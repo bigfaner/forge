@@ -1,0 +1,57 @@
+{
+  "feature": "quick-tasks-commit-autochain",
+  "proposal": "docs/proposals/quick-tasks-commit-autochain/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-add-commit-step": {
+      "id": "1",
+      "title": "Add Step 8 (Commit) to quick-tasks SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "status": "completed",
+      "file": "1-add-commit-step.md",
+      "record": "records/1-add-commit-step.md",
+      "type": "documentation"
+    },
+    "2-tighten-quick-transition": {
+      "id": "2",
+      "title": "Tighten /quick command Step 3→4 transition",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-tighten-quick-transition.md",
+      "record": "records/2-tighten-quick-transition.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

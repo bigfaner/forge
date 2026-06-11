@@ -1,0 +1,55 @@
+{
+  "feature": "autogen-test-task-paths",
+  "proposal": "docs/proposals/autogen-test-task-paths/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-add-feature-paths-embed": {
+      "id": "1",
+      "title": "Embed 模板添加 ## Feature Paths 区域",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-add-feature-paths-embed.md",
+      "record": "records/1-add-feature-paths-embed.md",
+      "type": "doc"
+    },
+    "2-add-feature-slug-prompt": {
+      "id": "2",
+      "title": "Prompt 模板渲染 FEATURE_SLUG",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "2-add-feature-slug-prompt.md",
+      "record": "records/2-add-feature-slug-prompt.md",
+      "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -1,0 +1,534 @@
+{
+  "feature": "forge-cli-v3",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "proposal": "docs/proposals/forge-cli-v3/proposal.md",
+  "created": "2026-05-13",
+  "tasks": {
+    "1-gate": {
+      "id": "1.gate",
+      "title": "Phase 1 Gate: Base Rename Verification",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "completed",
+      "file": "1-gate.md",
+      "record": "records/1-gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "1-summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1.x"
+      ],
+      "status": "completed",
+      "file": "1-summary.md",
+      "record": "records/1-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "1.1-base-rename": {
+      "id": "1.1",
+      "title": "Module/directory/binary rename + import path update",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1.1-base-rename.md",
+      "record": "records/1.1-base-rename.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2-gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Gate: Command Reorganization Verification",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2.summary"
+      ],
+      "status": "completed",
+      "file": "2-gate.md",
+      "record": "records/2-gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "2-summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.x"
+      ],
+      "status": "completed",
+      "file": "2-summary.md",
+      "record": "records/2-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "2.1-command-groups": {
+      "id": "2.1",
+      "title": "Create command group parents + restructure root.go",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "completed",
+      "file": "2.1-command-groups.md",
+      "record": "records/2.1-command-groups.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2.2-rename-commands": {
+      "id": "2.2",
+      "title": "Rename commands + delete template",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.1"
+      ],
+      "status": "completed",
+      "file": "2.2-rename-commands.md",
+      "record": "records/2.2-rename-commands.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2.3-list-types-command": {
+      "id": "2.3",
+      "title": "New list-types command + TaskTypeRegistry",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.1"
+      ],
+      "status": "completed",
+      "file": "2.3-list-types-command.md",
+      "record": "records/2.3-list-types-command.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2.4-quality-gate-cap": {
+      "id": "2.4",
+      "title": "Quality-gate max fix-task cap",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.1"
+      ],
+      "status": "completed",
+      "file": "2.4-quality-gate-cap.md",
+      "record": "records/2.4-quality-gate-cap.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2.5-concurrent-write-lock": {
+      "id": "2.5",
+      "title": "Concurrent write conflict handling for submit",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.2"
+      ],
+      "status": "completed",
+      "file": "2.5-concurrent-write-lock.md",
+      "record": "records/2.5-concurrent-write-lock.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "2.6-template-empty-placeholder": {
+      "id": "2.6",
+      "title": "Fix empty template variable rendering in prompt templates",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "completed",
+      "file": "2.6-template-empty-placeholder.md",
+      "record": "records/2.6-template-empty-placeholder.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3-gate": {
+      "id": "3.gate",
+      "title": "Phase 3 Gate: Feature Migration Verification",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3.summary"
+      ],
+      "status": "completed",
+      "file": "3-gate.md",
+      "record": "records/3-gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "3-summary": {
+      "id": "3.summary",
+      "title": "Phase 3 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3.x"
+      ],
+      "status": "completed",
+      "file": "3-summary.md",
+      "record": "records/3-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "3.1-e2e-core": {
+      "id": "3.1",
+      "title": "pkg/e2e/ core: profile resolution + ExecRunner",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.1-e2e-core.md",
+      "record": "records/3.1-e2e-core.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3.2-e2e-subcommands": {
+      "id": "3.2",
+      "title": "E2E subcommand implementations",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "2.gate",
+        "3.1"
+      ],
+      "status": "completed",
+      "file": "3.2-e2e-subcommands.md",
+      "record": "records/3.2-e2e-subcommands.md",
+      "scope": "backend",
+      "type": "implementation"
+    },
+    "3.3-probe-justfile": {
+      "id": "3.3",
+      "title": "Probe command + justfile cleanup",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.3-probe-justfile.md",
+      "record": "records/3.3-probe-justfile.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "4-gate": {
+      "id": "4.gate",
+      "title": "Phase 4 Gate: Reference Update Verification",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4.summary"
+      ],
+      "status": "completed",
+      "file": "4-gate.md",
+      "record": "records/4-gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "4-summary": {
+      "id": "4.summary",
+      "title": "Phase 4 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4.x"
+      ],
+      "status": "completed",
+      "file": "4-summary.md",
+      "record": "records/4-summary.md",
+      "type": "doc-generation.summary"
+    },
+    "4.1-hooks-agents-commands": {
+      "id": "4.1",
+      "title": "Update hooks.json + agent + command file references",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3.gate"
+      ],
+      "status": "completed",
+      "file": "4.1-hooks-agents-commands.md",
+      "record": "records/4.1-hooks-agents-commands.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "4.2-skill-references": {
+      "id": "4.2",
+      "title": "Update skill file references",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3.gate"
+      ],
+      "status": "completed",
+      "file": "4.2-skill-references.md",
+      "record": "records/4.2-skill-references.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "4.3-docs-tests-scripts": {
+      "id": "4.3",
+      "title": "Update documentation + Go tests + install scripts",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3.gate"
+      ],
+      "status": "completed",
+      "file": "4.3-docs-tests-scripts.md",
+      "record": "records/4.3-docs-tests-scripts.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "consolidate-specs": {
+      "id": "T-test-5",
+      "title": "Consolidate Specs",
+      "priority": "P2",
+      "estimatedTime": "20min",
+      "dependencies": [
+        "T-test-4.5"
+      ],
+      "status": "completed",
+      "file": "consolidate-specs.md",
+      "record": "records/consolidate-specs.md",
+      "scope": "all",
+      "type": "doc-generation.consolidate"
+    },
+    "eval-test-cases": {
+      "id": "T-test-1b",
+      "title": "Evaluate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-1"
+      ],
+      "status": "completed",
+      "file": "eval-test-cases.md",
+      "record": "records/eval-test-cases.md",
+      "scope": "all",
+      "mainSession": true,
+      "type": "test-pipeline.eval-cases"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: T-test-1b missing Main Session Instructions",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-test-1b",
+      "type": "fix"
+    },
+    "fix-10": {
+      "id": "fix-10",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-10.md",
+      "record": "records/fix-10.md",
+      "breaking": true
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: T-test-1 output not persisted",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "T-test-1b",
+      "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-7": {
+      "id": "fix-7",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-7.md",
+      "record": "records/fix-7.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-8": {
+      "id": "fix-8",
+      "title": "Fix: unit-test failure in all-completed quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-8.md",
+      "record": "records/fix-8.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-9": {
+      "id": "fix-9",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-9.md",
+      "record": "records/fix-9.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "gen-test-cases": {
+      "id": "T-test-1",
+      "title": "Generate e2e Test Cases",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "4.gate"
+      ],
+      "status": "completed",
+      "file": "gen-test-cases.md",
+      "record": "records/gen-test-cases.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-cases"
+    },
+    "gen-test-scripts-go-test": {
+      "id": "T-test-2",
+      "title": "Generate Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "T-test-1b"
+      ],
+      "status": "completed",
+      "file": "gen-test-scripts-go-test.md",
+      "record": "records/gen-test-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "graduate-tests-go-test": {
+      "id": "T-test-4",
+      "title": "Graduate Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "T-test-3"
+      ],
+      "status": "completed",
+      "file": "graduate-tests-go-test.md",
+      "record": "records/graduate-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "run-e2e-tests-go-test": {
+      "id": "T-test-3",
+      "title": "Run e2e Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-2"
+      ],
+      "status": "completed",
+      "file": "run-e2e-tests-go-test.md",
+      "record": "records/run-e2e-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "verify-regression": {
+      "id": "T-test-4.5",
+      "title": "Verify Full E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-test-4"
+      ],
+      "status": "completed",
+      "file": "verify-regression.md",
+      "record": "records/verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

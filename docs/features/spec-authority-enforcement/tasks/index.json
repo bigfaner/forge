@@ -1,0 +1,75 @@
+{
+  "feature": "spec-authority-enforcement",
+  "proposal": "docs/proposals/spec-authority-enforcement/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-audit-templates": {
+      "id": "1",
+      "title": "Audit all 19 prompt templates for Reference Files strengthening",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-audit-templates.md",
+      "record": "records/1-audit-templates.md",
+      "type": "doc"
+    },
+    "2-strengthen-templates": {
+      "id": "2",
+      "title": "Strengthen templates with Reference Files declaration + AC validation",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-strengthen-templates.md",
+      "record": "records/2-strengthen-templates.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "3-task-executor-fallback": {
+      "id": "3",
+      "title": "Add Reference Files fallback rule to task-executor.md Hard Constraints",
+      "priority": "P0",
+      "estimatedTime": "20m",
+      "status": "completed",
+      "file": "3-task-executor-fallback.md",
+      "record": "records/3-task-executor-fallback.md",
+      "type": "doc"
+    },
+    "4-quick-tasks-ref-files": {
+      "id": "4",
+      "title": "Improve quick-tasks SKILL.md Reference Files generation",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "4-quick-tasks-ref-files.md",
+      "record": "records/4-quick-tasks-ref-files.md",
+      "type": "doc"
+    },
+    "5-breakdown-tasks-ref-files": {
+      "id": "5",
+      "title": "Improve breakdown-tasks SKILL.md Reference Files generation for non-UI tasks",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "5-breakdown-tasks-ref-files.md",
+      "record": "records/5-breakdown-tasks-ref-files.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

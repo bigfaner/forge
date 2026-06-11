@@ -1,0 +1,173 @@
+{
+  "feature": "init-justfile-slim",
+  "proposal": "docs/proposals/init-justfile-slim/proposal.md",
+  "created": "2026-06-09",
+  "tasks": {
+    "1-scaffold-core-simple-surfaces": {
+      "id": "1",
+      "title": "Scaffold 核心框架 + cli/tui 模板",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-scaffold-core-simple-surfaces.md",
+      "record": "records/1-scaffold-core-simple-surfaces.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "2-scaffold-service-surfaces": {
+      "id": "2",
+      "title": "api/web/mobile service surface 模板",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-scaffold-service-surfaces.md",
+      "record": "records/2-scaffold-service-surfaces.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "high"
+    },
+    "3-scaffold-aggregate": {
+      "id": "3",
+      "title": "实现 scaffold aggregate 聚合模式",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-scaffold-aggregate.md",
+      "record": "records/3-scaffold-aggregate.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "4-scaffold-unit-tests": {
+      "id": "4",
+      "title": "scaffold 命令单元测试",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-scaffold-unit-tests.md",
+      "record": "records/4-scaffold-unit-tests.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "5-simplify-skill-and-delete-rules": {
+      "id": "5",
+      "title": "精简 SKILL.md 并删除废弃 rule 文件",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-simplify-skill-and-delete-rules.md",
+      "record": "records/5-simplify-skill-and-delete-rules.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "6-update-quality-gate-consumers": {
+      "id": "6",
+      "title": "更新 quality gate 下游 consumer",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "6-update-quality-gate-consumers.md",
+      "record": "records/6-update-quality-gate-consumers.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just unit-test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -1,0 +1,69 @@
+name: Release forge-cli
+
+on:
+  push:
+    tags: ['forge-cli/v*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { goos: darwin,  goarch: arm64 }
+          - { goos: darwin,  goarch: amd64 }
+          - { goos: linux,   goarch: arm64 }
+          - { goos: linux,   goarch: amd64 }
+          - { goos: windows, goarch: amd64 }
+          - { goos: windows, goarch: arm64 }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+          cache-dependency-path: forge-cli/go.sum
+
+      - name: Build
+        working-directory: forge-cli
+        run: |
+          VERSION=$(cat scripts/version.txt | tr -d '[:space:]')
+          EXT=$([ "${{ matrix.goos }}" = "windows" ] && echo ".exe" || echo "")
+          BINARY="forge-${VERSION}-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}"
+          LDFLAGS="-s -w -X forge-cli/pkg/types.Version=${VERSION}"
+          CGO_ENABLED=0 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} \
+            go build -ldflags="$LDFLAGS" -o "../bin/${BINARY}" ./cmd/forge
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forge-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: bin/forge-*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd artifacts
+          shasum -a 256 forge-* > checksums.txt
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            artifacts/forge-*
+            artifacts/checksums.txt
+            forge-cli/scripts/install.sh
+            forge-cli/scripts/install.ps1
+          generate_release_notes: true

@@ -1,0 +1,307 @@
+//go:build cli_functional
+
+package forgecommands
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	testkit "forge-tests/testkit"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// =============================================================================
+// Config Commands (Task 1) — TC-001 to TC-007
+// =============================================================================
+
+// Traceability: TC-005 -> Task 1 / AC-5
+func TestTC_005_ConfigGetSurfacesOutput(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("config", "get", "surfaces")
+
+	// surfaces key may not be configured (returns exit 1 with errKeyNotFound)
+	// or may return a value — both are valid
+	_ = exitCode
+	trimmed := strings.TrimSpace(out)
+	if trimmed != "" {
+		assert.NotContains(t, trimmed, "`", "output should not contain backticks: %q", trimmed)
+	}
+}
+
+// Traceability: TC-006 -> Task 1 / AC-6
+func TestTC_006_ConfigGetMissingKey(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("config", "get", "nonexistent-key")
+
+	assert.Equal(t, 1, exitCode, "config get with missing key should exit 1")
+	assert.Equal(t, "", strings.TrimSpace(out),
+		"config get with missing key should produce no stdout output")
+}
+
+// =============================================================================
+// Proposal Commands (Task 2) — TC-008 to TC-012
+// =============================================================================
+
+// Traceability: TC-008 -> Task 2 / AC-1
+func TestTC_008_ProposalListAllProposals(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("proposal")
+
+	assert.Equal(t, 0, exitCode, "proposal list should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"proposal list output should not be empty")
+
+	// Verify table columns present
+	upper := strings.ToUpper(out)
+	assert.True(t, strings.Contains(upper, "SLUG"),
+		"proposal list output should contain SLUG column header: %s", out)
+	assert.True(t, strings.Contains(upper, "CREATED"),
+		"proposal list output should contain CREATED column header: %s", out)
+	assert.True(t, strings.Contains(upper, "STATUS"),
+		"proposal list output should contain STATUS column header: %s", out)
+	assert.True(t, strings.Contains(upper, "PRD"),
+		"proposal list output should contain PRD column header: %s", out)
+	assert.True(t, strings.Contains(upper, "FEATURE"),
+		"proposal list output should contain FEATURE column header: %s", out)
+}
+
+// Traceability: TC-009 -> Task 2 / AC-2
+func TestTC_009_ProposalSlugDetailView(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("proposal", "forge-info-commands")
+
+	assert.Equal(t, 0, exitCode, "proposal detail should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"proposal detail output should not be empty")
+
+	// Verify detail fields present
+	upper := strings.ToUpper(out)
+	assert.True(t, strings.Contains(upper, "SLUG"),
+		"proposal detail should show SLUG field: %s", out)
+	assert.True(t, strings.Contains(upper, "CREATED"),
+		"proposal detail should show CREATED field: %s", out)
+	assert.True(t, strings.Contains(upper, "STATUS"),
+		"proposal detail should show STATUS field: %s", out)
+	assert.True(t, strings.Contains(upper, "FILE"),
+		"proposal detail should show FILE path: %s", out)
+}
+
+// Traceability: TC-010 -> Task 2 / AC-3
+func TestTC_010_ProposalCreatedDateFromFrontmatter(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("proposal")
+
+	assert.Equal(t, 0, exitCode, "proposal list should exit 0")
+	// Verify that the Created column shows a date from frontmatter, not file system time
+	assert.True(t, strings.Contains(out, "2026-05-14"),
+		"proposal list should show created date '2026-05-14' from frontmatter: %s", out)
+}
+
+// Traceability: TC-011 -> Task 2 / AC-4
+func TestTC_011_ProposalPRDColumnChecksPrdSpec(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("proposal")
+
+	assert.Equal(t, 0, exitCode, "proposal list should exit 0")
+	// For forge-info-commands which has no prd-spec.md, PRD column should show absence indicator
+	lines := strings.Split(out, "\n")
+	found := false
+	for _, line := range lines {
+		if strings.Contains(line, "forge-info-commands") {
+			// PRD column should show "-" or "no" for proposals without prd-spec.md
+			assert.True(t,
+				strings.Contains(line, " - ") || strings.Contains(line, "No"),
+				"PRD column for forge-info-commands should show absence indicator: %s", line)
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "should find forge-info-commands row in proposal list: %s", out)
+}
+
+// Traceability: TC-012 -> Task 2 / AC-5
+func TestTC_012_ProposalFeatureColumnReadsManifestStatus(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("proposal")
+
+	assert.Equal(t, 0, exitCode, "proposal list should exit 0")
+	// Feature column should show manifest status (e.g. "tasks") for proposals with features
+	lines := strings.Split(out, "\n")
+	found := false
+	for _, line := range lines {
+		if strings.Contains(line, "forge-info-commands") {
+			assert.True(t,
+				strings.Contains(line, "tasks") || strings.Contains(line, "pending") || strings.Contains(line, "completed"),
+				"Feature column for forge-info-commands should show manifest status: %s", line)
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "should find forge-info-commands row in proposal list: %s", out)
+}
+
+// =============================================================================
+// Feature Commands (Task 2) — TC-013 to TC-017
+// =============================================================================
+
+// Traceability: TC-013 -> Task 2 / AC-6
+func TestTC_013_FeatureListAllFeatures(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("feature", "list")
+
+	assert.Equal(t, 0, exitCode, "feature list should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"feature list output should not be empty")
+
+	// Verify table columns present
+	upper := strings.ToUpper(out)
+	assert.True(t, strings.Contains(upper, "SLUG"),
+		"feature list should contain SLUG column header: %s", out)
+	assert.True(t, strings.Contains(upper, "STATUS"),
+		"feature list should contain STATUS column header: %s", out)
+	assert.True(t, strings.Contains(upper, "PROGRESS"),
+		"feature list should contain PROGRESS column header: %s", out)
+}
+
+// Traceability: TC-015 -> Task 2 / AC-8
+func TestTC_015_FeatureListScoresFromFrontmatter(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("feature", "list")
+
+	assert.Equal(t, 0, exitCode, "feature list should exit 0")
+	// Score columns should show em-dash when no score field exists in frontmatter
+	// The em-dash character is used as placeholder
+	assert.True(t, strings.Contains(out, "—"),
+		"feature list should show em-dash for missing scores: %s", out)
+}
+
+// Traceability: TC-016 -> Task 2 / AC-9
+func TestTC_016_FeatureStatusDetailView(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("feature", "status", "forge-info-commands")
+
+	assert.Equal(t, 0, exitCode, "feature status should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"feature status output should not be empty")
+
+	upper := strings.ToUpper(out)
+	assert.True(t, strings.Contains(upper, "SLUG"),
+		"feature status should show SLUG field: %s", out)
+	assert.True(t, strings.Contains(upper, "STATUS"),
+		"feature status should show STATUS field: %s", out)
+	assert.True(t, strings.Contains(upper, "TASKS"),
+		"feature status should show TASKS section: %s", out)
+}
+
+// Traceability: TC-017 -> Task 2 / Hard Rules
+func TestTC_017_FeatureNoArgsKeepsExistingBehavior(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("feature")
+
+	assert.Equal(t, 0, exitCode, "feature with no args should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"feature with no args should display current feature")
+}
+
+// =============================================================================
+// Lesson Commands (Task 2) — TC-018 to TC-020
+// =============================================================================
+
+// Traceability: TC-018 -> Task 2 / AC-10
+func TestTC_018_LessonListAllLessons(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("lesson")
+
+	assert.Equal(t, 0, exitCode, "lesson list should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"lesson list output should not be empty")
+
+	// Verify table columns present
+	upper := strings.ToUpper(out)
+	assert.True(t, strings.Contains(upper, "NAME"),
+		"lesson list should contain NAME column header: %s", out)
+	assert.True(t, strings.Contains(upper, "CREATED"),
+		"lesson list should contain CREATED column header: %s", out)
+	assert.True(t, strings.Contains(upper, "CATEGORY"),
+		"lesson list should contain CATEGORY column header: %s", out)
+	assert.True(t, strings.Contains(upper, "TAGS"),
+		"lesson list should contain TAGS column header: %s", out)
+}
+
+// Traceability: TC-019 -> Task 2 / AC-11
+func TestTC_019_LessonCategoryFromFilenamePrefix(t *testing.T) {
+	exitCode, out := testkit.RunCLIExitCode("lesson")
+
+	assert.Equal(t, 0, exitCode, "lesson list should exit 0")
+	// Category should be derived from filename prefix (e.g. "gotcha-" -> "gotcha")
+	lines := strings.Split(out, "\n")
+	foundGotcha := false
+	for _, line := range lines {
+		if strings.Contains(line, "gotcha") {
+			foundGotcha = true
+			break
+		}
+	}
+	// If gotcha lessons exist, they should show "gotcha" as category
+	assert.True(t, foundGotcha,
+		"lesson list should show 'gotcha' category for gotcha-* lesson files: %s", out)
+}
+
+// Traceability: TC-020 -> Task 2 / AC-12
+func TestTC_020_LessonNameDetailView(t *testing.T) {
+	// First list lessons to find a valid name
+	_, listOut := testkit.RunCLIExitCode("lesson")
+	lines := strings.Split(listOut, "\n")
+
+	// Find a lesson name from the list output (skip header/separators)
+	var lessonName string
+	for _, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) >= 1 {
+			candidate := strings.TrimSpace(fields[0])
+			// Skip header lines and separator lines
+			if candidate != "" && candidate != "NAME" && !strings.HasPrefix(candidate, "-") &&
+				!strings.HasPrefix(candidate, "---") && !strings.Contains(candidate, "LESSONS") {
+				lessonName = candidate
+				break
+			}
+		}
+	}
+
+	testkit.SkipIf(t, lessonName == "", "no lessons found in docs/lessons/ to test detail view")
+
+	exitCode, out := testkit.RunCLIExitCode("lesson", lessonName)
+
+	assert.Equal(t, 0, exitCode, "lesson detail should exit 0")
+	assert.True(t, len(strings.TrimSpace(out)) > 0,
+		"lesson detail output should not be empty")
+
+	upper := strings.ToUpper(out)
+	assert.True(t, strings.Contains(upper, "NAME"),
+		"lesson detail should show NAME field: %s", out)
+	assert.True(t, strings.Contains(upper, "FILE"),
+		"lesson detail should show FILE path: %s", out)
+	// Full content should NOT be printed
+	assert.False(t, strings.Contains(out, "## "),
+		"lesson detail should NOT print full markdown content (heading found): %s", out)
+}
+
+// =============================================================================
+// Init Command (Task 3) — TC-021 to TC-029
+// =============================================================================
+
+// =============================================================================
+// Migration (Task 4) — TC-030 to TC-032
+// =============================================================================
+
+// Traceability: TC-032 -> Task 4 / AC-3
+func TestTC_032_JustfileHasNoProjectTypeRecipe(t *testing.T) {
+	// Read justfile and verify no project-type: recipe exists
+	justfilePath := filepath.Join("..", "..", "..", "justfile")
+	data, err := os.ReadFile(justfilePath)
+	if err != nil {
+		// Try relative to working directory
+		data, err = os.ReadFile("justfile")
+		testkit.SkipIf(t, err != nil, "cannot locate justfile for migration check")
+	}
+
+	content := string(data)
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		assert.False(t,
+			strings.HasPrefix(trimmed, "project-type:") || strings.HasPrefix(trimmed, "project-type :"),
+			"justfile should NOT contain a 'project-type:' recipe (migration task): found %q", trimmed)
+	}
+}

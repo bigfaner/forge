@@ -1,0 +1,280 @@
+{
+  "feature": "forge-skill-audit",
+  "proposal": "docs/proposals/forge-skill-audit/proposal.md",
+  "created": "2026-06-10",
+  "tasks": {
+    "1-sync-eval-data": {
+      "id": "1",
+      "title": "Sync eval ecosystem data (H-1)",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-sync-eval-data.md",
+      "record": "records/1-sync-eval-data.md",
+      "type": "doc"
+    },
+    "10-fix-gen-contracts-paths": {
+      "id": "10",
+      "title": "Fix gen-contracts path references (HIGH-A1, HIGH-A2, MEDIUM-A3)",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "10-fix-gen-contracts-paths.md",
+      "record": "records/10-fix-gen-contracts-paths.md",
+      "type": "doc"
+    },
+    "11-fix-quick-tasks-placeholders": {
+      "id": "11",
+      "title": "Fix quick-tasks placeholder mapping (MEDIUM-C1)",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "11-fix-quick-tasks-placeholders.md",
+      "record": "records/11-fix-quick-tasks-placeholders.md",
+      "type": "doc"
+    },
+    "12-fix-record-format-types": {
+      "id": "12",
+      "title": "Fix record-format type definitions (MEDIUM-D1, MINOR-D2)",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "12-fix-record-format-types.md",
+      "record": "records/12-fix-record-format-types.md",
+      "type": "doc"
+    },
+    "13-fix-extract-design-md": {
+      "id": "13",
+      "title": "Fix extract-design-md cross-references and templates (MEDIUM-A4, MINOR-C3)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "13-fix-extract-design-md.md",
+      "record": "records/13-fix-extract-design-md.md",
+      "type": "doc"
+    },
+    "14-fix-write-prd-templates": {
+      "id": "14",
+      "title": "Fix write-prd template consistency (MINOR-C4, MINOR-C5)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "14-fix-write-prd-templates.md",
+      "record": "records/14-fix-write-prd-templates.md",
+      "type": "doc"
+    },
+    "15-fix-doc-template-annotations": {
+      "id": "15",
+      "title": "Add doc template annotations (MINOR-C2, MINOR-D3)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "15-fix-doc-template-annotations.md",
+      "record": "records/15-fix-doc-template-annotations.md",
+      "type": "doc"
+    },
+    "16-add-config-guide": {
+      "id": "16",
+      "title": "Add config commands to guide.md (residual L-11)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "16-add-config-guide.md",
+      "record": "records/16-add-config-guide.md",
+      "type": "doc"
+    },
+    "17-fix-knowledge-format": {
+      "id": "17",
+      "title": "Fix knowledgeSave format description consistency (MINOR-H2)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "17-fix-knowledge-format.md",
+      "record": "records/17-fix-knowledge-format.md",
+      "type": "doc"
+    },
+    "2-remove-dead-path": {
+      "id": "2",
+      "title": "Remove tech-design dead path (H-2)",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-remove-dead-path.md",
+      "record": "records/2-remove-dead-path.md",
+      "type": "doc"
+    },
+    "3-fix-task-template": {
+      "id": "3",
+      "title": "Fix breakdown-tasks template placeholders (H-3)",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-fix-task-template.md",
+      "record": "records/3-fix-task-template.md",
+      "type": "doc"
+    },
+    "4-fix-record-format": {
+      "id": "4",
+      "title": "Fix record-format type coverage (H-4)",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-fix-record-format.md",
+      "record": "records/4-fix-record-format.md",
+      "type": "doc"
+    },
+    "5-add-inline-markers": {
+      "id": "5",
+      "title": "Add INLINE cross-skill version markers (M-9)",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-add-inline-markers.md",
+      "record": "records/5-add-inline-markers.md",
+      "type": "doc"
+    },
+    "6-unify-config-keys": {
+      "id": "6",
+      "title": "Unify auto.eval config key naming (M-1)",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "5"
+      ],
+      "status": "skipped",
+      "file": "6-unify-config-keys.md",
+      "record": "records/6-unify-config-keys.md",
+      "type": "doc"
+    },
+    "7-unify-ui-design-eval": {
+      "id": "7",
+      "title": "Unify ui-design auto.eval implementation (M-2)",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "7-unify-ui-design-eval.md",
+      "record": "records/7-unify-ui-design-eval.md",
+      "type": "doc"
+    },
+    "8-cleanup-orphan-files": {
+      "id": "8",
+      "title": "Clean up test-guide orphan files (M-4)",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "8-cleanup-orphan-files.md",
+      "record": "records/8-cleanup-orphan-files.md",
+      "type": "doc"
+    },
+    "9-fix-doc-completeness": {
+      "id": "9",
+      "title": "Fix small documentation completeness issues (M-3, M-5, M-6, M-7)",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "9-fix-doc-completeness.md",
+      "record": "records/9-fix-doc-completeness.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "17"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "7",
+        "8",
+        "9",
+        "11",
+        "13",
+        "15",
+        "3",
+        "4",
+        "6",
+        "12",
+        "14",
+        "1",
+        "2",
+        "5",
+        "16",
+        "10",
+        "17"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

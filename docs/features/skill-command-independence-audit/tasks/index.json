@@ -1,0 +1,204 @@
+{
+  "feature": "skill-command-independence-audit",
+  "proposal": "docs/proposals/skill-command-independence-audit/proposal.md",
+  "created": "2026-06-04",
+  "tasks": {
+    "1-inline-gen-contracts": {
+      "id": "1",
+      "title": "Inline surface detection into gen-contracts + clean Related sections",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-inline-gen-contracts.md",
+      "record": "records/1-inline-gen-contracts.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "10-reduce-breakdown-tasks": {
+      "id": "10",
+      "title": "Reduce shared content in breakdown-tasks",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "10-reduce-breakdown-tasks.md",
+      "record": "records/10-reduce-breakdown-tasks.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "11-reduce-eval": {
+      "id": "11",
+      "title": "Reduce proposal-only features in eval",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "11-reduce-eval.md",
+      "record": "records/11-reduce-eval.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "12-reduce-execute-run-tasks": {
+      "id": "12",
+      "title": "Reduce overlapping logic in execute-task and run-tasks commands",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "12-reduce-execute-run-tasks.md",
+      "record": "records/12-reduce-execute-run-tasks.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "13-delete-related-batch": {
+      "id": "13",
+      "title": "Delete Related sections in consolidate-specs, run-tests, ui-design",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "13-delete-related-batch.md",
+      "record": "records/13-delete-related-batch.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "2-inline-gen-journeys": {
+      "id": "2",
+      "title": "Inline contract model into gen-journeys + clean Related + reduce summaries",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "2-inline-gen-journeys.md",
+      "record": "records/2-inline-gen-journeys.md",
+      "type": "doc",
+      "complexity": "high"
+    },
+    "3-inline-gen-test-scripts": {
+      "id": "3",
+      "title": "Inline test isolation into gen-test-scripts + delete Related sections",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "3-inline-gen-test-scripts.md",
+      "record": "records/3-inline-gen-test-scripts.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "4-create-style-matching-rules": {
+      "id": "4",
+      "title": "Create style-matching rules in extract-design-md",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "4-create-style-matching-rules.md",
+      "record": "records/4-create-style-matching-rules.md",
+      "type": "doc",
+      "complexity": "low"
+    },
+    "5-inline-init-justfile": {
+      "id": "5",
+      "title": "Inline test-type model into init-justfile + reduce examples",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "5-inline-init-justfile.md",
+      "record": "records/5-inline-init-justfile.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "6-inline-fix-bug": {
+      "id": "6",
+      "title": "Inline templates/rules into fix-bug command + reduce Knowledge Review",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "6-inline-fix-bug.md",
+      "record": "records/6-inline-fix-bug.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "7-clean-tech-design": {
+      "id": "7",
+      "title": "Delete Related sections + reduce redundancy in tech-design",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "7-clean-tech-design.md",
+      "record": "records/7-clean-tech-design.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "8-clean-write-prd": {
+      "id": "8",
+      "title": "Delete Related sections + reduce redundancy in write-prd",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "8-clean-write-prd.md",
+      "record": "records/8-clean-write-prd.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "9-clean-quick-tasks": {
+      "id": "9",
+      "title": "Delete Integration + reduce shared content in quick-tasks",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "9-clean-quick-tasks.md",
+      "record": "records/9-clean-quick-tasks.md",
+      "type": "doc",
+      "complexity": "medium"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "6",
+        "10",
+        "2",
+        "3",
+        "4",
+        "12",
+        "8",
+        "9",
+        "7",
+        "1",
+        "11",
+        "13",
+        "5"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

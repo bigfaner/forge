@@ -1,0 +1,101 @@
+{
+  "feature": "gen-test-scripts-type-dispatch",
+  "proposal": "docs/proposals/gen-test-scripts-type-dispatch/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-types-cli": {
+      "id": "1",
+      "title": "Create types/cli.md instruction file",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-types-cli.md",
+      "record": "records/1-types-cli.md",
+      "type": "documentation"
+    },
+    "2-types-api": {
+      "id": "2",
+      "title": "Create types/api.md instruction file",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "2-types-api.md",
+      "record": "records/2-types-api.md",
+      "type": "documentation"
+    },
+    "3-types-ui": {
+      "id": "3",
+      "title": "Create types/ui.md instruction file (includes Step 2-3 Sitemap/Locators)",
+      "priority": "P1",
+      "estimatedTime": "2-3h",
+      "status": "completed",
+      "file": "3-types-ui.md",
+      "record": "records/3-types-ui.md",
+      "type": "documentation"
+    },
+    "4-types-tui": {
+      "id": "4",
+      "title": "Create types/tui.md instruction file",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "4-types-tui.md",
+      "record": "records/4-types-tui.md",
+      "type": "documentation"
+    },
+    "5-types-mobile": {
+      "id": "5",
+      "title": "Create types/mobile.md instruction file",
+      "priority": "P2",
+      "estimatedTime": "30min-1h",
+      "status": "completed",
+      "file": "5-types-mobile.md",
+      "record": "records/5-types-mobile.md",
+      "type": "documentation"
+    },
+    "6-refactor-dispatcher": {
+      "id": "6",
+      "title": "Refactor main SKILL.md to dispatcher pattern",
+      "priority": "P1",
+      "estimatedTime": "2-3h",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-refactor-dispatcher.md",
+      "record": "records/6-refactor-dispatcher.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

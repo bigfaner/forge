@@ -1,6 +1,6 @@
 # Decision Entry Template
 
-Single decision row format for appending to `docs/decisions/<type>.md`.
+Single decision row format for appending to `docs/decisions/{{TYPE}}.md`.
 
 ## Table Row
 
@@ -16,4 +16,4 @@ Single decision row format for appending to `docs/decisions/<type>.md`.
 | Feature | slug | e.g. `feat-log-decisions` |
 | Decision | string | One sentence, max 80 chars |
 | Rationale | string | One sentence, max 80 chars |
-| Source | string | `<feature-slug>/<file>.md §<Section>` or `manual` |
+| Source | string | `{{FEATURE_SLUG}}/{{FILE}}.md §{{SECTION}}` or `manual` |

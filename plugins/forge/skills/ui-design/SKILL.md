@@ -1,6 +1,7 @@
 ---
 name: ui-design
 description: Use after PRD ui-functions are defined to create UI design specifications. Supports design style selection and HTML prototype generation.
+effort: high
 ---
 
 # UI Design
@@ -70,54 +71,18 @@ If it does NOT exist:
 - Use AskUserQuestion to collect: platform (web/mobile), primary navigation entries, secondary pages, navigation rules
 - Write the collected structure back into prd-ui-functions.md (append after UI Scope section)
 
-Then read the platform-specific navigation rules from `templates/platforms/{web,mobile}.md` based on the identified platform.
+Then read the platform-specific navigation rules from `templates/platforms/{web,mobile,tui}.md` based on the identified platform.
 
 ## Step 3: Select Design Style
 
-Select design style by priority:
+Select design style based on the platform identified in Step 2.5. Follow the priority chain and platform-specific rules in `rules/style-selection.md`:
 
-### Priority 1: User-provided DESIGN.md
+1. **Check for user-provided DESIGN.md** (project root or feature directory) -- use directly if found.
+2. **If no user-provided style**: let the user choose from built-in styles (5 web/mobile styles or 2 TUI themes).
+3. **If built-in styles insufficient**: clone additional styles from the awesome-design-md repo.
+4. **Multi-platform**: select a style independently for each platform.
 
-Check the following locations; use directly if found:
-
-- Project root `DESIGN.md`
-- Feature directory `docs/features/<slug>/ui/style.md`
-
-If the user specifies a custom path, prioritize that.
-
-### Priority 2: Built-in Styles
-
-If no user-provided DESIGN.md, let the user choose from 5 built-in styles:
-
-| Style           | Vibe                     | Best for                                     |
-| --------------- | ------------------------ | -------------------------------------------- |
-| **Vercel**      | Black & white minimal, developer-tool feel | Developer platforms, CLI tools, technical docs |
-| **Shadcn**      | Zinc neutral, functional minimalism | SaaS, admin panels, tool applications        |
-| **Tailwind UI** | Indigo primary, professional warmth | General SaaS, marketing pages, enterprise    |
-| **Stripe**      | Purple gradients, light elegance | Fintech, brand sites, payment products       |
-| **Apple**       | Generous whitespace, image-driven, premium | Consumer products, brand sites, marketing     |
-
-Use `AskUserQuestion` tool for user selection with brief descriptions.
-
-Built-in style files located at: `templates/styles/{vercel,shadcn,tailwind-ui,stripe,apple}.md`
-
-### Priority 3: Clone More Styles from Repo
-
-If the 5 built-in styles are insufficient, clone additional styles from the awesome-design-md repo:
-
-```bash
-# Clone to a temp directory (not into project)
-git clone --depth 1 git@github.com:VoltAgent/awesome-design-md.git /tmp/awesome-design-md
-
-# Then use npx to fetch a specific site's DESIGN.md:
-npx getdesign@latest add <site-name>
-```
-
-> Note: The repo's DESIGN.md files are hosted externally at getdesign.md. The `npx getdesign@latest` CLI fetches them.
-
-### Using the Selected Style
-
-Inline the selected style content as the `Design System` section in `ui-design.md`. All subsequent component designs must follow the style's color, typography, and component specifications.
+Inline the selected style content as the `Design System` section in `ui-design.md`.
 
 ## Step 4: Draft UI Design
 
@@ -130,11 +95,26 @@ For each UI function, define:
 
 **For existing-page UI Functions**: the Component section in `ui-design.md` MUST include a Placement subsection that specifies where in the existing page this component will be placed. This comes from the PRD's Placement Position field but may be refined with layout constraints discovered during design (e.g., "full width of the content area, above the sub-items table, below the progress summary heading").
 
+### TUI Panel Design Requirements
+
+When platform=tui, each panel MUST include all mandatory structural requirements per `rules/tui-panel-requirements.md`:
+- 5 mandatory structural items: ASCII mockup, dimensions, character palette, color mapping, edge cases
+- Additional per-panel specs: states, key bindings, data binding
+
 All design decisions must follow the design style selected in Step 3.
 
 ## Step 5: Write UI Design
 
-Save to `ui/ui-design.md` using `templates/ui-design.md`.
+Save using `templates/ui-design.md` (for web/mobile) or the TUI component template section within it (for TUI panels).
+
+Output file naming:
+| Platform | Output File |
+|----------|------------|
+| Web only | `ui/ui-design.md` |
+| TUI only | `ui/ui-design-tui.md` |
+| Mobile only | `ui/ui-design-mobile.md` |
+| Web + mobile | `ui/ui-design.md` (web) + `ui/ui-design-mobile.md` (mobile) |
+| Multi-platform (web + tui) | `ui/ui-design-web.md` + `ui/ui-design-tui.md` |
 
 The Design System section references the style selected in Step 3 (inline core tokens, no external file references).
 
@@ -146,28 +126,55 @@ Update `manifest.md`:
 - Add traceability links from UI Functions to UI Design sections
 - Advance status to `design`
 
+For multi-platform features, add a row for each platform's design file:
+- `ui/ui-design-web.md` — web design
+- `ui/ui-design-tui.md` — TUI design
+
 Use `templates/manifest-update-ui.md` for the update pattern.
 
 ## Step 7: Auto Eval UI Design
 
-Automatically invoke `/eval-ui` to evaluate `ui-design.md`. Default: 95 points / 3 rounds.
+<EXTREMELY-IMPORTANT>
+Eval auto-run check — do NOT use AskUserQuestion when config enables auto-run.
 
-Invoke via `Skill` tool: `eval-ui`
+```bash
+# Eval auto-run check (uiDesign)
+# TODO(M-1): Rename auto.eval.uiDesign → auto.eval.ui-design pending Go config reader alias support.
+# Go EvalConfig uses yaml:"uiDesign" tag; reflection-based GetConfigValue requires exact match.
+# Track: https://github.com/bigfaner/forge/issues/TBD
+EVAL_ENABLED=$(forge config get auto.eval.uiDesign 2>/dev/null)
+if [ "$EVAL_ENABLED" = "true" ]; then
+  echo "AUTO_RUN"
+elif [ "$EVAL_ENABLED" = "false" ]; then
+  echo "SKIP"
+else
+  echo "FALLBACK_ASK"
+fi
+```
 
-eval-ui runs its own score → gate → revise loop and produces a report at `docs/features/<slug>/ui/eval/report.md`.
+Based on the output:
+- **AUTO_RUN** → invoke `/eval-ui` via `Skill` tool (default: 950 points / 3 rounds)
+- **SKIP** → skip eval, output "eval-ui 已通过配置跳过", proceed to Step 8 (prototype generation)
+- **FALLBACK_ASK** → ask via `AskUserQuestion`: "Run `/eval-ui` for adversarial evaluation? (default: 950 points / 3 rounds)"
+  - **Yes** → invoke `/eval-ui` via `Skill` tool
+  - **Custom** → invoke `/eval-ui --target X --iterations Y` via `Skill` tool
+  - **No** → proceed to Step 8 (prototype generation)
 
 After eval-ui completes, check the final score:
 
 | Condition | Action |
 |-----------|--------|
-| Score >= 95 | Proceed to Step 8 (prototype generation) |
-| Score < 95 | Report to user and ask: "UI design score is {{SCORE}}/100, below the 95 threshold. Continue revising?" — if yes, re-invoke eval-ui with additional iterations; if no, proceed to prototype anyway |
+| Score >= 950 | Proceed to Step 8 (prototype generation) |
+| Score < 950 | Report to user and ask: "UI design score is {{SCORE}}/1000, below the 950 threshold. Continue revising?" — if yes, re-invoke eval-ui with additional iterations; if no, proceed to prototype anyway |
 
 The eval report is attached at `docs/features/<slug>/ui/eval/report.md` for reference.
+</EXTREMELY-IMPORTANT>
 
 ## Step 8: Generate Prototype
 
-Generate HTML prototype from `ui-design.md` and the selected design style:
+Generate HTML prototype from `ui-design.md` and the selected design style.
+
+### For Web / Mobile Platform
 
 - Follow `templates/prototype.md` specifications
 - Multi-file structure: shared CSS/JS + per-page HTML + index.html navigation
@@ -176,6 +183,24 @@ Generate HTML prototype from `ui-design.md` and the selected design style:
 - Responsive layout
 
 Save to: `docs/features/<slug>/ui/prototype/`
+
+### For TUI Platform
+
+- Follow `templates/prototype.md` specifications for file structure
+- HTML simulates a terminal window: dark monospace background, box-drawing characters rendered via CSS
+- All panels rendered in a single `index.html` within a black "terminal window" div
+- Bottom area simulates key buttons (`[Tab]`, `[1]`, `[q]`, `[:command]`) to switch panels
+- Each panel's ASCII mockup from ui-design-tui.md is rendered as pre-formatted text
+- Implement panel states (loading/empty/error/populated) as toggleable views
+
+Save to: `docs/features/<slug>/ui/prototype/`
+
+### Multi-Platform
+
+When multiple platforms are present:
+- Each platform gets its own prototype directory:
+  - `docs/features/<slug>/ui/prototype/web/` (or `prototype/` for single-platform)
+  - `docs/features/<slug>/ui/prototype/tui/`
 
 ## Step 9: Human Review Gate
 
@@ -216,10 +241,3 @@ After prototype is approved or skipped, use `AskUserQuestion`:
 - **Yes** → invoke `/tech-design` via `Skill` tool
 - **No** → done
 
-## Integration
-
-Works well with:
-
-- `/write-prd` — Produces `prd/prd-ui-functions.md` input
-- `/tech-design` — Next skill after UI design; informed by UI decisions
-- `/eval-ui` — Adversarial evaluation after UI design is created

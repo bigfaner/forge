@@ -1,6 +1,8 @@
 ---
 name: forensic
 description: Analyze past session transcripts to identify root causes of agent deviations. Searches JSONL history, extracts thinking/tool chains, compares against skill definitions, outputs structured forensic report.
+argument-hint: "[session-id or keywords]"
+effort: max
 ---
 
 # Forensic Agent Deviation Analysis
@@ -14,7 +16,7 @@ description: Analyze past session transcripts to identify root causes of agent d
 - User provides `/forensic` command with a search term
 
 **Skip:**
-- Single-session post-mortem (use `/learn-lesson` instead)
+- Single-session post-mortem (use `/learn` instead)
 - Current-session debugging (investigate directly)
 
 ## Parameters
@@ -24,18 +26,18 @@ description: Analyze past session transcripts to identify root causes of agent d
 | `--keyword`   | —       | Search history.jsonl for sessions with keyword  |
 | `--session`   | —       | Analyze a specific session ID                  |
 | `--skill`     | —       | Analyze sessions that invoked a specific skill  |
-| `--last`      | 10      | Limit number of sessions to search             |
+| `--last`      | 20      | Limit number of sessions to search             |
 | `--target`    | —       | Specific behavior to investigate (e.g. "agent ignored MAIN_SESSION flag") |
 
 ## Prerequisites
 
-`task` CLI must be installed with forensic subcommand (v2.15.0+). Verify:
+`forge` CLI must be installed with forensic subcommand (v2.15.0+). Verify:
 
 ```bash
-task forensic --help
+forge forensic --help
 ```
 
-If missing, build and install: `cd task-cli && go build -o ~/.zcode-task-cli/task ./cmd/task/`
+If missing, ensure the `forge` CLI is installed (see project setup instructions).
 
 ## Architecture
 
@@ -48,7 +50,7 @@ flowchart LR
     B --> B1["subagents<br>transcripts"]
 ```
 
-## Workflow
+## Process Flow
 
 <HARD-RULE>
 After completing each workflow step, report its elapsed time in the format `[Step N: <duration>]`. This ensures the user can see progress even when analysis takes several minutes. Example output after each step:
@@ -67,13 +69,13 @@ After completing each workflow step, report its elapsed time in the format `[Ste
 Search `~/.claude/history.jsonl` to find relevant sessions.
 
 ```bash
-task forensic search "coding-harness/forge" --keyword "<KEYWORD>" --last <N>
+forge forensic search "coding-harness/forge" --keyword "<KEYWORD>" --last <N>
 ```
 
 Or search by skill name:
 
 ```bash
-task forensic search "coding-harness/forge" --skill "<SKILL>" --last <N>
+forge forensic search "coding-harness/forge" --skill "<SKILL>" --last <N>
 ```
 
 From the results, identify sessions of interest. Read the `firstMsg` and `dateTime` to select relevant sessions.
@@ -85,24 +87,32 @@ Present the session list to the user and confirm which sessions to analyze.
 For each confirmed session, extract compact evidence:
 
 ```bash
-# Derive JSONL path from sessionId
-# Path pattern: ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<sessionId>.jsonl
-
 mkdir -p docs/forensics/<slug>/evidence
 
-task forensic extract ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
+forge forensic extract ~/.claude/projects/<project-hash>/<SESSION_ID>.jsonl --out docs/forensics/<slug>/evidence
+# Or use --slug shorthand: forge forensic extract <path>.jsonl --slug <slug>
+```
+
+**Finding `<project-hash>`**: The project hash is a directory name under `~/.claude/projects/`. To discover it:
+
+```bash
+# List all project directories to find the relevant one
+ls ~/.claude/projects/
+# Or derive it: hash the project root path (replace path separators with --)
+# Example: Z:\project\ai\forge -> Z:--project-ai-forge
+ls ~/.claude/projects/ | grep -i "forge"
 ```
 
 Then check for subagent transcripts:
 
 ```bash
-task forensic subagents ~/.claude/projects/-Users-fanhuifeng-Projects-ai-coding-harness-forge/<SESSION_ID>
+forge forensic subagents ~/.claude/projects/<project-hash>/<SESSION_ID>
 ```
 
 If subagents exist, extract their evidence too:
 
 ```bash
-task forensic extract <subagent-transcript-path> --out docs/forensics/<slug>/evidence
+forge forensic extract <subagent-transcript-path> --out docs/forensics/<slug>/evidence
 ```
 
 <HARD-RULE>
@@ -114,8 +124,16 @@ Evidence files are intermediate artifacts. Each extract produces ~10-20KB regard
 From the evidence's `skillsUsed` field (or user's `--skill` parameter), read the relevant skill definitions:
 
 ```
-plugins/forge/skills/<skill-name>/SKILL.md
+<skill-name>/SKILL.md (resolve relative to the skills parent directory)
 ```
+
+**Resolving "skills parent directory"**: Check these locations in order:
+1. `plugins/forge/skills/<skill-name>/SKILL.md` — plugin-distributed skills
+2. `.claude/skills/<skill-name>/SKILL.md` — user-authored project skills
+
+For commands, check:
+1. `plugins/forge/commands/<command-name>.md` — plugin-distributed commands
+2. `.claude/commands/<command-name>.md` — user-authored project commands
 
 Extract the rules that the agent should have followed:
 - `<HARD-RULE>` blocks — mandatory constraints
@@ -140,7 +158,7 @@ Read the extracted evidence JSON from `docs/forensics/<slug>/evidence/evidence.j
 | Action | Duration | Detail |
 |--------|----------|--------|
 | Agent (doc-scorer) | 142.3s | eval-design scoring... |
-| Read | 0.8s | plugins/forge/skills/... |
+| Read | 0.8s | skills/<skill-name>/SKILL.md |
 | Bash | 45.2s | go test -race -cover ./... |
 | Edit | 0.3s | internal/cmd/forensic.go |
 
@@ -166,20 +184,11 @@ Trace the causal chain at least 3 levels deep:
 3. Root cause: Why the agent made that decision (instruction gap, context missing, wrong assumption)
 </HARD-RULE>
 
-**Deviation categories** (use these to classify each finding):
-
-| Category | Description | Example |
-|----------|-------------|---------|
-| `instruction-gap` | Skill definition missing a critical rule | No instruction to handle MAIN_SESSION flag |
-| `context-starvation` | Agent lacked necessary information | Agent didn't see the record.json content |
-| `trust-without-verify` | Agent trusted its own output | Marked AC as met without running the artifact |
-| `wrong-priority` | Agent followed wrong priority | Chose "efficiency" over "safety" |
-| `scope-creep` | Agent exceeded its defined scope | Task executor claimed multiple tasks |
-| `pipeline-gap` | No enforcement between stages | Dispatcher checked file existence, not content |
+Classify each finding using the deviation categories defined in `rules/deviation-categories.md` (instruction-gap, context-starvation, trust-without-verify, wrong-priority, scope-creep, pipeline-gap).
 
 ### Step 5: Generate Report
 
-Write the forensic report using the template at `plugins/forge/skills/forensic/templates/report.md`.
+Write the forensic report using the template at `templates/report.md`.
 
 Output to: `docs/forensics/<slug>/report.md`
 
@@ -187,7 +196,7 @@ Present the report to the user. Do NOT commit automatically — forensic reports
 
 ## Common Mistakes
 
-- **Don't read raw JSONL files** — Always use `task forensic extract` to compress the data. Raw JSONL is too large for analysis.
+- **Don't read raw JSONL files** — Always use `forge forensic extract` to compress the data. Raw JSONL is too large for analysis.
 - **Don't analyze a single data point** — Cross-reference thinking blocks with the corresponding tool calls to understand the full decision chain.
 - **Don't skip the skill definition** — You cannot identify deviations without knowing what the expected behavior was.
 - **Don't confuse symptom with root cause** — "Agent recorded failed task as completed" is a symptom. "CLI validation accepts completed+testsFailed>0" is the root cause.

@@ -1,29 +1,23 @@
 ---
 name: gen-test-scripts
-description: Generate executable TypeScript e2e test scripts from test cases. Uses @playwright/test for all tests (no node:test or node:assert). Playwright for UI, fetch for API, child_process for CLI.
+description: Generate executable test scripts from Contract specifications. Journey-driven: generates test code with @feature tags. Output directory adapts to surface count: multi-surface projects use tests/<surfaceKey>/<journey>/, single-surface projects use tests/<journey>/. Test type naming follows Surface → Test Type mapping (cli → CLI Functional Test, api → API Functional Test, tui → Terminal Functional Test, web → Web E2E Test, mobile → Mobile E2E Test).
 ---
 
 # Gen Test Scripts
 
-Generate executable TypeScript e2e test scripts from test cases.
+Generate executable test scripts from Contract specifications.
 
-**Core principle**: Every generated `test()` must be independently runnable, repeatable, and have explicit assertions. Test cases are input; scripts are output.
+**Core principle**: Tests are generated per Journey, not per interface type. Each Journey step's Contract defines the assertions. Output directory adapts to surface count: multi-surface projects write to `tests/<surfaceKey>/<journey>/`, single-surface projects write to `tests/<journey>/`.
 
-<HARD-GATE>
-This skill ONLY writes to `tests/e2e/features/<feature>/` (staging area). It does NOT execute tests (handled by `/run-e2e-tests`).
+## Pipeline Position
 
-**FORBIDDEN output paths** — agents MUST NOT write spec files to any of these, regardless of project convention:
-- `tests/e2e/<feature>/` (directly under e2e root — this is a post-graduation location)
-- `tests/e2e/<module>/` (any module directory — reserved for graduated scripts)
-- Any path outside `tests/e2e/features/`
-
-**Why this matters**: The `features/` prefix is a staging area that enforces a two-phase flow:
 ```
-Phase 1: /gen-test-scripts → writes to tests/e2e/features/<feature>/
-Phase 2: /graduate-tests   → classifies by functional module → moves to tests/e2e/<module>/
+gen-journeys -> gen-contracts -> gen-test-scripts -> run-tests
+                                      ^^^ YOU ARE HERE
 ```
-Bypassing the staging area skips functional module classification in `/graduate-tests`, scattering tests into wrong directories. Existing directories at `tests/e2e/<module>/` are POST-GRADUATION locations — do NOT copy that convention during generation.
-</HARD-GATE>
+
+Input: Contract specifications (from gen-contracts) + Fact Table (from code reconnaissance) + Handbook (design document, optional).
+Output: Executable test code with `@feature` tags. Output directory adapts to surface count: multi-surface → `tests/<surfaceKey>/<journey>/`, single-surface → `tests/<journey>/`.
 
 ## Prerequisites
 
@@ -31,430 +25,671 @@ Check previous stage artifacts. Abort and prompt user if missing:
 
 | Artifact | Missing prompt |
 |----------|----------------|
-| `docs/features/<slug>/testing/test-cases.md` | Run `/gen-test-cases` first |
-| `docs/sitemap/sitemap.json` (UI tests only) | Run `/gen-sitemap` first |
-| `tests/e2e/config.yaml` | Created by this skill in Step 5 (or create manually from template at `plugins/forge/references/shared/config.yaml`) |
+| At least one Contract file in `docs/features/<slug>/testing/<journey>/contracts/` | Run `/gen-contracts` first |
+| Eval report for all Contracts (`testing/<journey>/.eval-report.md`) | Run `/eval --type contract` first. **Blocker**: do not proceed if any Contract scored below target. |
 
-`<slug>` is the current feature name, obtained via `task feature` command. `docs/sitemap/sitemap.json` is a project-level file (one per application), not isolated per feature.
+### SKIP_EVAL_GATE Mode
 
-### Step Actionability Gate
+When the task context contains `SKIP_EVAL_GATE=true` (injected by Quick mode task templates), the eval report prerequisite is **conditionally waived**:
 
-Check whether an eval-test-cases report exists for the current feature. If it does, parse the Step Actionability score and enforce the blocking threshold.
+- **Skip**: eval-contract report check (`testing/<journey>/.eval-report.md`) is bypassed entirely
+- **Proceed directly**: move to Step 0 (Load Convention Files — surface-first) and Step 1 (Code Reconnaissance) without eval verification
+- **Mark output**: every test file generated under SKIP_EVAL_GATE MUST include a header comment: `// SKIP_EVAL_GATE: generated without eval-contract verification. Review with extra scrutiny.`
 
-**Check procedure**:
+**When SKIP_EVAL_GATE is NOT set** (Breakdown mode or manual `/gen-test-scripts` invocation): the eval report Blocker remains mandatory. Behavior is unchanged.
 
-1. List evaluation reports: `ls docs/features/<slug>/testing/eval/iteration-*.md 2>/dev/null`
-2. If no reports exist, proceed normally (backward compatible — eval is optional)
-3. If reports exist, read the latest iteration report (highest N)
-4. Find the Step Actionability dimension score in the report's dimension table
-5. If Step Actionability < 20: **ABORT** with the message below
+## Step 0: Load Convention Files
 
-**Abort message**:
-```
-ABORT: Step Actionability score is below the blocking threshold (score < 20).
+Load per-surface test strategy from Convention files (surface-first structure).
 
-The test cases in test-cases.md have insufficient step-level detail for reliable
-script generation. Low Step Actionability means test steps are vague, missing
-concrete actions, or lack sufficient detail for automated translation.
+Load: `rules/convention-guide.md` — Convention file structure reference, section schema, validation rules, merge semantics, and growth path.
 
-Action required: Run /eval-test-cases, review the Step Actionability dimension
-feedback, and fix test-cases.md to improve step-level specificity before
-re-running /gen-test-scripts.
-```
+### 0.1 Old Structure Detection
 
-<HARD-RULE>
-If eval-test-cases report exists and Step Actionability < 20, gen-test-scripts MUST abort. This gate prevents generating scripts from poorly-specified test cases, which historically leads to 3-5 rounds of agent-driven fixes. The threshold of 20 (out of 25) is the minimum for unambiguous step-to-script translation.
-</HARD-RULE>
+Before loading Convention files, check whether the project uses the legacy (framework-first) structure:
 
-### Sitemap
+1. Check if `docs/conventions/testing/` contains any `.md` files that are NOT inside a subdirectory (i.e., flat files like `go.md`, `vitest.md`).
+2. If legacy files are detected:
+   - Output migration prompt: "Legacy Convention structure detected in `docs/conventions/testing/` (framework-first files). Run `/test-guide` to regenerate with the new surface-first structure (`testing/{surface}/core.md`)."
+   - Proceed with Step 0.2 using auto-detection (the old files are not loaded).
+3. If no legacy files, proceed to Step 0.2.
 
-Locator source for UI tests: `docs/sitemap/sitemap.json` (generated by `/gen-sitemap`, full example: `plugins/forge/references/shared/sitemap.json`).
+### 0.2 Discover Convention Files (Surface-First)
 
-**Key locator fields**:
-
-| Field | Usage |
-|-------|-------|
-| `layout.elements[].role` + `name` | Layout-level shared elements (navbar, etc.), available for all pages wrapped by `layout.wraps` |
-| `elements[].role` + `name` | `page.getByRole(role, { name })` (priority 0) |
-| `elements[].level` | `getByRole('heading', { level })` precise targeting |
-| `elements[].label` | `page.getByLabel(label)` (priority 1) |
-| `elements[].placeholder` | `page.getByPlaceholder(placeholder)` (priority 2) |
-| `states[].trigger` | Click trigger element to enter dynamic state |
-| `states[].elements` | Locators for elements within dynamic states |
-
-Test cases match sitemap pages via the `Route` field. `Element` field is now **required** in test-cases.md (E-NNN / L-NNN IDs). When present, provides precise mapping; when set to `sitemap-missing`, use Fact Table DOM structure from Step 1.5 Code Reconnaissance to infer locators — match test step descriptions to the most appropriate semantic locators based on actual code structure.
-
-**Handling `sitemap-missing` Element values**: When a test case has `Element: sitemap-missing`, the sitemap is unavailable for that route. Fall back to the Fact Table built in Step 1.5:
-1. Read the actual page component source code
-2. Extract semantic roles, labels, and test IDs from the DOM structure
-3. Generate locators using the same priority system (role > label > placeholder > text > testid)
-4. Add a `// VERIFY: sitemap-missing — locator inferred from source code` comment on each inferred locator
-
-## When to Use
-
-**Trigger:**
-
-- User asks to "generate test scripts" or "create e2e scripts"
-- User provides `/gen-test-scripts` command
-- After `/gen-test-cases` has produced `testing/test-cases.md`
-
-## Workflow
-
-```
-1. Read test cases → 1.5. Code Reconnaissance → 2. Resolve sitemap → 3. Map locators → 4. Generate spec files → 4.5. Structural validation → 5. Ensure shared infrastructure
-```
-
-### Step 1: Read Test Cases
-
-Read `docs/features/<slug>/testing/test-cases.md`. Parse each test case — extract TC ID, title, type, route, feature, pre-conditions, steps, expected result, priority. Group by type (UI / API / CLI).
-
-#### Auth Classification
-
-For each test case, classify by authentication requirements:
-
-| Category | Detection Rules | Generation Strategy |
-|----------|----------------|---------------------|
-| **login-test** | `Target` matches `ui/login`, `ui/auth`, `ui/signin`, `api/auth`, `api/login`, `api/token` | No shared auth. UI uses independent `loginPage`, API uses raw `curl()`. Must call `clearCachedToken()` / `clearAuthState()` after to invalidate cached credentials for subsequent tests. |
-| **auth-required-test** | `Pre-conditions` contain "authenticated", "logged in", or `Target` implies protected resource | Use **cached shared auth** — credentials acquired once, reused across all tests and spec files (see Credential Caching below) |
-| **public-test** | No auth-related pre-conditions, target is a public resource | No auth needed |
-| **custom-auth-test** | `Pre-conditions` mention "API key", "X-API-Key", "OAuth", "session cookie", or other non-Bearer auth patterns | Detect auth mechanism from codebase during Step 1.5. Generate custom auth setup in `test.beforeAll` — e.g., API key via `curl()` with custom header, or cookie-based session |
-
-**Classification priority** (evaluated top-down, first match wins):
-1. `custom-auth-test` — takes priority over `auth-required-test` when both match (e.g., "authenticated via API key" → custom-auth, not auth-required)
-2. `login-test`
-3. `auth-required-test`
-4. `public-test`
-
-Count each category to decide whether to enable shared auth (enabled when `auth-required-test` exists).
+1. Determine the active surface type (from Step 0.5).
+2. Load the surface Convention from `docs/conventions/testing/{surface}/core.md`.
+3. If `core.md` does not exist for the detected surface, proceed to auto-detection (Step 0.3).
 
 <HARD-RULE>
-Login tests and authenticated tests must not be mixed in the same `describe` block.
+Convention loading is surface-driven, not framework-driven. The `{surface}` segment comes from Step 0.5 surface detection. Do NOT fall back to loading framework-specific flat files.
 </HARD-RULE>
 
-#### Credential Caching
+### 0.3 Resolve Target Framework
 
-Non-login test cases MUST use cached shared access credentials — no per-test or per-file re-authentication.
-
-**API tests**: `getApiToken()` in `helpers.ts` caches the token at module level. First call authenticates via the login endpoint; subsequent calls across all spec files return the cached token. No changes needed in spec files — the caching is transparent.
-
-**UI tests**: Use Playwright's `storageState` mechanism to avoid re-logging in per test:
-1. Generate `auth-setup.ts` (template: `plugins/forge/skills/gen-test-scripts/templates/auth-setup.ts`) into `tests/e2e/` — it calls `ensureAuthState(page)` once
-2. Uncomment the `projects` section in `playwright.config.ts` — the `setup` project runs `auth-setup.ts`, the `authenticated` project sets `testDir: 'features'` and `storageState: 'results/.auth/state.json'`
-3. Playwright injects the saved cookies/localStorage into each test's browser context — no `loginViaUI` in `beforeEach`
-
-**Fallback** (if `projects` are not configured): use `ensureAuthState(page)` in `test.beforeAll` with a fresh browser context — it checks whether the state file already exists before re-authenticating.
-
-**Login tests**: After login/logout tests complete, call both `clearCachedToken()` and `clearAuthState()` to invalidate stale credentials so subsequent auth-required tests re-authenticate with fresh state.
+1. **Convention assertion preference table**: If `core.md` was loaded, read its assertion preference table (per-framework rows) to identify the target framework.
+2. **Existing test file scan**: Scan `tests/` for file patterns to confirm the framework matches the project.
+3. **User specification**: If signals are ambiguous, ask the user which framework to use.
+4. **No Convention found**: Proceed with LLM defaults + Code Reconnaissance (Step 1). Output hint: "No test Convention files found for surface `{surface}` in `docs/conventions/testing/{surface}/core.md`. Generation will use LLM defaults. Run `/test-guide` to create one."
 
 <HARD-RULE>
-Auth-required tests MUST NOT call `loginViaUI` in `beforeEach` or re-authenticate per test. Use cached shared credentials instead. Re-authentication per test wastes time, creates flaky tests (auth endpoint rate limits), and masks real failures behind auth noise.
+If no Convention files are found and no framework can be detected from existing test files, ask the user which framework to use. Do NOT silently default.
 </HARD-RULE>
 
-### Step 1.5: Code Reconnaissance (Build Fact Table)
+### 0.4 Validate Convention Content
 
-Read actual source code files to extract ground-truth values. **Never guess or assume values** — every value in a generated script must come from the test-cases.md input or the Fact Table built here.
+For the loaded Convention file (`core.md`), check required sections per the surface template: file location, isolation model, assertion focus, timeout strategy, lifecycle, Contract/Journey ratio, anti-patterns.
 
-**Check test-cases.md** for Route Validation results (⚠️ warnings from gen-test-cases Step 3.5). Use corrected routes where available.
+- **Missing required section**: Log warning listing missing sections. Proceed with LLM defaults for that section's area.
+- **Invalid section content** (e.g., empty isolation model): Treat as missing. Log warning.
 
-**Required reads** (adapt to project structure):
+Use the loaded Convention content for all surface-specific strategy in subsequent steps. Framework implementation details come from the assertion preference table within `core.md`.
 
-| Source | What to extract | Discovery guidance |
-|--------|----------------|---------------------|
-| Router files | Route paths, path parameters, middleware bindings | Search for route registration patterns, configuration files, and entry points using Grep. Look for URL path strings, HTTP method bindings, and path parameter definitions. |
-| Config files | API port, base path prefix, auth credentials | Search for config/settings files (`.env`, `config.*`, `settings.*`). Look for port numbers, base URLs, and credential variable names. |
-| API handlers | Request/response schemas, status codes, validation rules | Search for request handler functions and response definitions. Look for status code usage, input validation, and response body shaping. |
-| Auth implementation | Login endpoint path, token field name, header format | Search for authentication/authorization modules. Look for login endpoints, token generation/parsing, and header middleware. |
-| CLI entry points | Command names, flag names, output formats | Search for command registration and argument parsing. Look for CLI framework usage (e.g., cobra, commander, click) and output formatting. |
+<HARD-RULE>
+`types/*.md` (loaded in Step 2.5) is the primary authority for generation-time framework strategies. `core.md` is the authority for surface-level strategy (isolation model, assertion focus, etc.). When both cover the same aspect (assertion preferences), `types/*.md` takes precedence.
+</HARD-RULE>
 
-**Build the Fact Table**: After reading, record verified facts with source citations:
+## Step 0.5: Surface Detection
+
+Determine the project's interface surface type to drive per-surface generation strategy.
+
+Load `rules/step-0.5-validation.md` for the complete surface detection and strategy application logic, including:
+- Reading surface configuration from `.forge/config.yaml`
+- Auto-detection fallback from code reconnaissance
+- Surface strategy table (CLI/TUI/Web/API/Mobile ratio targets)
+- Surface-driven generation strategy for Step 3.0
+
+## Test Type Terminology
+
+Test type names follow the Surface → Test Type mapping:
+
+| Surface | Test Type | Tag |
+|---------|-----------|-----|
+| `cli` | CLI 功能测试 (CLI Functional Test) | `@cli-functional` |
+| `tui` | 终端功能测试 (Terminal Functional Test) | `@tui-functional` |
+| `api` | API 功能测试 (API Functional Test) | `@api-functional` |
+| `web` | Web 端到端测试 (Web E2E Test) | `@web-e2e` |
+| `mobile` | 移动端端到端测试 (Mobile E2E Test) | `@mobile-e2e` |
+
+The "e2e" term is reserved exclusively for Web and Mobile surfaces. CLI, TUI, and API surfaces use "functional" terminology. Generated test code comments and `@feature` tags MUST use these surface-specific test type names, NOT the generic "e2e" label.
+
+## Step 1: Code Reconnaissance (Build Fact Table)
+
+Read source code to extract ground-truth values for semantic descriptor resolution AND test framework patterns.
+
+Load `rules/step-1-contract-loading.md` for the complete reconnaissance logic, including:
+- Framework reconnaissance (test file patterns, imports, build tags)
+- Domain reconnaissance (CLI entry points, API handlers, config values)
+- Fact Table construction with source citations
+- Semantic descriptor to regex conversion
+
+## Step 1.5: Cross-Validation (Fact Table vs Contract Anchors)
+
+After building the Fact Table (Step 1), cross-validate it against Contract frontmatter anchor fields. This step detects mismatches between code reality (Fact Table) and design intent (Contract anchors), using the handbook (design document) as the authority source.
+
+Load `rules/step-1.5-cross-validation.md` for the complete cross-validation logic, including:
+- Anchor field extraction from Contract frontmatter
+- Fact Table vs anchor comparison and classification
+- Handbook authority resolution and suggestion generation
+- Degradation mode when handbook or anchors are missing
+
+### Cross-Validation Flow
+
+1. **Extract anchors**: For each Contract in the target Journey, read frontmatter anchor fields based on the detected surface type:
+
+   | Surface | Anchor fields to read |
+   |---------|----------------------|
+   | API | `endpoint`, `method` |
+   | CLI | `command`, `subcommand` |
+   | TUI | `command` |
+   | Web | `page`, `route` |
+   | Mobile | `screen`, `deeplink` |
+
+2. **Match against Fact Table**: Compare each anchor value with corresponding Fact Table entries from code reconnaissance.
+
+3. **Classify results**: Each comparison produces one of three classifications:
+
+   | Classification | Criteria | Action |
+   |---------------|----------|--------|
+   | **High confidence match** | Anchor value matches Fact Table exactly (normalized comparison) | Proceed normally |
+   | **Low confidence mismatch** | Anchor value differs from Fact Table, but Fact Table signal is incomplete (e.g., dynamic route registration, partial scan) | Log mismatch with both values, prompt user to confirm |
+   | **Cannot verify** | No corresponding Fact Table entry exists, or anchor field is absent from Contract | Log as unverifiable, proceed with anchor value if present, or Fact Table inference if absent |
+
+4. **Authority resolution**: When a mismatch is detected, resolve authority:
+
+   | Handbook exists? | Authority source | Mismatch action |
+   |-----------------|-----------------|-----------------|
+   | Yes, and matches anchor | Handbook = anchor | Fact Table differs -> **code bug**: handbook says X, code does Y. Generate code bug report. |
+   | Yes, and differs from anchor | Handbook | Anchor is stale. Generate suggested fix (diff) to update Contract anchor to match handbook. User confirms before writing. |
+   | Yes, and differs from Fact Table | Handbook | Code does not match handbook -> **code bug**. Generate code bug report. |
+   | No | Fact Table | Degraded mode: use Fact Table as inference source. Prompt user that handbook is missing and recommend generating one. |
+   | No, anchor also missing | Fact Table | Full degradation: use Fact Table inference, no cross-validation possible. Prompt user. |
+
+5. **Suggestion generation**: For each mismatch where handbook exists and differs from anchor, generate a suggested fix:
+
+   - Show a diff of the current Contract frontmatter vs proposed change
+   - Include the handbook source citation for the proposed value
+   - Present to user for confirmation before writing to Contract
+   - If user rejects, keep current anchor value and log the rejection
+
+<HARD-RULE>
+**Handbook is the authority source** for cross-validation. When handbook and code implementation disagree, the discrepancy is flagged as a **code bug** (not a test or Contract issue). The user confirmation step is the final gate -- no automatic writes to Contract without explicit user approval.
+</HARD-RULE>
+
+<HARD-RULE>
+**Low confidence and cannot-verify results are NEVER auto-resolved**. They are reported to the user for manual confirmation. The pipeline does not block on these classifications.
+</HARD-RULE>
+
+### Degradation Mode (Backward Compatibility)
+
+When handbook is missing or anchor fields are absent from Contract:
+
+1. **No handbook**: Skip cross-validation for the relevant surface. Use Fact Table values as inference source. Output prompt: "Handbook not found for surface `{surface}`. Cross-validation skipped. Recommend running `/tech-design` to generate handbook for improved anchor accuracy."
+2. **No anchor fields in Contract**: The Contract predates technical anchors. Use Fact Table inference as fallback. Output prompt: "Contract `{contract_path}` has no anchor fields. Using Fact Table inference. Consider running `/gen-contracts` to populate anchors from handbook."
+3. **Both missing**: Proceed with existing Step 1 Fact Table inference only. No cross-validation. Output both prompts above.
+
+Degradation mode is non-blocking. The pipeline continues normally with reduced confidence.
+
+### Surface Coverage Report
+
+After cross-validation completes (or degrades), output a coverage report:
+
+```
+=== Surface Coverage Report ===
+Surface: API
+  - Contracts with anchors: 3/4
+  - Cross-validated (high confidence): 2
+  - Mismatches detected: 1 (low confidence: 0, cannot verify: 1)
+  - Code bugs flagged: 0
+  - Suggested fixes pending user confirmation: 1
+
+Surface: CLI
+  - Contracts with anchors: 2/2
+  - Cross-validated (high confidence): 2
+  - Mismatches detected: 0
+  - Code bugs flagged: 0
+  - Suggested fixes pending user confirmation: 0
+
+Surfaces not covered:
+  - Web: no handbook found
+  - Mobile: no contracts in journey
+  - TUI: not applicable (surface type = CLI)
+
+Summary: 4/6 anchors verified, 1 mismatch, 0 code bugs, 1 fix pending
+```
+
+The report MUST:
+- List each surface type present in the Journey's Contracts
+- Show anchor coverage ratio (Contracts with anchors / total Contracts)
+- Count verification results by classification
+- Explicitly list surfaces that were NOT verified and why (no handbook, no contracts, not applicable)
+- Provide a summary line with totals
+
+### Lesson Scenario Capture
+
+The cross-validation MUST capture the lesson scenario from the proposal evidence:
+
+**Scenario**: Contract does not specify HTTP method (no `method` anchor) or specifies POST, but the actual route is registered as PUT (per handbook).
+
+**Expected behavior**:
+1. Fact Table finds `PUT /teams/:teamId/sub-items/:subId/move` from code reconnaissance
+2. Handbook defines `PUT /teams/:teamId/sub-items/:subId/move`
+3. Contract anchor says `method: POST` (or missing)
+4. Cross-validation detects mismatch: Fact Table (PUT) vs Contract anchor (POST)
+5. Authority check: handbook says PUT -> suggest fix: change Contract `method` from POST to PUT
+6. Generate diff, present to user for confirmation
+
+## Step 2: Read Contract Specifications
+
+**Optional -- Run-to-Learn (R2L)**: If R2L is enabled in `.forge/config.yaml`, execute the R2L loop between Step 1 and Step 3. Load: `rules/run-to-learn.md` for the complete R2L mechanism (skeleton test generation, runtime fact enrichment, graceful degradation).
+
+### 2.0 Route Decision: Contract Path vs Direct Path
+
+Before loading Contract files, determine the generation path for each Journey:
+
+1. Read `docs/features/<slug>/testing/<journey>/journey.md` and extract the `surface_types` field.
+2. Check whether Contract files exist: glob `docs/features/<slug>/testing/<journey>/contracts/step-*.md`.
+
+**Routing logic**:
+
+| Condition | Path |
+|-----------|------|
+| Contract files exist | **Contract Path** (existing flow, Step 2.1) |
+| `surface_types` contains only `web` and/or `mobile`, AND no Contract files | **Direct Path** (Step 2.2) |
+| `surface_types` contains protocol-level (`cli`/`tui`/`api`) AND no Contract files | **Error**: protocol-level surfaces require Contracts. Output: `Direct path generation failed for <journey>: surface_types include protocol-level types [types] but no contracts found. Run /gen-contracts first.` |
+| `surface_types` field missing or empty AND no Contract files | **Error**: cannot determine path. Output: `Direct path generation failed for <journey>: surface_types field missing in journey.md and no contracts found.` |
+
+<HARD-RULE>
+**Direct path is exclusively for web/mobile-only journeys**. Protocol-level surfaces (cli/tui/api) ALWAYS require Contracts. When a journey has mixed surface types (e.g., both web and api), the Contract path must be used — the api surface demands Contracts.
+</HARD-RULE>
+
+### 2.1 Contract Path (Existing Flow)
+
+**Input discovery** -- find the Contract files for the target Journey:
+
+1. Glob `docs/features/<slug>/testing/<journey>/contracts/step-*.md` for the target Journey.
+2. If no Journey is specified, ask the user which Journey to generate tests for.
+3. Parse each Contract file to extract: Journey name, Step number, Action, Outcomes (Preconditions/Input/Output/State/Side-effect/Invariants).
+
+<HARD-RULE>
+**Batch generation**: Generate tests for one Journey at a time (happy path + edge cases). If the user wants multiple Journeys, process them sequentially.
+</HARD-RULE>
+
+#### Contract Parsing
+
+Each Contract file has this structure:
 
 ```markdown
-## Fact Table
-| Key | Value | Source |
-|-----|-------|--------|
-| API_PORT | 8080 | backend/config.yaml:3 |
-| AUTH_ENDPOINT | POST /v1/auth/login | internal/handler/router.go:42 |
+---
+journey: "task-lifecycle"
+step: 2
+step-action: "forge task claim"
+---
+# Contract: task-lifecycle / Step 2: forge task claim
+
+## Outcome "success"
+- Preconditions: "feature exists; at least one task available"
+- Input: no positional args; no flags
+- Output: stdout contains "claimed task <task_id>", exit code 0
+- State: tasks/<task_id>/status -> "in_progress"; index.json updated
+- Side-effect: none
+
+## Outcome "no-tasks-available"
+- Preconditions: "feature exists; no tasks available for claiming"
+- Input: no positional args; no flags
+- Output: stderr contains "no tasks available", exit code 1
+- State: unchanged
+
+## Journey Invariants
+- feature_slug consistent across all steps
+- task_id stable once assigned
 ```
 
 <HARD-RULE>
-- Every value in the Fact Table must cite the source file and line number.
-- If a source file cannot be found, note it as `UNKNOWN`. Do not fabricate values.
-- The agent must use Fact Table values when generating spec files in Step 4. When a Fact Table value contradicts a template placeholder, the Fact Table wins.
-- All `// VERIFY:` markers in templates must be resolved using Fact Table values.
+**Single Journey per invocation**: Do not attempt to process multiple Journeys in one gen-test-scripts invocation. If Contracts span multiple Journeys, abort and ask the user to specify which Journey to generate.
 </HARD-RULE>
 
-### Step 2: Resolve Sitemap
+### 2.2 Direct Path (Web/Mobile-Only, No Contracts)
 
-**Only execute when UI-type test cases exist.**
+When the routing decision selects the Direct Path, test scripts are generated directly from `journey.md` combined with type-specific rules (`types/web.md` or `types/mobile.md`), bypassing Contract files entirely.
 
-Read `docs/sitemap/sitemap.json`. For each route referenced in test cases:
+Output: `Generating test scripts for <journey> via direct path (surface: <type>, no contract required)`
 
-1. Match `Route` field to `sitemap.json` `pages[].route` (dynamic routes like `/tasks/:id` match specific paths like `/tasks/123`)
-2. Collect all element data for matched pages (base elements + related states)
-3. **If test case has `Element` field with E-NNN / L-NNN IDs**: use only specified elements for precise mapping
-4. **If test case has `Element: sitemap-missing`**: skip sitemap lookup for this test case; use Fact Table DOM structure from Step 1.5 to infer locators in Step 3
-5. **If sitemap has `layout` field**: for each route wrapped by `layout.wraps`, merge `layout.elements` as available elements
+#### 2.2.1 Extract Journey Steps
 
-If a route referenced in test cases does not exist in sitemap, report the missing route and suggest re-running `/gen-sitemap`.
+Read `journey.md` and extract structured test generation data from each step:
 
-### Step 3: Map Locators
+| Journey Step Field | Maps To | Description |
+|-------------------|---------|-------------|
+| Step description (prose) | `step-action` | User action: click, type, navigate, select, etc. |
+| Preconditions / setup context | `fixture_spec` | Required application state before the step |
+| Expected result / verification | `Outcome` | Visual assertions: assertVisible, assertText, assertNotVisible |
 
-Based on sitemap element data collected in Step 2, generate Playwright locators for each element by priority:
+**Mapping rules**:
 
-| Priority | Condition | Generated Code |
-|----------|-----------|----------------|
-| 0 (most stable) | `role` ∈ {button,link,heading,...} + `name` non-empty | `page.getByRole('button', { name: 'Submit' })` |
-| 0+ | heading + `level` non-empty | `page.getByRole('heading', { name: 'Dashboard', level: 1 })` |
-| 1 | `label` non-empty | `page.getByLabel('Email address')` |
-| 2 | `placeholder` non-empty, label empty | `page.getByPlaceholder('Search...')` |
-| 3 | Static text node | `page.getByText('No results found')` |
-| 4 | `data-testid` visible | `page.getByTestId('user-avatar')` |
-| 5 (fallback) | None of the above | `page.locator('.btn') // UNSTABLE: no semantic anchor` |
+1. **Step description to step-action**: Identify the primary user interaction verb in the step description.
+   - "Click the Submit button" -> `step-action: click` with target "Submit button"
+   - "Type 'hello' in the search field" -> `step-action: type` with target "search field" and value "hello"
+   - "Navigate to /dashboard" -> `step-action: navigate` with target "/dashboard"
+   - "Select 'Option A' from dropdown" -> `step-action: select` with target "dropdown" and value "Option A"
 
-For test steps within dynamic states: first click the trigger element's locator, then map locators for in-state elements. Build an in-memory mapping table for use in Step 4.
+2. **Preconditions to fixture_spec**: Convert setup context into required application state.
+   - "User is logged in" -> `fixture_spec: { auth_state: authenticated }`
+   - "A project exists with 3 items" -> `fixture_spec: { entities: [{ type: project, count: 3 }] }`
 
-### Step 4: Generate Spec Files
+3. **Expected result to Outcome**: Convert verification descriptions into visual assertions.
+   - "The confirmation dialog appears" -> `Outcome: assertVisible("confirmation dialog")`
+   - "The page shows 'Welcome, User'" -> `Outcome: assertText("Welcome, User")`
+   - "The loading spinner is no longer visible" -> `Outcome: assertNotVisible("loading spinner")`
 
-**Verify project interfaces before generating**: For each type group from Step 1, confirm the project actually exposes that interface. Build/test/lint commands are developer tooling, not a CLI product interface.
+<HARD-RULE>
+**Every direct-path generated test MUST include at least one visual assertion** (assertVisible, assertText, or assertNotVisible). Tests with only navigation actions and no assertions are invalid. Additionally, at least one assertion per test must be a non-trivial visual check — not merely "page is non-empty" or "skeleton is visible", but meaningful content verification (e.g., specific text present, element in expected state).
+</HARD-RULE>
 
-| Type | Probe command | Evidence of product interface |
-|------|--------------|-------------------------------|
-| UI | `ls docs/sitemap/sitemap.json` or `grep -r "router\|<Route\|page\." src/` | Sitemap exists, or frontend route registration found |
-| API | `grep -rn "router\|handler\|endpoint\|HandleFunc\|app.get\|app.post" --include='*.go' --include='*.ts' --include='*.js' .` | HTTP handler registration patterns found |
-| CLI | `grep '"bin"' package.json` or `ls cmd/` or `grep -rn "cobra.Command" --include='*.go' .` | CLI entry point or command framework detected |
+#### 2.2.2 Load Direct Path Type Rules
 
-For each non-empty, verified type group, generate a spec file from the corresponding template:
-- UI: `plugins/forge/skills/gen-test-scripts/templates/playwright-ui.spec.ts` → output: `ui.spec.ts`
-- API: `plugins/forge/skills/gen-test-scripts/templates/api.spec.ts` → output: `api.spec.ts`
-- CLI: `plugins/forge/skills/gen-test-scripts/templates/cli.spec.ts` → output: `cli.spec.ts`
+Load the direct path generation rules from the corresponding type file:
 
-Additionally, if auth-required-test cases exist and UI tests are generated:
-- **Auth setup**: `plugins/forge/skills/gen-test-scripts/templates/auth-setup.ts` → output: `tests/e2e/auth-setup.ts`
-- **Config update**: uncomment the `projects` section in `playwright.config.ts` to enable the setup/authenticated project separation
+- For `web` surface: load "Direct Path Generation Rules" section from `types/web.md`
+- For `mobile` surface: load "Direct Path Generation Rules" section from `types/mobile.md`
 
-Based on Step 1 auth classification, **uncomment** matching CONDITIONAL blocks, remove non-matching blocks, then fill in test data. Replace example content with actual test cases from `test-cases.md`, keeping the same structure (locator pattern, assertion pattern, screenshot call). Do not rewrite template structure from scratch.
+These sections define the step-to-test-action mapping templates and assertion patterns specific to each surface.
 
-#### Integration Test Scripts
+<HARD-RULE>
+Direct path generation uses the mapping templates from `types/web.md` or `types/mobile.md` "Direct Path Generation Rules" sections as the authoritative mapping guide. When journey step descriptions are ambiguous, apply the most specific matching template. If no template matches, use the generic action categories from the type file's Golden Rules.
+</HARD-RULE>
 
-Integration test cases are a subcategory of UI tests. They verify that a component embedded on an existing page (via `placement: existing-page:<route>`) is visible at the correct position and renders data correctly.
+#### 2.2.3 Generate Direct Path Tests
 
-**Identification**: A test case is an integration test when:
-- `Source` field contains "Placement + Integration Spec", **or**
-- `Test ID` field contains "integration-"
+Using the extracted step data and type-specific mapping rules, generate test code:
 
-Integration tests use the same Playwright framework and spec file structure as standard UI tests — the distinction is conceptual (page-level integration vs component-level behavior). They are grouped with UI test cases and emitted into the same `ui.spec.ts` file.
+1. For each step, create a test function that performs the mapped user action and asserts the expected visual outcome.
+2. Generate exactly one Journey smoke test covering all steps in sequence (happy path).
+3. Apply all relevant Golden Rules from the loaded type file (Session Reuse, Viewport Management, Element Location Strategy for web; App State Reset, Permission Handling, Screen Transition Assertions for mobile).
 
-**Script generation strategy** — for each integration test case:
+**Failure handling**: If journey.md lacks sufficient information to map a step to a test action, output: `Direct path generation failed for <journey>: step <N> could not be mapped — <reason>`. Do NOT silently skip the step or generate placeholder code without meaningful assertions.
 
-1. **Locate the target page** by route (same as standard UI tests, using sitemap resolution from Step 2).
-2. **Locate the embedded component** using these strategies in priority order:
-   a. Component heading or section title: `page.getByRole('heading', { name: /component name/i })`
-   b. Container with `aria-label` or `data-testid`: `page.getByLabel(label)` or `page.getByTestId(id)`
-   c. Sitemap element at the insertion point area (from the test case `Element` field)
-3. **Assert visibility**: `expect(locator).toBeVisible()`
-4. **Assert position** (if feasible): verify the component appears above/below/adjacent to expected sibling elements using Playwright's locator chaining or `.evaluate()` for DOM position checks.
-5. **Verify data rendering**: assert expected text content is present within the component locator (e.g., `await expect(locator).toContainText('expected data')`).
+<HARD-RULE>
+**Direct path is a first-class generation route**, not a degraded fallback. Generated tests must meet the same quality standards as Contract-path tests: meaningful assertions, proper isolation, correct test type tags, and traceability comments linking back to journey.md step numbers.
+</HARD-RULE>
 
-**Example generated test**:
+## Step 2.5: Load Type Rules
 
-```typescript
-test('Integration — Recent Tasks visible on Dashboard', async ({ page }) => {
-  // Traceability: TC-005 → PRD UI Function "Recent Tasks" Placement + Integration Spec
-  await page.goto('/dashboard');
-  const recentTasks = page.getByRole('heading', { name: /recent tasks/i });
-  await expect(recentTasks).toBeVisible();
-  const section = recentTasks.locator('..');
-  await expect(section).toContainText('task-001');
-});
+After reading Contract files (Step 2) and before generating test code (Step 3), load type-specific Golden Rules that constrain generation.
+
+<HARD-RULE>
+types/ Golden Rules define non-overridable principle constraints. Convention provides framework implementation details. When both cover the same aspect, Golden Rules' principles take precedence, Convention's implementation details supplement areas Golden Rules don't cover.
+</HARD-RULE>
+
+<HARD-RULE>
+Reconnaissance Hints in type files are discovery aids only. Information discovered via Hints must be converted to Fact Table values, not used directly in generation instructions.
+</HARD-RULE>
+
+### 2.5.1 Extract Interface Types
+
+Interface types are extracted differently depending on the generation path:
+
+**Contract Path**: Extract from Contract files:
+
+1. Examine `step-action` fields for interface indicators (CLI commands, HTTP methods, Web interactions, TUI rendering, mobile gestures).
+2. Examine Outcome `Output` dimensions for interface-specific assertions (exit codes -> CLI, HTTP status codes -> API, element selectors -> Web/TUI/Mobile).
+3. Record the detected type set (e.g., `{CLI, API}`).
+
+**Direct Path**: Extract from `journey.md` `surface_types` field:
+
+1. Read the `surface_types` array from `journey.md` frontmatter.
+2. Map each entry directly to its type file: `web` -> `types/web.md`, `mobile` -> `types/mobile.md`.
+3. Record the detected type set (e.g., `{Web}`, `{Web, Mobile}`).
+
+### 2.5.2 Load Shared Principles
+
+Always load `types/_shared.md` regardless of detected types. This file defines the five cross-type universal principles (Isolation, Determinism, Timeout Protection, Idempotency, Resource Cleanup) and shared antipattern guards.
+
+### 2.5.3 Load Type-Specific Rules
+
+For each interface type in the detected set, load the corresponding type file:
+
+1. Map interface type to filename: `CLI` -> `types/cli.md`, `TUI` -> `types/tui.md`, `Web` -> `types/web.md`, `Mobile` -> `types/mobile.md`, `API` -> `types/api.md`.
+2. Read each matched type file via Read tool.
+3. Extract Golden Rules (generation constraints) and Reconnaissance Hints (discovery aids).
+
+Do NOT load type files for interface types not detected in the Contracts. No speculative bulk loading.
+
+<HARD-RULE>
+`_shared.md` is ALWAYS loaded regardless of detected types. Only type files matching detected interface types are loaded -- no speculative bulk loading.
+</HARD-RULE>
+
+### 2.5.4 Assertion Depth and Fixture Quality Rules
+
+Load behavioral test quality rules that constrain assertion depth and fixture data richness:
+
+1. **Load `rules/assertion-depth.md`**: Assertion classification criteria (behavioral vs structural), >=80% behavioral threshold, >=30% deep assertion requirement. This rule is enforced during Step 3 generation — the agent MUST count and classify assertions, supplementing if thresholds are not met.
+
+2. **Load `rules/fixture-from-spec.md`**: Fixture data generation from Contract `fixture_spec` declarations. When a Contract's Preconditions contain `fixture_spec.entities`, test code MUST create >= `min_count` entities with correct relationships and field constraints. When `fixture_spec` is absent, apply backward compatibility handling from `types/_shared.md`.
+
+<HARD-RULE>
+**Assertion depth enforcement is mandatory**: Every generated Journey's test suite MUST satisfy both the >=80% behavioral threshold and >=30% deep assertion requirement. Health check / readiness-only Journeys are exempt but MUST document the exemption with a header comment.
+</HARD-RULE>
+
+### 2.5.5 Token Budget Warning
+
+If the detected type set contains more than 3 types, emit:
+
+```
+WARNING: Detected {N} interface types ({type list}). Loading all type rules may consume significant token budget. Consider splitting the Journey into type-specific sub-Journeys.
 ```
 
-#### beforeAll Safety
+Proceed with generation -- the warning is advisory, not blocking.
 
-All `test.beforeAll` blocks must follow defensive patterns to prevent cascade failures where module-level variables stay `undefined`:
+## Step 3: Generate Test Code
 
-1. **Wrap each operation in try/catch** with `console.error` identifying which step failed
-2. **Explicit undefined check** — after assignment, validate with `if (!var) throw new Error('var is undefined after <operation>')`
-3. **Prefer reusing existing resources** over creating new ones in `beforeAll` — fewer operations means fewer failure modes
-4. **Use `test.describe.serial`** when tests have sequential dependencies (resource A must exist for test B), instead of bare `test.describe` with shared mutable state
-5. **Use `withRetry()`** for backend-dependent operations (token acquisition, resource creation) to handle transient failures (429, connection reset)
+For each Contract step, generate test code following the resolved framework's conventions AND the surface-specific strategy from Step 0.5.
 
-<HARD-RULE>
-When `beforeAll` throws and module-level `let` variables stay `undefined`, all downstream tests fail with misleading errors (e.g., `undefined` in URL paths → 404). The try/catch + explicit check pattern ensures the *real* failure is reported, not a secondary symptom.
-</HARD-RULE>
+### 3.0 Surface-Driven Generation Strategy
 
-#### Anti-Patterns (Forbidden in Generated Code)
+Apply the surface type detected in Step 0.5 to constrain the generation plan. Load `rules/step-0.5-validation.md` section "Surface-Driven Generation Strategy" for per-surface ratio targets, execution models, and generation constraints (CLI, TUI, Web, API, Mobile).
 
-<HARD-RULE>
-**No `waitForTimeout` / `sleep` / fixed delays.** These mask real timing issues, waste time when the app is fast, and fail when the app is slow. Instead:
+**Test isolation**: Every test — unit or surface — must own its environment. No test may depend on the real project's filesystem state, git state, or `.forge/` state.
 
-| Forbidden | Replacement |
-|-----------|-------------|
-| `page.waitForTimeout(2000)` | `await expect(locator).toBeVisible()` or `await page.waitForResponse('**/api/...')` |
-| `await new Promise(r => setTimeout(r, N))` | `await withRetry(() => ..., { delayMs: N })` for API polling |
-| `waitForTimeout` after navigation | `await page.waitForLoadState('networkidle')` or `await expect(locator).toBeVisible()` |
-| `waitForTimeout` after click/submit | `await page.waitForResponse('**/api/...')` wrapping the click, or `await expect(resultLocator).toBeVisible()` |
+<!-- INLINE from run-tests/rules/test-isolation.md @ v3.0.0-rc.53 -->
 
-**Why**: In a real project (350+ tests), `waitForTimeout` accounted for ~60+ seconds of wasted time per run and was the #1 source of flaky tests — too short when slow, wasted when fast. Every wait must be event-driven.
-</HARD-RULE>
+| Rule ID | Scope | Requirement | Pattern |
+|---------|-------|-------------|---------|
+| TEST-isolation-000 | All tests | Every test MUST create its own world via `t.TempDir()` (unit) or isolated fixture setup (e2e). Tests MUST NOT read, write, or depend on files outside their own sandbox. | Use `t.TempDir()` / `t.Setenv()` for all stateful tests |
+| TEST-isolation-001 | Unit tests (project root) | Tests calling `FindProjectRoot()`, `runFeature()`, `executeClaim()`, or any function relying on project root detection MUST set `CLAUDE_PROJECT_DIR` via `t.Setenv()` to isolate from real `.forge/state.json` and workspace markers. | `t.Setenv("CLAUDE_PROJECT_DIR", dir)` + `os.Chdir(dir)` |
+| TEST-isolation-002 | CLI functional tests | Tests invoking `forge` CLI commands MUST pass `CLAUDE_PROJECT_DIR=<fixture-dir>` via `cmd.Env` to prevent CLI from detecting real project root. | `cmd.Env = append(os.Environ(), "CLAUDE_PROJECT_DIR="+dir)` |
+| TEST-isolation-003 | CLI functional test fixtures | Helpers creating project directories MUST create all files required by code under test — including `tasks/index.json`, `.forge/config.yaml`, and any other files the production code checks for. | Include `index.json` in `ensureFeatureDir` |
+| TEST-isolation-004 | CLI functional tests (binary) | Test files invoking forge CLI commands SHOULD compile a dedicated forge binary from current source tree via `go build` and use it for all `exec.Command` invocations, rather than relying on system-installed `forge` via `$PATH`. | `TestMain` builds binary; tests use `exec.Command(forgeBinary, ...)` |
 
-<HARD-RULE>
-**Serial suite size limit: 15 tests max.** When a workflow requires more than 15 sequential tests, split into multiple `test.describe.serial` blocks, each with independent setup/teardown. Large serial suites (30+ tests) create catastrophic cascade — one early failure invalidates all subsequent tests, making diagnosis extremely difficult.
+<!-- END INLINE:origin=run-tests/rules/test-isolation.md -->
 
-**afterAll cleanup is mandatory** for serial suites that create shared data. Use `createTestResource()` + `cleanupTestResources()` from helpers, or manual DELETE calls. Missing cleanup causes test pollution across runs.
-</HARD-RULE>
+### Output Directory
 
-<HARD-RULE>
-**UI auth: use `beforeAll` login, NOT `beforeEach`.** Each `login(page)` call costs ~1-3 seconds (page load + auth injection + reload). For a 30-test suite, `beforeEach` login adds 30-90 seconds of pure overhead. Instead:
+Output directory adapts to the project's surface count. Determine the correct path by checking whether the project has multiple surfaces (via `forge surfaces` or `.forge/config.yaml`):
 
-- **Preferred**: Playwright `storageState` mechanism (login once in setup project, reuse across all tests)
-- **Fallback**: `test.beforeAll` login with shared page context for tests that don't need isolation
-- **Exception**: `beforeEach` login is acceptable only for tests that specifically verify login behavior or need clean session state
-</HARD-RULE>
+- **Multi-surface** (2+ surfaces): `tests/<surfaceKey>/<journey>/`
+- **Single-surface** (1 surface): `tests/<journey>/`
 
-<HARD-RULE>
-**Selector priority (same as Step 3, reinforced)**: Never use CSS class selectors (`.ant-*`, `.btn-*`, etc.) or DOM traversal (`locator('..')`) in generated code. These bind to internal implementation details and break on any UI library update. If sitemap doesn't provide a role-based locator, use `data-testid` as fallback — never CSS classes.
-</HARD-RULE>
+Contract specs are read from `docs/features/<slug>/testing/<journey>/contracts/`.
 
-**Import path**: All spec files must import from `'../../helpers.js'` (two levels up to shared helpers.ts at `tests/e2e/`).
+**Multi-surface example** (surfaces: `backend=api`, `frontend=web`):
 
-**VERIFY marker resolution**: Resolve all `// VERIFY:` comments using Fact Table values. If no Fact Table value exists, keep the `// VERIFY:` comment as-is.
+```
+docs/features/<slug>/testing/
+  task-lifecycle/                  <- Journey directory
+    journey.md                     <- Journey narrative
+    contracts/                     <- Contract specs (input, from gen-contracts)
+      step-1-feature-create.md
+      step-2-task-claim.md
+      step-3-task-submit.md
 
-**TypeScript compilation check**: After generating all spec files for a feature, verify they compile:
-```bash
-cd tests/e2e && npx tsc --noEmit
+tests/
+  backend/                         <- surfaceKey directory
+    task-lifecycle/                <- Generated test scripts for backend surface
+      step1_feature_create_test.go
+      step2_task_claim_test.go
+  frontend/                        <- surfaceKey directory
+    task-lifecycle/                <- Generated test scripts for frontend surface
+      step1_feature_create_test.go
+      step2_task_claim_test.go
 ```
 
-**Post-generation check**: Verify no unresolved `// VERIFY:` markers remain:
-1. Run `just e2e-verify --feature <slug>` if the recipe exists in the Justfile
-2. Otherwise: `grep -rn '// VERIFY:' tests/e2e/features/<slug>/ --include='*.spec.ts'`
-3. Also check: `grep -rn '// VERIFY:' tests/e2e/helpers.ts` (should have none after stripping during copy)
+**Single-surface example** (surfaces: `tui` or `surfaces: [{key: app, type: tui}]`):
+
+```
+docs/features/<slug>/testing/
+  task-lifecycle/                  <- Journey directory
+    journey.md                     <- Journey narrative
+    contracts/                     <- Contract specs (input, from gen-contracts)
+      step-1-feature-create.md
+      step-2-task-claim.md
+      step-3-task-submit.md
+
+tests/
+  task-lifecycle/                  <- Generated test scripts (no surfaceKey layer)
+    step1_feature_create_test.go
+    step2_task_claim_test.go
+    step3_task_submit_test.go
+    task_lifecycle_smoke_test.go
+```
+
+<HARD-RULE>
+**No staging area**: Tests go directly to the output directory (adaptive per surface count), NOT to `tests/e2e/features/` staging. The old staging model is replaced by tag-based lifecycle management.
+</HARD-RULE>
+
+<HARD-RULE>
+**Surface-key directory**: When the project has multiple surfaces, the `<surfaceKey>` segment MUST use the surface's key (e.g., `backend`, `frontend`), NOT the surface's type (e.g., `api`, `web`). The key is the user-defined identifier; the type is the technical classification. Keys are unique; types can repeat.
+</HARD-RULE>
+
+### @feature Tags
+
+All generated test files MUST include `@feature` tags. The tag format and mechanism are defined by the Convention file's **Tags** section. Read and follow the Convention's tag syntax precisely.
+
+If the Convention file does not have a Tags section, ask the user which tag format to use. Common formats for reference only -- do NOT auto-select without Convention or user input.
+
+### Step Test Generation
+
+For each Contract step, generate a test file containing one test function per Outcome:
+
+1. Each test function validates one Outcome's assertions.
+2. Use `t.TempDir()` or framework equivalent for isolation.
+3. Assert Output matches the regex pattern from Step 1.
+4. Assert State changes as specified in the Contract.
+5. Include traceability comment linking back to the Contract.
+
+### Journey Smoke Test
+
+Generate exactly one smoke test per Journey that:
+
+1. Runs the complete happy path end-to-end (all steps in sequence).
+2. Passes state between steps (feature_slug, task_id, etc.).
+3. Asserts each step's output matches the "success" Outcome's Output dimension.
+4. Verifies Journey Invariants hold across all steps.
+
+<HARD-RULE>
+Every Journey MUST have at least 1 smoke test. The smoke test MUST only test the happy path (success Outcomes).
+</HARD-RULE>
+
+### Test Data Safety
+
+<HARD-RULE>
+**No hardcoded secrets**: Generated test code MUST NOT contain real secret/token values. Sensitive fields (token, api_key, password, secret, credential) MUST use environment variable placeholders:
+- Go: `os.Getenv("E2E_API_TOKEN")`
+- Python: `os.environ.get("E2E_API_TOKEN")`
+- JavaScript: `process.env.E2E_API_TOKEN`
+</HARD-RULE>
+
+### Framework-Specific Rules
 
 <EXTREMELY-IMPORTANT>
-**UI tests use `@playwright/test`** (full test runner with automatic browser lifecycle). Using agent-browser in generated spec files is forbidden.
+All framework-specific rules (test runner, assertion library, imports, HTTP client, process execution, anti-patterns) are defined in the Convention file loaded in Step 0. Read and follow those rules precisely.
 
-**API tests use Node.js built-in `fetch`**. External HTTP libraries like axios, supertest are forbidden.
-
-**CLI tests use `child_process.execSync`** via `runCli()` helper.
-
-**All tests use `@playwright/test`** (`test`, `expect`, `test.describe`). The `node:test` and `node:assert` modules are not used.
-
-**`@eN` refs must not appear in any generated spec file.**
+- Use ONLY the framework specified in the Convention file
+- Import paths and naming conventions follow the Convention's conventions
+- Convention sections: framework, discovery, structure, assertions, Import Patterns, Code Style, Anti-patterns, Helpers
 </EXTREMELY-IMPORTANT>
 
-<HARD-RULE>
-**Traceability**: Each `test()` must include a traceability comment `// Traceability: TC-NNN → {PRD Source}` ensuring complete traceability chain from test script to PRD.
+### Templates (Convention-Driven)
 
-**Skip empty groups**: If no test cases of a given type exist, or the project lacks that interface (Step 4 verification), skip generating that spec file.
+Convention files contain all framework-specific patterns (imports, assertion syntax, helpers, anti-patterns). Use the Convention's Code Style and Helpers sections as the template for generated code.
 
-**Empty result guard**: If zero spec files were generated (all groups empty or all interfaces undetected), abort with a clear message: "No spec files generated — either test-cases.md has no testable cases, or all interface types were undetected. Re-run /gen-test-cases or verify project structure."
-</HARD-RULE>
+Use the Convention file content as the authoritative template source for all framework-specific patterns.
 
-### Step 4.5: Structural Validation
+## Step 4: Compile Gate
 
-After generating spec files (Step 4) and before compilation/infrastructure setup, run structural validation to catch rule violations early.
+After generating all test files, run a compile gate to verify generated code correctness.
 
-**Run validation**:
-```bash
-task validate-specs
-```
+### 4.0 Syntax and Import Validation
 
-This command spawns `validate-specs.mjs` which performs ts-morph AST analysis against the generated spec files in `tests/e2e/features/<slug>/`. It checks 8 rules: 4 ERROR-level (blocking) and 4 WARNING-level (non-blocking).
+Before compile, run lightweight syntax and import checks:
 
-**Interpret results**:
+| Framework | Syntax Validation | Import Validation |
+|-----------|-------------------|-------------------|
+| Go | `gofmt -e <file>` | `go vet ./tests/...` (adaptive path per surface count) |
+| JavaScript/TypeScript | `node --check <file>` or `tsc --noEmit` | `tsc --noEmit` or `node -e "require('<import>')"` |
+| Python | `python -m py_compile <file>` | `python -c "import <module>"` per import |
+| Maestro YAML | `maestro validate <file>` or YAML lint | N/A |
 
-| Exit code | Meaning | Action |
-|-----------|---------|--------|
-| 0 | No errors (warnings OK) | Report any warnings, proceed to Step 5 |
-| 1 | Validation errors found | **Block task** — report errors, do not proceed |
-| 2 | Script failed to run | Check prerequisites (Node.js, ts-morph); report and continue if degraded |
+#### Validation Failure Handling
 
-**Blocking behavior (exit code 1)**: When `task validate-specs` returns errors:
-1. Report all ERROR entries to the user with rule ID, file, line, and message
-2. Do NOT proceed to Step 5 or TypeScript compilation
-3. The errors indicate fundamental structural problems (forbidden `waitForTimeout`, missing TC IDs, missing traceability, DOM parent traversal) that must be fixed in the generated spec files
-
-**Warning behavior (exit code 0 with warnings)**: Warnings indicate suboptimal but non-blocking issues (large serial suites, missing cleanup, per-test login, CSS class selectors). Report them but proceed to Step 5.
+1. **Auto-retry (1 attempt)**: Feed error + file content back to LLM. Regenerate. Re-validate.
+2. **Retry also fails**: Mark file as `gen-failed` with header comment: `// GEN-FAILED: <error summary>`.
+3. **Skip and continue**: `gen-failed` file is skipped in subsequent steps. Others proceed normally.
 
 <HARD-RULE>
-Step 4.5 MUST run after Step 4 and before Step 5. The validation catches structural issues that TypeScript compilation cannot detect (missing TC IDs, forbidden patterns, traceability gaps). Skipping this step means rule violations propagate to runtime where they cause flaky tests and debugging overhead.
+**gen-failed files are NOT deleted**. They remain for user inspection. Pipeline does NOT block on `gen-failed` files. At most 1 auto-retry per file.
 </HARD-RULE>
 
-### Step 5: Ensure Shared Infrastructure
+### 4.1 Prerequisite Check
 
-Check if shared infrastructure exists at `tests/e2e/`:
+Verify `just compile` recipe exists:
 
 ```bash
-ls tests/e2e/helpers.ts tests/e2e/package.json tests/e2e/tsconfig.json tests/e2e/playwright.config.ts tests/e2e/config.yaml 2>/dev/null
+just --list | grep compile
 ```
 
-<PRINCIPLE>
-**Shared infrastructure first.** Before generating any spec files, ensure that shared dependencies (`helpers.ts`, `config.yaml`, `package.json`, `tsconfig.json`, `playwright.config.ts`) are complete and functional. Spec files depend on these shared files via import — if they are missing or incomplete, all specs will fail at the import stage. Check and fix shared dependencies before generating spec files. Downstream skills (`/run-e2e-tests`, `/graduate-tests`) follow the same principle.
-</PRINCIPLE>
+If missing, block generation with: "Missing justfile `compile` recipe. Run `/forge:init-justfile` first, or add a recipe manually."
 
-**If any file is missing**, create it from the corresponding template:
-- `helpers.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/helpers.ts` (only if tests/e2e/helpers.ts does not exist). When copying, strip all `// VERIFY:` and `// TEMPLATE:` comments — these are generation-time markers that should not appear in runtime files.
-- `package.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/package.json` (only if tests/e2e/package.json does not exist)
-- `tsconfig.json`: copy from `plugins/forge/skills/gen-test-scripts/templates/tsconfig.json` (only if tests/e2e/tsconfig.json does not exist)
-- `playwright.config.ts`: copy from `plugins/forge/skills/gen-test-scripts/templates/playwright.config.ts` (only if tests/e2e/playwright.config.ts does not exist)
-- `config.yaml`: copy from `plugins/forge/references/shared/config.yaml` (only if tests/e2e/config.yaml does not exist). CLI-only projects may omit this — `helpers.ts` lazy-loads gracefully.
+### 4.2 Compile and Retry
 
-**If helpers.ts already exists**: check whether it exports all symbols imported by the generated specs. If symbols are missing (e.g., `screenshot` for UI tests, `curl` for API tests), add the missing exports AND all their private dependencies from the template. Private dependencies include: `findConfigPath()`, `getConfig()`, `_config`, `_configPath`, `_defaultCreds`, `getDefaultCreds()`, `SCREENSHOTS_DIR`, `_cachedToken`, `AUTH_STATE_DIR`, `AUTH_STATE_PATH`, plus `yaml` import, `Page` type import from `@playwright/test`, and `unlinkSync` import from `node:fs`. Do NOT overwrite existing exports — merge.
+Run `just compile`. On failure: retry up to 3 attempts (feed compile error + file content back to LLM, regenerate). After 3 failures: block task, output error details, preserve generated files.
 
-<HARD-RULE>
-**Shared file policy**: `helpers.ts`, `package.json`, `tsconfig.json`, and `playwright.config.ts` at `tests/e2e/` are shared across all features.
-- If they do not exist: create them from templates.
-- If `helpers.ts` already exists: merge missing exports from template into it (do NOT overwrite existing exports).
-- Other shared files (`package.json`, `tsconfig.json`, `playwright.config.ts`): if they exist, DO NOT modify.
-- Only spec files (`*.spec.ts`) are written per-feature.
-</HARD-RULE>
+### 4.3 Recovery on Exhaustion
 
-#### Playwright webServer Audit
+If all compile attempts fail:
+1. Output compile error with generated file path.
+2. Suggest: (a) check Convention for incorrect declarations, (b) run `/forge:test-guide` to regenerate Convention, (c) manually edit.
+3. Do not auto-delete generated files.
 
-When processing `playwright.config.ts` (new copy or existing file):
+### 4.4 Post-Compile Checks
 
-> **Exception to HARD-RULE "do not modify existing playwright.config.ts"**:
-> The webServer audit is the ONLY permitted modification to an existing `playwright.config.ts`.
-> All other content must be preserved verbatim.
+- **VERIFY Marker Check**: `grep -rn '// VERIFY:' tests/` (adaptive per surface count) -- resolve remaining markers using Fact Table.
+- **Antipattern Guard & Duplicate Name Check**: See `rules/quality-gates.md`.
+- **Assertion Depth Check**: See `rules/assertion-depth.md` — verify >=80% behavioral assertion threshold and >=30% deep assertion requirement are met per Journey. If thresholds are not met and no exemption header exists, regenerate with supplemented assertions.
+- **Fixture Spec Compliance**: See `rules/fixture-from-spec.md` — verify that when Contract contains `fixture_spec.entities`, the generated test creates >= `min_count` entities with correct relationships.
 
-1. Check for `webServer` key:
-   ```bash
-   grep -n "webServer" tests/e2e/playwright.config.ts
+## Step 5: Coverage Self-Check
+
+After all test generation and compile gates complete, verify coverage completeness by surface type.
+
+### 5.1 Coverage Verification
+
+For each surface type present in the feature's journeys:
+
+1. Count journeys of each surface type: iterate `docs/features/<slug>/testing/*/journey.md`, extract `surface_types` from each.
+2. Count generated test scripts of each surface type: scan the output directory (`tests/`) for test files, classify by surface type using the Surface -> Test Type mapping.
+3. Verify: `count(journeys_of_type) == count(test_scripts_of_type)` for each surface type.
+
+**Surface -> Test Type mapping** (defined here as the authoritative source):
+
+| Surface | Test Type | Tag |
+|---------|-----------|-----|
+| `cli` | CLI Functional Test | `@cli-functional` |
+| `tui` | Terminal Functional Test | `@tui-functional` |
+| `api` | API Functional Test | `@api-functional` |
+| `web` | Web E2E Test | `@web-e2e` |
+| `mobile` | Mobile E2E Test | `@mobile-e2e` |
+
+### 5.2 Coverage Report
+
+Output a coverage report:
+
+```
+=== Coverage Self-Check ===
+Surface: web
+  - Journeys: 3
+  - Test scripts generated: 3
+  - Status: PASS
+
+Surface: api
+  - Journeys: 2
+  - Test scripts generated: 2
+  - Status: PASS
+
+Summary: 5/5 journeys covered, 0 gaps
+```
+
+### 5.3 Failure Handling
+
+If any surface type shows a gap:
+
+1. Output FAIL status for that surface type.
+2. List the gap details:
    ```
+   Surface: web
+     - Journeys: 5
+     - Test scripts generated: 3
+     - Status: FAIL
+     - Missing journeys:
+       - user-onboarding (no test script generated)
+       - dashboard-interaction (no test script generated)
+   ```
+3. If a missing journey had a direct path generation failure in Step 2.2.3, include the failure reason.
+4. The overall pipeline status is FAIL — do not silently proceed with coverage gaps.
 
-2. If `webServer` block found:
-   - Remove the entire `webServer: { ... }` block (matching braces)
-   - Insert comment: `// Server lifecycle managed by justfile (embedded in test-e2e recipe)`
-   - Report: "Removed Playwright webServer config — server lifecycle enforced by test-e2e"
-
-3. If `webServer` not found: no action needed
-
-## Output
-
-All generated spec files go to `tests/e2e/features/<feature>/` (staging area). After verification via `/run-e2e-tests`, use `/graduate-tests` to migrate them to the regression suite. Output files: `ui.spec.ts` (if UI detected), `api.spec.ts` (if API detected), `cli.spec.ts` (if CLI detected).
-
-**Shared infrastructure outputs** (written to `tests/e2e/`, not per-feature):
-- `auth-setup.ts` — if auth-required-test cases exist and UI tests are generated
-- `playwright.config.ts` — `projects` section uncommented when auth setup is needed
+<HARD-RULE>
+**Coverage gaps are hard failures**. If `count(journeys_of_type) != count(test_scripts_of_type)` for any surface type, the generation is incomplete. Output the gap list and FAIL. Do NOT suppress or downgrade the failure.
+</HARD-RULE>
 
 ## Error Handling
 
-| Situation | Action |
-|-----------|--------|
-| `docs/features/<slug>/testing/test-cases.md` missing | Abort with prompt to run `/gen-test-cases` |
-| `sitemap.json` missing (UI tests) | Abort with prompt to run `/gen-sitemap` |
-| `Element: sitemap-missing` in test cases | Use Fact Table DOM structure to infer locators (no abort) |
-| eval-test-cases Step Actionability < 20 | Abort with prompt to fix `test-cases.md` first |
-| `task validate-specs` returns errors (exit 1) | Block task, report all errors, do not proceed |
-| `task validate-specs` returns script failure (exit 2) | Check prerequisites, continue if degraded |
-| TypeScript compilation fails post-generation | Fix generated code, re-run `tsc --noEmit` |
-| No spec files generated (all empty groups) | Abort with clear diagnostic message |
-| Source files not found for Fact Table | Mark as `UNKNOWN`, do not fabricate values |
-| `helpers.ts` exists but missing needed exports | Merge missing exports from template into existing file |
-
-## Related Skills
-
-| Skill             | Usage                                   |
-| ----------------- | --------------------------------------- |
-| `/gen-test-cases` | Generate test cases from PRD            |
-| `/gen-sitemap`    | Generate and maintain sitemap.json      |
-| `/run-e2e-tests`  | Execute test scripts and report results |
+See `rules/quality-gates.md` for the complete error handling table covering Convention, Contract, Fact Table, compile gate, and template resolution failures.

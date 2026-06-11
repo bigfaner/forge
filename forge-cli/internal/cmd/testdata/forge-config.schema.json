@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "forge-config",
+  "title": "Forge Project Configuration",
+  "description": "Schema for .forge/config.yaml — project-level declarative config for Forge language detection and auto-behavior settings",
+  "type": "object",
+  "properties": {
+    "project-type": {
+      "type": "string",
+      "description": "Project type for scope resolution.",
+      "enum": ["fullstack", "mobile", "library", "mixed"]
+    },
+    "surfaces": {
+      "description": "Surface type mapping. Scalar form (e.g., 'api') for single-module projects; map form (e.g., {frontend: web, backend: api}) for multi-module projects. Omit to use forge init auto-detection.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["web", "mobile", "api", "cli", "tui"]
+        },
+        {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["web", "mobile", "api", "cli", "tui"]
+          }
+        }
+      ]
+    },
+    "languages": {
+      "type": "array",
+      "description": "Override auto-detected languages. Omit to use auto-detection from project file signals (go.mod, package.json, etc.).",
+      "items": {
+        "type": "string",
+        "enum": [
+          "go",
+          "javascript",
+          "mobile",
+          "java",
+          "rust",
+          "python"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "test-framework": {
+      "type": "string",
+      "description": "Override the test framework used for code generation. Built-in frameworks: go-testing, pytest, mocha, junit5, rust-test, maestro. Omit to use the default framework for the detected language. Any string value is accepted — custom frameworks are fully supported."
+    },
+    "auto": {
+      "type": "object",
+      "description": "Auto-behavior configuration for Forge pipeline. Each mode-scoped field has quick/full sub-keys. Omit the entire block for backward-compatible defaults.",
+      "properties": {
+        "test": {
+          "type": "object",
+          "description": "Whether e2e test tasks are generated for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Generate e2e test tasks (T-quick-1~4) in quick mode.",
+              "default": true
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Generate e2e test tasks (T-test-1~4.5) in full mode.",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "consolidateSpecs": {
+          "type": "object",
+          "description": "Whether spec-consolidation tasks are generated for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Generate spec sync task (T-quick-specs-1) in quick mode.",
+              "default": true
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Generate spec sync task (T-specs-1) in full mode.",
+              "default": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "cleanCode": {
+          "type": "object",
+          "description": "Whether code-cleanup tasks are generated for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Generate code cleanup task (T-clean-code-1) in quick mode.",
+              "default": false
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Generate code cleanup task (T-clean-code-1) in full mode.",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "knowledgeSave": {
+          "type": "object",
+          "description": "Whether auto knowledge extraction saves silently for each pipeline mode.",
+          "properties": {
+            "quick": {
+              "type": "boolean",
+              "description": "Auto-save extracted knowledge in quick mode (no confirmation dialog).",
+              "default": true
+            },
+            "full": {
+              "type": "boolean",
+              "description": "Auto-save extracted knowledge in full mode (no confirmation dialog).",
+              "default": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "gitPush": {
+          "type": "boolean",
+          "description": "Automatically push to remote after all-completed hook passes.",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "worktree": {
+      "type": "object",
+      "description": "Worktree creation configuration. Omit the entire block for default behavior (create from HEAD, no file copying).",
+      "properties": {
+        "source-branch": {
+          "type": "string",
+          "description": "Default source branch for worktree creation. Used when no --source-branch flag is provided."
+        },
+        "includes": {
+          "type": "array",
+          "description": "List of files to include from project root to worktree after creation. Must be relative paths within the project root.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "required": []
+}

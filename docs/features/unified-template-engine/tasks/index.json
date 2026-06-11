@@ -1,0 +1,189 @@
+{
+  "feature": "unified-template-engine",
+  "proposal": "docs/proposals/unified-template-engine/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-prompt-render-engine": {
+      "id": "1",
+      "title": "定义 promptTemplateData 并迁移 renderTemplate 到 text/template",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-prompt-render-engine.md",
+      "record": "records/1-prompt-render-engine.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "2-prompt-template-migration": {
+      "id": "2",
+      "title": "迁移 21 个 prompt 模板占位符语法并添加条件块",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-prompt-template-migration.md",
+      "record": "records/2-prompt-template-migration.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "3-clean-template-output": {
+      "id": "3",
+      "title": "简化 cleanTemplateOutput 并添加模板校验",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-clean-template-output.md",
+      "record": "records/3-clean-template-output.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "low"
+    },
+    "4-task-creation-template": {
+      "id": "4",
+      "title": "迁移 pkg/template 任务创建层到 text/template",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "4-task-creation-template.md",
+      "record": "records/4-task-creation-template.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "5-autogen-render-engine": {
+      "id": "5",
+      "title": "迁移 pkg/task/autogen 渲染引擎并清理 scope",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "fix-1"
+      ],
+      "status": "completed",
+      "file": "5-autogen-render-engine.md",
+      "record": "records/5-autogen-render-engine.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "6-surface-hard-constraint": {
+      "id": "6",
+      "title": "Surface 硬性约束与 forge init 集成",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-surface-hard-constraint.md",
+      "record": "records/6-surface-hard-constraint.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "7-metadata-frontmatter": {
+      "id": "7",
+      "title": "统一模板 metadata frontmatter",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "7-metadata-frontmatter.md",
+      "record": "records/7-metadata-frontmatter.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "8-directory-reorganization": {
+      "id": "8",
+      "title": "目录重组：合并、拆分、重命名",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "7"
+      ],
+      "status": "completed",
+      "file": "8-directory-reorganization.md",
+      "record": "records/8-directory-reorganization.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "9-scope-concept-cleanup": {
+      "id": "9",
+      "title": "Skill/Command/Agent 概念对齐与 scope 清理",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "8"
+      ],
+      "status": "completed",
+      "file": "9-scope-concept-cleanup.md",
+      "record": "records/9-scope-concept-cleanup.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "low"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: task 5 leftover Scope references in tests",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "5",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

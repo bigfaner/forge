@@ -1,0 +1,290 @@
+---
+name: auto-task-main-instructions
+status: Approved
+created: 2026-05-22
+updated: 2026-05-23
+---
+
+# Proposal: Auto-Generated Task Body Content
+
+## Problem
+
+CLI auto-generated tasks (T-test-*, T-validate-*, T-clean-code, T-specs-*, T-eval-doc) produced by `GenerateTestTaskMD()` have useless body content. The prompt templates (`forge prompt get-by-task-id`) already provide complete workflow guidance, but their Step 1 instructs agents to "Read the task file to understand X." The task file then says either "Execute this test pipeline task." or "Read docs/conventions/testing-*.md" — providing zero value.
+
+The task file body is the only per-instance artifact that can carry feature-specific context. Prompt templates are shared across all features and cannot carry instance data. When the body is empty, agents either:
+- Do unfocused full-project exploration (drift task: 4+ hours)
+- Skip validation entirely (no criteria to validate against)
+- Make up inputs from guesses instead of feature context
+
+## Analysis: Information Availability Per Task Type
+
+| Task Type | Agent Expects from Task File | Available at Planning Time? | Skill Self-Discovery? | Strategy |
+|-----------|---------------------------|:---:|:---:|----------|
+| test.gen-cases | "what test cases to generate" | Partial (scope, interfaces) | ✅ Skill reads PRD | A: Feature context |
+| test.eval-cases | "what test cases to evaluate" | ❌ (upstream output) | ✅ Skill reads cases | A: Feature context |
+| test.gen-scripts | "what test scripts to generate" | ❌ (upstream output) | ✅ Skill reads cases | A: Feature context |
+| test.gen-and-run | Same as gen-scripts + run | ❌ | ✅ | A: Feature context |
+| test.run | "what tests to run" | ❌ (upstream output) | ✅ Skill finds scripts | A: Feature context |
+| test.graduate | "what tests to graduate" | ❌ (upstream output) | ✅ Skill finds scripts | A: Feature context |
+| test.verify-regression | "what regression suite" | ❌ (upstream output) | ✅ `just test-e2e` | A: Feature context |
+| validation.code | **"validation criteria in task file"** | ✅ PRD AC extractable | ❌ Agent validates | B: Static + discovery |
+| validation.ux | **"validation criteria in task file"** | ✅ PRD AC extractable | ❌ Agent validates | B: Static + discovery |
+| doc.eval | **"list of documents to evaluate"** | Partial (new docs unknown) | Partial (can scan dirs) | C: Discovery strategy |
+| doc.consolidate | "what specs to consolidate" | Partial (scope known) | ✅ Skill scans feature | C: Discovery strategy |
+| doc.drift | "what specs to check" | ❌ (code paths unknown) | ✅ But needs focus | C: Discovery strategy |
+| code-quality.simplify | "what code to clean up" | ❌ (changed files unknown) | ✅ Skill uses git diff | C: Discovery strategy |
+
+## Solution
+
+Three strategies based on information availability:
+
+- **Strategy A** (Feature context): Planning-time data only (slug, scope, interfaces). Skill discovers inputs at runtime.
+- **Strategy B** (Static + discovery): Pre-fill from PRD where possible (acceptance criteria). Add discovery pointers for supplementary info.
+- **Strategy C** (Discovery strategy): All inputs are runtime-only. Template provides the discovery method, not the data.
+
+### BodyContext
+
+Carries planning-time data from `BuildIndex()` to template rendering:
+
+```go
+type BodyContext struct {
+    FeatureSlug        string
+    Mode               string        // "quick" or "breakdown"
+    Scope              []string      // In-scope items from proposal/PRD
+    SuccessCriteria    []string      // Success criteria from proposal/PRD
+    AcceptanceCriteria []string      // PRD acceptance criteria (extracted at planning time)
+    ProjectType        string        // From .forge/config.yaml
+    Interfaces         []string      // Test interfaces from config
+}
+```
+
+### Placeholder Substitution
+
+| Placeholder | Source | When Empty |
+|-------------|--------|-----------|
+| `{{FEATURE_SLUG}}` | BodyContext.FeatureSlug | Never empty (required) |
+| `{{MODE}}` | BodyContext.Mode | Omit mode line |
+| `{{SCOPE}}` | BodyContext.Scope | Omit scope section |
+| `{{INTERFACES}}` | BodyContext.Interfaces | "See .forge/config.yaml" |
+| `{{TEST_TYPE}}` | AutoGenTaskDef.TestType | Omit type line |
+| `{{ACCEPTANCE_CRITERIA}}` | BodyContext.AcceptanceCriteria | "- [ ] All acceptance criteria met" |
+
+### Template Files
+
+#### Strategy A: Feature Context (8 task types)
+
+`test-gen-cases.md`:
+```markdown
+Generate structured test cases for the {{FEATURE_SLUG}} feature ({{MODE}} mode).
+
+## Feature Context
+- Scope: {{SCOPE}}
+- Test interfaces: {{INTERFACES}}
+
+Read the PRD/proposal to extract acceptance criteria and generate test cases with full traceability.
+```
+
+`test-eval-cases.md`:
+```markdown
+Evaluate generated test cases for executability for the {{FEATURE_SLUG}} feature.
+
+## Feature Context
+- Scope: {{SCOPE}}
+
+Verify each test case has clear steps, expected results, and can drive script generation.
+The test cases were generated by the previous task — read them from the testing directory.
+```
+
+`test-gen-scripts.md`:
+```markdown
+Generate executable test scripts for the {{FEATURE_SLUG}} feature.
+Test type: {{TEST_TYPE}}.
+
+Read the approved test cases and generate scripts using the framework from the active test profile.
+```
+
+`test-gen-and-run.md`:
+```markdown
+Generate and run test scripts for the {{FEATURE_SLUG}} feature.
+Test type: {{TEST_TYPE}}.
+
+Phase 1: Read approved test cases and generate scripts.
+Phase 2: Execute scripts and verify results. Fix failures and re-run (max 3 attempts).
+```
+
+`test-run.md`:
+```markdown
+Execute staged e2e test scripts for the {{FEATURE_SLUG}} feature.
+
+## Feature Context
+- Scope: {{SCOPE}}
+
+Run all staged test scripts. If tests fail, identify root cause, apply minimal fix, and re-run.
+```
+
+`test-graduate.md`:
+```markdown
+Promote feature test scripts to the project regression suite for the {{FEATURE_SLUG}} feature.
+
+Read scripts from the staging directory. Analyze content, decide target directory, and migrate files.
+```
+
+`test-verify-regression.md`:
+```markdown
+Run full e2e regression suite to verify no regressions after the {{FEATURE_SLUG}} feature.
+
+## Feature Context
+- Scope: {{SCOPE}}
+
+Use `just test-e2e` to run the promoted regression suite.
+If failures occur, fix source code or test selectors — do NOT start dev server manually.
+```
+
+`test-eval-cases.md`:
+```markdown
+Evaluate generated test cases for executability for the {{FEATURE_SLUG}} feature.
+
+## Feature Context
+- Scope: {{SCOPE}}
+
+Verify each test case has clear steps, expected results, and can drive script generation.
+The test cases were generated by the previous task — read them from the testing directory.
+```
+
+#### Strategy B: Static + Discovery (2 task types)
+
+`validation-code.md`:
+```markdown
+Validate code quality for the {{FEATURE_SLUG}} feature.
+
+## Validation Criteria
+{{ACCEPTANCE_CRITERIA}}
+
+## Additional Checks
+- Check docs/conventions/ for project-specific quality standards (read each file's `domains` frontmatter to determine relevance)
+- Run the quality gate: just compile → just fmt → just lint → just test
+```
+
+`validation-ux.md`:
+```markdown
+Validate user experience for the {{FEATURE_SLUG}} feature.
+
+## Validation Criteria
+{{ACCEPTANCE_CRITERIA}}
+
+## Additional Checks
+- Read the UI design spec (if exists) at docs/features/{{FEATURE_SLUG}}/design/ui-design.md
+- Check docs/conventions/ for UX-related standards
+- Verify accessibility, usability, and consistency against design specs
+```
+
+#### Strategy C: Discovery Strategy (4 task types)
+
+`doc-eval.md`:
+```markdown
+Evaluate documentation quality for the {{FEATURE_SLUG}} feature ({{MODE}} mode).
+
+## Discovery Strategy
+Scan these directories for ALL documents created or modified by this feature:
+- docs/features/{{FEATURE_SLUG}}/ (prd/, design/, testing/, and any subdirectories)
+- docs/proposals/{{FEATURE_SLUG}}/
+
+New documents may have been created by business tasks — list everything found.
+
+Score each document using the 8-dimension rubric (1000-point scale).
+```
+
+`doc-consolidate.md`:
+```markdown
+Extract and consolidate business rules and tech specs from the {{FEATURE_SLUG}} feature.
+
+## Feature Context
+- Scope: {{SCOPE}}
+
+## Discovery Strategy
+1. Scan docs/features/{{FEATURE_SLUG}}/ for all feature documents (PRD, design, task records)
+2. Scan docs/proposals/{{FEATURE_SLUG}}/ for proposal
+3. Extract rules and specs from discovered documents
+4. Compare against existing specs in docs/business-rules/ and docs/conventions/
+
+Run in non-interactive mode: auto-integrate all CROSS items. Commit with [auto-specs] tag.
+```
+
+`doc-drift.md`:
+```markdown
+Detect spec drift between existing project specs and current code for the {{FEATURE_SLUG}} feature.
+
+## Discovery Strategy
+1. Run `git diff --name-only main...HEAD` to identify files changed by this feature
+2. List all spec files in docs/business-rules/ and docs/conventions/
+3. For each spec file, read its `domains` frontmatter
+4. Only verify specs whose domains overlap with the changed files
+5. Skip specs with no overlap — they are unaffected by this feature
+
+Do NOT scan all spec files blindly. Use git diff to narrow scope first.
+If git diff returns no changes, skip — nothing to drift against.
+
+Auto-fix drifted specs and commit with [auto-specs] tag.
+```
+
+`code-quality-simplify.md`:
+```markdown
+Simplify and clean up code for the {{FEATURE_SLUG}} feature.
+
+## Discovery Strategy
+1. Run `git diff --name-only main...HEAD` to identify files changed by this feature
+2. Focus cleanup on changed files only
+3. The skill resolves scope: git diff > feature context > user-specified paths
+
+Do NOT clean up files outside this feature's scope.
+```
+
+## Implementation Steps
+
+1. **Update** the 13 embed template files in `forge-cli/pkg/task/data/` with the content above
+2. **Add** `BodyContext` struct to `autogen.go`
+3. **Add** `renderBody(templateContent string, def AutoGenTaskDef, ctx BodyContext) string`
+4. **Update** `GenerateTestTaskMD()` signature: `(def AutoGenTaskDef, ctx BodyContext) ([]byte, error)`
+5. **Update** `BuildIndex()` to populate `BodyContext` and pass through
+6. **Remove** `EXISTING_SPEC_FILES`, `AFFECTED_CODE_PATHS`, `FeatureDocDirs` from BodyContext (no longer needed — discovery strategies replace them)
+7. **Update** tests
+
+### Changes to BuildIndex()
+
+Populate `BodyContext` with planning-time data only:
+1. `FeatureSlug` + `Mode` — already known
+2. `Scope` — from proposal/PRD "## Scope > ### In Scope" section
+3. `SuccessCriteria` — from proposal/PRD "## Success Criteria" section
+4. `AcceptanceCriteria` — from PRD "## Acceptance Criteria" section (breakdown mode)
+5. `Interfaces` — from `.forge/config.yaml`
+
+NO directory scanning, NO spec file listing, NO code path derivation — those are runtime discovery.
+
+### Changes to GenerateTestTaskMD()
+
+Body generation:
+1. Look up template via `autogenTypeToFile[def.Type]`
+2. Read from `autogenTemplateFS`
+3. Call `renderBody()` — substitute `{{PLACEHOLDER}}` with BodyContext fields
+4. Append TestType note if present
+5. Append StrategyContent if present (legacy)
+
+## Risks
+
+| Risk | Mitigation |
+|------|-----------|
+| PRD/proposal not found at generation time | BodyContext fields default to empty; renderBody() omits sections with empty placeholders |
+| Acceptance criteria extraction fails | Fall back to empty; agent uses generic "all criteria met" |
+| Discovery strategy in template not followed by agent | Discovery strategies are explicit step-by-step instructions, not vague pointers |
+| Template content too long → wastes context | Templates are concise (5-15 lines). Much less than prompt templates. |
+
+## Success Criteria
+
+- [ ] 13 embed template files use correct strategy per type (A/B/C)
+- [ ] No workflow duplication between task body and prompt templates
+- [ ] Strategy A tasks: feature slug + scope + interfaces injected
+- [ ] Strategy B tasks: PRD acceptance criteria pre-filled as validation checklist
+- [ ] Strategy C tasks: step-by-step discovery strategies (git diff, directory scan)
+- [ ] Drift task: git diff + domain matching strategy prevents full-project scan
+- [ ] Existing tests pass (backward compatible frontmatter)
+- [ ] New tests verify body content per strategy type

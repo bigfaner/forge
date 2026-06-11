@@ -1,0 +1,100 @@
+{
+  "feature": "skill-ecosystem-audit",
+  "proposal": "docs/proposals/skill-ecosystem-audit/proposal.md",
+  "created": "2026-05-17",
+  "tasks": {
+    "1-fix-allowed-tools": {
+      "id": "1",
+      "title": "Fix allowed-tools field name and format across all skills/commands",
+      "priority": "P0",
+      "estimatedTime": "45m",
+      "status": "completed",
+      "file": "1-fix-allowed-tools.md",
+      "record": "records/1-fix-allowed-tools.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "2-fix-argument-effort-frontmatter": {
+      "id": "2",
+      "title": "Fix argument-hints and add missing argument-hint + arguments + effort",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-fix-argument-effort-frontmatter.md",
+      "record": "records/2-fix-argument-effort-frontmatter.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "3-fix-forensic-stale-refs": {
+      "id": "3",
+      "title": "Fix forensic hardcoded paths and stale record-task reference",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "3-fix-forensic-stale-refs.md",
+      "record": "records/3-fix-forensic-stale-refs.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "4-fix-template-paths-remove-dead-code": {
+      "id": "4",
+      "title": "Fix 5 template path references and remove Playwright dead code",
+      "priority": "P0",
+      "estimatedTime": "45m",
+      "status": "completed",
+      "file": "4-fix-template-paths-remove-dead-code.md",
+      "record": "records/4-fix-template-paths-remove-dead-code.md",
+      "scope": "all",
+      "type": "cleanup"
+    },
+    "5-dedup-tasks-logic": {
+      "id": "5",
+      "title": "Extract shared logic from breakdown-tasks ↔ quick-tasks",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "5-dedup-tasks-logic.md",
+      "record": "records/5-dedup-tasks-logic.md",
+      "scope": "all",
+      "type": "refactor"
+    },
+    "6-extract-eval-pipeline": {
+      "id": "6",
+      "title": "Extract eval validate-ux sub-pipeline to rubric file",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "6-extract-eval-pipeline.md",
+      "record": "records/6-extract-eval-pipeline.md",
+      "scope": "all",
+      "type": "refactor"
+    },
+    "7-fix-scope-heuristic": {
+      "id": "7",
+      "title": "Fix breakdown-tasks scope heuristic for backend projects",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "7-fix-scope-heuristic.md",
+      "record": "records/7-fix-scope-heuristic.md",
+      "scope": "all",
+      "type": "enhancement"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

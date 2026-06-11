@@ -1,0 +1,229 @@
+{
+  "feature": "v3-release-audit",
+  "proposal": "docs/proposals/v3-release-audit/proposal.md",
+  "created": "2026-05-24",
+  "tasks": {
+    "1-split-gen-test-scripts-skill": {
+      "id": "1",
+      "title": "Split gen-test-scripts SKILL.md (527→≤350 lines)",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-split-gen-test-scripts-skill.md",
+      "record": "records/1-split-gen-test-scripts-skill.md",
+      "type": "doc"
+    },
+    "10-update-pipeline-docs": {
+      "id": "10",
+      "title": "Update pipeline descriptions in guide.md and forge-distribution.md",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "10-update-pipeline-docs.md",
+      "record": "records/10-update-pipeline-docs.md",
+      "type": "doc"
+    },
+    "11-add-subsystem-summaries": {
+      "id": "11",
+      "title": "Add 9 subsystem overviews to ARCHITECTURE.md",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "11-add-subsystem-summaries.md",
+      "record": "records/11-add-subsystem-summaries.md",
+      "type": "doc"
+    },
+    "12-template-consistency": {
+      "id": "12",
+      "title": "Fix template variable naming and frontmatter consistency",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "12-template-consistency.md",
+      "record": "records/12-template-consistency.md",
+      "type": "doc"
+    },
+    "13-hook-and-misc-fixes": {
+      "id": "13",
+      "title": "Hook Unix parameter validation and misc file relocations",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "13-hook-and-misc-fixes.md",
+      "record": "records/13-hook-and-misc-fixes.md",
+      "type": "doc"
+    },
+    "14-spec-extraction-and-fixes": {
+      "id": "14",
+      "title": "Consolidate-specs extraction, UTF-8 handling, and CLI test path updates",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "14-spec-extraction-and-fixes.md",
+      "record": "records/14-spec-extraction-and-fixes.md",
+      "type": "doc"
+    },
+    "15-readme-v3-features": {
+      "id": "15",
+      "title": "Add v3.0.0 new features section to README",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "15-readme-v3-features.md",
+      "record": "records/15-readme-v3-features.md",
+      "type": "doc"
+    },
+    "2-split-eval-skill": {
+      "id": "2",
+      "title": "Split eval SKILL.md (488→≤350 lines)",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "2-split-eval-skill.md",
+      "record": "records/2-split-eval-skill.md",
+      "type": "doc"
+    },
+    "3-remove-harness-prerequisite": {
+      "id": "3",
+      "title": "Remove harness rubric type from Prerequisites tables",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-remove-harness-prerequisite.md",
+      "record": "records/3-remove-harness-prerequisite.md",
+      "type": "doc"
+    },
+    "4-fix-architecture-md": {
+      "id": "4",
+      "title": "Fix ARCHITECTURE.md factual errors",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "4-fix-architecture-md.md",
+      "record": "records/4-fix-architecture-md.md",
+      "type": "doc"
+    },
+    "5-fix-cli-references": {
+      "id": "5",
+      "title": "Fix broken CLI cross-references (5 locations)",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "5-fix-cli-references.md",
+      "record": "records/5-fix-cli-references.md",
+      "type": "doc"
+    },
+    "6-rewrite-readme": {
+      "id": "6",
+      "title": "Full README.md rewrite for v3.0.0",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-rewrite-readme.md",
+      "record": "records/6-rewrite-readme.md",
+      "type": "doc"
+    },
+    "7-complete-cli-flags": {
+      "id": "7",
+      "title": "Complete CLI flags documentation (8 missing)",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "7-complete-cli-flags.md",
+      "record": "records/7-complete-cli-flags.md",
+      "type": "doc"
+    },
+    "8-fix-paths-and-orphans": {
+      "id": "8",
+      "title": "Fix cross-skill path violations and orphan rules",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "8-fix-paths-and-orphans.md",
+      "record": "records/8-fix-paths-and-orphans.md",
+      "type": "doc"
+    },
+    "9-dead-code-cleanup": {
+      "id": "9",
+      "title": "Dead code cleanup (example files and templates)",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "9-dead-code-cleanup.md",
+      "record": "records/9-dead-code-cleanup.md",
+      "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "9"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "phase": 1,
+    "name": "Pipeline Unification",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 1,
+        "description": "≥2 existing projects (1 CLI + 1 API, each with ≥3 PRD User Stories) run full pipeline (gen-journeys → eval-journey → gen-contracts → eval-contract → gen-test-scripts → run-tests) without errors, generated test code all executable"
+      }
+    ]
+  },
+  {
+    "phase": 2,
+    "name": "Depth Enhancement",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 2,
+        "description": "High-risk Journey test count ≥ low-risk × 1.5, boundary Outcome invalid rate < 20%"
+      }
+    ]
+  },
+  {
+    "phase": 3,
+    "name": "Extensibility",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 3,
+        "description": "New conventions generate ≥3 executable tests on real projects"
+      }
+    ]
+  }
+]

@@ -8,385 +8,219 @@ description: Use when the technical design is finalized to break down into execu
 Break a technical design into executable tasks (1-4h each, clear dependencies, testable acceptance criteria).
 
 ## Prerequisites
-
-**Conditional Tags**: `<HAS_UI>`, `<NO_UI>`, `<UI_ONLY>`, `<HAS_PLACEMENT>`, `<RULE>` are inclusion markers.
-- If `ui/ui-design.md` exists → include `<HAS_UI>` and `<UI_ONLY>` blocks, exclude `<NO_UI>` blocks.
-- If `ui/ui-design.md` does NOT exist → include `<NO_UI>` blocks, exclude `<HAS_UI>`/`<UI_ONLY>` blocks.
-- If `prd/prd-ui-functions.md` exists → include `<HAS_PLACEMENT>` and `<RULE>` blocks (independent of ui-design.md). `<RULE>` has no independent activation — it is always co-activated with `<HAS_PLACEMENT>`.
-- If `prd/prd-ui-functions.md` does NOT exist → exclude `<HAS_PLACEMENT>` and `<RULE>` blocks.
-- If `design/er-diagram.md` exists → include `<HAS_DB>` blocks.
-- If `design/er-diagram.md` does NOT exist → exclude `<HAS_DB>` blocks.
-
 | Artifact                | Missing? Run                    |
 | ----------------------- | ------------------------------- |
 | `prd/prd-spec.md`       | `/write-prd`                    |
 | `design/tech-design.md` | `/tech-design` |
 
+## Condition-Rule Matrix
+
+Evaluate each row independently. Load ONLY if condition is true. Rule files are additive — skeleton is complete without any.
+
+| Rule File | Load Condition | Steps |
+|-----------|---------------|-------|
+| `rules/phase-detection.md` | PRD contains phase/gate structure | 2, 3 |
+| `rules/ui-placement.md` | `ui/ui-design.md` OR `prd/prd-ui-functions.md` exists | 1, 2, 3, 4a |
+| `rules/db-schema.md` | `design/er-diagram.md` exists | 2, 4a |
+| `rules/existing-code-split.md` | Tech-design modifies existing shared code | 4a |
+| *(surface resolution built into Step 4a)* | Always | 4a |
+
+Read applicable files via `rules/<filename>`.
+
+## Docs-Only Fast Path
+
+When all tasks are `type: "doc"` (non-compilable, non-runnable output only), skip Step 0. Step 5 is always mandatory. Detection: Step 1 scans artifacts → every element targets non-compilable files → docs-only.
+
+## Step 0: Resolve Language
+
+Discover via `docs/conventions/testing/index.md` (preferred) or scan existing source/test files. On failure: ask user.
+
+<HARD-RULE>
+Do NOT silently default to any language. Do NOT use `domains` frontmatter filtering — use index.md-based discovery.
+</HARD-RULE>
+
 ## Step 1: Read All Documents
+Feature-relative paths below resolve from `docs/features/<slug>/`. Read `manifest.md`, then all available: `prd/prd-spec.md`, `design/tech-design.md`, `design/api-handbook.md` (if exists), `design/er-diagram.md` (if exists), `design/schema.sql` (if exists), `prd/prd-user-stories.md` (if exists), `prd/prd-ui-functions.md` (if exists), `ui/ui-design.md` (if exists).
 
-Read `manifest.md` to locate documents, then read all available files:
-
-- `prd/prd-spec.md` — WHAT to build
-- `design/tech-design.md` — HOW to build it
-- `design/api-handbook.md` — interfaces (if exists)
-- `design/er-diagram.md` — entity relationships (if exists)
-- `design/schema.sql` — SQL DDL (if exists)
-- `prd/prd-user-stories.md` — user scenarios with Given/When/Then AC (if exists)
-- `prd/prd-ui-functions.md` — UI function requirements (if exists)
-- `ui/ui-design.md` — UI component specs (if exists)
-
-<HAS_UI>
-If `ui/ui-design.md` exists, also list `ui/prototype/` files and read `ui/prototype/index.html` for page inventory (skip if no prototype directory).
-</HAS_UI>
-
-<HAS_PLACEMENT>
-**Placement validation** (mandatory):
-1. Read the Page Composition table from `prd/prd-ui-functions.md`
-2. Check if `docs/sitemap/sitemap.json` exists. If not → WARN: `"sitemap.json not found — cannot verify existing-page routes. Run /gen-sitemap for full validation."` and proceed without route verification (skip step 3).
-3. For each `existing-page:<route>` entry, verify the route exists in `docs/sitemap/sitemap.json`
-4. If route not found in sitemap → ERROR: abort with message `"Route <route> not found in sitemap.json. Run /gen-sitemap first or verify the route is correct."`
-5. If no Placement sections found in any UI Function → ERROR: `"Missing Placement declarations. All UI Functions must have a Placement section. Edit prd/prd-ui-functions.md to add Placement sections, or re-run /write-prd."`
-</HAS_PLACEMENT>
+IF `rules/ui-placement.md` loaded, apply its UI Prototype Reading and Placement Validation. IF `rules/phase-detection.md` loaded, apply its phase detection.
 
 ## Step 2: Map → Tasks
 
 ### Element Mapping
+| Design Element | Source | Task Type |
+| --- | --- | --- |
+| Interface definition | tech-design.md | Interface task |
+| Data model | tech-design.md | Model task |
+| Backend component | tech-design.md | Implementation (Backend) |
+| Error type | tech-design.md | Error handling task |
+| PRD flow gate (diamond node) | prd-spec.md | Gate verification task |
 
-| Design Element               | Source         | Task Type                |
-| ---------------------------- | -------------- | ------------------------ |
-| Interface definition         | tech-design.md | Interface task           |
-| Data model                   | tech-design.md | Model task               |
-| DB schema (er-diagram + schema.sql) | design/er-diagram.md, design/schema.sql | Schema task |
-| Backend component            | tech-design.md | Implementation (Backend) |
-| Error type                   | tech-design.md | Error handling task      |
-| PRD flow gate (diamond node) | prd-spec.md    | Gate verification task   |
-
-<UI_ONLY>
-| UI Component (Layout + States + Interactions + Binding) | ui/ui-design.md | Implementation (UI) |
-| Integration Spec (existing-page) | tech-design.md | Integration (UI) |
-| Page composition (new-page) | prd-ui-functions.md Page Composition | Page Assembly task |
-</UI_ONLY>
-
-<HAS_PLACEMENT>
-<RULE>
-UI Task Split Rules — driven by PRD Placement:
-
-1. For each UI Function with `placement: new-page`:
-   - Create one "Build Component" task per component (existing behavior)
-   - Create one "Page Assembly" task: create page file, register route, compose all components
-   - Build tasks depend on interfaces + models
-   - Page Assembly depends on all Build tasks for its page
-
-2. For each UI Function with `placement: existing-page:<route>`:
-   - Create one "Build Component" task (component implementation + unit tests)
-   - Create one "Integrate Component" task (wire component into existing page)
-   - Build task depends on interfaces + models
-   - Integrate task depends on Build task
-   - Integrate task's acceptance criteria MUST reference:
-     a. Target page file from tech-design Integration Spec
-     b. Insertion point from tech-design Integration Spec
-     c. Component visible at correct position (verifiable by e2e)
-
-3. For mixed scenarios (some new-page, some existing-page):
-   - Apply rules 1 and 2 independently per UI Function
-
-4. NO fallback to one-to-one rule. Every UI component MUST have explicit Placement.
-</RULE>
-
-**Placement format note**: The PRD template stores Placement as two separate fields (`Mode: new-page | existing-page` and `Target Page: <page route or name>`). Downstream consumers (including the rules above) use the combined canonical form: `<mode>:<target-page-value>`. For example, if Mode is `existing-page` and Target Page is `/dashboard`, the canonical placement is `existing-page:/dashboard`. If Mode is `new-page` and Target Page is `Analytics`, the canonical placement is `new-page:Analytics`.
-</HAS_PLACEMENT>
+IF `rules/ui-placement.md` loaded, add its UI mapping rows. IF `rules/db-schema.md` loaded, add: `DB schema (er-diagram + schema.sql) | design/er-diagram.md, design/schema.sql | Schema task`.
 
 ### PRD Coverage Verification
-
-Read the **PRD Coverage Map** from `tech-design.md`. Every PRD acceptance criterion must map to at least one task. UI-facing requirements → UI tasks, not generic Implementation.
-
-Fallback: if Coverage Map is incomplete, use `prd/prd-user-stories.md` acceptance criteria directly.
+Read **PRD Coverage Map** from `tech-design.md`. Every AC maps to >=1 task. Fallback: `prd/prd-user-stories.md` AC directly.
 
 ### Phase & Gate Detection
-
-Analyze the PRD and tech-design to identify the feature's natural execution phases and quality gates. This drives the phase structure in Step 3 and gate tasks in Step 4d.
-
-**Explicit detection** (highest priority):
-
-- Flow diagrams with diamond decision nodes (quality gates, phase transitions)
-- PRD sections explicitly named "Round 1/2", "Phase 1/2", "Stage 1/2"
-
-**Heuristic detection** (when no explicit structure is defined):
-Scan `prd/prd-spec.md` and `design/tech-design.md` for these patterns:
-
-- Sequential markers: "Round 1/2/3", "Phase/Stage 1/2/3", "第X阶段/轮", "Step 1/2/3", "第一轮/第二轮"
-- Conditional transitions: "after X passes", "once X is verified", "X通过后", "确认X后再进行"
-- Go/no-go checkpoints: "verify all tests pass", "confirm X before proceeding", "全部通过"
-- Gated prose: "第一阶段...第二阶段...", "first pass...second pass...", "先X再Y"
-
-**Fallback** (no phases detected): The skill will use artifact-driven decomposition in Step 3.
-
-Collect results into a **Phase Inventory** and write it to `tasks/phase-inventory.json`:
-
-```json
-[
-  {"phase": 1, "name": "...", "source": "PRD-explicit|PRD-heuristic|design|fallback", "gates": [{"afterPhase": 1, "description": "..."}]},
-  {"phase": 2, "name": "...", "source": "...", "gates": []}
-]
-```
-
-This file persists the planning output for cross-step reference and later review.
+IF `rules/phase-detection.md` loaded, apply three-tier detection, write `tasks/phase-inventory.json`. Else source="fallback" → artifact-driven decomposition in Step 3.
 
 ## Step 3: Derive Phases & Dependencies
 
-Use the Phase Inventory from Step 2 to determine phase structure. Number phases sequentially (1.x, 2.x, ...).
+Number phases sequentially (1.x, 2.x, ...).
+**PRD-defined** (preferred): map explicit/heuristic phases to numbered phases. PRD structure takes priority.
+**Artifact-driven** (fallback): list elements → determine edges → group by dependency depth → number in order.
 
-### PRD-defined phases (preferred)
+IF `rules/ui-placement.md` loaded, apply its UI Dependency Layer rules.
 
-When the Phase Inventory contains PRD-explicit or PRD-heuristic phases, map each to a numbered phase. Within each phase, create tasks from the design elements belonging to that phase's scope. PRD-defined structure always takes priority over fixed templates.
+**Dependencies**: same phase = parallel (unless conflicting). Cross-phase = depend on gate or last task. IF `rules/ui-placement.md` loaded, apply UI dependency principle.
 
-Example: a 4-round cleanup PRD produces phases 1.x–4.x, each containing tasks for that round.
+**Split Rules** (priority order): (1) Independently verifiable standard — separate tasks if outcomes require different verification contexts. (2) Multi-verb detection — split by functional boundary when verbs target different concerns. (3) Operational ceiling — split by file group when modifying >8 files with the same pattern; each sub-task targets ≤8 files.
 
-### Artifact-driven decomposition (fallback)
+<HARD-GATE>
+Maximum 6 Acceptance Criteria per task. If a task has >6 AC, its scope is too large — split further by functional boundary. No overall task count cap; task volume is bounded by design scope and the AC max rule.
+</HARD-GATE>
 
-When the Phase Inventory source is "fallback", derive phases organically from the design artifacts:
-
-1. List all design elements from the Element Mapping table
-2. Determine dependency edges between elements (what builds on what)
-3. Group into dependency layers — elements at the same depth form one phase
-4. Number phases sequentially in dependency order (foundations first, consumers later)
-
-<HAS_UI>
-UI components form a natural dependency layer after data models and interfaces, but do NOT require backend implementation to be complete (can mock).
-</HAS_UI>
-
-### Dependency principles
-
-- Tasks within the same phase: parallel unless they conflict on shared resources
-- Cross-phase: a task depends on prerequisite phases' outputs
-  - If a gate task exists at the boundary → depend on the gate
-  - If no gate → depend on the prerequisite phase's summary or last task
-    <HAS_UI>
-- UI tasks depend on interfaces + models only (can mock backend; does NOT need the backend implementation phase)
-  </HAS_UI>
-
-### Task granularity
-
-Split each design element into tasks of 1–4 hours, independently testable with clear acceptance criteria. Merge small elements (<1h combined) into one task. Split large elements (>4h) by sub-responsibility.
+**Complexity判定** (at task generation): `low` = AC ≤ 3 AND no Hard Rules AND Reference Files ≤ 1; `high` = AC ≥ 5 OR has Hard Rules; `medium` = everything else. LLM judgment override allowed with reason in Implementation Notes. breakdown-tasks may have finer AC granularity due to tech-design decomposition; LLM override is expected to be more common.
 
 ## Step 4: Create Task Files
 
 <HARD-RULE>
-Read the corresponding template before writing each task type.
-
-**Naming & ID conventions:**
-- Business task: file `<seq>.<sub>-<slug>.md`, ID `<seq>.<sub>`
-- Phase summary: file `<phase>-summary.md`, ID `<phase>.summary`, depends on `["<phase>.x"]`
-- Gate task: file `<phase>-gate.md`, ID `<phase>.gate`, `breaking: true`
-- Standard test: file `<title-slug>.md` (e.g., `gen-test-cases.md`), ID `T-test-<N>`
-
-**Gate attribution:**
-- `N.gate` is phase N's exit verification gate — confirms phase N output is complete and consistent
-- Depends on `N.summary` (e.g., `["1.summary"]`)
-- Next phase's tasks depend on `N.gate` (explicit, not wildcard)
-
-**Sort order within a phase** (alphabetic sub-ID): numeric < `gate` < `summary`
-- e.g., `1.1` < `1.2` < `1.gate` < `1.summary`
-- Execution is dependency-driven; sort order is for display only
-
-**index.json rules:**
-- Paths relative to `tasks/` directory
-- `dependencies` arrays reference task IDs (`"1.1"`), not index keys (`"1.1-interface"`)
-- Wildcard `"<phase>.x"` means "all tasks in phase <phase>" (resolved by task CLI, excludes .summary/.gate/self)
+Read template before writing. Naming: business task `<seq>.<sub>-<slug>.md` ID `<seq>.<sub>`; test task `<title-slug>.md` ID `T-test-<N>`. Stage-gates auto-generated by `forge task index` for phases with >=2 business tasks — do NOT create manually. Business tasks MUST use `<phase>.<sub>` ID format. `dependencies` reference task IDs not index keys. Wildcard `"<phase>.x"` = all tasks in phase (resolved by CLI).
 </HARD-RULE>
 
 ### 4a. Business Tasks
+One task file per design element. Set `breaking: true` if modifying shared interfaces/models/API contracts. Additive Go interface changes are breaking.
 
-Read `templates/task.md` for task content structure. Create one task file per design element from the Element Mapping table, following dependencies from Step 3. For each task, set `breaking: true` if it modifies shared interfaces, data models, or API contracts (e.g., changing a schema column type, renaming a shared field). Additive changes are non-breaking.
+IF `rules/existing-code-split.md` loaded, apply split for shared-code modifications. IF `rules/db-schema.md` loaded, apply schema task rules. IF `rules/ui-placement.md` loaded, apply UI Reference File Requirements.
 
-<HAS_DB>
+### File Scope Boundary
 
-For each entity in `design/er-diagram.md`, create one Schema task:
-- References `design/schema.sql` and `design/er-diagram.md` as input
-- AC: "DDL executes without error", "all FK references resolve", "indexes created"
-- `breaking: true` if it ALTERs an existing table; `breaking: false` if all CREATE TABLE are new
-- Depends on interface tasks (if any) since the migration may need type information
-- scope: "backend"
+For tasks involving multiple files: enumerate exact file names in Implementation Notes (never "all files" or vague terms). When operational ceiling triggers split, add Hard Rule: `仅修改以下文件：<file list>`.
 
-</HAS_DB>
+### Breaking Task Test Impact Assessment
 
-<HAS_UI>
-
-For each UI task, **Reference Files** must include:
-
-1. Matching `ui/ui-design.md` Component section
-2. Corresponding `ui/prototype/<page>.html` (or note "No HTML prototype available")
-3. Data binding table for this component
-4. Relevant `tech-design.md` interfaces
-
-Example:
-
+When `breaking: true`, add to Implementation Notes:
 ```
-- ui/ui-design.md Component "Dashboard" — layout, states, interactions
-- ui/prototype/dashboard.html — interactive prototype
-- design/tech-design.md Interfaces — data contracts
+### Test Impact
+- Affected test suite(s): <test directory paths>
+- Expected fixture changes: <which test fixtures need updating>
+- Risk level: low/medium/high
 ```
+Fix-tasks in the same test directory are merged into one.
 
-For **Integration tasks** (existing-page), Reference Files must include:
+Populate **User Stories** from `prd/prd-user-stories.md` or note "No direct user story mapping."
 
-1. `tech-design.md` Integration Spec section
-2. `ui-design.md` Component Placement section
-3. Target page file path (for file-diff verification)
-4. Any relevant prototype file
+**Hard Rules**: fill `{{HARD_RULES}}` only for critical constraints. Leave empty for normal tasks.
 
-For **Page Assembly tasks** (new-page), Reference Files must include:
-
-1. `prd-ui-functions.md` Page Composition table
-2. `ui-design.md` Components for this page
-3. Route configuration file (for route registration)
-4. Navigation component file (for adding nav links)
-
-</HAS_UI>
-
-For each task, populate the **User Stories** section with matching stories from `prd/prd-user-stories.md`. Include full Given/When/Then acceptance criteria. If no match, note "No direct user story mapping."
-
-### Scope Assignment
-
-For each task, determine the `scope` field for `index.json`:
-
-**Algorithm**: inspect the task's affected file paths (listed in the task's "Files Created/Modified" section derived from the tech-design).
-
-1. Classify each file path:
-   - `frontend`: path starts with `ui/`, `src/`, `components/`, `pages/`, `styles/`, `public/`, or any directory containing `package.json` with no `go.mod`/`Cargo.toml` at the same level
-   - `backend`: path starts with `cmd/`, `internal/`, `pkg/`, `api/`, or any directory containing `go.mod`/`Cargo.toml`/`pyproject.toml` with no `package.json` at the same level
-   - `undetermined`: path does not match either pattern (e.g., `docs/`, root config files, `justfile`)
-
-2. Compute scope:
-   - If ALL paths are `frontend` → `scope: "frontend"`
-   - If ALL paths are `backend` → `scope: "backend"`
-   - Otherwise (mixed paths, `undetermined` paths, or no file paths) → `scope: "all"`
-
-3. Write `scope` into the task entry in `index.json`.
-
-**Non-mixed projects**: when `init-justfile` detects a pure frontend or backend project, all tasks receive `scope: "all"` (scope distinction is irrelevant when `just project-type` does not return `"mixed"`).
-
-**Examples**:
-
-| Task file paths | scope | Reason |
-|----------------|-------|--------|
-| `ui/components/Button.tsx`, `src/styles.css` | `frontend` | All frontend paths |
-| `cmd/server/main.go`, `pkg/handler/api.go` | `backend` | All backend paths |
-| `ui/App.tsx`, `cmd/server/main.go` | `all` | Mixed frontend + backend |
-| `docs/WORKFLOW.md`, `justfile` | `all` | Undetermined paths |
-| Any task in a pure backend project | `all` | Non-mixed project, scope distinction is irrelevant |
-
-### 4b. Phase Summary Tasks
-
-For each phase in the decomposition (from Step 3), insert a phase summary task at the end of that phase. Read `templates/phase-summary-task.md` for task content.
-
-Example for phase 1:
-
-```
-"1.summary": {
-  "id": "1.summary",
-  "title": "Phase 1 Summary",
-  "priority": "P0",
-  "estimatedTime": "15min",
-  "dependencies": ["1.x"],
-  "status": "pending",
-  "file": "1-summary.md",
-  "record": "records/1-summary.md"
-}
-```
-
-### 4c. Gate Tasks
-
-Create a gate for every phase (including the last) when EITHER condition is met:
-
-1. **Cross-layer**: The feature spans multiple layers (detected from the Cross-Layer Data Map or architecture diagram)
-2. **PRD-defined phases**: The Phase Inventory (from Step 2) contains detected quality gates between phases
-
-Read `templates/gate-task.md` for task content. `N.gate` is phase N's exit verification — it confirms phase N's output is complete. It depends on `N.summary`, and the next phase's tasks depend on `N.gate`. The last phase's gate verifies final output before T-test tasks begin.
-
-Example dependency chain:
-
-```
-Phase 1: 1.1, 1.2                 (dependencies: none or earlier phases)
-Phase 1 summary: 1.summary         (dependencies: ["1.x"])
-Phase 1 gate: 1.gate               (dependencies: ["1.summary"])
-Phase 2: 2.1, 2.2                  (dependencies: ["1.gate"])
-Phase 2 summary: 2.summary         (dependencies: ["2.x"])
-Phase 2 gate: 2.gate               (dependencies: ["2.summary"])
-```
-
-### 4d. Standard Test Tasks
-
-Append seven fixed test tasks:
-
-- **T-test-1**: read `templates/gen-test-cases.md`, calls `/gen-sitemap` first (if `sitemap.json` missing) then `/gen-test-cases`, file `gen-test-cases.md`
-- **T-test-1b**: read `templates/eval-test-cases.md`, calls `/eval-test-cases`, depends on T-test-1, file `eval-test-cases.md`
+#### Reference Files Generation
 
 <HARD-RULE>
-**Task properties propagate from template frontmatter to index.json**: When generating `index.json`, copy all boolean flags from the task template's YAML frontmatter (e.g., `breaking`, `noTest`, `mainSession`) directly into the corresponding index.json entry. Do NOT set these flags ad-hoc — they belong in the template.
+1. BEFORE writing Reference Files, Grep `^#{1,4} ` on `docs/features/<slug>/design/tech-design.md` to extract all headers. Only use headers that actually exist. If no match found, omit `(ref: ...)` — never fabricate headers.
+2. First entry MUST be the full tech-design path: `- docs/features/<slug>/design/tech-design.md — <relevant sections>`
 </HARD-RULE>
-- **T-test-2**: read `templates/gen-test-scripts.md`, calls `/gen-test-scripts`, depends on T-test-1b, file `gen-test-scripts.md`
-- **T-test-3**: read `templates/run-e2e-tests.md`, calls `/run-e2e-tests`, depends on T-test-2, file `run-e2e-tests.md`
-- **T-test-4**: read `templates/graduate-tests.md`, calls `/graduate-tests`, depends on T-test-3, file `graduate-tests.md`
-- **T-test-4.5**: read `templates/verify-regression.md`, runs full e2e regression, depends on T-test-4, file `verify-regression.md`
-- **T-test-5**: read `templates/consolidate-specs.md`, calls `/consolidate-specs`, depends on T-test-4.5, file `consolidate-specs.md`
 
-Replace `{{T_TEST_1_DEP}}` with the last phase's gate ID if a gate exists (e.g., `"2.gate"`), otherwise the last phase's summary ID.
+**Inline format**: `- <file-path>: <specific change description> (ref: <actual-design-header>)`. Max 5 inline entries. Each entry 1-2 lines.
 
-**Responsibility chain:**
-- T-test-1: generate test case documentation
-- T-test-1b: evaluate test cases for downstream executability (main session task)
-- T-test-2: generate test scripts from evaluated test cases
-- T-test-3: execute feature e2e tests; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
-- T-test-4: verify e2e passed (check `latest.md`), then graduate scripts to `tests/e2e/`
-- T-test-4.5: run full regression suite; on failure, mark blocked, add fix tasks (P0) with unblock instruction — re-runs after fix
-- T-test-5: extract business rules and tech specs, user reviews and confirms integration
+**Extraction heuristic**: Extract file paths from `## Affected Files` → search tech-design.md for matching sections → extract specific requirements (not just section titles) → merge, deduplicate, keep 2-5 most relevant. Header in `(ref: ...)` MUST match an extracted header.
 
-**Fix-task reference**: Templates are managed by task-cli and embedded in the binary. Auto-generated fix-task IDs follow the `disc-N` format (e.g., `disc-1`, `disc-2`). Agents should run `task template fix-task` to view the template and required variables before creating fix tasks:
+UI tasks use `rules/ui-placement.md` requirements instead — no overlap.
+
+### Surface-Key/Type Inference
+
+Run `forge surfaces` once. Single-surface project → set same key/type on all tasks (scalar surfaces: `surface-key` empty). Multi-surface → path-prefix match per task; ambiguous → call per file. On failure: leave empty, continue. Parsing rule: see Forge Guide → Surface Output Parsing.
+
+### Priority Assignment
+
+P0 = core mechanism or blocks others; P1 = maps to PRD AC or core user flow; P2 = polish/edge cases.
+
+### Type Assignment
+
+| Type | When to assign |
+|------|----------------|
+| `coding.feature` | New runtime behavior, new user-facing capability, or new files |
+| `coding.enhancement` | Improves existing behavior without new capabilities |
+| `coding.cleanup` | Removes dead code, fixes tech debt, improves hygiene |
+| `coding.refactor` | Restructures code without behavior change |
+| `coding.fix` | Auto-generated for test failures; do not assign manually |
+| `doc` | Non-compilable, non-runnable output only (e.g., `.md`, `.yaml`, `.json`, `.sql`, `.toml`, `.graphql`) |
+| `doc.consolidate` | User-created consolidation task (legacy projects) |
+| `doc.drift` | User-created drift audit task |
+
+Fallback: `coding.feature`. **Classify by output artifact, not intent.** If the task produces no compilable or runnable files, type must be `doc`.
+
+<HARD-RULE>
+Non-compilable files (`.md`, `.sql`, `.yaml`, `.json`, `.toml`, `.graphql`, etc.) are always non-compilable regardless of directory location — even under `pkg/`, `src/`, `internal/`. If output is ONLY non-compilable files, type **must** be `doc`, not `coding.*`. Decision test: "Does the output include any file that needs compilation or runtime testing?" If NO → `doc`.
+</HARD-RULE>
+
+| Category | Quality-gate |
+|----------|-------------|
+| Code (`coding.*`) | Run (compile + fmt + lint + test) |
+| Doc (`doc`, `doc.consolidate`, `doc.drift`) | Skip |
+
+### Intent Propagation
+
+If `docs/proposals/<slug>/proposal.md` has `intent`, use as default type. 1:1 mapping: `new-feature`→`coding.feature`, `enhancement`→`coding.enhancement`, `refactor`→`coding.refactor`, `cleanup`→`coding.cleanup`, `fix`→`coding.fix`, `doc`→`doc`. Individual task `type` overrides. `doc.consolidate` and `doc.drift` are auto-generated, unified under `doc`.
+
+### Template Selection
+
+All Affected Files non-compilable → `templates/task-doc.md`. Any compilable → `templates/task.md`.
+
+### 4b. Test Tasks (auto-generated)
+
+Test tasks (T-test-*) are auto-generated by `forge task index` in Step 5. Do NOT create manually.
+
+Fix-Type Derivation: `doc`/`eval` → `doc.fix`; `coding`/`test`/`validation`/`gate` → `coding.fix`.
 
 ```bash
-task add --template fix-task --title "Fix: <description>" \
-  --source-task-id <source-task-id> \
-  --block-source \
-  --var SOURCE_FILES="<affected paths>" \
-  --var TEST_SCRIPT="<failing test>" \
-  --var TEST_RESULTS="<results path>" \
-  --description "<root cause>"
+forge task add --type <derived-fix-type> --title "Fix: <desc>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<paths>" --var TEST_SCRIPT="<test>" --var TEST_RESULTS="<results>" --description "<cause>"
 ```
 
-**`--block-source`**: atomically sets source task to blocked before resolution. `task add` automatically deduplicates — check output: `ACTION: ADDED` (new fix task) or `ACTION: SKIPPED` (active fix already exists).
+## Step 5: Task Sizing Audit
 
-When a fix-task completes, `task record` auto-restores the source task to `pending` (checks all source task's dependencies are completed). For nested fix-tasks (fix-task itself fails), `--source-task-id` must point to the FAILED fix-task, not the original source. Maximum nesting: 3 levels.
+After all task files are written, self-audit every task: (1) Multi-verb detection — split if title links independent actions; (2) AC cross-domain — split if AC covers unrelated domains; (3) Operational ceiling — split if modifying >8 files with same pattern. Split → re-assign IDs, re-wire dependencies, output audit report.
 
-## Step 5: Create index.json
+<HARD-GATE>
+If any task still has >6 AC after splitting, split further. Do not proceed to Step 6 until all tasks pass.
+</HARD-GATE>
 
-Read `templates/index.json` before writing. Assemble all tasks from Steps 4a–4d. Populate `dependencies` per Step 3 rules. Each task's `breaking` field should already be set from Step 4a.
-
-Reference: [templates/index.json](templates/index.json) | Schema: [templates/index.schema.json](templates/index.schema.json)
-
-## Step 6: Validate
+## Step 6: Generate index.json
 
 ```bash
-task validate docs/features/<slug>/tasks/index.json
+forge task index --feature <slug>
 ```
 
-## Step 7: Update Manifest
+Scans `.md`, auto-generates stage-gates + test tasks, produces `index.json`, validates.
 
-Read `templates/manifest-update-tasks.md` for the traceability table format and frontmatter update instructions.
+## Step 7: Validate
 
-- Fill traceability table (5-column: PRD Section | Design Section | UI Component | Placement | Tasks); use "—" for UI Component when no UI, use "—" for Placement when no UI Functions
-- Advance status to `tasks`
+```bash
+forge task validate docs/features/<slug>/tasks/index.json
+```
+
+## Step 8: Update Manifest
+
+Read `templates/manifest-update-tasks.md`. Fill 5-column traceability (PRD Section | Design Section | UI Component | Placement | Tasks; "---" for N/A). Advance status to `tasks`.
+
+## Step 9: Commit Planning Artifacts
+
+Only if Step 7 passed.
+
+<HARD-RULE>
+Stage only planning artifact paths — never `git add -A` or `git add .`.
+</HARD-RULE>
+
+```bash
+git add docs/features/<slug>/tasks/*.md docs/features/<slug>/tasks/index.json docs/features/<slug>/manifest.md docs/features/<slug>/prd/ docs/features/<slug>/design/ docs/features/<slug>/ui/
+git commit -m "docs(<slug>): add breakdown-tasks planning artifacts"
+```
 
 ## Output Checklist
-
-- [ ] `tasks/phase-inventory.json` written with detected phases and gates
-- [ ] All task files follow naming conventions from HARD-RULE
-- [ ] `index.json` valid per schema, `task validate` passes
-- [ ] Every PRD AC covered by ≥1 task
-- [ ] Dependency graph is a DAG (no cycles) — verify with `task validate`
-- [ ] Every Phase Inventory gate has a corresponding gate task
-- [ ] Gate tasks: correct phase attribution, `breaking: true`, explicit dependency chains
-- [ ] `breaking: true` set on tasks that modify shared contracts
-- [ ] UI tasks reference prototype files (if applicable)
-- [ ] User Stories populated from `prd-user-stories.md`
-- [ ] `index.json` ends with T-test-1 through T-test-5 (including T-test-4.5)
+- [ ] `tasks/phase-inventory.json` written (if `rules/phase-detection.md` loaded)
+- [ ] Task files follow naming conventions
+- [ ] `index.json` valid, `forge task validate` passes
+- [ ] Stage-gates auto-generated
+- [ ] Every PRD AC covered by >=1 task
+- [ ] DAG (no cycles)
+- [ ] Every gate has corresponding gate task
+- [ ] `breaking: true` on shared-contract modifications
+- [ ] User Stories populated
 - [ ] `manifest.md` updated with traceability + `status: tasks`

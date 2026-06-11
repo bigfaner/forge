@@ -1,0 +1,57 @@
+{
+  "feature": "optimize-quick-tasks-split",
+  "proposal": "docs/proposals/optimize-quick-tasks-split/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-remove-affected-files-template": {
+      "id": "1",
+      "title": "Remove Affected Files from implementation task template",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-remove-affected-files-template.md",
+      "record": "records/1-remove-affected-files-template.md",
+      "type": "documentation"
+    },
+    "2-rewrite-skill-scope-inference": {
+      "id": "2",
+      "title": "Rewrite SKILL.md: Scope Inference, split rules, cleanup",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-rewrite-skill-scope-inference.md",
+      "record": "records/2-rewrite-skill-scope-inference.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

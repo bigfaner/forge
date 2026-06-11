@@ -1,0 +1,70 @@
+{
+  "feature": "review-doc-pipeline",
+  "proposal": "docs/proposals/review-doc-pipeline/proposal.md",
+  "created": "2026-05-23",
+  "tasks": {
+    "1-rename-doc-eval-to-review": {
+      "id": "1",
+      "title": "Rename doc.eval → doc.review and rewrite templates",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-rename-doc-eval-to-review.md",
+      "record": "records/1-rename-doc-eval-to-review.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "2-mixed-feature-routing": {
+      "id": "2",
+      "title": "Modify build.go routing for mixed features",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-mixed-feature-routing.md",
+      "record": "records/2-mixed-feature-routing.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "3-write-prd-conditional-stories": {
+      "id": "3",
+      "title": "Add conditional user stories to write-prd Step 7",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "3-write-prd-conditional-stories.md",
+      "record": "records/3-write-prd-conditional-stories.md",
+      "type": "doc"
+    },
+    "4-update-skill-type-tables": {
+      "id": "4",
+      "title": "Update skill type tables and docs-only fast path docs",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-update-skill-type-tables.md",
+      "record": "records/4-update-skill-type-tables.md",
+      "type": "doc"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

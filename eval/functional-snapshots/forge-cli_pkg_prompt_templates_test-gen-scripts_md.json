@@ -1,0 +1,157 @@
+{
+  "type": "prompt",
+  "nodeCount": 24,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 16
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor running a test script generation task.",
+      "sourceLine": 18
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "## Task Constraints",
+      "sourceLine": 20
+    },
+    {
+      "id": 7,
+      "category": "instruction",
+      "summary": "<TASK-CONSTRAINTS>",
+      "sourceLine": 22
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "- MUST invoke `Skill(skill=\"forge:gen-test-scripts\")` to generate scripts",
+      "sourceLine": 23
+    },
+    {
+      "id": 9,
+      "category": "constraint",
+      "summary": "- MUST NOT write test scripts manually — the skill generates them from test cases",
+      "sourceLine": 24
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "</TASK-CONSTRAINTS>",
+      "sourceLine": 25
+    },
+    {
+      "id": 11,
+      "category": "format",
+      "summary": "## Workflow (2 Steps)",
+      "sourceLine": 27
+    },
+    {
+      "id": 12,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 29
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand what test scripts to generate.",
+      "sourceLine": 31
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}",
+      "sourceLine": 33
+    },
+    {
+      "id": 15,
+      "category": "format",
+      "summary": "Output: `Step 1/2: Reading task definition... DONE`",
+      "sourceLine": 35
+    },
+    {
+      "id": 16,
+      "category": "format",
+      "summary": "### Step 2: Generate Test Scripts",
+      "sourceLine": 37
+    },
+    {
+      "id": 17,
+      "category": "instruction",
+      "summary": "Invoke the skill:",
+      "sourceLine": 39
+    },
+    {
+      "id": 18,
+      "category": "format",
+      "summary": "```\nSkill(skill=\"forge:gen-test-scripts\"{{.TestTypeArg}})\n```",
+      "sourceLine": 41
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "This generates executable e2e test scripts from test cases, using the framework specified by the surface.",
+      "sourceLine": 45
+    },
+    {
+      "id": 20,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 47
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 49
+    },
+    {
+      "id": 22,
+      "category": "metadata",
+      "summary": "- **scriptsCreated**: list of test script files generated",
+      "sourceLine": 50
+    },
+    {
+      "id": 23,
+      "category": "metadata",
+      "summary": "- **casesGenerated**: number of test cases used as input",
+      "sourceLine": 51
+    },
+    {
+      "id": 24,
+      "category": "format",
+      "summary": "Output: `Step 2/2: Generating test scripts... DONE`",
+      "sourceLine": 53
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 11,
+    "constraint": 1,
+    "example": 0,
+    "format": 8,
+    "metadata": 4
+  }
+}

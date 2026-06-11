@@ -1,0 +1,110 @@
+{
+  "feature": "deduplicate-quality-gate",
+  "proposal": "docs/proposals/deduplicate-quality-gate/proposal.md",
+  "created": "2026-05-19",
+  "tasks": {
+    "1-cli-submit-static-gate": {
+      "id": "1",
+      "title": "CLI submit gate — static gate for non-breaking tasks",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-cli-submit-static-gate.md",
+      "record": "records/1-cli-submit-static-gate.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "2-remove-claim-breaking-output": {
+      "id": "2",
+      "title": "Remove BREAKING output from task claim",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "2-remove-claim-breaking-output.md",
+      "record": "records/2-remove-claim-breaking-output.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "3-remove-notest-flag": {
+      "id": "3",
+      "title": "Remove noTest flag from all structs and logic",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-remove-notest-flag.md",
+      "record": "records/3-remove-notest-flag.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "4-submit-skill-cleanup": {
+      "id": "4",
+      "title": "Submit-task SKILL.md cleanup — remove CLI-enforced validation rules",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "4-submit-skill-cleanup.md",
+      "record": "records/4-submit-skill-cleanup.md",
+      "type": "doc"
+    },
+    "5-remove-dispatcher-breaking-gate": {
+      "id": "5",
+      "title": "Remove dispatcher breaking gate from run-tasks.md and execute-task.md",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "5-remove-dispatcher-breaking-gate.md",
+      "record": "records/5-remove-dispatcher-breaking-gate.md",
+      "type": "doc"
+    },
+    "6-skill-templates-targeted-tests": {
+      "id": "6",
+      "title": "Update skill templates with targeted test instructions",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "6-skill-templates-targeted-tests.md",
+      "record": "records/6-skill-templates-targeted-tests.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

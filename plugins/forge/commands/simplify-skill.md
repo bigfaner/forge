@@ -1,8 +1,8 @@
 ---
 name: simplify-skill
 description: Refactor skill files by extracting templates/examples to separate files.
-argument-hints: skill name
-allowed_tools: ["Read", "Write", "Edit", "AskUserQuestion"]
+argument-hint: "[skill-name]"
+allowed-tools: Read Write Edit AskUserQuestion
 ---
 
 # /simplify-skill
@@ -28,6 +28,8 @@ examples/    → Full use cases, edge cases
 ## Phase 1: Identify Target
 
 If no argument provided, ask user which skill to refactor.
+
+This command targets **user-authored** skills and commands (in the project's `.claude/` directory). It does NOT operate on plugin-distributed skills (under `plugins/forge/skills/`), which follow a different distribution model.
 
 Target locations:
 - Skills: `.claude/skills/<name>/SKILL.md`

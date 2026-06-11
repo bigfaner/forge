@@ -1,0 +1,77 @@
+{
+  "feature": "clean-dead-code",
+  "proposal": "docs/proposals/clean-dead-code/proposal.md",
+  "created": "2026-05-29",
+  "tasks": {
+    "1-delete-dead-packages-and-shells": {
+      "id": "1",
+      "title": "删除 internal/docsync 目录和空壳文件",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "status": "completed",
+      "file": "1-delete-dead-packages-and-shells.md",
+      "record": "records/1-delete-dead-packages-and-shells.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "low"
+    },
+    "2-clean-verify-regression-residual": {
+      "id": "2",
+      "title": "清理 verify-regression 残留推断规则和陈旧测试引用",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-clean-verify-regression-residual.md",
+      "record": "records/2-clean-verify-regression-residual.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "medium"
+    },
+    "3-tidy-go-mod": {
+      "id": "3",
+      "title": "清理 go.mod 残留依赖并验证构建",
+      "priority": "P1",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "skipped",
+      "file": "3-tidy-go-mod.md",
+      "record": "records/3-tidy-go-mod.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "low"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

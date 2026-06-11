@@ -1,0 +1,19 @@
+---
+name: clean-code
+description: Simplify and clean up code. Supports scoped cleanup (git diff, files, directories) with optional quality gate.
+allowed-tools: Bash Read Edit Write Glob Grep
+---
+
+Without arguments, scope is determined automatically (git diff or feature context).
+
+Invoke the skill:
+
+```
+Skill(skill="forge:clean-code")
+```
+
+With specific paths:
+
+```
+Skill(skill="forge:clean-code", args="pkg/service/handler.go forge-cli/internal/cmd/")
+```

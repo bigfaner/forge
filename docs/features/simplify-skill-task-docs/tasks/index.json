@@ -1,0 +1,68 @@
+{
+  "feature": "simplify-skill-task-docs",
+  "proposal": "docs/proposals/simplify-skill-task-docs/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-simplify-quick-tasks-skill": {
+      "id": "1",
+      "title": "Simplify quick-tasks SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-simplify-quick-tasks-skill.md",
+      "record": "records/1-simplify-quick-tasks-skill.md",
+      "type": "documentation"
+    },
+    "2-simplify-breakdown-tasks-skill": {
+      "id": "2",
+      "title": "Simplify breakdown-tasks SKILL.md",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "2-simplify-breakdown-tasks-skill.md",
+      "record": "records/2-simplify-breakdown-tasks-skill.md",
+      "type": "documentation"
+    },
+    "3-add-task-types-reference-to-readme": {
+      "id": "3",
+      "title": "Add Task Types reference section to README.md",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-add-task-types-reference-to-readme.md",
+      "record": "records/3-add-task-types-reference-to-readme.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -1,0 +1,113 @@
+{
+  "feature": "contract-technical-anchors",
+  "proposal": "docs/proposals/contract-technical-anchors/proposal.md",
+  "created": "2026-06-05",
+  "tasks": {
+    "1-add-contract-anchor-fields": {
+      "id": "1",
+      "title": "Contract 模板增加技术锚点字段",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-add-contract-anchor-fields.md",
+      "record": "records/1-add-contract-anchor-fields.md",
+      "type": "doc"
+    },
+    "2-add-handbook-generation": {
+      "id": "2",
+      "title": "tech-design 增加全 surface handbook 自动生成",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "2-add-handbook-generation.md",
+      "record": "records/2-add-handbook-generation.md",
+      "type": "doc"
+    },
+    "3-gen-contracts-anchor-filling": {
+      "id": "3",
+      "title": "gen-contracts 从 handbook 填充锚点字段",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-gen-contracts-anchor-filling.md",
+      "record": "records/3-gen-contracts-anchor-filling.md",
+      "type": "doc"
+    },
+    "4-eval-contract-anchor-checks": {
+      "id": "4",
+      "title": "eval-contract 增加锚点完整性和一致性检查",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-eval-contract-anchor-checks.md",
+      "record": "records/4-eval-contract-anchor-checks.md",
+      "type": "doc"
+    },
+    "5-gen-test-scripts-cross-validation": {
+      "id": "5",
+      "title": "gen-test-scripts 增加交叉验证和 surface 覆盖报告",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-gen-test-scripts-cross-validation.md",
+      "record": "records/5-gen-test-scripts-cross-validation.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3",
+        "4",
+        "5",
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

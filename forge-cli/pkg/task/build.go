@@ -1,0 +1,345 @@
+package task
+
+import (
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+
+	"forge-cli/pkg/forgeconfig"
+	"forge-cli/pkg/types"
+)
+
+// BuildIndexOpts holds options for building the task index.
+type BuildIndexOpts struct {
+	FeatureSlug string
+	ProjectRoot string
+	TasksDir    string                 // absolute path to tasks/
+	IndexPath   string                 // absolute path to index.json
+	AutoConfig  forgeconfig.AutoConfig // auto-behavior config (defaults filled by caller)
+	Intent      string                 // feature intent: "new-feature" (default), "refactor", "cleanup"
+}
+
+// BuildIndexResult holds the result of a BuildIndex operation.
+type BuildIndexResult struct {
+	NewCount            int
+	UpdatedCount        int
+	PreservedCount      int
+	StageGatesGenerated int
+	Warnings            []string
+	Index               *TaskIndex
+}
+
+// BuildIndex scans .md files and generates/updates index.json.
+// It is idempotent: re-running with no changes produces the same output.
+func BuildIndex(opts BuildIndexOpts) (*BuildIndexResult, error) {
+	// Apply defaults only when AutoConfig is completely zero (nothing was loaded from config).
+	// WithDefaults() is NOT called here because it cannot distinguish "user explicitly set
+	// both fields to false" from "field was never set" — both equal ModeToggle{}.
+	// The caller (forgeconfig.ReadAutoConfig) already applies per-field defaults correctly
+	// using raw YAML field tracking. When config is loaded, all fields are explicitly set.
+	if opts.AutoConfig.IsZero() {
+		opts.AutoConfig = forgeconfig.AutoConfigDefaults()
+	}
+
+	bc := &buildContext{opts: opts, result: &BuildIndexResult{}}
+
+	// Step 1: Load existing index or create new
+	if err := bc.loadOrCreateIndex(); err != nil {
+		return nil, err
+	}
+
+	// Step 2-3.5: Resolve context (mode, metadata, body context)
+	bc.resolveContext()
+
+	// Step 5: Scan .md files and upsert into index
+	if err := bc.scanTaskFiles(); err != nil {
+		return nil, err
+	}
+
+	// Step 5.5: Validate task types
+	if err := bc.validateTaskTypes(); err != nil {
+		return nil, err
+	}
+
+	// Step 5.5.1-5.5.2: Detect pipeline needs and extract AC
+	bc.detectPipelineNeedsAndAC()
+
+	// Step 5.9-6: Migrate fix-tasks and cleanup orphans
+	bc.cleanupOrphans()
+
+	// Step 6.5: Generate stage-gates and index new files
+	if err := bc.generateAndIndexStageGates(); err != nil {
+		return nil, err
+	}
+
+	// Step 7: Generate auto-gen tasks via registry
+	bc.generateAutoGenTasks()
+
+	// Step 8-9: Normalize task files and save index
+	if err := bc.normalizeAndSave(); err != nil {
+		return nil, err
+	}
+
+	bc.result.Index = bc.index
+	return bc.result, nil
+}
+
+// detectMode determines the feature mode from file existence and intent.
+// When intent is "cleanup", it forces Quick mode regardless of document existence.
+func detectMode(projectRoot, slug, intent string) string {
+	// cleanup intent always forces Quick mode, ignoring document existence
+	if intent == "cleanup" {
+		return "quick"
+	}
+
+	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
+	if _, err := os.Stat(filepath.Join(featureDir, "prd", "prd-spec.md")); err == nil {
+		return "breakdown"
+	}
+	if _, err := os.Stat(filepath.Join(projectRoot, "docs", "proposals", slug, "proposal.md")); err == nil {
+		return "quick"
+	}
+	return ""
+}
+
+// setFeatureMetadata sets PRD/Design/Proposal paths on the index.
+func setFeatureMetadata(index *TaskIndex, projectRoot, slug string) {
+	featureDir := filepath.Join(projectRoot, "docs", "features", slug)
+
+	if _, err := os.Stat(filepath.Join(featureDir, "prd", "prd-spec.md")); err == nil {
+		index.PRD = "prd/prd-spec.md"
+	}
+	if _, err := os.Stat(filepath.Join(featureDir, "design", "tech-design.md")); err == nil {
+		index.Design = "design/tech-design.md"
+	}
+	if _, err := os.Stat(filepath.Join(projectRoot, "docs", "proposals", slug, "proposal.md")); err == nil {
+		index.Proposal = path.Join("docs", "proposals", slug, "proposal.md")
+	}
+}
+
+// shouldSkipFile returns true for files that should not be parsed as task files.
+func shouldSkipFile(name string) bool {
+	switch {
+	case strings.HasPrefix(name, "_"):
+		return true
+	case name == "index.json":
+		return true
+	}
+	return false
+}
+
+// isTestTaskID returns true for auto-generated pipeline task IDs (excluding
+// gate/summary/T-review-doc). Derived from PipelineRegistry: all registry nodes
+// with a "T-" prefix are test pipeline tasks.
+func isTestTaskID(id string) bool {
+	if !strings.HasPrefix(id, "T-") {
+		return false
+	}
+	if id == "T-review-doc" {
+		return false // review-doc is auto-gen but not a test task
+	}
+	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
+		return false // gate/summary handled separately
+	}
+	// Check if the ID matches any registry node pattern (exact or per-surface-type)
+	if matchRegistryID(id, nil) != "" {
+		return true
+	}
+	// Check per-surface-key prefix match without requiring surfaces map.
+	// Handles IDs like "T-test-gen-scripts-backend" where the suffix is a surface key.
+	return isAutoGenRegistryPrefix(id)
+}
+
+// isFixTaskID returns true for fix-task IDs (auto-generated by quality gate pipeline).
+func isFixTaskID(id string) bool {
+	return strings.HasPrefix(id, "fix-")
+}
+
+// IsTestableType returns true if the given task type has testable runtime behavior.
+// Covers coding.* prefix and code-quality.simplify (explicit match).
+func IsTestableType(typ string) bool {
+	return strings.HasPrefix(typ, "coding.") || typ == TypeCleanCode
+}
+
+// needsTestPipeline returns true when any non-auto-gen task has a testable
+// runtime behavior type (feature, enhancement, or fix).
+// When intent is "refactor" or "cleanup", it returns false immediately
+// without iterating tasks — these intents skip the test pipeline entirely.
+// An empty task map returns false.
+func needsTestPipeline(tasks map[string]Task, intent string) bool {
+	// Intent short-circuit: refactor/cleanup skip test pipeline entirely
+	if intent == "refactor" || intent == "cleanup" {
+		return false
+	}
+
+	for _, t := range tasks {
+		if IsAutoGenTaskID(t.ID) {
+			continue
+		}
+		if IsTestableType(t.Type) {
+			return true
+		}
+	}
+	return false
+}
+
+// needsReviewDoc returns true when ANY non-auto-gen task has a doc-category type.
+// Uses CategoryForType to check: this covers TypeDoc, TypeDocConsolidate, TypeDocDrift, etc.
+// Doc subtypes that are system types (doc.review, doc.summary) cannot appear as business tasks
+// due to system-type validation, so they are effectively excluded.
+// An empty task map returns false.
+func needsReviewDoc(tasks map[string]Task) bool {
+	for _, t := range tasks {
+		if IsAutoGenTaskID(t.ID) {
+			continue
+		}
+		if CategoryForType(t.Type) == CategoryDoc {
+			return true
+		}
+	}
+	return false
+}
+
+// IsAutoGenTaskID returns true for task IDs that are auto-generated
+// (test pipeline, gates, summaries, T-review-doc).
+// fix- and disc- tasks are NOT auto-generated; they are business tasks (they modify code).
+func IsAutoGenTaskID(id string) bool {
+	if isTestTaskID(id) {
+		return true
+	}
+	// Check per-surface-key prefix match without requiring surfaces map.
+	// Handles IDs like "T-test-run-backend" where the suffix is a surface key
+	// unknown at validation time. The prefix match is sufficient for ID classification.
+	if isAutoGenRegistryPrefix(id) {
+		return true
+	}
+	if id == "T-review-doc" {
+		return true
+	}
+	if strings.HasSuffix(id, IDSuffixGate) || strings.HasSuffix(id, IDSuffixSummary) {
+		return true
+	}
+	return false
+}
+
+// isAutoGenRegistryPrefix checks if an ID starts with a per-surface-key registry
+// node's ID prefix (with "-{surface-key}" stripped). Used by IsAutoGenTaskID to
+// recognize auto-gen IDs without needing the surfaces map.
+func isAutoGenRegistryPrefix(id string) bool {
+	if !strings.HasPrefix(id, "T-") {
+		return false
+	}
+	for _, node := range PipelineRegistry {
+		if node.Expansion != "per-surface-key" {
+			continue
+		}
+		placeholder := "{surface-key}"
+		idx := strings.Index(node.ID, placeholder)
+		if idx < 0 {
+			continue
+		}
+		prefix := node.ID[:idx]
+		if strings.HasPrefix(id, prefix) && len(id) > len(prefix) {
+			return true
+		}
+		// Degenerate form: ID equals the template without placeholder suffix
+		stripTemplate := strings.ReplaceAll(node.ID, "-"+placeholder, "")
+		if id == stripTemplate {
+			return true
+		}
+	}
+	return false
+}
+
+// migratedRunTestState holds the saved state from a legacy T-test-run entry
+// that needs to be applied to the new T-test-run-{first-surface-key} task.
+type migratedRunTestState struct {
+	FirstRunTestID string // new target ID (e.g. "T-test-run-backend")
+	Status         string
+	BlockedReason  string
+}
+
+// migrateFixTaskSources remaps fix-tasks with SourceTaskID "T-test-run" to the new
+// per-surface-key task ID (T-test-run-{first-surface-key}) in multi-surface projects.
+// It also removes the old T-test-run entry from the index and returns the saved state
+// so it can be applied to the first run-test task after test pipeline generation.
+// Returns nil if no migration is needed.
+func migrateFixTaskSources(index *TaskIndex, _ map[string]string, executionOrder []string) *migratedRunTestState {
+	if len(executionOrder) == 0 {
+		return nil
+	}
+
+	// Find all fix-tasks with SourceTaskID "T-test-run"
+	var fixKeys []string
+	for key, t := range index.TasksMap() {
+		if t.SourceTaskID == "T-test-run" {
+			fixKeys = append(fixKeys, key)
+		}
+	}
+
+	if len(fixKeys) == 0 {
+		return nil
+	}
+
+	// Find and save the old T-test-run entry's state
+	firstSurfaceKey := executionOrder[0]
+	newRunTestID := "T-test-run-" + firstSurfaceKey
+
+	var state migratedRunTestState
+	state.FirstRunTestID = newRunTestID
+
+	// Look for the old T-test-run entry by iterating all tasks
+	for key, t := range index.TasksMap() {
+		if t.ID == "T-test-run" {
+			state.Status = string(t.Status)
+			state.BlockedReason = t.BlockedReason
+			// Remove the old entry
+			delete(index.TasksMap(), key)
+			break
+		}
+	}
+
+	// Remap fix-task SourceTaskIDs
+	for _, key := range fixKeys {
+		task, exists := index.TasksMap()[key]
+		if !exists {
+			continue
+		}
+		task.SourceTaskID = newRunTestID
+		index.SetTask(key, task)
+	}
+
+	return &state
+}
+
+// applyMigratedRunTestState applies the saved state from a migrated T-test-run
+// to the first per-surface-key run-test task in the index.
+func applyMigratedRunTestState(index *TaskIndex, state *migratedRunTestState) {
+	if state == nil || state.FirstRunTestID == "" {
+		return
+	}
+
+	// Find the first run-test task by ID
+	for key, t := range index.TasksMap() {
+		if t.ID == state.FirstRunTestID {
+			// Apply saved state only when the new task is still in pending status
+			// (don't override if it already has a runtime state)
+			if t.Status == types.StatusPending && state.Status != "" {
+				t.Status = types.Status(state.Status)
+				t.BlockedReason = state.BlockedReason
+				index.SetTask(key, t)
+			}
+			return
+		}
+	}
+}
+
+// loadIndexFromBytes deserializes index JSON.
+func loadIndexFromBytes(data []byte) (*TaskIndex, error) {
+	var idx TaskIndex
+	if err := idx.UnmarshalJSON(data); err != nil {
+		return nil, err
+	}
+	return &idx, nil
+}

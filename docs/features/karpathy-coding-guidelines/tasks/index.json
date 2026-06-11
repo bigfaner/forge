@@ -1,0 +1,111 @@
+{
+  "feature": "karpathy-coding-guidelines",
+  "proposal": "docs/proposals/karpathy-coding-guidelines/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-inject-principles-feature-enhancement": {
+      "id": "1",
+      "title": "Inject Karpathy principles into coding-feature and coding-enhancement templates",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1-inject-principles-feature-enhancement.md",
+      "record": "records/1-inject-principles-feature-enhancement.md",
+      "type": "doc"
+    },
+    "2-inject-principles-fix": {
+      "id": "2",
+      "title": "Inject Karpathy principles into coding-fix template, replacing existing rules",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-inject-principles-fix.md",
+      "record": "records/2-inject-principles-fix.md",
+      "type": "doc"
+    },
+    "3-inject-principles-refactor": {
+      "id": "3",
+      "title": "Inject Surgical Changes principle into coding-refactor template",
+      "priority": "P1",
+      "estimatedTime": "20m",
+      "status": "completed",
+      "file": "3-inject-principles-refactor.md",
+      "record": "records/3-inject-principles-refactor.md",
+      "type": "doc"
+    },
+    "4-inject-principles-cleanup": {
+      "id": "4",
+      "title": "Inject principles into coding-cleanup template",
+      "priority": "P1",
+      "estimatedTime": "20m",
+      "status": "completed",
+      "file": "4-inject-principles-cleanup.md",
+      "record": "records/4-inject-principles-cleanup.md",
+      "type": "doc"
+    },
+    "5-inject-principles-fixbug": {
+      "id": "5",
+      "title": "Inject Karpathy principles into fix-bug command",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "status": "completed",
+      "file": "5-inject-principles-fixbug.md",
+      "record": "records/5-inject-principles-fixbug.md",
+      "type": "doc"
+    },
+    "6-version-bump-verify": {
+      "id": "6",
+      "title": "Bump CLI version and verify prompt generation includes principles",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-version-bump-verify.md",
+      "record": "records/6-version-bump-verify.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "rejected",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

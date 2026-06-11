@@ -1,0 +1,103 @@
+{
+  "feature": "forge-init-config-sync",
+  "proposal": "docs/proposals/forge-init-config-sync/proposal.md",
+  "created": "2026-05-20",
+  "tasks": {
+    "1-add-init-prompts": {
+      "id": "1",
+      "title": "Add auto.validation and worktree prompts to forge init (huh TUI)",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-add-init-prompts.md",
+      "record": "records/1-add-init-prompts.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-add-config-init-validation": {
+      "id": "2",
+      "title": "Add auto.validation prompts to forge config init (stdin)",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "2-add-config-init-validation.md",
+      "record": "records/2-add-config-init-validation.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-remove-test-command": {
+      "id": "3",
+      "title": "Remove test-command from Config and refactor consumers",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "3-remove-test-command.md",
+      "record": "records/3-remove-test-command.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "4-update-schema-version": {
+      "id": "4",
+      "title": "Update example YAML, JSON schema, and bump version",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-update-schema-version.md",
+      "record": "records/4-update-schema-version.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: update test files for TestCommand removal",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "3",
+      "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "quality-gate:unit-test",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

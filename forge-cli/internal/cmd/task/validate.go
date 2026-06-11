@@ -1,0 +1,481 @@
+package task
+
+import (
+	"encoding/json"
+	"fmt"
+	"forge-cli/internal/cmd/base"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
+	"strings"
+
+	"forge-cli/pkg/feature"
+	"forge-cli/pkg/project"
+	"forge-cli/pkg/task"
+	"forge-cli/pkg/types"
+
+	"github.com/spf13/cobra"
+)
+
+var validateCmd = &cobra.Command{
+	Use:   "validate [file]",
+	Short: "Validate index.json and task sizing",
+	Long: `Validate an index.json file for structural and semantic correctness.
+
+If no file is specified, validates the current feature's index.json.
+
+Validations:
+  1. JSON syntax correctness
+  2. Required 'feature' field present
+  3. PRD/Design field presence (warning if missing, relaxed in proposal quick mode)
+  4. statusEnum field presence (warning if missing)
+  5. Task fields: id, title, file, status, priority, type (including system-type guard)
+  6. Dependency references exist (exact IDs and wildcard matches)
+  7. No circular dependencies
+  8. Task markdown files exist on disk
+  9. First-test task template placeholders resolved
+  10. No wildcard self-dependency deadlocks
+  11. Gate integrity: gates depend on own phase summary, next-phase tasks depend on gate
+  12. Phase ordering: cross-phase dependencies present
+  13. Phase summary tasks exist for phases with business tasks
+  14. Blocked task liveness: detect orphaned, stale, or deadlocked blocked tasks
+  15. AC count per task (must be >= 1 and <= 6)
+
+Proposal quick mode: when index has a proposal field but no PRD/design, phases,
+summaries, and gates are not required (flat task structure).`,
+	Args: cobra.MaximumNArgs(1),
+	RunE: runValidate,
+}
+
+var (
+	validStatus   = buildValidStatusMap()
+	validPriority = buildValidPriorityMap()
+)
+
+func buildValidStatusMap() map[string]bool {
+	m := make(map[string]bool)
+	for _, s := range types.AllStatuses() {
+		m[string(s)] = true
+	}
+	return m
+}
+
+func buildValidPriorityMap() map[string]bool {
+	m := make(map[string]bool)
+	for _, p := range types.AllPriorities() {
+		m[string(p)] = true
+	}
+	return m
+}
+
+func runValidate(_ *cobra.Command, args []string) error {
+	var filePath string
+	if len(args) > 0 {
+		filePath = args[0]
+	} else {
+		projectRoot, err := project.FindProjectRoot()
+		if err != nil {
+			base.Exit(base.ErrProjectNotFound())
+		}
+		slug, err := feature.RequireFeature(projectRoot)
+		if err != nil {
+			base.Exit(base.ErrFeatureNotSet())
+		}
+		filePath = filepath.Join(projectRoot, feature.GetFeatureIndexFile(slug))
+	}
+
+	v := &validator{filePath: filePath}
+	if err := v.run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type validator struct {
+	filePath  string
+	quickMode bool // true when Proposal is set instead of PRD+Design
+	errors    []string
+	warnings  []string
+	info      []string
+}
+
+func (v *validator) run() error {
+	data, err := os.ReadFile(v.filePath)
+	if err != nil {
+		return base.ErrFileNotFound(v.filePath)
+	}
+
+	var idx task.TaskIndex
+	if err := json.Unmarshal(data, &idx); err != nil {
+		return base.ErrInvalidJSON(v.filePath, err.Error())
+	}
+
+	if idx.Feature == "" {
+		return base.NewAIError(base.ErrValidation, "Missing required field", "'feature' field is empty", "Add feature name to index.json", "Add \"feature\": \"<name>\" to index.json")
+	}
+
+	v.info = append(v.info, fmt.Sprintf("Feature: %s", idx.Feature))
+	v.info = append(v.info, fmt.Sprintf("Tasks: %d", idx.TaskCount()))
+
+	if idx.PRD == "" && idx.Proposal == "" {
+		v.warnings = append(v.warnings, "Missing 'prd' field")
+	}
+	if idx.Design == "" && idx.Proposal == "" {
+		v.warnings = append(v.warnings, "Missing 'design' field")
+	}
+
+	// Quick mode: Proposal replaces PRD+Design, flat tasks without phases/gates/summaries
+	v.quickMode = idx.Proposal != "" && idx.PRD == "" && idx.Design == ""
+	if len(idx.StatusEnum) == 0 {
+		v.warnings = append(v.warnings, "Missing 'statusEnum' field — task record/status commands may fail")
+	}
+
+	v.validateTasks(idx.TasksMap())
+	v.validateDependencies(&idx)
+	v.validateCircularDeps(idx.TasksMap())
+	v.validateFilesExist(idx.Feature, idx.TasksMap())
+	v.validateWildcardSelfDeps(&idx)
+	v.validateGateIntegrity(idx.TasksMap())
+	v.validatePhaseOrder(idx.TasksMap())
+	v.validatePhaseSummaries(idx.TasksMap())
+	v.validateLiveness(&idx)
+	v.validateACCount(idx.Feature, idx.TasksMap())
+	if !v.printResults() {
+		return base.NewAIError(base.ErrValidation, "Validation failed", fmt.Sprintf("%d errors found", len(v.errors)), "Fix errors in index.json", "cat "+v.filePath)
+	}
+	return nil
+}
+
+func (v *validator) validateTasks(tasks map[string]task.Task) {
+	for key, t := range tasks {
+		if t.ID == "" {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'id'", key))
+		}
+		if t.Title == "" {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'title'", key))
+		}
+		if t.File == "" {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'file'", key))
+		}
+		if t.Status != "" && !validStatus[string(t.Status)] {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid status '%s'", key, t.Status))
+		}
+		if t.Priority != "" && !validPriority[string(t.Priority)] {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid priority '%s'", key, t.Priority))
+		}
+		switch {
+		case t.Type == "":
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': missing 'type'", key))
+		case !task.IsValidType(t.Type):
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': invalid type '%s'", key, t.Type))
+		}
+		// System type interception: non-auto-gen tasks must not use system types
+		if t.Type != "" && task.IsSystemType(t.Type) && !task.IsAutoGenTaskID(t.ID) {
+			v.errors = append(v.errors, fmt.Sprintf("Task '%s': type '%s' is a system-reserved type (reserved: %s)", t.ID, t.Type, task.FormatSystemTypes()))
+		}
+	}
+}
+
+func (v *validator) validateDependencies(index *task.TaskIndex) {
+	for key, t := range index.TasksMap() {
+		for _, dep := range t.Dependencies {
+			matches, isWildcard := task.ResolveWildcardDep(index, dep)
+			if isWildcard {
+				if len(matches) == 0 {
+					v.errors = append(v.errors, fmt.Sprintf("Task '%s': wildcard '%s' matches no business tasks", key, dep))
+				}
+			} else if _, found := index.ByID(dep); !found {
+				v.errors = append(v.errors, fmt.Sprintf("Task '%s': dependency '%s' not found", key, dep))
+			}
+		}
+	}
+}
+
+func (v *validator) validateCircularDeps(tasks map[string]task.Task) {
+	graph := make(map[string][]string)
+	taskIDs := make(map[string]bool)
+	for _, t := range tasks {
+		taskIDs[t.ID] = true
+	}
+	for _, t := range tasks {
+		for _, dep := range t.Dependencies {
+			if !strings.HasSuffix(dep, task.IDSuffixWildcard) && taskIDs[dep] {
+				graph[t.ID] = append(graph[t.ID], dep)
+			}
+		}
+	}
+
+	visited := make(map[string]bool)
+	inStack := make(map[string]bool)
+
+	var dfs func(id string, path []string) bool
+	dfs = func(id string, path []string) bool {
+		visited[id] = true
+		inStack[id] = true
+		for _, neighbor := range graph[id] {
+			if !visited[neighbor] {
+				if dfs(neighbor, append(path, neighbor)) {
+					return true
+				}
+			} else if inStack[neighbor] {
+				v.errors = append(v.errors, fmt.Sprintf("Circular: %s", strings.Join(append(path, neighbor), " -> ")))
+				return true
+			}
+		}
+		inStack[id] = false
+		return false
+	}
+
+	for id := range taskIDs {
+		if !visited[id] && dfs(id, []string{id}) {
+			break
+		}
+	}
+}
+
+func (v *validator) validateFilesExist(featureSlug string, tasks map[string]task.Task) {
+	// Get project root from filePath (which is .../docs/features/<slug>/tasks/index.json)
+	// Go up 4 levels: index.json -> tasks -> <slug> -> features -> docs -> projectRoot
+	projectRoot := filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(filepath.Dir(v.filePath)))))
+	tasksDir := filepath.Join(projectRoot, feature.GetFeatureTasksDir(featureSlug))
+
+	for key, t := range tasks {
+		if t.File == "" {
+			continue
+		}
+		taskFile := filepath.Join(tasksDir, t.File)
+		if _, err := os.Stat(taskFile); os.IsNotExist(err) {
+			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s': file '%s' missing", key, t.File))
+		}
+
+		// Check for unresolved template placeholders in first-test task files
+		if strings.HasPrefix(t.ID, "T-test-gen-scripts-") {
+			v.validateFirstTestTaskTemplate(taskFile, t.ID, []string{"{{LAST_BUSINESS_TASK_ID}}", "{{T_TEST_1_DEP}}"})
+		}
+	}
+}
+
+// validateFirstTestTaskTemplate checks if a first-test task file has unresolved placeholders.
+func (v *validator) validateFirstTestTaskTemplate(taskFile string, taskID string, placeholders []string) {
+	data, err := os.ReadFile(taskFile)
+	if err != nil {
+		return // File existence already checked above
+	}
+
+	content := string(data)
+	for _, ph := range placeholders {
+		if strings.Contains(content, ph) {
+			v.errors = append(v.errors,
+				fmt.Sprintf("Task '%s': file contains unresolved placeholder %s — replace with actual dependency ID", taskID, ph))
+		}
+	}
+}
+
+// V1: Wildcard self-dependency detection
+func (v *validator) validateWildcardSelfDeps(index *task.TaskIndex) {
+	for key, t := range index.TasksMap() {
+		for _, dep := range t.Dependencies {
+			matches, isWildcard := task.ResolveWildcardDep(index, dep)
+			if !isWildcard {
+				continue
+			}
+			prefix := strings.TrimSuffix(dep, task.IDSuffixWildcard) + "."
+			if !strings.HasPrefix(t.ID, prefix) || !task.IsBusinessTask(t.ID) {
+				continue
+			}
+			// This task's own ID matches the wildcard. Check if other business tasks also match.
+			others := len(matches) - 1 // subtract self
+			if others == 0 {
+				v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): wildcard '%s' only matches itself (self-dependency deadlock)", key, t.ID, dep))
+			} else {
+				v.warnings = append(v.warnings, fmt.Sprintf("Task '%s' (%s): wildcard '%s' matches itself plus %d others (self excluded at runtime, but verify intent)", key, t.ID, dep, others))
+			}
+		}
+	}
+}
+
+// V2: Gate integrity
+func (v *validator) validateGateIntegrity(tasks map[string]task.Task) {
+	gates := collectGateInfos(tasks)
+
+	for _, g := range gates {
+		phase := task.GetTaskPhase(g.id)
+		if phase <= 0 {
+			continue
+		}
+		v.validateGateOwnSummaryDep(g, phase, tasks)
+		v.validateNextPhaseGateDep(g.id, phase, tasks)
+	}
+}
+
+// gateInfo holds a gate task's map key and ID.
+type gateInfo struct {
+	key string
+	id  string
+}
+
+func collectGateInfos(tasks map[string]task.Task) []gateInfo {
+	var gates []gateInfo
+	for key, t := range tasks {
+		if strings.HasSuffix(t.ID, task.IDSuffixGate) && t.Breaking {
+			gates = append(gates, gateInfo{key: key, id: t.ID})
+		}
+	}
+	return gates
+}
+
+// validateGateOwnSummaryDep checks that a gate depends on its own phase summary.
+func (v *validator) validateGateOwnSummaryDep(g gateInfo, phase int, tasks map[string]task.Task) {
+	ownSummary := fmt.Sprintf("%d.summary", phase)
+	if !taskExists(tasks, ownSummary) {
+		return
+	}
+	for _, dep := range tasks[g.key].Dependencies {
+		if dep == ownSummary {
+			return
+		}
+	}
+	v.errors = append(v.errors, fmt.Sprintf("Gate '%s' (%s): must depend on own phase summary '%s'", g.key, g.id, ownSummary))
+}
+
+// validateNextPhaseGateDep checks that next-phase business tasks depend on the gate.
+func (v *validator) validateNextPhaseGateDep(gateID string, phase int, tasks map[string]task.Task) {
+	nextPhase := phase + 1
+	for key, t := range tasks {
+		if !task.IsBusinessTask(t.ID) || task.GetTaskPhase(t.ID) != nextPhase {
+			continue
+		}
+		if hasDep(t.Dependencies, gateID) {
+			continue
+		}
+		v.errors = append(v.errors, fmt.Sprintf("Task '%s' (%s): must depend on gate '%s'", key, t.ID, gateID))
+	}
+}
+
+// taskExists checks whether a task with the given ID exists in the map.
+func taskExists(tasks map[string]task.Task, id string) bool {
+	for _, t := range tasks {
+		if t.ID == id {
+			return true
+		}
+	}
+	return false
+}
+
+// hasDep checks whether the dependency list contains the given target.
+func hasDep(deps []string, target string) bool {
+	for _, dep := range deps {
+		if dep == target {
+			return true
+		}
+	}
+	return false
+}
+
+// V3: Phase order sanity
+func (v *validator) validatePhaseOrder(tasks map[string]task.Task) {
+	// Quick mode: flat tasks without phases
+	if v.quickMode {
+		return
+	}
+	// Build a lookup for gate tasks (used to recognize transitive cross-phase deps)
+	gateIDs := make(map[string]bool)
+	for _, t := range tasks {
+		if strings.HasSuffix(t.ID, task.IDSuffixGate) && t.Breaking {
+			gateIDs[t.ID] = true
+		}
+	}
+
+	for key, t := range tasks {
+		if !task.IsBusinessTask(t.ID) {
+			continue
+		}
+		phase := task.GetTaskPhase(t.ID)
+		if phase <= 1 {
+			continue // Phase 1 has no previous phase
+		}
+		hasCrossPhaseDep := false
+		for _, dep := range t.Dependencies {
+			// Depending on a gate satisfies cross-phase ordering because gate N.gate
+			// (phase N) depends on N.summary, and the current task is in a later phase.
+			if gateIDs[dep] {
+				hasCrossPhaseDep = true
+				break
+			}
+			depPhase := task.GetTaskPhase(dep)
+			if depPhase > 0 && depPhase < phase {
+				hasCrossPhaseDep = true
+				break
+			}
+			// Check wildcard deps for cross-phase ordering
+			if strings.HasSuffix(dep, task.IDSuffixWildcard) {
+				if wp, err := strconv.Atoi(strings.TrimSuffix(dep, task.IDSuffixWildcard)); err == nil && wp < phase {
+					hasCrossPhaseDep = true
+					break
+				}
+			}
+		}
+		if !hasCrossPhaseDep {
+			v.warnings = append(v.warnings, fmt.Sprintf("Task '%s' (%s): no dependency on previous phase (may be claimed too early)", key, t.ID))
+		}
+	}
+}
+
+// V4: Phase summary existence
+func (v *validator) validatePhaseSummaries(tasks map[string]task.Task) {
+	// Quick mode: flat tasks without phases, summaries, or gates
+	if v.quickMode {
+		return
+	}
+	// Collect phases that have business tasks
+	phasesWithBusiness := make(map[int]bool)
+	for _, t := range tasks {
+		if task.IsBusinessTask(t.ID) {
+			if p := task.GetTaskPhase(t.ID); p > 0 {
+				phasesWithBusiness[p] = true
+			}
+		}
+	}
+
+	// Check each such phase has a .summary task
+	for phase := range phasesWithBusiness {
+		summaryID := fmt.Sprintf("%d.summary", phase)
+		if !taskExists(tasks, summaryID) {
+			v.warnings = append(v.warnings, fmt.Sprintf("Phase %d has business tasks but no '%d.summary' task", phase, phase))
+		}
+	}
+}
+
+func (v *validator) printResults() bool {
+	if len(v.info) > 0 {
+		base.PrintSection("INFO")
+		sort.Strings(v.info)
+		for _, i := range v.info {
+			base.PrintListItem(i)
+		}
+	}
+
+	if len(v.warnings) > 0 {
+		base.PrintSection("WARNINGS")
+		sort.Strings(v.warnings)
+		for _, w := range v.warnings {
+			base.PrintListItem(w)
+		}
+	}
+
+	if len(v.errors) > 0 {
+		base.PrintSection("ERRORS")
+		sort.Strings(v.errors)
+		for _, e := range v.errors {
+			base.PrintListItem(e)
+		}
+	}
+
+	if len(v.errors) == 0 {
+		base.PrintResult("PASS", v.filePath)
+		return true
+	}
+	base.PrintResult("FAIL", fmt.Sprintf("%s (%d errors)", v.filePath, len(v.errors)))
+	return false
+}

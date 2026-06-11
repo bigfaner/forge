@@ -1,7 +1,7 @@
 ---
 feature: "{{FEATURE_NAME}}"
 status: Draft
-db-schema: "<yes|no>"
+db-schema: "{{DB_SCHEMA}}"
 ---
 
 # {{FEATURE_NAME}} — PRD Spec

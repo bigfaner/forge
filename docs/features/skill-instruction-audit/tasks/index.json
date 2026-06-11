@@ -1,0 +1,189 @@
+{
+  "feature": "skill-instruction-audit",
+  "proposal": "docs/proposals/skill-instruction-audit/proposal.md",
+  "created": "2026-05-28",
+  "tasks": {
+    "1-delete-cli-descriptions-pipeline": {
+      "id": "1",
+      "title": "Delete CLI behavior descriptions from pipeline skills/commands",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-delete-cli-descriptions-pipeline.md",
+      "record": "records/1-delete-cli-descriptions-pipeline.md",
+      "type": "doc"
+    },
+    "2-delete-cli-descriptions-remaining": {
+      "id": "2",
+      "title": "Delete CLI behavior descriptions from remaining skills/commands",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-delete-cli-descriptions-remaining.md",
+      "record": "records/2-delete-cli-descriptions-remaining.md",
+      "type": "doc"
+    },
+    "3-remove-ei-redundancy": {
+      "id": "3",
+      "title": "Remove EXTREMELY-IMPORTANT redundancy from skills",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-remove-ei-redundancy.md",
+      "record": "records/3-remove-ei-redundancy.md",
+      "type": "doc"
+    },
+    "4-remove-other-redundancy": {
+      "id": "4",
+      "title": "Remove frontmatter duplication and rule preview redundancy",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-remove-other-redundancy.md",
+      "record": "records/4-remove-other-redundancy.md",
+      "type": "doc"
+    },
+    "5-fix-numbering-references": {
+      "id": "5",
+      "title": "Fix numbering/reference errors in skills",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-fix-numbering-references.md",
+      "record": "records/5-fix-numbering-references.md",
+      "type": "doc"
+    },
+    "6-fix-pipeline-ambiguity": {
+      "id": "6",
+      "title": "Fix ambiguity and logic issues in pipeline commands/skills",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-fix-pipeline-ambiguity.md",
+      "record": "records/6-fix-pipeline-ambiguity.md",
+      "type": "doc"
+    },
+    "7-fix-remaining-ambiguity": {
+      "id": "7",
+      "title": "Fix ambiguity and logic issues in remaining skills/commands",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "7-fix-remaining-ambiguity.md",
+      "record": "records/7-fix-remaining-ambiguity.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: T-review-doc blocked — gen-contracts description and section refs",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-review-doc",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: pre-existing lint failures block quality gate (types.go stutter warnings)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "fix-1",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: pre-existing docsync test failures block quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "fix-2",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: 3 pre-existing TestAddFixTask_* failures in internal/cmd block quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "fix-3",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "7"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

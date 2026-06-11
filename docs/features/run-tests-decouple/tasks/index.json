@@ -1,0 +1,70 @@
+{
+  "feature": "run-tests-decouple",
+  "proposal": "docs/proposals/run-tests-decouple/proposal.md",
+  "created": "2026-05-21",
+  "tasks": {
+    "1-rewrite-run-tests-skill": {
+      "id": "1",
+      "title": "Rewrite run-e2e-tests → run-tests as pure executor",
+      "priority": "P0",
+      "estimatedTime": "90m",
+      "status": "completed",
+      "file": "1-rewrite-run-tests-skill.md",
+      "record": "records/1-rewrite-run-tests-skill.md",
+      "type": "doc"
+    },
+    "2-convention-init-justfile-cleanup": {
+      "id": "2",
+      "title": "Remove Convention Execution command and update init-justfile",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-convention-init-justfile-cleanup.md",
+      "record": "records/2-convention-init-justfile-cleanup.md",
+      "type": "doc"
+    },
+    "3-report-references-cleanup": {
+      "id": "3",
+      "title": "Delete dead templates, generalize report, update references",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-report-references-cleanup.md",
+      "record": "records/3-report-references-cleanup.md",
+      "type": "doc"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc.eval"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

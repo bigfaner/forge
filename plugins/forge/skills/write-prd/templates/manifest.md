@@ -1,9 +1,10 @@
 ---
-feature: "{{FEATURE_SLUG}}"
+feature: "{{SLUG}}"
+created: "{{DATE}}"
 status: prd
 ---
 
-# Feature: {{FEATURE_SLUG}}
+# Feature: {{SLUG}}
 
 <!-- Status flow: prd → design → tasks → in-progress → completed -->
 

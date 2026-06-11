@@ -1,0 +1,516 @@
+{
+  "feature": "forge-architecture-simplification",
+  "prd": "prd/prd-spec.md",
+  "design": "design/tech-design.md",
+  "proposal": "docs/proposals/forge-architecture-simplification/proposal.md",
+  "created": "2026-05-21",
+  "tasks": {
+    "0.1-characterization-tests": {
+      "id": "0.1",
+      "title": "Characterization tests for current behavior",
+      "priority": "P0",
+      "estimatedTime": "3h",
+      "status": "completed",
+      "file": "0.1-characterization-tests.md",
+      "record": "records/0.1-characterization-tests.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "1.1-dead-code-deletion": {
+      "id": "1.1",
+      "title": "Delete dead code (unused exports)",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "0.1"
+      ],
+      "status": "completed",
+      "file": "1.1-dead-code-deletion.md",
+      "record": "records/1.1-dead-code-deletion.md",
+      "scope": "backend",
+      "type": "coding.cleanup"
+    },
+    "1.2-naming-fixes": {
+      "id": "1.2",
+      "title": "Naming fixes (testgen → autogen + type renames)",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "0.1"
+      ],
+      "status": "completed",
+      "file": "1.2-naming-fixes.md",
+      "record": "records/1.2-naming-fixes.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "1.3-constants-and-exports": {
+      "id": "1.3",
+      "title": "Extract magic values to constants + export IsBusinessTask",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "0.1"
+      ],
+      "status": "completed",
+      "file": "1.3-constants-and-exports.md",
+      "record": "records/1.3-constants-and-exports.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "1.gate": {
+      "id": "1.gate",
+      "title": "Phase 1 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.summary"
+      ],
+      "status": "completed",
+      "file": "1.gate.md",
+      "record": "records/1.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "1.summary": {
+      "id": "1.summary",
+      "title": "Phase 1 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "1.1",
+        "1.2",
+        "1.3"
+      ],
+      "status": "completed",
+      "file": "1.summary.md",
+      "record": "records/1.summary.md",
+      "type": "doc.summary"
+    },
+    "2.1-state-machine": {
+      "id": "2.1",
+      "title": "State machine: ValidateTransition + CheckTransitionDeps",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "completed",
+      "file": "2.1-state-machine.md",
+      "record": "records/2.1-state-machine.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2.10-test-command-hardening": {
+      "id": "2.10",
+      "title": "Test command hardening",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1.gate",
+        "2.2"
+      ],
+      "status": "completed",
+      "file": "2.10-test-command-hardening.md",
+      "record": "records/2.10-test-command-hardening.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2.2-error-handling-foundation": {
+      "id": "2.2",
+      "title": "Error handling: new error codes + exit code differentiation",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "completed",
+      "file": "2.2-error-handling-foundation.md",
+      "record": "records/2.2-error-handling-foundation.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2.3-atomic-write-primitives": {
+      "id": "2.3",
+      "title": "WithLock callback + atomic state writes",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1.gate"
+      ],
+      "status": "completed",
+      "file": "2.3-atomic-write-primitives.md",
+      "record": "records/2.3-atomic-write-primitives.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2.4-submit-refactor": {
+      "id": "2.4",
+      "title": "Submit command refactor",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1.gate",
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "status": "completed",
+      "file": "2.4-submit-refactor.md",
+      "record": "records/2.4-submit-refactor.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2.5-reopen-status-readonly": {
+      "id": "2.5",
+      "title": "Reopen command + Status read-only",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.1",
+        "2.2"
+      ],
+      "status": "completed",
+      "file": "2.5-reopen-status-readonly.md",
+      "record": "records/2.5-reopen-status-readonly.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2.6-migrate-writers-withlock": {
+      "id": "2.6",
+      "title": "Migrate index writers to WithLock pattern",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1.gate",
+        "2.3"
+      ],
+      "status": "completed",
+      "file": "2.6-migrate-writers-withlock.md",
+      "record": "records/2.6-migrate-writers-withlock.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "2.7-buildindex-preserve": {
+      "id": "2.7",
+      "title": "BuildIndex orphan cleanup + PreserveRuntimeFields",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.3"
+      ],
+      "status": "completed",
+      "file": "2.7-buildindex-preserve.md",
+      "record": "records/2.7-buildindex-preserve.md",
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2.8-quality-gate-fixes": {
+      "id": "2.8",
+      "title": "Quality gate fixes + error handling",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.1",
+        "2.2",
+        "2.3"
+      ],
+      "status": "completed",
+      "file": "2.8-quality-gate-fixes.md",
+      "record": "records/2.8-quality-gate-fixes.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "2.9-eval-pipeline-safety": {
+      "id": "2.9",
+      "title": "Eval pipeline safety",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1.gate",
+        "2.2"
+      ],
+      "status": "completed",
+      "file": "2.9-eval-pipeline-safety.md",
+      "record": "records/2.9-eval-pipeline-safety.md",
+      "scope": "all",
+      "type": "coding.enhancement"
+    },
+    "2.gate": {
+      "id": "2.gate",
+      "title": "Phase 2 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "2.summary"
+      ],
+      "status": "completed",
+      "file": "2.gate.md",
+      "record": "records/2.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "2.summary": {
+      "id": "2.summary",
+      "title": "Phase 2 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.1",
+        "2.10",
+        "2.2",
+        "2.3",
+        "2.4",
+        "2.5",
+        "2.6",
+        "2.7",
+        "2.8",
+        "2.9"
+      ],
+      "status": "completed",
+      "file": "2.summary.md",
+      "record": "records/2.summary.md",
+      "type": "doc.summary"
+    },
+    "3.1.1-fix-compilation-errors": {
+      "id": "3.1.1",
+      "title": "Fix compilation errors in submit.go and test_promote.go",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.1.1-fix-compilation-errors.md",
+      "record": "records/3.1.1-fix-compilation-errors.md",
+      "scope": "backend",
+      "type": "coding.fix"
+    },
+    "3.1.2-args-validation": {
+      "id": "3.1.2",
+      "title": "Add cobra Args validation to commands",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3.1.1",
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.1.2-args-validation.md",
+      "record": "records/3.1.2-args-validation.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3.1.3-printblock-formatting": {
+      "id": "3.1.3",
+      "title": "Unify output with PrintBlock formatting",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3.1.2",
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.1.3-printblock-formatting.md",
+      "record": "records/3.1.3-printblock-formatting.md",
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3.2-config-init-merge": {
+      "id": "3.2",
+      "title": "Config init merge (huh TUI)",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3.1.3",
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.2-config-init-merge.md",
+      "record": "records/3.2-config-init-merge.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.refactor"
+    },
+    "3.3-config-crud": {
+      "id": "3.3",
+      "title": "Config set/get CRUD",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.3-config-crud.md",
+      "record": "records/3.3-config-crud.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3.4-schema-version-enum": {
+      "id": "3.4",
+      "title": "Schema version + enum alignment",
+      "priority": "P2",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "3.4-schema-version-enum.md",
+      "record": "records/3.4-schema-version-enum.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.enhancement"
+    },
+    "3.gate": {
+      "id": "3.gate",
+      "title": "Phase 3 Gate",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3.summary"
+      ],
+      "status": "completed",
+      "file": "3.gate.md",
+      "record": "records/3.gate.md",
+      "breaking": true,
+      "type": "gate"
+    },
+    "3.summary": {
+      "id": "3.summary",
+      "title": "Phase 3 Summary",
+      "priority": "P0",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3.1.3",
+        "3.2",
+        "3.3",
+        "3.4"
+      ],
+      "status": "completed",
+      "file": "3.summary.md",
+      "record": "records/3.summary.md",
+      "type": "doc.summary"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "type": "coding.fix"
+    },
+    "fix.1": {
+      "id": "fix.1",
+      "title": "Fix TestRunStatus silent failure in internal/cmd",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.1.md",
+      "record": "records/fix.1.md",
+      "breaking": true,
+      "sourceTaskID": "2.4",
+      "type": "coding.fix"
+    },
+    "fix.2": {
+      "id": "fix.2",
+      "title": "Fix compilation errors from task 2.5 (checkUnmetDeps, status_test)",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.2.md",
+      "record": "records/fix.2.md",
+      "breaking": true,
+      "sourceTaskID": "2.5",
+      "type": "coding.fix"
+    },
+    "fix.3": {
+      "id": "fix.3",
+      "title": "Remove unused indexPkg imports from build.go and index.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.3.md",
+      "record": "records/fix.3.md",
+      "breaking": true,
+      "sourceTaskID": "2.6",
+      "type": "coding.fix"
+    },
+    "fix.4": {
+      "id": "fix.4",
+      "title": "Fix undefined PreserveRuntimeFields in preserve_test.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.4.md",
+      "record": "records/fix.4.md",
+      "breaking": true,
+      "sourceTaskID": "2.7",
+      "type": "coding.fix"
+    },
+    "fix.5": {
+      "id": "fix.5",
+      "title": "Fix ErrFileNotFound type mismatch in worktree.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.5.md",
+      "record": "records/fix.5.md",
+      "breaking": true,
+      "sourceTaskID": "2.8",
+      "type": "coding.fix"
+    },
+    "fix.6": {
+      "id": "fix.6",
+      "title": "Fix undefined validateJourneyName in test_promote_test.go",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.6.md",
+      "record": "records/fix.6.md",
+      "breaking": true,
+      "sourceTaskID": "2.10",
+      "type": "coding.fix"
+    },
+    "fix.7": {
+      "id": "fix.7",
+      "title": "Update characterization tests after SourceTaskID sentinel elimination",
+      "priority": "P0",
+      "status": "completed",
+      "file": "fix.7.md",
+      "record": "records/fix.7.md",
+      "breaking": true,
+      "sourceTaskID": "2.8",
+      "type": "coding.fix"
+    },
+    "fix.8": {
+      "id": "fix.8",
+      "title": "Fix TestAutoConfigWithDefaults after WithDefaults() fix",
+      "priority": "P1",
+      "dependencies": [
+        "2.gate"
+      ],
+      "status": "completed",
+      "file": "fix.8.md",
+      "record": "records/fix.8.md",
+      "type": "coding.fix"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

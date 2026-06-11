@@ -1,0 +1,99 @@
+{
+  "feature": "task-pipeline-precision",
+  "proposal": "docs/proposals/task-pipeline-precision/proposal.md",
+  "created": "2026-05-27",
+  "tasks": {
+    "1-complexity-data-pipeline": {
+      "id": "1",
+      "title": "Add complexity data pipeline and conditional template rendering",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-complexity-data-pipeline.md",
+      "record": "records/1-complexity-data-pipeline.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "2-prompt-template-branching": {
+      "id": "2",
+      "title": "Add complexity branching and search strategy to prompt templates",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-prompt-template-branching.md",
+      "record": "records/2-prompt-template-branching.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "3-quick-tasks-rules": {
+      "id": "3",
+      "title": "Update quick-tasks split rules, complexity判定, Reference Files inline, remove task cap",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-quick-tasks-rules.md",
+      "record": "records/3-quick-tasks-rules.md",
+      "type": "doc"
+    },
+    "4-breakdown-tasks-sync": {
+      "id": "4",
+      "title": "Sync breakdown-tasks with split rules, complexity判定, Reference Files inline",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-breakdown-tasks-sync.md",
+      "record": "records/4-breakdown-tasks-sync.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

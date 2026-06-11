@@ -1,0 +1,159 @@
+---
+title: "Forge CLI 命令参考"
+domains: [cli, commands, reference, skills, task-list, validate]
+---
+
+# Forge CLI 命令参考
+
+本文档记录所有有效的 `forge` CLI 命令，供 skill 作者编写或修改 skill 时参考。
+
+> **权威来源**：`forge-cli/internal/cmd/root.go` 中的 `init()` 函数。本文档必须与此文件保持同步。
+
+## 顶层命令
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge init` | 初始化 forge 项目环境 | `init.go` |
+| `forge config` | 管理 forge 配置 | `config.go` |
+| `forge feature [slug]` | 设置或显示当前 feature | `feature/feature.go` |
+| `forge proposal [slug]` | 列出或查看 proposal 详情 | `proposal.go` |
+| `forge lesson [name]` | 列出或查看 lesson 详情 | `lesson.go` |
+| `forge cleanup` | 清理已完成/阻塞/暂停/拒绝的任务状态（删除 state.json 和 record.json） | `cleanup.go` |
+| `forge quality-gate` | 检查所有任务是否完成，然后运行测试 | `qualitygate/quality_gate.go` |
+| `forge verify-task-done` | 在 git commit 前验证任务完成状态 | `verify_task_done.go` |
+| `forge version` | 打印 CLI 版本号（隐藏命令，不出现在 --help 中） | `version.go` |
+| `forge research [slug]` | 列出或查看 research report 详情 | `research.go` |
+| `forge claude` | 跳过权限检查启动 Claude CLI | `claude.go` |
+| `forge surfaces [path]` | 扫描项目文件检测 forge 可用的 surface；`--json` 结构化输出；`--types` 列出类型 | `surfaces.go` |
+| `forge upgrade` | 升级 CLI binary + Plugin（两阶段：CLI self-update from GitHub Releases + Plugin install/update via claude CLI） | `upgrade.go` |
+| `forge justfile` | Justfile 管理（scaffold 子命令生成 surface recipe） | `justfile.go` |
+
+## 命令组
+
+### forge task — 任务生命周期管理
+
+源文件：`task/` 目录（`task/register.go`, `task/task_parent.go` 等）
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge task claim` | 认领下一个可用任务 | `claim.go` |
+| `forge task submit` | 提交任务执行结果 | `submit.go` |
+| `forge task status <task-id>` | 查询任务状态（只读） | `status.go` |
+| `forge task query` | 查询任务信息 | `query.go` |
+| `forge task check-deps` | 检查任务依赖关系 | `check_deps.go` |
+| `forge task validate [file]` | 验证 index.json 文件及 AC 数量（≥1 且 ≤6） | `validate.go` |
+| `forge task add` | 向当前 feature 添加新任务 | `add.go` |
+| `forge task index` | 从任务 markdown 文件构建或重建 index.json | `index.go` |
+| `forge task migrate` | 为所有任务推断 type 字段并迁移 index.json | `migrate.go` |
+| `forge task list-types` | 列出所有支持的任务类型 | `list_types.go` |
+| `forge task reopen <task-id>` | 重新打开已拒绝/跳过的任务（恢复为 pending） | `reopen.go` |
+| `forge task transition <task-id> <status> --reason` | 手动切换任务状态（操作员覆盖） | `transition.go` |
+| `forge task list [slug]` | 列出当前 feature 或指定 feature 的所有任务。默认拓扑排序（`--sort topo`）；`--sort id` 恢复自然 ID 排序；`--tree` 显示交互式依赖树（TUI）；`--local` 忽略 worktree 直接读取主仓库 | `list.go` |
+
+### forge prompt — Agent 执行提示词管理
+
+源文件：`prompt/register.go`, `prompt/prompt_get.go`
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge prompt get-by-task-id <id>` | 为任务合成 agent 提示词 | `prompt/prompt_get.go` |
+
+### forge worktree — Git Worktree 管理
+
+源文件：`worktree/` 目录（`worktree/register.go`, `worktree/cmd_start.go` 等）
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge worktree start [slug]` | 创建 worktree 并在其中启动 Claude；幂等——若 worktree 已存在且有效则跳过创建直接启动（slug 可选，支持 `-i` 交互选择，`-b` 指定源分支，`--no-launch` 仅创建不启动） | `worktree/cmd_start.go` |
+| `forge worktree list` | 列出所有 git worktree | `worktree/cmd_list.go` |
+| `forge worktree remove <slug>` | 移除 worktree（`--hard` 删除分支，`--force` 强制） | `worktree/cmd_remove.go` |
+| `forge worktree resume <slug>` | 在已有 worktree 中重新启动 Claude | `worktree/cmd_resume.go` |
+| `forge worktree push` | 推送当前 worktree 分支到远程并设置 upstream 跟踪 | `worktree/cmd_push.go` |
+| `forge worktree status [<slug>]` | 显示 worktree 状态（分支、提交、未提交文件列表、未推送提交数）；无参数时显示所有 worktree | `worktree/cmd_status.go` |
+
+### forge config — 配置管理
+
+源文件：`config.go`
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge config get <key>` | 获取配置值（纯文本输出）；特殊 key `mode` 返回管道模式 `quick`/`full`/`none` | `config.go` |
+| `forge config set <key> <value>` | 设置配置值（支持 dot-notation 嵌套键） | `config.go` |
+| `forge config init` | 交互式初始化 .forge/config.yaml | `config.go` |
+
+### forge feature — Feature 管理
+
+源文件：`feature/` 目录（`feature/feature.go`, `feature/feature_complete.go`）
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge feature list` | 列出所有 feature | `feature.go` |
+| `forge feature status <slug>` | 显示 feature 状态详情 | `feature.go` |
+| `forge feature set <slug>` | 显式设置当前 feature | `feature.go` |
+| `forge feature complete` | 所有任务完成后执行 feature 收尾 | `feature_complete.go` |
+
+### forge forensic — 会话取证分析
+
+源文件：`forensic/` 目录（`forensic/register.go`, `forensic/commands.go`, `forensic/search.go`, `forensic/extract.go`, `forensic/subagents.go`）
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge forensic search [project-path]` | 在 history.jsonl 中搜索匹配的会话 | `forensic/search.go` |
+| `forge forensic extract <session-jsonl-path>` | 从会话记录中提取紧凑证据 | `forensic/extract.go` |
+| `forge forensic subagents <session-dir-path>` | 列出会话的子 agent 记录 | `forensic/subagents.go` |
+
+### forge justfile — Justfile 管理
+
+源文件：`justfile.go`、`scaffold/` 目录（`scaffold/register.go`、`scaffold/generate.go`、`scaffold/types.go`）
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge justfile scaffold --type <type> --key <key>` | 为单个 surface 生成完整 recipe 集（lifecycle + quality），输出到 stdout | `scaffold/generate.go` |
+| `forge justfile scaffold --aggregate` | 生成跨 surface 聚合 recipe（install / ci / clean），读取 `forge surfaces` 获取全部 surface | `scaffold/generate.go` |
+
+### forge fact — 项目事实管理
+
+源文件：`fact/parent.go`
+
+| 命令 | 用途 | 源文件 |
+|------|------|--------|
+| `forge fact get <fact_id>` | 获取指定 fact 的值 | `fact/get.go` |
+| `forge fact list` | 列出所有 fact（支持 `--source` 和 `--confidence` 过滤） | `fact/list.go` |
+| `forge fact summary` | 输出 fact 摘要 | `fact/summary.go` |
+
+## CLI 表格渲染约定
+
+列表命令（`forge feature list`、`forge lesson`、`forge proposal`）的 slug/name 列使用动态宽度：
+
+- **宽度计算**: `clamp(max(30, maxSlugLen + 2), 60)` — 最小 30 字符，最大 60 字符
+- **实现**: `CalcSlugColWidth()` 计算宽度，`PadRight()` 对齐，`TruncateSlug()` 截断超长值
+- **新增列表命令时**必须遵循此模式（常量 `SlugColMinWidth` / `SlugColMaxWidth` 在 `internal/cmd/base/output.go` 中定义）
+
+## 列表排序约定
+
+所有列表命令按 frontmatter `created` 字段（`YYYY-MM-DD` 格式）降序排列。缺少 `created` 时 fallback 到文件 mtime。git clone 会重置 mtime，因此 `created` frontmatter 是唯一可靠的创建时间源。
+
+## 已移除的命令（禁止使用）
+
+以下命令已从 CLI 中移除，**不得在任何 skill 或文档中引用**：
+
+| 已移除命令 | 原所属组 | 说明 |
+|-----------|---------|------|
+| `forge probe` | 顶层 | 已移除。原为 HTTP 健康检查（用于 e2e 测试服务器） |
+| `forge e2e` (整组) | e2e | 已移除。包含 validate-specs, run, setup, verify, compile, discover 子命令 |
+| `forge test detect` | test | 已移除。通过读取项目文件（package.json / go.mod / Cargo.toml / pyproject.toml）推断测试语言 |
+| `forge test interfaces` | test | 已移除。通过读取项目结构和 `docs/conventions/` 推断接口类型 |
+| `forge test framework` | test | 已移除 |
+| `forge test get` | test | 已移除 |
+| `forge test promote` | test | 已移除。标签晋升由 `/run-tests` skill 直接处理 |
+| `forge test run-journey` | test | 已移除。skill 层直接调用 `just test` |
+| `forge test verify` | test | 已移除。contract 验证已集成到 skill 层 |
+| `forge probe` | 顶层 | 已移除。e2e 探测功能集成到 `quality-gate` 中 |
+| `forge e2e validate-specs` | e2e | 已移除。整个 `forge e2e` 命令组不再存在 |
+| `forge e2e run` | e2e | 已移除。使用 `/run-tests` 替代 |
+| `forge e2e setup` | e2e | 已移除 |
+| `forge e2e verify` | e2e | 已移除。契约验证已集成到 `/run-tests` skill 中 |
+| `forge e2e compile` | e2e | 已移除 |
+| `forge e2e discover` | e2e | 已移除 |
+
+> **维护提醒**：如果在 skill 编写中需要检测项目信息，请直接读取项目文件，不要依赖 CLI 命令。

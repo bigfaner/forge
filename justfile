@@ -1,178 +1,139 @@
 # Custom recipes (project-specific, not part of forge standard)
 
-claude:
-    claude --dangerously-skip-permissions
+claude-p:
+    claude --dangerously-skip-permissions --plugin-dir plugins/forge
 
-claude-c:
-    claude --dangerously-skip-permissions -c
-
-claude-w name="":
-    claude --dangerously-skip-permissions -w "{{name}}"
-
-# install-task: build and install task CLI locally (platform-aware)
-install-task:
+# install-forge: build and install forge CLI locally (platform-aware)
+install-forge:
     #!/usr/bin/env bash
     set -euo pipefail
     case "$(uname -s)" in
-        Linux|Darwin)  bash task-cli/scripts/install-local.sh ;;
-        MINGW*|MSYS*|CYGWIN*) powershell -File task-cli/scripts/install-local.ps1 ;;
+        Linux|Darwin)  bash forge-cli/scripts/install-local.sh ;;
+        MINGW*|MSYS*|CYGWIN*) powershell -File forge-cli/scripts/install-local.ps1 ;;
         *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
     esac
 
+# check-stale-refs: detect old task-cli command references (CI stale reference detection)
+check-stale-refs:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pattern='(^\s*\$?\s*|`)(task (claim|submit|status|query|check-deps|validate-index|verify-task-done|quality-gate|cleanup|feature|prompt|add|index|migrate|validate-specs|record|all-completed|verify-completion|check|validate))\b'
+    matches=$(grep -rP "$pattern" plugins/ forge-cli/docs/ --include='*.md' --include='*.json' 2>/dev/null || true)
+    if [ -n "$matches" ]; then
+        count=$(echo "$matches" | wc -l | tr -d ' ')
+        echo "Error: $count stale task-cli reference(s) found" >&2
+        echo "$matches" >&2
+        exit 1
+    fi
+    echo "OK: no stale task-cli references"
+
+# test-discover: list all e2e test cases without running them
+test-discover:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd tests && go test -tags=cli_functional -list '.*' ./...
+
 # --- forge standard recipes ---
 
-# project-type: return project type identifier
-project-type:
-    @echo "backend"
-
-# compile: type-check and transpile for fast feedback
-compile scope="":
+# compile: type-check for fast feedback
+# user-customized
+[group("go")]
+compile:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go vet ./...
+    cd forge-cli && go vet ./...
 
 # build: full compile and package
-build scope="":
+# user-customized
+[group("go")]
+build:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go build ./...
-
-# run: start the service
-run scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd task-cli && go run .
-
-# dev: hot-reload development mode
-dev scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd task-cli && go run .
-
-# test: unit + integration tests
-test scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd task-cli && go test -race ./...
-
-# test-e2e: end-to-end tests
-[arg("feature", long)]
-test-e2e feature="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if [ -z "{{feature}}" ]; then
-        [ ! -d tests/e2e/node_modules ] && npm install --prefix tests/e2e
-        cd tests/e2e && npx playwright test
-    else
-        feature_config="tests/e2e/features/{{feature}}/playwright.config.ts"
-        if [ -f "$feature_config" ]; then
-            cd tests/e2e/features/{{feature}} && npx playwright test --config=playwright.config.ts
-        else
-            cd tests/e2e && E2E_FEATURE=1 npx playwright test features/{{feature}}/
-        fi
-    fi
-
-# probe: check if configured services are healthy
-probe path="/health":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    config="tests/e2e/config.yaml"
-    if [ ! -f "$config" ]; then
-        echo "OK: no config.yaml (CLI-only project)"
-        exit 0
-    fi
-    fail=0
-    for url in $(grep 'Url:' "$config" | grep -oE 'https?://[^ "]+'); do
-        probe_url="${url}{{path}}"
-        if curl -sf --max-time 5 "$probe_url" > /dev/null 2>&1; then
-            echo "OK: $probe_url"
-        else
-            echo "FAIL: $probe_url not responding" >&2
-            fail=$((fail+1))
-        fi
-    done
-    [ "$fail" -eq 0 ] || exit 1
-
-# lint: static analysis
-lint scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd task-cli && golangci-lint run ./...
+    cd forge-cli && go build ./...
 
 # fmt: auto-format code
-fmt scope="":
+# user-customized
+[group("go")]
+fmt:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && gofmt -w .
-
-# check: lint + compile (CI gate)
-check scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd task-cli && golangci-lint run ./... && go vet ./...
-
-# clean: remove build artifacts
-clean scope="":
-    #!/usr/bin/env bash
-    set -euo pipefail
-    cd task-cli && go clean ./...
+    cd forge-cli && gofmt -w .
 
 # install: install dependencies (idempotent)
-install scope="":
+# user-customized
+[group("go")]
+install:
     #!/usr/bin/env bash
     set -euo pipefail
-    cd task-cli && go mod download
+    cd forge-cli && go mod download
+
+# clean: remove build artifacts
+# user-customized
+[group("go")]
+clean:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd forge-cli && go clean ./...
 
 # ci: full CI pipeline
+# user-customized
+[group("go")]
 ci:
     #!/usr/bin/env bash
     set -euo pipefail
     just install
     just compile
     just build
-    just test
+    just unit-test
     just lint
 
-# e2e-setup: install e2e dependencies (idempotent); pass force to always run npm install
-e2e-setup force="":
+# lint: static analysis
+# user-customized
+[group("go-test")]
+lint:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ ! -f tests/e2e/package.json ]; then
-        echo "Error: tests/e2e/package.json not found" >&2
-        exit 1
-    fi
-    case "{{force}}" in
-      force) npm install --prefix tests/e2e ;;
-      "")
-        if [ ! -d tests/e2e/node_modules ]; then
-            npm install --prefix tests/e2e
-        fi
-        ;;
-      *) echo "[forge] invalid value '{{force}}'; expected 'force' or empty" >&2; exit 1 ;;
-    esac
-    npx --prefix tests/e2e playwright install chromium
-    echo "OK: e2e dependencies ready"
+    cd forge-cli && golangci-lint run ./...
 
-# e2e-verify: check for unresolved // VERIFY: markers
-[arg("feature", long)]
-e2e-verify feature="":
+# check: lint + compile (CI gate)
+# user-customized
+[group("go-test")]
+check:
     #!/usr/bin/env bash
     set -euo pipefail
-    if [ -z "{{feature}}" ]; then
-        echo "Usage: just e2e-verify --feature <slug>" >&2
-        exit 1
+    cd forge-cli && golangci-lint run ./... && go vet ./...
+
+# unit-test: language-level unit tests
+# user-customized
+[group("go-test")]
+unit-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v gcc &>/dev/null; then
+        cd forge-cli && go test -race ./...
+    else
+        cd forge-cli && CGO_ENABLED=0 go test ./...
     fi
-    if [ ! -d "tests/e2e/features/{{feature}}" ]; then
-        echo "Error: tests/e2e/features/{{feature}}/ not found" >&2
-        exit 1
+
+# test: surface-level CLI functional tests
+# user-customized
+[group("cli")]
+test journey='':
+    #!/usr/bin/env bash
+    set -euo pipefail
+    feature_flag=""
+    if [ -n "{{journey}}" ]; then
+        feature_flag="-run TestTC.*$(echo '{{journey}}' | sed 's/.*/\u&/')"
     fi
-    matches=$(grep -rn '// VERIFY:' "tests/e2e/features/{{feature}}/" --include='*.spec.ts' || true)
-    if [ -n "$matches" ]; then
-        count=$(echo "$matches" | wc -l | tr -d ' ')
-        echo "Error: $count unresolved // VERIFY: marker(s) in tests/e2e/features/{{feature}}/" >&2
-        echo "$matches" >&2
-        exit 1
-    fi
-    echo "OK: no unresolved // VERIFY: markers in tests/e2e/features/{{feature}}/"
+    cd tests && go test -v -tags=cli_functional -timeout=10m -json $feature_flag ./... \
+      | go-junit-report > results/report.xml 2>/dev/null \
+      || go test -v -tags=cli_functional -timeout=10m $feature_flag ./...
+
+# teardown: cleanup after tests (no-op for CLI surface)
+# user-customized
+[group("cli")]
+teardown:
+    #!/usr/bin/env bash
+    echo "OK: forge CLI project (no teardown needed)"
 
 # --- end forge standard recipes ---

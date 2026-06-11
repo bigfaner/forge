@@ -1,12 +1,17 @@
 ---
+# Template placeholders:
+#   COMPLEXITY — low | medium | high (default: medium)
+#   TYPE — coding.feature | coding.enhancement | coding.cleanup | coding.refactor | coding.fix | doc | doc.consolidate | doc.drift (default: coding.feature)
 id: "{{ID}}"
 title: "{{TITLE}}"
 priority: "{{PRIORITY}}"
 estimated_time: "{{ESTIMATED_TIME}}"
+complexity: "{{COMPLEXITY}}"
 dependencies: [{{DEPENDENCIES}}]
-status: pending
+surface-key: "{{SURFACE_KEY}}"
+surface-type: "{{SURFACE_TYPE}}"
 breaking: false
-noTest: false
+type: "{{TYPE}}"
 mainSession: false
 ---
 
@@ -16,27 +21,13 @@ mainSession: false
 {{DESCRIPTION}}
 
 ## Reference Files
-- `docs/proposals/<slug>/proposal.md` — Source proposal
-
-## Affected Files
-
-### Create
-| File | Description |
-|------|-------------|
-| {{NEW_FILES}} |
-
-### Modify
-| File | Changes |
-|------|---------|
-| {{MODIFIED_FILES}} |
-
-### Delete
-| File | Reason |
-|------|--------|
-| {{DELETED_FILES}} |
+- `docs/proposals/{{SLUG}}/proposal.md` — Source proposal
 
 ## Acceptance Criteria
 {{ACCEPTANCE_CRITERIA}}
+
+## Hard Rules
+{{HARD_RULES}}
 
 ## Implementation Notes
 {{NOTES}}

@@ -1,0 +1,45 @@
+{
+  "feature": "eval-adversarial-scorer",
+  "proposal": "docs/proposals/eval-adversarial-scorer/proposal.md",
+  "created": "2026-05-18",
+  "tasks": {
+    "1-adversarial-protocol": {
+      "id": "1",
+      "title": "Implement three-phase adversarial protocol in doc-scorer",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-adversarial-protocol.md",
+      "record": "records/1-adversarial-protocol.md",
+      "scope": "backend",
+      "type": "enhancement"
+    },
+    "2-domain-personas": {
+      "id": "2",
+      "title": "Add domain expert persona auto-selection",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-domain-personas.md",
+      "record": "records/2-domain-personas.md",
+      "scope": "backend",
+      "type": "enhancement"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

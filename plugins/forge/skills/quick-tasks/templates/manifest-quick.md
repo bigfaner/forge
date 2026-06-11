@@ -1,10 +1,11 @@
 ---
-feature: "{{FEATURE_SLUG}}"
+feature: "{{SLUG}}"
+created: "{{DATE}}"
 status: tasks
 mode: quick
 ---
 
-# Feature (Quick): {{FEATURE_SLUG}}
+# Feature (Quick): {{SLUG}}
 
 <!-- Status flow: tasks -> in-progress -> completed -->
 
@@ -13,7 +14,6 @@ mode: quick
 | Document | Path |
 |----------|------|
 | Proposal | ../../proposals/{{SLUG}}/proposal.md |
-| Test Cases | testing/test-cases.md |
 
 ## Tasks
 

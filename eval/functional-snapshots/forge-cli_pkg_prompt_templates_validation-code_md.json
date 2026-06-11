@@ -1,0 +1,319 @@
+{
+  "type": "prompt",
+  "nodeCount": 51,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "instruction",
+      "summary": "{{if .SurfaceKey}}SURFACE_KEY: {{.SurfaceKey}}{{end}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 5,
+      "category": "instruction",
+      "summary": "You are a focused task executor validating code quality and correctness.",
+      "sourceLine": 17
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "## Workflow (3 Steps)",
+      "sourceLine": 19
+    },
+    {
+      "id": 7,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 21
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "Check `docs/conventions/` and `docs/business-rules/` for project-specific knowledge relevant to this task.",
+      "sourceLine": 23
+    },
+    {
+      "id": 9,
+      "category": "instruction",
+      "summary": "Read each file's YAML frontmatter `domains` field to determine relevance.",
+      "sourceLine": 24
+    },
+    {
+      "id": 10,
+      "category": "instruction",
+      "summary": "Load files whose domains match `{{.SurfaceKey}}` or keywords from `{{.TaskFile}}`.",
+      "sourceLine": 25
+    },
+    {
+      "id": 11,
+      "category": "instruction",
+      "summary": "If no files match, skip — no matching convention files for this task.",
+      "sourceLine": 26
+    },
+    {
+      "id": 12,
+      "category": "instruction",
+      "summary": "Then read the task file at `{{.TaskFile}}`.",
+      "sourceLine": 28
+    },
+    {
+      "id": 13,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for key decisions and conventions from the pr",
+      "sourceLine": 30
+    },
+    {
+      "id": 14,
+      "category": "format",
+      "summary": "Output: `Step 1/3: Reading task definition... DONE`",
+      "sourceLine": 32
+    },
+    {
+      "id": 15,
+      "category": "constraint",
+      "summary": "<CRITICAL> block (19 lines)",
+      "sourceLine": 34
+    },
+    {
+      "id": 16,
+      "category": "constraint",
+      "summary": "<CRITICAL> block (6 lines)",
+      "sourceLine": 54
+    },
+    {
+      "id": 17,
+      "category": "format",
+      "summary": "### Step 1.5: Spec-Code Conflict Scan",
+      "sourceLine": 61
+    },
+    {
+      "id": 18,
+      "category": "instruction",
+      "summary": "For each Reference File loaded in Step 1, scan existing code against spec requirements across five dimensions.",
+      "sourceLine": 63
+    },
+    {
+      "id": 19,
+      "category": "instruction",
+      "summary": "Read the code files that implement the requirements described in each Reference File, then output a per-dimension checkl",
+      "sourceLine": 65
+    },
+    {
+      "id": 20,
+      "category": "instruction",
+      "summary": "SPEC-CODE SCAN:",
+      "sourceLine": 66
+    },
+    {
+      "id": 21,
+      "category": "instruction",
+      "summary": "- MUST/SHALL directives: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 67
+    },
+    {
+      "id": 22,
+      "category": "instruction",
+      "summary": "- Architecture decisions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 68
+    },
+    {
+      "id": 23,
+      "category": "instruction",
+      "summary": "- Data flow patterns: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 69
+    },
+    {
+      "id": 24,
+      "category": "instruction",
+      "summary": "- Interface contracts: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 70
+    },
+    {
+      "id": 25,
+      "category": "instruction",
+      "summary": "- Naming conventions: [scanned | N/A] — [findings or \"none found\"]",
+      "sourceLine": 71
+    },
+    {
+      "id": 26,
+      "category": "instruction",
+      "summary": "For each finding, output:",
+      "sourceLine": 73
+    },
+    {
+      "id": 27,
+      "category": "instruction",
+      "summary": "[spec section: \"key requirement\"]: existing code [MATCHES | DIFFERS | NOT YET IMPLEMENTED]",
+      "sourceLine": 74
+    },
+    {
+      "id": 28,
+      "category": "instruction",
+      "summary": "- If DIFFERS: describe the specific difference and record as a validation finding",
+      "sourceLine": 75
+    },
+    {
+      "id": 29,
+      "category": "instruction",
+      "summary": "If no Reference Files were loaded: output \"SPEC-CODE SCAN: degraded mode — no spec sources, existing code + conventions ",
+      "sourceLine": 77
+    },
+    {
+      "id": 30,
+      "category": "format",
+      "summary": "### Step 2: Validate Code Quality",
+      "sourceLine": 79
+    },
+    {
+      "id": 31,
+      "category": "instruction",
+      "summary": "Validate each check against Reference Files loaded in Step 1, not just code structure. Record SCAN DIFFERS as validation",
+      "sourceLine": 81
+    },
+    {
+      "id": 32,
+      "category": "instruction",
+      "summary": "<IMPORTANT> block (9 lines)",
+      "sourceLine": 83
+    },
+    {
+      "id": 33,
+      "category": "instruction",
+      "summary": "Perform code validation checks:",
+      "sourceLine": 93
+    },
+    {
+      "id": 34,
+      "category": "instruction",
+      "summary": "1. Read each validation criterion listed in the task file",
+      "sourceLine": 95
+    },
+    {
+      "id": 35,
+      "category": "instruction",
+      "summary": "2. For criteria with explicit verification commands — run them",
+      "sourceLine": 96
+    },
+    {
+      "id": 36,
+      "category": "instruction",
+      "summary": "3. For criteria without commands — verify by reading the relevant source files",
+      "sourceLine": 97
+    },
+    {
+      "id": 37,
+      "category": "instruction",
+      "summary": "4. Record pass/fail for each criterion",
+      "sourceLine": 98
+    },
+    {
+      "id": 38,
+      "category": "instruction",
+      "summary": "**If any criterion fails:**",
+      "sourceLine": 100
+    },
+    {
+      "id": 39,
+      "category": "instruction",
+      "summary": "- If the gap is trivial (e.g., missing import, typo): fix it inline and re-verify (max 2 attempts)",
+      "sourceLine": 101
+    },
+    {
+      "id": 40,
+      "category": "instruction",
+      "summary": "- If the gap is non-trivial or max attempts reached: document it as a finding, then set status to blocked via `forge tas",
+      "sourceLine": 102
+    },
+    {
+      "id": 41,
+      "category": "constraint",
+      "summary": "- Do NOT force validation to pass — an unmet criterion means validation fails",
+      "sourceLine": 103
+    },
+    {
+      "id": 42,
+      "category": "instruction",
+      "summary": "Then run the quality gate:",
+      "sourceLine": 105
+    },
+    {
+      "id": 43,
+      "category": "instruction",
+      "summary": "Execute in strict sequential order:",
+      "sourceLine": 107
+    },
+    {
+      "id": 44,
+      "category": "format",
+      "summary": "```bash\njust compile{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust fmt{{if .SurfaceKey}} {{.SurfaceKey}}{{end}}\njust lin",
+      "sourceLine": 109
+    },
+    {
+      "id": 45,
+      "category": "instruction",
+      "summary": "All must pass.",
+      "sourceLine": 116
+    },
+    {
+      "id": 46,
+      "category": "constraint",
+      "summary": "| Failed step | Action |\n|---|---|\n| `compile` | Fix compilation errors, retry from compile |\n| `fmt` | **WARNING** (non",
+      "sourceLine": 118
+    },
+    {
+      "id": 47,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 125
+    },
+    {
+      "id": 48,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 127
+    },
+    {
+      "id": 49,
+      "category": "metadata",
+      "summary": "- **validationPassed**: whether all validation criteria passed (true/false)",
+      "sourceLine": 128
+    },
+    {
+      "id": 50,
+      "category": "metadata",
+      "summary": "- **issuesFound**: list of issues found during validation",
+      "sourceLine": 129
+    },
+    {
+      "id": 51,
+      "category": "format",
+      "summary": "Output: `Step 2/3: Validating code... DONE`",
+      "sourceLine": 131
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 35,
+    "constraint": 4,
+    "example": 0,
+    "format": 8,
+    "metadata": 4
+  }
+}

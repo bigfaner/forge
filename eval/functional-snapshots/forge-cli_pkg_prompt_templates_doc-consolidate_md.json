@@ -1,0 +1,133 @@
+{
+  "type": "prompt",
+  "nodeCount": 20,
+  "nodes": [
+    {
+      "id": 1,
+      "category": "metadata",
+      "summary": "TASK_ID: {{.TaskID}}",
+      "sourceLine": 12
+    },
+    {
+      "id": 2,
+      "category": "metadata",
+      "summary": "TASK_FILE: {{.TaskFile}}",
+      "sourceLine": 13
+    },
+    {
+      "id": 3,
+      "category": "metadata",
+      "summary": "SURFACE_KEY: {{.SurfaceKey}}",
+      "sourceLine": 14
+    },
+    {
+      "id": 4,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}{{.PhaseSummary}}{{end}}",
+      "sourceLine": 15
+    },
+    {
+      "id": 5,
+      "category": "constraint",
+      "summary": "You are a focused task executor running a spec consolidation task in non-interactive (pipeline) mode. You are running un",
+      "sourceLine": 17
+    },
+    {
+      "id": 6,
+      "category": "format",
+      "summary": "## Workflow (2 Steps)",
+      "sourceLine": 19
+    },
+    {
+      "id": 7,
+      "category": "format",
+      "summary": "### Step 1: Read Task Definition",
+      "sourceLine": 21
+    },
+    {
+      "id": 8,
+      "category": "instruction",
+      "summary": "Read the task file at `{{.TaskFile}}` to understand what specs to consolidate.",
+      "sourceLine": 23
+    },
+    {
+      "id": 9,
+      "category": "instruction",
+      "summary": "{{if .PhaseSummary}}If the Phase Summary file is non-empty, read that file for context from the previous phase.{{end}}",
+      "sourceLine": 25
+    },
+    {
+      "id": 10,
+      "category": "format",
+      "summary": "Output: `Step 1/2: Reading task definition... DONE`",
+      "sourceLine": 27
+    },
+    {
+      "id": 11,
+      "category": "format",
+      "summary": "### Step 2: Consolidate Specs",
+      "sourceLine": 29
+    },
+    {
+      "id": 12,
+      "category": "instruction",
+      "summary": "Invoke the skill:",
+      "sourceLine": 31
+    },
+    {
+      "id": 13,
+      "category": "format",
+      "summary": "```\nSkill(skill=\"forge:consolidate-specs\")\n```",
+      "sourceLine": 33
+    },
+    {
+      "id": 14,
+      "category": "instruction",
+      "summary": "This extracts business rules and tech specs from feature docs into preview files, detects overlaps with existing knowled",
+      "sourceLine": 37
+    },
+    {
+      "id": 15,
+      "category": "format",
+      "summary": "## Record Fields",
+      "sourceLine": 39
+    },
+    {
+      "id": 16,
+      "category": "instruction",
+      "summary": "When submitting via `forge:submit-task`, populate these record fields in record.json:",
+      "sourceLine": 41
+    },
+    {
+      "id": 17,
+      "category": "metadata",
+      "summary": "- **referencedDocs**: list of spec files consolidated",
+      "sourceLine": 42
+    },
+    {
+      "id": 18,
+      "category": "metadata",
+      "summary": "- **reviewStatus**: consolidation outcome (e.g. \"completed\")",
+      "sourceLine": 43
+    },
+    {
+      "id": 19,
+      "category": "metadata",
+      "summary": "- **docMetrics**: consolidation statistics (e.g. \"3 rules extracted, 1 overlap found\")",
+      "sourceLine": 44
+    },
+    {
+      "id": 20,
+      "category": "format",
+      "summary": "Output: `Step 2/2: Consolidating specs... DONE`",
+      "sourceLine": 46
+    }
+  ],
+  "categoryBreakdown": {
+    "instruction": 6,
+    "constraint": 1,
+    "example": 0,
+    "format": 7,
+    "metadata": 6
+  }
+}

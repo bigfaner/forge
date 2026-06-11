@@ -3,9 +3,9 @@
 # Coverage
 coverages/
 coverage*
-cover.outfile
-cover.out
-dep_*.out
+
+# Build artifacts
+*.out
 
 # Temporary
 tmp/
@@ -18,10 +18,20 @@ bin/
 *.test
 bin/
 *.DS_Store
-task-cli/check.out
 
 # Dependencies
 node_modules/
-task-cli/*.out
 test-results/.last-run.json
-tests/e2e/results/.last-run.json
+tests/results/
+.forge/state.json
+docs/features/*/tasks/process/
+
+# Embedded just binaries (tracked as exception)
+forge-cli/internal/embedded/just/binaries/*
+!forge-cli/internal/embedded/just/binaries/just-*
+docs/features/*/tasks/index.json.lock
+# Forge
+.forge/test-state.json
+.forge/worktrees/
+docs/features/*/testing/results/
+.forge/logs/

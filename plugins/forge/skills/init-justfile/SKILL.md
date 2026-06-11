@@ -1,331 +1,146 @@
 ---
 name: init-justfile
-description: Scaffold a Justfile with standard forge targets for the current project.
-allowed_tools: ["Bash", "Read", "Write", "Edit"]
+description: Scaffold a Justfile with standard forge targets for the current project, with surface-aware recipe generation.
+allowed-tools: Bash Read Write Edit
 disable-model-invocation: true
-argument-hints: "[--lang go|rust|python|node] [--type frontend|backend|mixed] [--force]"
+argument-hint: '[--force]'
 ---
 
 # /init-justfile
 
 MANUAL-ONLY. Do NOT auto-invoke — only when user explicitly asks to `/init-justfile`.
 
-Generate a Justfile with standard forge targets as an abstraction layer for test/build commands.
+Generate a Justfile with standard forge targets. When surfaces are configured, call `forge justfile scaffold` to produce surface-aware recipes (dev/probe/test/teardown) differentiated by surface type.
 
 ## Prerequisites
 
-**Install just (>= 1.50.0)**
-
-| Platform | Command |
-|----------|---------|
-| macOS / Linux | `brew install just` |
-| Windows (Scoop) | `scoop install just` |
-| Windows (winget) | `winget install --id Casey.Just --exact` |
-| Cargo (universal) | `cargo install just` |
-
-```bash
-just --version  # requires >= 1.50.0 (supports [arg] named option syntax)
-```
-
-If version < 1.50.0: `cargo install just`
+**Install just (>= 1.50.0)**: `brew install just` (macOS/Linux), `scoop install just` (Windows), or `cargo install just`. Requires >= 1.50.0 for `[arg]` named option syntax and `[linux]`/`[windows]` attributes.
 
 ## Parameters
 
-| Parameter | Values | Default | Description |
-|-----------|--------|---------|-------------|
-| `--lang` | `go`, `rust`, `python`, `node` | (auto-detect) | Override language detection |
-| `--type` | `frontend`, `backend`, `mixed` | (auto-detect) | Override project type |
-| `--force` | (flag) | false | Overwrite existing justfile without confirmation |
+| Parameter | Values  | Default | Description                                      |
+| --------- | ------- | ------- | ------------------------------------------------ |
+| `--force` | (flag)  | false   | Overwrite existing justfile without confirmation |
 
-## Standard Target Contract
+## Recipe Naming Model
 
-| Target | Required | Purpose |
-|--------|----------|---------|
-| `project-type` | Yes | Return project type identifier (`frontend`/`backend`/`mixed`) |
-| `compile` | No | Type-check and transpile for fast feedback |
-| `build` | No | Full compile and package |
-| `run` | No | Start the service |
-| `dev` | No | Hot-reload development mode |
-| `test` | Yes | Unit + integration tests |
-| `test-e2e` | No | E2E tests; `--feature <slug>` for single feature |
-| `lint` | No | Static analysis |
-| `fmt` | No | Auto-format code |
-| `check` | No | lint + compile (CI gate) |
-| `clean` | No | Remove build artifacts |
-| `install` | No | Install dependencies (idempotent) |
-| `ci` | No | Full CI pipeline |
-| `e2e-setup` | No | Install e2e dependencies (idempotent) |
-| `e2e-verify` | No | Check for unresolved `// VERIFY:` markers |
+`<prefix>` is `<key>-` for named surfaces (e.g., `app-test`) or empty for scalar surfaces (e.g., `test`).
 
-## Workflow
+| Surface Type | Lifecycle Recipes | Quality Recipes | Aggregate |
+| ------------ | ----------------- | --------------- | --------- |
+| `cli`        | `test`, `teardown` | `compile`, `fmt`, `lint`, `unit-test` | 无 |
+| `tui`        | `test`, `teardown` | `compile`, `fmt`, `lint`, `unit-test` | 无 |
+| `api`/`web`  | `dev`, `probe`, `test`, `teardown`, `<key>` | `compile`, `fmt`, `lint`, `unit-test` | `<key>` (dev->probe->test->teardown) |
+| `mobile`     | `test-setup`, `dev`, `probe`, `test`, `teardown`, `<key>` | `compile`, `fmt`, `lint`, `unit-test` | `<key>` (test-setup->dev->probe->test->teardown) |
+
+**Test directory path**: Single-surface projects use `tests/<journey>/`. Multi-surface projects use `tests/<key>/<journey>/`.
+
+**Recipe signatures**: `unit-test` (no params), `<prefix>test [journey]` (optional filter), `<prefix>probe` (no params).
+
+## Process Flow
 
 ```
-1. Detect project type + language + entry points → 2. Check existing justfile → 3. Assemble and write → 4. Verify and self-correct → 5. Output confirmation
+Step 0: forge surfaces -> SURFACES_LIST (key + type + form)
+Step 1: Detect languages per surface + load Convention -> record slot values
+Step 2: Check existing justfile (boundary markers + user-customized protection)
+Step 3: forge justfile scaffold per surface -> fill <<PLACEHOLDER>> -> --aggregate -> boundary marker merge
+Step 4: Verify (just --list + dry-run + actual execution + self-correction)
+Step 5: Output confirmation
 ```
 
-### Step 1: Detect Project Type, Language, and Entry Points
+### Step 0: Detect Surfaces
 
 ```bash
-just --version 2>/dev/null | awk '{print $2}' | awk -F. '$1 > 1 || ($1 == 1 && $2 >= 50)' | grep -q .
-# If exit code != 0: output "Error: just >= 1.50.0 required — run `cargo install just`" and abort.
+forge surfaces 2>/dev/null
 ```
 
-#### Parameter override
+Parse each line: `key=type` (named) or `type` alone (scalar). Collect as `SURFACES_LIST`. If empty/failed, output "No surfaces configured. Run `forge init` first." and abort.
 
-If `--lang` and/or `--type` are provided, skip all or part of auto-detection:
+### Step 1: Detect Languages and Load Convention
 
-1. **`--lang` and `--type` both set**: Skip all detection (1a/1b/1c). Use `--lang` for template selection, `--type` for project-type output. Use placeholder defaults from the table below.
-2. **`--lang` only**: Skip 1a (marker detection) and 1b/1c (language-specific detection). Run a simplified 1a just to determine `--type` if no markers exist, otherwise use detected type.
-3. **`--type` only**: Run 1a to detect language from markers, but override the project-type classification with `--type`. Run 1b/1c for the detected language.
-4. **Neither set**: Full auto-detection (existing behavior).
+**1a. Language detection**: Scan for marker files (`go.mod`=Go, `package.json`=Node/TS, `Cargo.toml`=Rust, `pyproject.toml`/`setup.py`=Python, `pom.xml`/`build.gradle`=Java, `build.gradle.kts`=Kotlin, `Gemfile`=Ruby, `*.csproj`/`*.sln`=C#/.NET). Read marker to extract version, dependency manager, tooling.
 
-**Placeholder defaults when skipping detection:**
+**1b. Per-surface detection**: Each surface in `SURFACES_LIST` scans its working directory independently using 1a's table. Multi-surface projects may have different languages per surface.
 
-| Placeholder | Go | Rust | Python | Node |
-|-------------|-----|------|--------|------|
-| `ENTRY_POINT` | `.` | `` (empty) | `main.py` | N/A |
-| `DEV_COMMAND` | N/A | N/A | `python main.py` | N/A |
-| `ENTRY_SCRIPT` | N/A | N/A | N/A | `dev` |
+**1c. Convention loading**: Read `docs/conventions/testing/<surface>/core.md` for each surface. Extract: framework, file pattern, test runner, build tags, result format flags. Legacy fallback: flat files with `domains` frontmatter. Cold start: use agent built-in knowledge.
 
-For `mixed` projects via parameters, `FRONTEND_DIR` and `BACKEND_DIR` both default to `.`.
-
-#### 1a. Project type detection
-
-```bash
-ls package.json go.mod Cargo.toml pyproject.toml 2>/dev/null
-```
-
-**Detection signal mapping:**
-
-| Marker File | Signal |
-|-------------|--------|
-| `package.json` | frontend |
-| `go.mod` | backend |
-| `Cargo.toml` | backend |
-| `pyproject.toml` | backend |
-
-**Classification algorithm:**
-
-1. Check for each marker file's existence in the project root.
-2. Count frontend vs backend signals and classify:
-   - Exactly one frontend signal AND exactly one backend signal → **`mixed`**
-   - Exactly one frontend signal, no backend signals → **`frontend`**
-   - Exactly one backend signal, no frontend signals → **`backend`**
-   - Neither set has signals → **Error**: "Error: no known project markers detected (expected one of: package.json, go.mod, Cargo.toml, pyproject.toml)" — abort, do NOT generate a justfile.
-   - Multiple backend signals (e.g. `go.mod` + `Cargo.toml`) → **Error**: "Error: multiple backend markers detected — not supported" — abort.
-
-**For `mixed` projects, also detect root paths:**
-
-```bash
-find . -name package.json -not -path '*/node_modules/*' -maxdepth 3 | head -1 | xargs dirname
-find . \( -name go.mod -o -name Cargo.toml -o -name pyproject.toml \) -maxdepth 3 | head -1 | xargs dirname
-```
-
-Record these as `FRONTEND_DIR` and `BACKEND_DIR` (e.g. `./frontend`, `./backend`). Use `.` if the marker is in the project root.
-
-#### 1b. Backend language + entry point detection
-
-For **backend** and **mixed** projects, detect the backend language (already known from marker file) and the entry point:
-
-| Language | Marker | Entry point detection (`BACKEND_ENTRY`) | `ENTRY_POINT` placeholder value | `DEV_COMMAND` placeholder value |
-|----------|--------|---------------------------------------|-------------------------------|-------------------------------|
-| Go | `go.mod` | `ls cmd/*/main.go` → `cmd/<name>/main.go`; else `ls main.go` → `.` | `cmd/server/main.go` or `.` | N/A (uses `BACKEND_DEV` row) |
-| Rust | `Cargo.toml` | `grep '\[\[bin\]\]' Cargo.toml` → `--bin <name>`; else empty | `--bin server` or `` (empty) | N/A (uses `BACKEND_DEV` row) |
-| Python | `pyproject.toml` | `ls src/__init__.py` → `-m src`; `ls main.py` → `main.py`; `ls app.py` → `app.py` | `-m src` / `main.py` / `app.py` | `uvicorn src:app --reload` or `python -m src --reload` |
-
-Record `BACKEND_ENTRY` from the detected entry point. For Python `DEV_COMMAND`: use `uvicorn src:app --reload` if uvicorn is available, else `python -m src --reload`.
-
-#### 1c. Frontend run script detection
-
-For **frontend** and **mixed** projects, detect available npm scripts:
-
-```bash
-node -e "const s=JSON.parse(require('fs').readFileSync('package.json')).scripts||{}; console.log(s.start ? 'start' : s.preview ? 'preview' : 'dev')"
-```
-
-Record as `FRONTEND_RUN_SCRIPT` (e.g. `start`, `preview`, or `dev`).
+**1d. Cold start fallback**: When Convention absent: (1) infer from project files (`package.json` scripts, `Makefile`, go module), (2) language defaults (Node: 3000, Go: 8080), (3) leave unresolvable as `<<PLACEHOLDER>>`, list in report.
 
 ### Step 2: Check Existing Justfile
 
-```bash
-ls justfile Justfile 2>/dev/null
-```
+- No justfile: proceed to Step 3.
+- Boundary markers present (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`): check completeness via `just --list`, skip to Step 4 if complete.
+- No markers + `--force`: proceed to Step 3.
+- No markers + no `--force`: prompt "Overwrite? (y/n)", abort if declined.
 
-- If `justfile` or `Justfile` already exists:
-  - Check for boundary markers (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`).
-  - **If boundary markers exist**: proceed to Step 3 (boundary marker merge). No confirmation needed — only the marked section will be replaced; custom recipes outside markers are preserved.
-  - **If boundary markers do NOT exist** (user's justfile has no forge markers):
-    - If `--force` flag was provided: skip confirmation, proceed to Step 3 (merge within boundary markers if they exist, or overwrite entire file if they don't).
-    - If `--force` flag was NOT provided: prompt the user: "A justfile already exists without forge markers. Overwrite? (y/n)". If user declines, abort without modifying the file.
-- If no justfile exists: proceed to Step 3 (create new file).
+<HARD-RULE>
+If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
+</HARD-RULE>
 
-### Step 3: Assemble and Write Justfile
+### Step 3: Generate Recipes and Assemble Justfile
 
-#### Template selection
+**3a. CLI scaffold**: For each surface, run `forge justfile scaffold --type <type> --key <key>` (named) or `--type <type>` (scalar). Fill `<<PLACEHOLDER>>` slots from Convention (priority) > project inference > language defaults. Then `forge justfile scaffold --aggregate` for `install`/`ci`/`clean`.
 
-If `--lang` is provided, select template directly:
+**3b. Boundary marker merge**: Replace content between markers (inclusive). No markers: write full new file.
 
-| `--lang` value | Template |
-|----------------|----------|
-| `go` | `plugins/forge/skills/init-justfile/templates/go.just` |
-| `rust` | `plugins/forge/skills/init-justfile/templates/rust.just` |
-| `python` | `plugins/forge/skills/init-justfile/templates/python.just` |
-| `node` | `plugins/forge/skills/init-justfile/templates/node.just` |
-| (mixed via `--type mixed`) | `plugins/forge/skills/init-justfile/templates/mixed.just` |
+<HARD-RULE>
+Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers MUST be preserved verbatim. `# user-customized` marked recipes MUST be preserved during re-generation.
+</HARD-RULE>
 
-If `--lang` is not provided, detect from marker files:
-
-| Marker file | Template |
-|-------------|----------|
-| `go.mod` | `plugins/forge/skills/init-justfile/templates/go.just` |
-| `Cargo.toml` | `plugins/forge/skills/init-justfile/templates/rust.just` |
-| `pyproject.toml` | `plugins/forge/skills/init-justfile/templates/python.just` |
-| `package.json` only | `plugins/forge/skills/init-justfile/templates/node.just` |
-| mixed | `plugins/forge/skills/init-justfile/templates/mixed.just` |
-| none matched | `plugins/forge/skills/init-justfile/templates/generic.just` |
-
-Write to `justfile` (lowercase).
-
-#### Placeholder substitution
-
-For **single-language templates** (`go.just`, `rust.just`, `python.just`, `node.just`):
-
-| Placeholder | Scope | Replaced with | Example |
-|-------------|-------|--------------|---------|
-| `ENTRY_POINT` | Go/Rust | `BACKEND_ENTRY` from Step 1b | `cmd/server/main.go`, `.`, `--bin server`, `` (empty) |
-| `DEV_COMMAND` | Python only | Dev server command from Step 1b | `uvicorn src:app --reload`, `python -m src --reload` |
-| `ENTRY_SCRIPT` | Node only | `FRONTEND_RUN_SCRIPT` from Step 1c | `start` / `preview` / `dev` |
-
-For **mixed projects** (`mixed.just`):
-
-Replace `FRONTEND_DIR` and `BACKEND_DIR` with the paths detected in Step 1a. Additionally, replace all `BACKEND_*` and `FRONTEND_*` placeholders based on detected backend language:
-
-| Placeholder | Go | Rust | Python |
-|-------------|-----|------|--------|
-| `BACKEND_COMPILE` | `go vet ./...` | `cargo check` | `python -m py_compile src/` |
-| `BACKEND_BUILD` | `go build ./...` | `cargo build --release` | `python -m build` |
-| `BACKEND_RUN` | `go run <BACKEND_ENTRY>` | `cargo run <BACKEND_ENTRY>` | `python <BACKEND_ENTRY>` |
-| `BACKEND_DEV` | `go run <BACKEND_ENTRY>` | `cargo run <BACKEND_ENTRY>` | `uvicorn src:app --reload` |
-| `BACKEND_TEST` | `go test ./...` | `cargo test` | `pytest` |
-| `BACKEND_LINT` | `golangci-lint run ./...` | `cargo clippy -- -D warnings` | `ruff check .` |
-| `BACKEND_FMT` | `gofmt -w .` | `cargo fmt` | `ruff format .` |
-| `BACKEND_CLEAN` | `go clean ./...` | `cargo clean` | `rm -rf build/ dist/ *.egg-info` |
-| `BACKEND_INSTALL` | `go mod download` | `cargo fetch` | `pip install -e .` |
-| `FRONTEND_RUN` | `npm run <FRONTEND_RUN_SCRIPT>` (value from Step 1c) | (same) | (same) |
-| `FRONTEND_DEV` | `npm run dev` (all backend langs) | (same) | (same) |
-
-Note: `go test` omits `-race` flag by default — it requires CGO which is unavailable on some platforms (notably Windows). See Step 4c for auto-detection.
-
-#### Boundary marker merge
-
-When markers exist (`# --- forge standard recipes ---` / `# --- end forge standard recipes ---`), replace everything between them (inclusive) with the new template, preserving user recipes outside. Otherwise write the full template as a new file.
+**3c. Organization**: Group recipes as `[group: language]` (compile/build/install/clean/ci), `[group: language-test]` (unit-test/lint/fmt/check), `[group: <surface-key>]` (surface lifecycle + aggregate). Use surface key for group name; scalar uses type.
 
 ### Step 4: Verify and Self-Correct
 
-Two-phase verification: `--dry-run` catches syntax/structure errors, actual execution catches runtime errors (missing scripts, wrong entry points, unavailable tools).
+**4a. Completeness**: `just --list` — confirm all recipes parseable. Fix errors before proceeding.
 
-#### 4a. Phase 1 — Dry-run (syntax check)
+**4b. Dry-run**: `just --dry-run` each recipe to verify syntax.
 
-Run each recipe with `--dry-run` to verify recipe syntax, variable expansion, and command structure:
+**4c. Actual execution**: Safe recipes (compile/lint/check) execute directly. Destructive (build/fmt/clean) execute directly. Idempotent (install) execute directly. Long-running (`<prefix>dev`) use `timeout 10s`. Expensive (unit-test/`<prefix>test`) skip, dry-run only.
 
-```bash
-just --list
-just --dry-run compile
-just --dry-run build
-just --dry-run test
-just --dry-run run
-just --dry-run dev
-just --dry-run install
-just --dry-run lint
-just --dry-run fmt
-just --dry-run check
-just --dry-run e2e-setup
-```
+**4d. Self-correction**: On failure, apply fixes per `rules/self-correction.md`. Max 2 retries per recipe.
 
-For mixed projects, also verify `--dry-run compile` and `--dry-run run` with `backend`/`frontend` scope arguments.
-
-Fix any syntax failures before proceeding to Phase 2.
-
-#### 4b. Phase 2 — Actual execution (runtime check)
-
-Execute each recipe for real to catch runtime errors. Recipes are classified by execution safety:
-
-| Category | Recipes | Method |
-|----------|---------|--------|
-| **Safe** (fast, no side effects) | `project-type`, `compile`, `lint`, `check` | Execute directly |
-| **Destructive** (modifies files or creates artifacts) | `build`, `fmt`, `clean` | Execute directly (artifacts can be cleaned; fmt changes are welcome) |
-| **Idempotent** (installs dependencies) | `install`, `e2e-setup` | Execute directly |
-| **Long-running** (starts servers) | `run`, `dev` | Execute with timeout (10s), kill after timeout — success = process still alive at timeout |
-| **Expensive** (runs full test suite) | `test`, `test-e2e` | Skip actual execution; verified by `--dry-run` only |
-
-For long-running recipes (`run`, `dev`): execute via `timeout 10 just <recipe> 2>&1 || true`. A crash before timeout ("missing script", "can't load package") is a runtime failure. For mixed, also verify scoped variants.
-
-#### 4c. Self-correction rules
-
-When a recipe fails in Phase 2, analyze the error and apply corrections:
-
-| Error Pattern | Recipe | Fix |
-|---------------|--------|-----|
-| `npm error Missing script: "start"` | `run` (node/mixed) | Replace `npm run start` → `npm run preview` in justfile, retry |
-| `npm error Missing script: "preview"` | `run` (node/mixed) | Replace → `npm run dev` in justfile, retry |
-| `npm error Missing script: "dev"` | `dev` (node/mixed) | Replace → `npm run start` in justfile, retry |
-| `can't load package: no Go files` | `run`/`dev`/`compile` (go) | Scan for `cmd/*/main.go`, update entry point in justfile, retry |
-| `CGO_ENABLED=1` available | `test` (go) | Add `-race` flag to `go test` recipe for race detection, retry |
-| `command not found: golangci-lint` | `lint`/`check` (go) | In `lint`: replace `golangci-lint run ./...` → `go vet ./...`. In `check`: replace `golangci-lint run ./... && go vet ./...` → `go vet ./...`. Retry both. |
-| `command not found: uvicorn` | `dev` (python) | Replace → `python -m src --reload` or skip with comment, retry |
-| `command not found: ruff` | `lint`/`fmt`/`check` (python) | In `lint`: replace `ruff check .` → `python -m flake8`. In `check`: replace `ruff check .` → `python -m flake8` (keep `&& python -m py_compile src/`). In `fmt`: skip with comment. Retry. |
-
-For each fix:
-1. Edit the justfile to apply the correction.
-2. Re-run the failed command (actual execution, same method as Phase 2).
-3. If it still fails after 2 attempts, leave the recipe as-is and report the failure in the output.
-
-#### 4d. Report verification results
-
-After all recipes have been verified (or corrected):
-
-```
-Verification results:
-  ✓ project-type    → "mixed" (executed)
-  ✓ compile         → go vet ./... + npx tsc --noEmit (executed)
-  ✓ build           → go build ./... + npm run build (executed)
-  ✓ test            → go test ./... + npm test (dry-run only)
-  ✗ run             → FIXED: npm start → npm run preview (executed, self-corrected)
-  ✓ dev             → go run cmd/server/main.go + npm run dev (executed, 10s timeout)
-  ✓ install         → go mod download + npm install (executed)
-  ✗ lint            → golangci-lint not found, replaced with go vet (executed, self-corrected)
-
-2 issues auto-corrected. Edit justfile to customize further.
-```
+**4e. Report**: One line per recipe: `[ok]` or `[fix]` + name + command + method.
 
 ### Step 5: Output Confirmation
 
 ```
-Created justfile with standard forge targets (Go project)
+Created justfile with <surface-aware | standard> forge targets (<Language> project)
 
-Targets:
-  just project-type               → echo "backend"
-  just compile                    → go vet ./...
-  just test                       → go test ./...
-  just test-e2e --feature <slug>  → feature tests in tests/e2e/features/<slug>/
-  ... (all 15 standard targets listed with resolved commands)
+Surfaces:              (omit if no surfaces)
+  <key> (<type>): <generated recipes>
 
-Edit justfile to customize commands for your project.
-task all-completed will now use `just test` automatically.
+Language targets:
+  just <target>        -> <resolved command>
+
+Surface targets:       (omit if no surfaces)
+  just <prefix><verb>  -> <resolved command>
+
+Convention: <path> (<framework>) | No Convention file found. Run `/forge:test-guide` to create.
+Edit justfile to customize commands. Recipes marked `# user-customized` will be preserved on re-generation.
 ```
 
 ## Notes
 
-- **just >= 1.50.0**: `[arg("feature", long)]` generates `--feature <value>` named option syntax; callers (CI, `task all-completed`) must pass the slug: `just test-e2e --feature <slug>`
-- Makefile migration: preserve original command logic, adjust only format
-- **e2e tests use `npx playwright test` regardless of project language**: forge e2e test scripts use `@playwright/test` and are executed via the Playwright test runner. The e2e layer is language-agnostic. Backend projects (Go/Rust/Python) still need Node.js available in the environment for `just test-e2e` and `just e2e-setup`.
-- **Targets invoked by forge skills**: `project-type`, `compile`, `build`, `test`, `test-e2e`, `install`, `e2e-setup`, `e2e-verify`. The remaining targets (`run`, `dev`, `lint`, `fmt`, `check`, `clean`, `ci`) are for manual use and are not called by any skill.
-- **Idempotency**: `e2e-setup` and `install` are designed to be idempotent (safe to run multiple times). Other recipes (`build`, `compile`, `test`) are not — they always re-execute.
-- **Mixed project scope**: forge skills resolve scope from `task claim` output or `process/state.json` and pass it to `just <verb>` when `just project-type` returns `mixed`. Pass `just compile frontend` or `just compile backend` manually to target a single side outside of a task context.
+- **Two-layer model**: `unit-test` = language-level (per-task submit gate); `<prefix>test` = surface-level (functional/e2e).
+- **Recipe generation**: MUST use `forge justfile scaffold` CLI. Do NOT generate PID/lifecycle code from scratch.
+- **Targets invoked by forge skills**: `compile`, `unit-test`, `<prefix>test`, `<prefix>teardown`, `install`.
+
+<!-- INLINE from test-guide/references/test-type-model.md @ v3.0.0-rc.53 -->
+**Surface -> Test Type mapping**:
+
+| Surface | Test Type | Verification | Execution Model |
+|---------|-----------|-------------|-----------------|
+| `cli` | CLI Functional Test | Exit code + stdout + stderr | Subprocess |
+| `tui` | Terminal Functional Test | Terminal output + stdin interaction | Subprocess + stdin pipe |
+| `api` | API Functional Test | HTTP status + response body + headers | HTTP client |
+| `web` | Web E2E Test | DOM visibility + user interaction + URL change | Browser automation |
+| `mobile` | Mobile E2E Test | UI visibility + user interaction + screen ID | Maestro YAML / manual |
+<!-- END INLINE:origin=test-guide/references/test-type-model.md -->
 
 <EXTREMELY-IMPORTANT>
-- MANUAL-ONLY. Do NOT auto-invoke this skill from other skills or agents. Only invoke when user explicitly runs `/init-justfile`.
-- If an existing justfile lacks forge boundary markers and `--force` is not set, you MUST prompt the user before overwriting. Never silently destroy user customizations.
-- Only the section between `# --- forge standard recipes ---` / `# --- end forge standard recipes ---` markers may be replaced. Recipes outside markers must be preserved verbatim.
-- After writing, you MUST run the verification steps (dry-run + actual execution) and report all results.
+- MANUAL-ONLY. Do NOT auto-invoke this skill.
+- Boundary marker + `--force` protection: never silently overwrite user customizations.
+- `# user-customized` recipes MUST be preserved during re-generation.
+- CLI/TUI surfaces MUST NOT generate dev, probe, or aggregate recipes.
+- Recipe generation MUST use `forge justfile scaffold` CLI command.
 </EXTREMELY-IMPORTANT>

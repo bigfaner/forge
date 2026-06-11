@@ -1,0 +1,165 @@
+{
+  "feature": "eval-target-iterations-config",
+  "proposal": "docs/proposals/eval-target-iterations-config/proposal.md",
+  "created": "2026-06-04",
+  "tasks": {
+    "1-add-eval-settings-struct": {
+      "id": "1",
+      "title": "Add EvalSettings Go struct and Config integration",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-add-eval-settings-struct.md",
+      "record": "records/1-add-eval-settings-struct.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2-add-eval-block-to-init": {
+      "id": "2",
+      "title": "Add eval block to forge config init output",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-add-eval-block-to-init.md",
+      "record": "records/2-add-eval-block-to-init.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "3-update-eval-commands": {
+      "id": "3",
+      "title": "Update 7 eval-* commands to read config and pass to skill",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-eval-commands.md",
+      "record": "records/3-update-eval-commands.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "4-add-eval-settings-tests": {
+      "id": "4",
+      "title": "Add EvalSettings unit tests",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "4-add-eval-settings-tests.md",
+      "record": "records/4-add-eval-settings-tests.md",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: Task 1 compilation errors - EvalSettings struct missing from config.go",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1",
+      "type": "coding.fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: Pre-existing test failures in qualitygate and scripts packages",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "fix-1",
+      "type": "coding.fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: duplicate TestSetConfigValue_EvalSettings in eval_settings_test.go",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "type": "coding.fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: syntax error in init_test.go line 608",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "2",
+      "type": "coding.fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "Fix: duplicate TestSetConfigValue_EvalSettings across evalsettings_test.go and eval_settings_test.go",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true,
+      "sourceTaskID": "4",
+      "type": "coding.fix"
+    },
+    "fix-6": {
+      "id": "fix-6",
+      "title": "Fix: duplicate TestSetConfigValue_EvalSettings in eval_settings_test.go",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-6.md",
+      "record": "records/fix-6.md",
+      "breaking": true,
+      "sourceTaskID": "4",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "fix-4"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

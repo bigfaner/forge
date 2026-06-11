@@ -1,0 +1,233 @@
+---
+title: "Forge Plugin Distribution Model"
+domains: [plugin, distribution, path-resolution, skills, hooks, references, CLAUDE_PLUGIN_ROOT, intent, pipeline-branching]
+---
+
+# Forge Plugin 架构与分发机制
+
+Forge 是一个分发到用户环境的 Claude Code plugin，不是只在开发源码中运行的工具。理解分发模型对编写 skill 至关重要。
+
+## 1. 分发模型
+
+Forge 的分发模型以 **CLI binary 为入口，Plugin 是 CLI 管理的依赖**。
+
+### CLI Binary 安装
+
+```
+~/.forge/bin/forge          # Unix (macOS/Linux)
+%USERPROFILE%\.forge\bin\forge.exe   # Windows
+```
+
+安装方式：
+- `curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash` (Unix)
+- PowerShell 脚本 `install.ps1` (Windows)
+- `forge upgrade` 统一升级 CLI binary + Plugin
+
+### Plugin 安装位置
+
+```
+~/.claude/plugins/cache/forge/forge/<version>/
+```
+
+例如 Windows: `C:\Users\<user>\.claude\plugins\cache\forge\forge\3.0.0-rc.28\`
+
+Plugin 由 `forge upgrade` 自动管理安装和升级，用户不直接操作 Plugin。
+
+### 分发包内容（源码 → 安装映射）
+
+源码仓库 `plugins/forge/` 下的以下目录随 plugin 包分发到用户环境：
+
+```
+~/.claude/plugins/cache/forge/forge/<version>/
+├── .claude-plugin/plugin.json     # plugin 元数据（name, version, description）
+├── agents/                        # 分发 — subagent 定义
+│   └── task-executor.md
+├── commands/                      # 分发 — 斜杠命令入口
+├── hooks/                         # 分发 — 生命周期钩子
+│   ├── hooks.json                 #   hook 注册表（使用 ${CLAUDE_PLUGIN_ROOT}）
+│   ├── run-hook.cmd               #   hook 调度脚本（分发到用户环境）
+│   ├── session-start              #   注入 guide.md 到上下文
+│   ├── debug                      #   调试辅助脚本
+│   └── guide.md                   #   forge 规范指南（随 SessionStart 加载）
+└── skills/                        # 分发 — skill 定义 + templates
+    └── <skill-name>/
+        ├── SKILL.md
+        ├── templates/
+        └── experts/               # eval skill 专用：协议 + 专家角色
+            ├── protocol/
+            │   ├── scorer-protocol.md
+            │   └── reviser-protocol.md
+            ├── freeform/          # freeform 评估专用：动态专家生成
+            │   ├── expert-inference.md
+            │   ├── expert-template.md
+            │   ├── extraction-prompt.md
+            │   ├── freeform-reviewer.md
+            │   └── freeform-review-protocol.md
+            └── scorer/
+                ├── architect.md
+                ├── code-reviewer.md
+                ├── cto.md
+                ├── editor.md
+                ├── pm.md
+                ├── qa.md
+                ├── ux-auditor.md
+                └── ux-engineer.md
+```
+
+**不分发的内容**：源码仓库中的 `docs/`、`.git/`、Go 源码、测试文件等。
+
+## 2. 组件说明
+
+| 组件 | 作用 | 分发 | 用户的交互方式 |
+|------|------|------|---------------|
+| **skills/** | Skill 定义文件（SKILL.md + templates + experts） | 是 | `/skill-name` 斜杠命令 |
+| **commands/** | 轻量命令入口（单 .md 文件） | 是 | `/command-name` 斜杠命令 |
+| **agents/** | Subagent 定义 | 是 | Skill/Command 通过 Agent 工具调用 |
+| **hooks/** | 生命周期钩子 + forge 规范指南 | 是 | 自动触发（SessionStart/SubagentStart 注入 guide.md，SessionEnd/SubagentStop 触发 cleanup，Stop 触发 quality-gate 和 feature complete） |
+
+## 3. 核心依赖
+
+### `just` — 构建任务运行器
+
+- **必须依赖**，不是可选的
+- `forge init` 引导用户安装 `just`
+- `just` 抽象不同语言的常用命令（compile, fmt, lint, unit-test, test, probe 等）
+- Skill 中引用 `just` 是预期行为
+
+### Forge CLI — 命令行工具
+
+- `forge task claim/submit/status/index` 等命令是 skill 的操作接口
+- `forge upgrade` 统一管理 CLI binary 升级和 Plugin 安装/升级
+- Skill 中引用 `forge` CLI 命令是预期行为
+
+### `skills/eval/experts/` — 评估协议与专家角色
+
+- 随 plugin 分发在 `skills/eval/experts/` 目录中
+- `protocol/` 包含通用评分和修订工作流（不含领域知识）
+- `freeform/` 包含 freeform 评估的动态专家生成模板（领域推理、专家模板、提取提示词、评审协议）
+- `scorer/` 包含各领域专家角色描述（角色 + 领域失败模式）
+- Eval skill 在运行时组合 protocol + expert，通过 `general-purpose` agent 执行
+- Skill 中引用 `experts/` 下的文件是预期行为（相对路径，与 `rubrics/` 同级约定）
+
+## 4. 用户项目目录规范
+
+以下目录由 forge skill 在**用户项目**中生成，用户必须遵循：
+
+```
+<user-project>/
+├── docs/
+│   ├── ARCHITECTURE.md       # 系统架构（用户维护）
+│   ├── business-rules/       # 跨 feature 业务规则（consolidate-specs 生成）
+│   ├── conventions/          # 技术规范：编码标准、API 约定、命名规则
+│   ├── reference/            # 系统规范：环境、部署、技术栈
+│   ├── decisions/            # 技术决策（/learn 生成）
+│   ├── lessons/              # 经验教训（/learn 生成）
+│   ├── proposals/            # 改进提案（/brainstorm 生成）
+│   └── sitemap/sitemap.json  # 页面元素地图（/gen-web-sitemap 生成）
+├── docs/features/<slug>/     # Feature 工作区
+│   ├── manifest.md           # Feature 入口
+│   ├── tasks/                # 任务文件
+│   └── testing/              # 测试脚本（运行时生成）
+├── tests/                    # Surface 回归测试（含 CLI 功能测试）
+└── .forge/
+    └── config.yaml           # Forge 项目配置（test profile 等）
+```
+
+**关键约束**：
+- `docs/conventions/` 和 `docs/business-rules/` 由 `/consolidate-specs` 从 feature 文档中提取，agent 在任务执行时读取这些规范
+- `tests/` 测试通过标签管理（`/run-tests` skill 内部处理 `@feature` → `@regression` 晋升），不使用文件迁移
+- `records/` 由 `forge task submit` 生成，不能手动写入
+
+## 5. 路径解析机制
+
+### Hooks/Scripts — 使用 `${CLAUDE_PLUGIN_ROOT}`
+
+hooks.json 和 shell 脚本可以通过环境变量引用 plugin 安装位置：
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "\"${CLAUDE_PLUGIN_ROOT}/hooks/run-hook.cmd\" session-start"
+      }]
+    }]
+  }
+}
+```
+
+### Skills/Commands — 使用相对路径
+
+Skill 文件（SKILL.md）和 Command 文件（.md）中的路径使用相对于当前文件所在目录的相对路径。Claude 知道 SKILL.md 的文件位置，能够正确解析相对路径引用。
+
+**路径规则：**
+
+| 引用目标 | 路径风格 | 示例 |
+|---------|---------|------|
+| skill/command 内部文件 | 相对路径 | `rules/platform-routing.md`、`templates/decision-entry.md`、`rubrics/<type>.md` |
+| 跨 skill 文件 | 描述性路径 + 上下文 | `ui-design/templates/styles/<name>.md`（注明 resolve relative to the skills parent directory） |
+| 用户项目文件 | 项目相对路径 | `docs/decisions/<type>.md` |
+| forge CLI | 命令名 | `forge task claim` |
+
+**模板文件（templates/）**：不是 SKILL.md，不经过 skill 内容加载机制。模板中的跨 skill 引用路径由读取该模板的 SKILL.md 在执行时负责解析。如果模板需要引用其他 skill 的资源（如 eval rubrics），SKILL.md 应在指令中提供正确的路径，而非在模板中硬编码。
+
+**禁止：**
+- 项目根路径（`plugins/forge/...`）— 分发后路径不存在
+- `${CLAUDE_SKILL_DIR}` 变量 — 使用相对路径替代，保持 SKILL.md 内容自描述
+
+## 6. Pipeline
+
+### Full Pipeline
+
+```
+/brainstorm → /write-prd → /ui-design? → /tech-design → /breakdown-tasks → /run-tasks → /submit-task
+                  ↓              ↓              ↓
+              /eval-prd     /eval-ui      /eval-design
+```
+
+### Quick Pipeline（coding 和 doc 任务，无数量上限）
+
+```
+/brainstorm → /quick-tasks → /run-tasks* → /submit-task
+
+> **\*** `/run-tasks` is a command (`commands/run-tasks.md`), not a skill. Other pipeline components shown above are skills.
+```
+
+### Intent-Driven Pipeline Branching
+
+每个 feature 有一个 intent（`new-feature`、`enhancement`、`refactor`、`cleanup`、`fix`、`doc`），决定 pipeline 的路径：
+
+| Intent | Mode | PRD Format | Test Pipeline | 说明 |
+|--------|------|-----------|--------------|------|
+| `new-feature` | Breakdown（有 PRD+Design）或 Quick（有 Proposal） | Full | 正常生成 | 默认值，根据文档存在自动选择 mode |
+| `enhancement` | 同上 | Simplified | 正常生成 | 改进现有行为，跳过 User Stories |
+| `refactor` | 同上 | Spec-only | 跳过 | 不生成测试 pipeline 任务 |
+| `cleanup` | 强制 Quick | Spec-only | 跳过 | 忽略文档存在，始终走 Quick mode |
+| `fix` | 同上 | Spec-only | 跳过 | Bug 修复 |
+| `doc` | 同上 | Minimal | 跳过 | 纯文档变更 |
+
+`doc.consolidate` 和 `doc.drift` 是低频内部任务类型，自动由 skills 生成，属于 `doc` umbrella — 无需单独 intent。
+
+Intent 存储在 proposal frontmatter 的 `intent` 字段，`forge task index` 通过 `BuildIndexOpts.Intent` 传递。各 skill（brainstorm、write-prd、tech-design、breakdown-tasks、quick-tasks）通过 Intent Detection 读取此字段，按 Pipeline Configuration 表决定工作流分支。Override Signals 可在内容生成时启用额外 pipeline 步骤（如 API 变更信号启用 API Handbook）。
+
+### 测试 Pipeline
+
+```
+/gen-journeys → /eval-journey → /gen-contracts? → /eval-contract? → /gen-test-scripts → /run-tests
+```
+
+`gen-contracts` 和 `eval-contract` 步骤由 `CondHasProtocolSurfaceTask` 条件控制：当 feature 所有业务任务的 `surface-type` 均为 web/mobile（交互级 surface）时，这两个步骤跳过，`gen-test-scripts` 直接依赖 `gen-journeys`。仅当存在 api/cli/tui（协议级 surface）任务时才执行 contract 生成。条件判断保守策略：空/未知 surface-type 视为"可能有协议级"，不触发跳过。
+
+### 辅助 Skill（任意阶段可用）
+
+- `/consolidate-specs` — 提取业务规则和技术规范
+- `/learn` — 统一知识积累（吸收了 /learn-lesson 和 /record-decision）
+- `/forensic` — 分析历史会话偏差原因
+- `/init-justfile` — 初始化项目 Justfile
+- `/eval` — 通用文档评估（12 种 rubric 类型：proposal, prd, design, ui, ui-web, ui-mobile, ui-tui, consistency, validate-code, validate-ux, journey, contract）
+- `/clean-code` — 代码简化与质量提升
+- `/deep-research` — 技术或产品深度调研
+- `/extract-design-md` — 从应用提取视觉样式生成 DESIGN.md
+- `/gen-web-sitemap` — 自动生成 Web 应用站点地图
+- `/test-guide` — 测试指南（profile-based）

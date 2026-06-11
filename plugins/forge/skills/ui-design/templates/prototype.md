@@ -24,11 +24,11 @@ Before generating any page, load the platform-specific navigation rules:
 
 Determine platform by checking in order:
 
-| Signal | Web | Mobile App |
-|--------|-----|------------|
-| PRD Navigation Architecture `platform` field | `web` | `mobile` |
-| UI Function descriptions | "pages", "routes", "browser" | "screens", "tabs", "mini-program" |
-| User explicit instruction | — | — |
+| Signal | Web | Mobile App | TUI |
+|--------|-----|------------|-----|
+| PRD Navigation Architecture `platform` field | `web` | `mobile` | `tui` |
+| UI Function descriptions | "pages", "routes", "browser" | "screens", "tabs", "mini-program" | "panels", "terminal", "key bindings" |
+| User explicit instruction | — | — | — |
 
 If ambiguous, ask the user.
 
@@ -38,6 +38,7 @@ If ambiguous, ask the user.
 |----------|------|-----------------|
 | Web | `templates/platforms/web.md` | Top nav bar / sidebar, breadcrumbs |
 | Mobile App | `templates/platforms/mobile.md` | Bottom tab bar, secondary pages with back button |
+| TUI | `templates/platforms/tui.md` | Keyboard-driven panels, modes, keymaps |
 
 ### Platform-Agnostic Rules
 
@@ -173,6 +174,193 @@ Each `{page-name}.html` follows this structure:
 </html>
 ```
 
+## TUI Prototype Rules
+
+TUI prototypes use HTML + CSS to simulate terminal appearance in the browser. They are a **human review tool** — the ASCII mockup with numeric dimensions in `ui-design.md` remains the precise specification for agents.
+
+### Single-File Structure
+
+Unlike web/mobile multi-file prototypes, TUI prototypes are a **single `index.html`** containing all panels rendered inside a terminal-window container.
+
+```
+ui/prototype/          (single TUI feature)
+└── index.html         # All panels in one terminal-window div
+
+ui/prototype/tui/      (multi-platform feature)
+└── index.html
+```
+
+### Output Path
+
+| Scenario | Path |
+|----------|------|
+| Single TUI feature | `docs/features/{{SLUG}}/ui/prototype/index.html` |
+| Multi-platform feature (web + tui) | `docs/features/{{SLUG}}/ui/prototype/tui/index.html` |
+
+### Terminal Window Container
+
+All panels render inside a single `<div class="terminal-window">` that simulates the terminal viewport:
+
+```html
+<div class="terminal-window">
+  <div class="terminal-header">
+    <span class="terminal-title">{{Feature Name}}</span>
+  </div>
+  <div class="terminal-content">
+    <!-- Header panel -->
+    <div class="tui-panel tui-header">...</div>
+    <!-- Content panel(s) rendered per ASCII mockup -->
+    <div class="tui-panel tui-content">...</div>
+    <!-- Status bar -->
+    <div class="tui-panel tui-status-bar">...</div>
+  </div>
+  <div class="simulated-keys">
+    <button class="key-btn" data-panel="header">[Tab]</button>
+    <button class="key-btn" data-panel="content">[1]</button>
+    <button class="key-btn" data-panel="sidebar">[2]</button>
+    <button class="key-btn" data-panel="detail">[3]</button>
+    <button class="key-btn" data-action="quit">[q]</button>
+    <button class="key-btn" data-action="command">[:command]</button>
+  </div>
+</div>
+```
+
+### Terminal CSS
+
+Use monospace font and dark background to approximate terminal appearance. Map the TUI theme's 256-color or 16-color values to CSS hex equivalents.
+
+```css
+.terminal-window {
+  background: #1e1e1e;           /* Approximate terminal bg */
+  color: #d4d4d4;                /* Approximate terminal fg */
+  font-family: 'Cascadia Mono', 'Consolas', 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  max-width: 960px;              /* Approximate 120-col terminal */
+  margin: 0 auto;
+}
+
+.terminal-content {
+  padding: 0;
+  white-space: pre;              /* Preserve ASCII layout spacing */
+}
+
+.tui-panel {
+  border: 1px solid #444;
+}
+
+.tui-panel.focused {
+  border-color: #5f87af;         /* Border Focus approximation */
+}
+
+.tui-status-bar {
+  background: #1e1e1e;
+  color: #808080;
+  padding: 0 4px;
+}
+```
+
+### Panel Rendering
+
+Each panel from `ui-design.md` maps to a `<div class="tui-panel">`. Panel layout inside the terminal-window must match the ASCII mockup structure:
+
+1. Read the `### ASCII Layout Mockup` from each TUI panel in `ui-design.md`
+2. Render the ASCII art as-is inside a `<pre>` block within the panel div
+3. Apply the panel's `### Color Mapping` as inline styles or CSS classes
+4. Use the `### Character Palette` characters exactly as specified
+
+```html
+<!-- Panel rendered from ASCII mockup -->
+<div class="tui-panel tui-content focused">
+  <pre class="tui-ascii">
+┌─ Dashboard ────────────────────────────────┐
+│  CPU  [████████░░] 78%    Mem [██████░░] 62%│
+│  Disk [████░░░░░░] 41%    Net [██░░░░░░] 23%│
+└────────────────────────────────────────────┘</pre>
+</div>
+```
+
+### Simulated Key Buttons
+
+Interactive buttons at the bottom simulate keyboard input. Each button switches the focused panel or triggers a mode change.
+
+**Required buttons** (from proposal D6):
+
+| Button | Behavior |
+|--------|----------|
+| `[Tab]` | Cycle focus to next panel |
+| `[1]`-`[9]` | Jump to panel by index |
+| `[q]` | Simulate quit / exit mode |
+| `[:command]` | Show command input overlay |
+
+```css
+.simulated-keys {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: #2d2d2d;
+  justify-content: center;
+}
+
+.key-btn {
+  background: #3c3c3c;
+  color: #cccccc;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.key-btn:hover {
+  background: #505050;
+  border-color: #5f87af;
+}
+```
+
+```js
+// Simulated key interaction (inline script)
+document.querySelectorAll('.key-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const panel = btn.dataset.panel;
+    const action = btn.dataset.action;
+    // Remove focused class from all panels
+    document.querySelectorAll('.tui-panel').forEach(p => p.classList.remove('focused'));
+    // Apply focus to target panel
+    if (panel) {
+      const target = document.querySelector(`.tui-panel[data-name="${panel}"]`)
+        || document.querySelectorAll('.tui-panel')[parseInt(panel) - 1];
+      if (target) target.classList.add('focused');
+    }
+  });
+});
+```
+
+### Panel Layout Matching
+
+The HTML panel arrangement must match the ASCII mockup from `ui-design.md`:
+
+- **Header**: top, full width
+- **Content**: center, fills remaining space
+- **Status Bar**: bottom, full width
+- **Sidebar**: left side (if present in design)
+- **Detail**: right of sidebar (if present in design)
+
+Verify by comparing the rendered browser output against the ASCII mockup structure.
+
+### TUI-Specific Post-Generation Checks
+
+- [ ] All panels from `ui-design.md` are rendered in a single `index.html`
+- [ ] Terminal-window div has dark background and monospace font
+- [ ] Simulated key buttons are present: `[Tab]`, `[1]`-`[9]`, `[q]`, `[:command]`
+- [ ] Panel focus toggles when clicking simulated key buttons
+- [ ] ASCII art inside panels matches the mockup from `ui-design.md`
+- [ ] Color mapping from the TUI theme is applied as CSS
+
 ## State Mocks
 
 For each page, implement all relevant states as sections or toggleable views:
@@ -202,4 +390,8 @@ After generating ALL files, perform these checks:
 
 ## Output
 
-Save to: `docs/features/<slug>/ui/prototype/`
+| Scenario | Path |
+|----------|------|
+| Single web or mobile feature | `docs/features/{{SLUG}}/ui/prototype/` (multi-file) |
+| Single TUI feature | `docs/features/{{SLUG}}/ui/prototype/index.html` (single file) |
+| Multi-platform feature | `docs/features/{{SLUG}}/ui/prototype/web/`, `docs/features/{{SLUG}}/ui/prototype/tui/` |

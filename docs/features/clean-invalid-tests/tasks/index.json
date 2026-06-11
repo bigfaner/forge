@@ -1,0 +1,157 @@
+{
+  "feature": "clean-invalid-tests",
+  "proposal": "docs/proposals/clean-invalid-tests/proposal.md",
+  "created": "2026-05-26",
+  "tasks": {
+    "1-clean-forge-cli-skip-tests": {
+      "id": "1",
+      "title": "Clean forge-cli/tests/ skip and dead tests",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-clean-forge-cli-skip-tests.md",
+      "record": "records/1-clean-forge-cli-skip-tests.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "blockedReason": "auto-downgrade: testsFailed=19"
+    },
+    "2-clean-forge-cli-artifacts": {
+      "id": "2",
+      "title": "Clean forge-cli/tests/ empty artifacts and dead helpers",
+      "priority": "P1",
+      "estimatedTime": "45m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-clean-forge-cli-artifacts.md",
+      "record": "records/2-clean-forge-cli-artifacts.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "3-clean-tests-static-duplicates": {
+      "id": "3",
+      "title": "Clean tests/ static-file grep and duplicate tests",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "3-clean-tests-static-duplicates.md",
+      "record": "records/3-clean-tests-static-duplicates.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "4-clean-tests-invalid-tui": {
+      "id": "4",
+      "title": "Clean tests/ invalid tests and tui-ui-design directory",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "4-clean-tests-invalid-tui.md",
+      "record": "records/4-clean-tests-invalid-tui.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "5-extend-tc004-scope": {
+      "id": "5",
+      "title": "Extend TC-004 contract to cover forge-cli/tests/",
+      "priority": "P2",
+      "estimatedTime": "15m",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-extend-tc004-scope.md",
+      "record": "records/5-extend-tc004-scope.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-2"
+      ],
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix",
+      "blockedReason": "auto-downgrade: testsFailed=24"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: surface-aware-recipe-generation e2e failures (8)",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "fix-3"
+      ],
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "sourceTaskID": "fix-1"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "Fix: test-generation e2e failures",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "sourceTaskID": "fix-2",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

@@ -1,0 +1,247 @@
+{
+  "feature": "test-pipeline-consistency-audit",
+  "proposal": "docs/proposals/test-pipeline-consistency-audit/proposal.md",
+  "created": "2026-05-27",
+  "tasks": {
+    "10-fix-architecture-md": {
+      "id": "10",
+      "title": "修复 ARCHITECTURE.md 与实际代码的对齐",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "10-fix-architecture-md.md",
+      "record": "records/10-fix-architecture-md.md",
+      "type": "doc"
+    },
+    "11-sync-overview-workflow": {
+      "id": "11",
+      "title": "同步更新 OVERVIEW 和 WORKFLOW 文档（含中文版）",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "10"
+      ],
+      "status": "completed",
+      "file": "11-sync-overview-workflow.md",
+      "record": "records/11-sync-overview-workflow.md",
+      "type": "doc"
+    },
+    "12-update-surface-test-type-model": {
+      "id": "12",
+      "title": "更新 surface-test-type-model 提案的 recipe 命名",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "12-update-surface-test-type-model.md",
+      "record": "records/12-update-surface-test-type-model.md",
+      "type": "doc"
+    },
+    "1a-constants-paths": {
+      "id": "1a",
+      "title": "重命名 E2E 常量和路径函数为 surface-neutral 名称",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "1a-constants-paths.md",
+      "record": "records/1a-constants-paths.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor"
+    },
+    "1b-flatten-test-dir": {
+      "id": "1b",
+      "title": "扁平化 tests/ 物理目录结构",
+      "priority": "P0",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1a"
+      ],
+      "status": "completed",
+      "file": "1b-flatten-test-dir.md",
+      "record": "records/1b-flatten-test-dir.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "2-rename-e2eprobe-serverprobe": {
+      "id": "2",
+      "title": "重命名 e2eprobe 包为 serverprobe",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1a"
+      ],
+      "status": "completed",
+      "file": "2-rename-e2eprobe-serverprobe.md",
+      "record": "records/2-rename-e2eprobe-serverprobe.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor"
+    },
+    "3-update-quality-gate": {
+      "id": "3",
+      "title": "更新 quality_gate 路径和 mobile-test-setup 集成",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1a",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-update-quality-gate.md",
+      "record": "records/3-update-quality-gate.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement"
+    },
+    "4-cleanup-dead-code-types": {
+      "id": "4",
+      "title": "清理废弃模板、死代码和 TypeTestVerifyRegression 类型",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1a"
+      ],
+      "status": "completed",
+      "file": "4-cleanup-dead-code-types.md",
+      "record": "records/4-cleanup-dead-code-types.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "5-rename-build-tags": {
+      "id": "5",
+      "title": "重命名 Go build tag 为 surface-type-specific 标签",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-rename-build-tags.md",
+      "record": "records/5-rename-build-tags.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "blockedReason": "refactor verification failed: git status is not clean (modified: docs/features/test-pipeline-consistency-audit/tasks/index.json, forge-cli/internal/cmd/quality_gate.go, plus untracked docs from previous tasks). Clean starting state required for safe refactoring rollback."
+    },
+    "6-update-template-terminology": {
+      "id": "6",
+      "title": "更新 prompt/task 模板中的旧术语",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "6-update-template-terminology.md",
+      "record": "records/6-update-template-terminology.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup"
+    },
+    "7-update-gen-scripts-docs": {
+      "id": "7",
+      "title": "更新 gen-contracts 和 gen-test-scripts Skill 文档术语",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "7-update-gen-scripts-docs.md",
+      "record": "records/7-update-gen-scripts-docs.md",
+      "type": "doc"
+    },
+    "8-fix-quick-tasks-order": {
+      "id": "8",
+      "title": "修正 quick-tasks 执行顺序和术语",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "status": "completed",
+      "file": "8-fix-quick-tasks-order.md",
+      "record": "records/8-fix-quick-tasks-order.md",
+      "type": "doc"
+    },
+    "9-update-other-skill-docs": {
+      "id": "9",
+      "title": "更新其他 Skill/Command 文档中的旧术语和路径",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "9-update-other-skill-docs.md",
+      "record": "records/9-update-other-skill-docs.md",
+      "type": "doc"
+    },
+    "disc-1": {
+      "id": "disc-1",
+      "title": "Fix: pre-existing TestDetectModeFromPath failure",
+      "priority": "P1",
+      "status": "completed",
+      "file": "disc-1.md",
+      "record": "records/disc-1.md",
+      "sourceTaskID": "1a",
+      "type": "coding.fix"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "9"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

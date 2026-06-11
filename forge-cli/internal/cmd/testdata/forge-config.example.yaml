@@ -1,0 +1,90 @@
+# Forge Project Configuration
+# Commit to git — this is declarative, not environment-specific
+# Runtime config (baseUrl, credentials) stays in tests/e2e/config.yaml
+
+project-type: fullstack
+
+# Surface type mapping for test pipeline and path-based queries.
+# Scalar form (single-module projects):
+#   surfaces: api
+# Map form (multi-module / monorepo):
+#   surfaces:
+#     frontend: web
+#     backend: api
+# Omit to use forge init auto-detection.
+# Valid values: web, mobile, api, cli, tui
+surfaces:
+  frontend: web
+  backend: api
+
+# Override auto-detected languages. Omit to use auto-detection from project file signals.
+# Valid values: go, javascript, mobile, java, rust, python
+# languages:
+#   - javascript
+
+# Override the test framework for code generation.
+# Built-in frameworks: go-testing, pytest, mocha, junit5, rust-test, maestro
+# Omit to use the default framework for the detected language.
+# Custom framework names are also accepted.
+# test-framework: pytest
+
+# Auto-behavior configuration (all optional — omit the block for backward-compatible defaults)
+# Each mode-scoped field has quick/full sub-keys to control pipeline behavior per mode.
+auto:
+  # Whether e2e test tasks are generated for each pipeline mode.
+  # Default: quick=true, full=true (existing behavior — backward compatible)
+  test:
+    quick: true
+    full: true
+
+  # Whether spec-consolidation tasks are generated for each pipeline mode.
+  # Default: quick=true, full=true (existing behavior — backward compatible)
+  consolidateSpecs:
+    quick: true
+    full: true
+
+  # Whether code-cleanup tasks are generated for each pipeline mode.
+  # Default: quick=false, full=false (opt-in — off by default)
+  cleanCode:
+    quick: false
+    full: false
+
+  # Automatically push to remote after all-completed hook passes.
+  # Default: false (opt-in — off by default)
+  gitPush: false
+
+  # Whether auto knowledge extraction saves silently for each pipeline mode.
+  # Default: quick=true, full=false (quick mode auto-saves, full mode asks for confirmation)
+  knowledgeSave:
+    quick: true
+    full: false
+
+# Worktree creation configuration (optional — omit the block for default behavior)
+# source-branch: default branch to create worktrees from (defaults to HEAD)
+# includes: files to include from project root into new worktrees (e.g., .env files)
+# worktree:
+#   source-branch: develop
+#   includes:
+#     - .env
+#     - .env.local
+
+# Coverage strategy configuration (optional — omit the block for built-in defaults)
+# Per task type, choose a strategy:
+#   - percentage: target a specific coverage percentage
+#   - maintain: keep existing coverage, don't add new tests
+# Built-in defaults (used when this block is omitted):
+#   coding.feature: 80%, coding.enhancement/fix: 60%, coding.refactor/cleanup/clean: maintain
+# coverage:
+#   coding.feature:
+#     type: percentage
+#     percentage: 80
+#   coding.enhancement:
+#     type: percentage
+#     percentage: 60
+#   coding.fix:
+#     type: percentage
+#     percentage: 60
+#   coding.refactor:
+#     type: maintain
+#   coding.cleanup:
+#     type: maintain

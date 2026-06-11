@@ -1,0 +1,249 @@
+{
+  "feature": "forge-cli-codebase-standards",
+  "proposal": "docs/proposals/forge-cli-codebase-standards/proposal.md",
+  "created": "2026-05-30",
+  "tasks": {
+    "1-gen-dependency-graph": {
+      "id": "1",
+      "title": "Generate pkg/ dependency graph as factual baseline",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "status": "completed",
+      "file": "1-gen-dependency-graph.md",
+      "record": "records/1-gen-dependency-graph.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "medium"
+    },
+    "10-ci-gate-integration": {
+      "id": "10",
+      "title": "CI gate integration (goconst + gofmt + go vet)",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "8"
+      ],
+      "status": "completed",
+      "file": "10-ci-gate-integration.md",
+      "record": "records/10-ci-gate-integration.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "11-reorganize-internal-cmd": {
+      "id": "11",
+      "title": "Reorganize internal/cmd/ package structure and split large files",
+      "priority": "P1",
+      "estimatedTime": "4h",
+      "dependencies": [
+        "2",
+        "6"
+      ],
+      "status": "completed",
+      "file": "11-reorganize-internal-cmd.md",
+      "record": "records/11-reorganize-internal-cmd.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "12-reorganize-pkg-layer": {
+      "id": "12",
+      "title": "Reorganize pkg/ layer",
+      "priority": "P1",
+      "estimatedTime": "5h",
+      "dependencies": [
+        "2",
+        "6",
+        "7",
+        "8",
+        "9",
+        "11"
+      ],
+      "status": "completed",
+      "file": "12-reorganize-pkg-layer.md",
+      "record": "records/12-reorganize-pkg-layer.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "2-write-package-organization": {
+      "id": "2",
+      "title": "Write package-organization.md with PR review checklist",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-write-package-organization.md",
+      "record": "records/2-write-package-organization.md",
+      "type": "doc"
+    },
+    "3-write-naming": {
+      "id": "3",
+      "title": "Write naming.md convention",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-write-naming.md",
+      "record": "records/3-write-naming.md",
+      "type": "doc"
+    },
+    "4-write-constants-conventions": {
+      "id": "4",
+      "title": "Write constants.md and extend enum-constants.md",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-write-constants-conventions.md",
+      "record": "records/4-write-constants-conventions.md",
+      "type": "doc"
+    },
+    "5-write-deadcode-conventions": {
+      "id": "5",
+      "title": "Write dead-code.md and extend code-structure.md",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-write-deadcode-conventions.md",
+      "record": "records/5-write-deadcode-conventions.md",
+      "type": "doc"
+    },
+    "6-delete-dead-code": {
+      "id": "6",
+      "title": "Delete dead code and unify Debugf",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "5"
+      ],
+      "status": "completed",
+      "file": "6-delete-dead-code.md",
+      "record": "records/6-delete-dead-code.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "medium"
+    },
+    "7-cross-module-audit": {
+      "id": "7",
+      "title": "Cross-module dependency audit and CI check",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "7-cross-module-audit.md",
+      "record": "records/7-cross-module-audit.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "8-extract-magic-values": {
+      "id": "8",
+      "title": "Extract magic values to named constants",
+      "priority": "P1",
+      "estimatedTime": "3h",
+      "dependencies": [
+        "4",
+        "6"
+      ],
+      "status": "completed",
+      "file": "8-extract-magic-values.md",
+      "record": "records/8-extract-magic-values.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.refactor",
+      "complexity": "high"
+    },
+    "9-clean-test-bridge": {
+      "id": "9",
+      "title": "Clean test-bridge alias functions",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "5",
+        "6"
+      ],
+      "status": "completed",
+      "file": "9-clean-test-bridge.md",
+      "record": "records/9-clean-test-bridge.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.cleanup",
+      "complexity": "medium"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

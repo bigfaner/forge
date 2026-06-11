@@ -1,0 +1,287 @@
+---
+created: 2026-06-06
+author: "faner"
+status: Draft
+intent: "new-feature"
+---
+
+# Proposal: Forge Workspace — 多项目过程文档统一管理
+
+## Problem
+
+独立开发者同时推进多个 Forge 项目（4-8 个），但 Forge 是单项目视角设计——所有**过程文档**（proposals、features、PRDs、designs、tasks）锚定在项目目录内。多项目场景下产生具体痛点：
+
+1. **过程文档散落**：每个项目的 `docs/` 下有大量过程文档（proposals、features、tasks），查找时需要先切到项目目录。无法在一个地方看到所有项目的 proposals 或 features
+2. **缺乏全局状态视图**：无法一眼看到所有项目的阶段、活跃任务、阻塞项，需要逐个 `cd` + `forge task list`
+3. **多项目切换摩擦**：在项目间切换时丢失上下文，需要反复重新加载状态
+4. **知识无法复用**：lessons/conventions/decisions 沉淀在各自项目里，跨项目无法共享
+
+> 四个痛点中，1-3 是**过程文档管理**问题（Workspace 解决），4 是**知识管理**问题（Wiki 解决）。本提案聚焦前者。
+
+### Evidence
+
+- 4-8 个活跃 Forge 项目分布在一个统一父目录下
+- 查看「所有项目当前状态」需要逐个 `cd` + `forge task list`
+- 已有 proposals 和 features 分布在各自项目的 `docs/` 下，没有跨项目的统一视图
+- 已有两个 Draft 提案（forge-dashboard、forge-wiki）分别解决可见性和知识管理，但缺乏统一的**过程文档管理层**
+
+### Urgency
+
+每多一个项目，过程文档管理摩擦非线性增长。4-8 个项目的规模已影响日常效率。推迟意味着持续在项目间来回切换来了解全貌。
+
+## Proposed Solution
+
+引入 **Forge Workspace** 概念——项目父目录即工作区，作为多项目**过程文档**的统一管理入口。
+
+### 三模块协作架构
+
+Forge 多项目管理由三个互补模块组成，各有明确职责边界：
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                                                          │
+│  ┌──────────────────┐                                    │
+│  │   Workspace      │  过程文档管理                      │
+│  │                  │  (proposals + features + tasks)     │
+│  │  · 项目发现/注册  │                                    │
+│  │  · 跨项目提案     │◄──── proposals 暂存与分配          │
+│  │  · feature 总览   │◄──── features 聚合与状态追踪      │
+│  │  · 任务聚合       │◄──── tasks 跨项目进度              │
+│  └────────┬─────────┘                                    │
+│           │                                              │
+│           │ 提供结构化数据                                 │
+│           ▼                                              │
+│  ┌──────────────────┐                                    │
+│  │   Dashboard      │  可视化查看                        │
+│  │                  │  (文档 + 任务 + 状态)               │
+│  │  · 项目状态卡片   │                                    │
+│  │  · 活动时间线     │                                    │
+│  │  · 文档/任务下钻  │                                    │
+│  └──────────────────┘                                    │
+│                                                          │
+│  ┌──────────────────┐                                    │
+│  │   Wiki           │  知识管理                          │
+│  │                  │  (lessons/conventions/decisions)    │
+│  │  · 知识 push/pull│                                    │
+│  │  · 多维搜索      │                                    │
+│  │  · 健康检查      │                                    │
+│  └──────────────────┘                                    │
+│                                                          │
+│  .forge-workspace.yaml  (仅注册表)                       │
+│  .forge-workspace/       (per-module 配置，按需创建)       │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+         │              │              │
+    ┌────┴────┐    ┌────┴────┐    ┌────┴────┐
+    │ my-api  │    │ my-web  │    │cli-tool │  ...
+    │ (项目)   │    │ (项目)   │    │ (项目)   │
+    └─────────┘    └─────────┘    └─────────┘
+```
+
+**模块职责边界**：
+
+| 模块 | 管理什么 | 不管理什么 | 优先级 |
+|------|---------|-----------|--------|
+| **Workspace** | 过程文档（proposals、features、tasks、PRDs、designs） | 知识（lessons/conventions/decisions） | P0（本次实现） |
+| **Dashboard** | 可视化查看（消费 Workspace 的数据，展示文档与任务） | 数据生产、持久化 | P2（后续提案） |
+| **Wiki** | 知识（lessons、conventions、decisions、business-rules） | 过程文档、UI 展示 | P1（后续提案，基于 forge-wiki 演进） |
+
+**协作关系**：
+- Workspace 提供过程文档的结构化数据 → Dashboard 消费并可视化
+- Wiki 独立管理知识 → Workspace 的 feature 流程中可引用 Wiki 知识
+- 三者通过 `.forge-workspace.yaml` 共享项目注册信息；各模块配置独立存放在 `.forge-workspace/` 下，按需创建
+
+**设计原则**：
+- **职责正交**：过程文档（Workspace）与知识（Wiki）严格分离，不交叉
+- **CLI 优先**：所有能力先有 CLI 入口，Dashboard 是可视化层
+- **渐进采用**：`forge workspace init` 一条命令即可开始
+- **项目不变**：现有项目结构完全不变，Workspace 是纯叠加层
+- **注册表最小化**：`.forge-workspace.yaml` 仅允许 `{schema_version, projects}` 两个顶层字段，模块级配置存入 `.forge-workspace/` 下各自文件；新增字段需经提案评审，防止注册表膨胀为耦合点
+
+### Innovation Highlights
+
+**过程文档与知识的正交分离**：传统工具把所有文档混在一起管理。Forge Workspace 明确区分「过程文档」（proposals、features、tasks——有生命周期、有状态机）和「知识」（lessons、conventions、decisions——长期沉淀、跨项目复用）。两类文档的消费者、生命周期、管理方式完全不同，分开处理更自然。
+
+**以过程文档为核心的项目管理**：Workspace 不试图成为通用项目管理工具——它只管理 Forge 管线产生的过程文档（brainstorm → PRD → design → tasks → execute）。这个限定让 Workspace 与 Forge 管线深度集成，而非泛化的项目管理。
+
+**跨项目提案空间**：独立开发者的想法经常还没确定属于哪个项目。Workspace 级别的 proposals 提供了一个「创意暂存区」——先沉淀想法，后续再分配到具体项目。
+
+**跨领域借鉴与差异化**：Forge Workspace 的设计从已有多实体聚合模式中汲取灵感，但保持关键差异化：
+
+| 借鉴源 | 借鉴了什么 | Forge Workspace 的不同之处 |
+|--------|-----------|--------------------------|
+| Cargo workspaces | `workspace.members` 将独立 crate 聚合为统一视图 | Cargo 要求同仓库；Forge Workspace 是纯叠加层，项目可分布在不同仓库 |
+| VS Code multi-root | `.code-workspace` 将独立项目作为一等公民放入容器 | VS Code 绑定 IDE 运行时；Forge Workspace 是 CLI-first，聚焦过程文档生命周期 |
+| Turborepo | 增量缓存策略（任务指纹 + 结果缓存） | Turborepo 缓存构建产物；Forge Workspace 缓存文档聚合状态（mtime 指纹），无构建图依赖 |
+
+核心差异：上述工具都面向**代码产物**（包、编译结果、编辑器会话）的多实体聚合。Forge Workspace 面向**过程文档**（proposals、features、tasks）的聚合——文档有生命周期、有状态机、有跨项目流转需求（提案分配），这是已有工具未覆盖的维度。
+
+## Requirements Analysis
+
+### Key Scenarios
+
+1. **每日全局视图**：运行 `forge workspace status`，一张表看到所有项目的阶段、任务进度、阻塞项
+2. **跨项目提案**：想统一所有项目的错误处理规范 → `forge workspace propose "统一错误处理规范"` → 在 workspace 级别创建 proposal → brainstorm 技能在 workspace 上下文运行
+3. **提案落地**：workspace 级 proposal 审批后 → `forge workspace assign <proposal> <project>` → 将 proposal 转为指定项目的 feature
+4. **Feature 总览**：`forge workspace features` 跨项目列出所有 features 及其状态（哪个阶段、多少任务完成）
+5. **项目注册**：新建项目后 → `forge workspace register ./new-project` → 加入 workspace 管理
+6. **单项目下钻**：`forge workspace status <project>` 查看某项目的活跃 features、待办任务、近期记录
+
+### Non-Functional Requirements
+
+- `forge workspace status` 响应时间 < 2 秒（扫描 8 个项目）
+- **增量聚合策略**：首次扫描后缓存各项目状态快照至 `.forge-workspace/cache.json`（含 mtime 指纹）；mtime 追踪粒度为每个项目 `docs/` 目录下所有 `.md` 文件的最大 mtime；后续调用仅重新扫描 mtime 变动的项目，全量刷新阈值 5 分钟
+- 项目发现兼容任意子目录命名
+- 过程文档格式与现有项目 docs/ 保持一致（Markdown + frontmatter）
+
+### Constraints & Dependencies
+
+- 项目父目录下所有子目录平铺（非嵌套），每个项目包含 `.forge/config.yaml`
+- Forge CLI 已有的路径解析和 manifest 读取能力
+- 过程文档格式与现有技能（brainstorm、write-prd、tech-design、breakdown-tasks）产出的格式兼容
+- **需 workspace 上下文适配的技能**：以下技能需增加 workspace 上下文运行模式（检测当前是否在 workspace 目录下，切换输出路径和项目引用方式）：
+  - `brainstorm` — workspace 级 proposal 创建与迭代
+  - `write-prd` — workspace 级 proposal → PRD 转换（assign 后在目标项目内运行，无需适配）
+  - `tech-design` — 同 write-prd，assign 后在目标项目内运行，无需适配
+  - `breakdown-tasks` — 同 write-prd，assign 后在目标项目内运行，无需适配
+  - 实际需修改范围：仅 `brainstorm` 需要显式适配 workspace 上下文
+
+## Alternatives & Industry Benchmarking
+
+### Industry Solutions
+
+| Approach | Source | Pros | Cons | Verdict |
+|----------|--------|------|------|---------|
+| Do nothing | — | 零成本 | 过程文档管理摩擦持续，随项目增长恶化 | Rejected: 成本已在累积 |
+| **npm/Yarn workspaces** | JavaScript monorepo 依赖管理 | hoisted `node_modules`、统一版本锁定、成熟生态 | 强假定 monorepo（单仓库、单 `package.json` 根）；管理依赖而非文档；无跨项目提案/feature 聚合 | Rejected: Forge Workspace 不要求 monorepo，管理的是过程文档而非包依赖 |
+| **Cargo workspaces** | Rust 官方多 crate 工作区 | 共享 `Cargo.lock`、统一构建、`workspace.members` 聚合 | 同样假定 monorepo；聚合 crate 而非文档；无提案生命周期管理 | Referenced: 借鉴「workspace 作为聚合层」概念，但 Forge Workspace 是纯叠加层（不要求项目同仓库），且聚合的是过程文档而非编译单元 |
+| **Turborepo / Nx** | Monorepo 任务编排 + 缓存 | 增量构建、任务图依赖分析、远程缓存 | 面向构建产物缓存，非文档状态缓存；强假定 monorepo 和 `package.json` 结构 | Referenced: 借鉴「跨项目缓存」思路（mtime 指纹缓存），但 Forge Workspace 缓存的是文档聚合状态而非构建产物，且不依赖 monorepo |
+| **VS Code multi-root workspaces** | IDE 级多项目管理 | `.code-workspace` 文件聚合多项目、共享设置、统一搜索 | IDE 绑定（需 VS Code 运行）；管理编辑器上下文而非文档生命周期 | Referenced: 借鉴「projects as first-class citizens in a container」概念，但 Forge Workspace 是 CLI-first 且以过程文档（proposals/features/tasks）为核心，非编辑器会话 |
+| forge-dashboard (现有 Draft) | Web UI 多项目可视化 | 富交互 UI | 仅解决可见性，无过程文档管理，需常驻 HTTP 进程 | Superseded: Dashboard 降级为 Workspace 的可视化模块 |
+| forge-wiki (现有 Draft) | Hub-Spoke 知识管理 | 完整知识架构 | 管理知识而非过程文档，无提案/feature 管理 | Complementary: Wiki 作为独立知识模块 |
+| **Forge Workspace** | 过程文档统一管理 | CLI 优先、职责正交、与 Forge 管线深度集成 | v1 不含可视化和知识管理；叠加层模式未经大规模验证 | **Selected: 匹配过程文档管理的核心需求** |
+
+## Feasibility Assessment
+
+### Technical Feasibility
+
+- 项目发现：扫描子目录 + 检测 `.forge/config.yaml`，纯文件系统操作
+- 状态聚合：读取各项目 `docs/features/*/manifest.md` 和 `tasks/index.json`，现有格式可直接消费
+- 跨项目 proposals：复用现有 proposal 模板，路径从项目级提升到 workspace 级
+- Feature 总览：读取各项目 manifest.md 中的 status 字段，纯聚合操作
+
+### Resource & Timeline
+
+- Workspace 核心工作量估算（不含技能适配）：
+
+  | 范围项 | 估算（人天） | 说明 |
+  |--------|------------|------|
+  | 项目发现 + 注册（init / register） | 1-2d | 文件系统扫描 + `.forge-workspace.yaml` 读写 |
+  | 状态聚合（status / status <project>） | 2-3d | 多项目 manifest 读取 + 表格格式化 + 缓存策略 |
+  | Feature 总览（features） | 1-2d | 与 status 共享聚合逻辑，输出格式不同 |
+  | Workspace 级 proposals（propose / assign / close） | 2-3d | 文件操作 + 字段继承 + 状态机校验 |
+  | 零发现诊断 + unhealthy 降级 | 0.5-1d | 错误路径覆盖 |
+  | brainstorm 技能 workspace 上下文适配 | 1-2d | 路径检测 + 输出目录切换 |
+  | **合计** | **8-13d** | |
+
+- 所有实现基于现有 Forge CLI 框架，无需新基础设施
+
+### Dependency Readiness
+
+- Forge CLI 已有完整的文件读取、manifest 解析、config 加载能力
+- 过程文档格式与现有技能产出格式兼容
+- 无外部服务或 API 依赖
+
+## Assumptions Challenged
+
+| Assumption | Challenge Tool | Finding |
+|------------|---------------|---------|
+| "过程文档和知识是同一类东西，应该一起管理" | Assumption Flip | 过程文档有生命周期（Draft → Approved → Done），知识是长期沉淀。消费者不同（过程文档由开发者追踪进度，知识由 agent 跨项目检索）。分开管理更自然：Workspace 管过程，Wiki 管知识 |
+| "需要 Web Dashboard 来看项目状态" | XY Detection | CLI 表格输出对 4-8 个项目足够。Dashboard 是锦上添花，不是必需品。v1 做 CLI，Dashboard 留作后续模块 |
+| "Proposals 必须属于具体项目" | 5 Whys | 独立开发者的想法经常在项目之前产生。先有想法再有项目是正常流程，workspace 级 proposals 匹配真实心智模型 |
+| "项目文档需要迁移到 workspace" | Stress Test | 迁移成本高、风险大、破坏 git 历史。正确做法：项目不变，workspace 是纯叠加层 |
+| "应该复用 forge-wiki 的设计作为知识共享" | Occam's Razor | forge-wiki 的 agentic search、session cache、降级策略对 v1 过重。知识管理独立演进为 Wiki 模块，与 Workspace 职责正交 |
+| "独立开发者需要团队级工具" | Assumption Flip | 团队工具（权限、协作、审计）对独立开发者是噪音。聚焦个人效率：看见、整理、推进 |
+
+## Scope
+
+### In Scope
+
+**v1 — Workspace 核心（过程文档管理）**：
+
+1. **项目发现与注册**
+   - `forge workspace init` — 自动扫描子目录，注册含 `.forge/config.yaml` 的项目
+     - **发现规则**：仅扫描直接子目录（一层深度），跳过符号链接、`.gitignore` 标记的目录、隐藏目录（`.` 前缀非 Forge 项目）
+     - **结构验证**：拒绝嵌套项目（子目录的子目录含 `.forge/`），`init` 时输出发现报告（已注册 / 已跳过及原因）
+     - **零发现诊断**：当扫描结果为零时，输出诊断信息：扫描的子目录总数、每条跳过原因的计数（如「隐藏目录: 3」「缺少 .forge/config.yaml: 5」）、以及建议（如「若项目在嵌套子目录中，请使用 `register <path>` 手动注册」）
+   - `forge workspace register <path>` — 手动注册项目（支持相对路径，自动规范化为绝对路径）
+   - `.forge-workspace.yaml` — workspace 注册表（仅含项目路径列表和 schema 版本号）
+	   - `.forge-workspace/config.yaml` — Workspace 模块自身配置（别名、显示偏好等）
+	   - `.forge-workspace/dashboard.yaml` / `.forge-workspace/wiki.yaml` — 各模块独立配置，按需创建，schema 独立演进
+
+2. **跨项目状态总览**
+   - `forge workspace status` — 表格输出：项目名、当前 phase、任务进度（done/total）、阻塞数
+   - `forge workspace status <project>` — 单项目详情（活跃 features + tasks + 近期记录）
+
+3. **Feature 总览**
+   - `forge workspace features` — 跨项目列出所有 features 及其状态（阶段、任务进度）
+   - `forge workspace features <project>` — 单项目 feature 列表
+
+4. **Workspace 级 Proposals**
+   - `docs/proposals/` 目录 — workspace 级提案存储
+   - `forge workspace propose "<title>"` — 创建 workspace 级提案
+   - brainstorm/eval 技能在 workspace 上下文运行
+   - `forge workspace assign <proposal> <project>` — 将提案分配到具体项目，启动 feature 流程
+     - **字段继承**：`assign` 将以下字段从 workspace proposal 写入目标项目 feature manifest：
+
+       | Proposal 字段 | 目标 Feature 字段 | 说明 |
+       |---------------|-------------------|------|
+       | `title` | `title` | 直接复制 |
+       | `intent` | `intent` | 直接复制 |
+       | `status` | `status` | 设为 `Draft`（feature 起点） |
+       | frontmatter 自定义字段 | 同名字段 | 透传（如 `priority`、`scope`） |
+       | `body (摘要段)` | `background` | proposal 正文第一段作为 feature 背景 |
+
+       workspace 级 proposal 状态更新为 `Assigned`，记录 `assigned_to` 和 `assigned_at`
+     - **状态转换**：proposal 状态机 `Draft → Approved → Assigned → Done`；`assign` 要求 proposal 处于 `Approved` 状态，否则拒绝并提示
+     - **单次分配**：一个 proposal 仅可分配到一个项目，重复 `assign` 报错；如需多项目实施，应为每个项目创建独立 proposal
+     - **可追溯性**：在目标项目 feature 的 frontmatter 中记录 `source: workspace-proposal:<slug>`，保持双向链接
+   - `forge workspace close <proposal>` — 标记 workspace 提案为 `Done`，要求对应目标项目 feature 状态为 `Completed` 或 `Closed`；不满足条件时拒绝并提示当前 feature 状态。`close` 后 proposal 记录 `closed_at` 时间戳
+
+**模块边界（v1 内部 API 契约，非公开接口）**：
+
+5. **Workspace 数据输出边界** — `status`/`features` 命令内部通过标准化的数据聚合函数产出结构化结果；后续 Dashboard/Wiki 模块消费同一函数，但 v1 不承诺稳定的输出 schema
+6. **模块间隔离原则** — Workspace 模块代码不引入对 Wiki/Dashboard 内部数据结构的依赖；跨模块数据交换通过 `.forge-workspace.yaml` 注册表和文件系统（manifest 文件）完成，不通过内存 API
+
+### Out of Scope
+
+- **知识管理**（lessons、conventions、decisions 的 push/pull/search）→ Wiki 模块独立提案
+- **Dashboard Web UI**（卡片视图、活动时间线、下钻）→ Dashboard 模块独立提案
+- 跨项目任务调度（全局任务队列、项目间依赖）
+- 多用户 / 团队协作
+- 数字孪生 / 能力画像
+
+## Key Risks
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| 项目结构变化导致发现失败 | L | M | 优雅降级：发现失败的项目在 status 中标记为「unhealthy」，不影响其他项目 |
+| 跨项目 proposal 落地时上下文丢失 | M | M | assign 时自动从 workspace 级 proposal 继承关键上下文到目标项目的 PRD |
+| 模块间耦合导致后续 Wiki/Dashboard 难独立演进 | L | H | v1 不定义跨模块公开接口，仅通过注册表和文件系统解耦；各模块代码隔离，schema 独立演进 |
+| Feature 聚合时项目间 manifest 格式不一致 | M | M | 引入 manifest schema 版本号（`schema_version` 字段）；聚合器按版本分发解析逻辑，未知版本降级为纯文本摘要；**无 `schema_version` 的 manifest 视为 v0 默认**，使用现有字段集解析（无结构化降级），CLI 输出中以 `[v0]` 标签视觉区分，提示用户迁移到带版本号的格式；新版本格式独立于聚合逻辑演进 |
+| Workspace 级 proposals 与项目级 proposals 的认知混淆 | M | L | CLI 命令明确区分：workspace 级用 `forge workspace propose`，项目级用 `/brainstorm`（在项目内运行） |
+
+## Success Criteria
+
+- [ ] `forge workspace init` 自动发现父目录下所有 Forge 项目（含 `.forge/config.yaml` 的子目录），生成 `.forge-workspace.yaml`
+- [ ] `forge workspace register <path>` 将指定路径的项目加入 workspace 注册表，支持相对路径，自动规范化为绝对路径
+- [ ] `forge workspace status` 输出包含项目名、当前 phase、任务进度（done/total）、阻塞数的表格，8 个项目扫描冷启动 < 2 秒，缓存命中 < 0.5 秒
+- [ ] `forge workspace status <project>` 显示单项目的活跃 features、待办任务和近期执行记录
+- [ ] `forge workspace features` 跨项目列出所有 features 及其状态（阶段、任务进度）
+- [ ] `forge workspace propose "统一错误处理"` 在 workspace 级 `docs/proposals/` 创建提案，brainstorm 技能可在 workspace 上下文运行
+- [ ] `forge workspace assign <proposal-slug> <project>` 将 workspace 提案分配到目标项目，目标 feature manifest 中正确继承字段（title、intent、status=Draft、source 链接），proposal 状态更新为 `Assigned`
+- [ ] `forge workspace close <proposal>` 在目标项目 feature 状态为 `Completed` 或 `Closed` 时将 proposal 标记为 `Done` 并记录 `closed_at`；feature 不满足条件时拒绝并提示当前状态
+- [ ] 项目发现失败（目录缺失、manifest 损坏）时在 status 中标记为「unhealthy」，不阻塞其他项目
+- [ ] `init` 扫描结果为零时输出诊断信息：扫描的子目录总数、每条跳过原因的计数、手动注册建议
+- [ ] 缓存行为正确：首次扫描后生成 `.forge-workspace/cache.json`（含 mtime 指纹），仅重新扫描 mtime 变动的项目，全量刷新阈值 5 分钟
+- [ ] 无 `schema_version` 的 feature manifest 使用 v0 字段集解析，CLI 输出中以 `[v0]` 标签视觉区分

@@ -1,288 +1,147 @@
 ---
 name: run-tasks
 description: Autonomous task dispatcher that continuously claims tasks and dispatches to subagents.
-allowed_tools: ["Bash", "Read", "Agent", "TaskOutput", "Skill"]
+allowed-tools: Bash Read Agent Skill
 ---
 
 # /run-tasks
 
-Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others go to forge:task-executor subagent.
+Auto-dispatch tasks. MAIN_SESSION tasks execute in main session; all others dispatch to forge:task-executor subagent.
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    A["1. Claim Task"] --> B{"MAIN_SESSION?"}
+    S0["0. Set Active Feature"] --> A["1. Claim Task"]
+    A --> B{"MAIN_SESSION?"}
     B -->|"yes"| C["1.5 Follow Task Instructions"]
-    C --> LOOP(["Step 6: Continue Loop"])
-    B -->|"no"| D["2. Dispatch + Timeout"]
-    D --> E["3. Verify Record"]
-    E --> F["4. Context Check"]
-    F --> G{"Breaking task?"}
-    G -->|"yes"| H["5. Breaking Gate"]
-    G -->|"no"| LOOP
-    H --> LOOP
+    C --> SUB["1.5.5 Submit + Commit"]
+    SUB --> LOOP(["Step 3: Continue Loop"])
+    B -->|"no"| D["2. Dispatch + Verify"]
+    D --> LOOP
     LOOP --> A
 ```
 
 ## Dispatcher Iron Laws
 
 <EXTREMELY-IMPORTANT>
-1. Only 5 actions: claim → (main_session? follow task instructions : dispatch) → verify → context check → breaking gate
-2. NO code reading, NO code writing — EXCEPT for MAIN_SESSION tasks (Step 1.5) where the Skill tool is invoked in the main session
-3. NO running tests directly — EXCEPT in Step 5 (Breaking Task Gate) where `just test` and `just test-e2e` are executed as quality gates
+1. Only 3 actions: claim → (main_session? follow task instructions : dispatch+verify) → continue loop
+2. NO code reading, NO code writing — EXCEPT for MAIN_SESSION tasks (Step 1.5) where reading the task file and invoking the Skill tool are required
+3. NO running tests directly — the CLI submit gate handles quality checks at task submission
 4. 30-minute timeout per task
-5. 3 consecutive failures → STOP
+5. 3 consecutive failures → STOP (tracked by failure counter below)
+6. NO `run_in_background`, NO `TaskOutput` polling — Agent call is blocking, wait for return
 </EXTREMELY-IMPORTANT>
 
 ## Execution Loop
 
+**Failure tracking**: maintain `consecutive_failures` (starts at 0). Increment on: fix-task creation, record-missing dispatch, agent timeout. Reset to 0 when a claim→dispatch→verify cycle ends with `STATUS == "completed"` (verified via `forge task status <TASK_ID>`). At 3: print summary (see format below) and STOP.
+
+### Step 0: Set Active Feature
+
+Runs **once** before the claim loop.
+
+1. Determine the feature slug from the current context (proposal directory, manifest, or user input).
+2. Run `forge feature set <slug>`. On success (exit code 0), the slug is printed to stdout. Proceed to Step 1.
+3. On failure (non-zero exit): the slug is invalid or feature not found. Report the error to the user and STOP — do not enter the claim loop.
+
 ### Step 1: Claim Task
 
 ```bash
-task claim
+forge task claim
 ```
 
-**Output parsing**:
-- `ACTION: CLAIMED` → New task
-- `ACTION: CONTINUE` → Resume existing task
-- Error → No available task, end loop
+**Output**: `ACTION: CLAIMED` (new) | `ACTION: CONTINUE` (resume) | Error (no task, end loop).
 
-**Extract from claim output**:
-- `TASK_ID` (e.g., "2.1")
-- `KEY` (e.g., "2.1-implementation")
-- `FILE` (e.g., full absolute path to task file)
-- `BREAKING` (e.g., "true" or absent)
-- `MAIN_SESSION` (e.g., "true" or absent)
-- `SCOPE` (e.g., "frontend", "backend", or "all" — defaults to "all" if absent; may be omitted entirely by claim output when not set)
-- `NO_TEST` (e.g., "true" or "false")
-- `FEATURE` (e.g., "my-feature" — feature slug from claim output)
+**Extract**: `TASK_ID`, `TYPE`, `FILE`, `MAIN_SESSION` (`"true"`|`"false"`), `TASK_CATEGORY` (`doc`|`eval`|`coding`|`test`|`validation`|`gate`), `SURFACE_KEY`, `SURFACE_TYPE`, `FEATURE`.
 
 ### Step 1.5: Main Session Routing
 
 If `MAIN_SESSION == "true"`:
 
-1. Read the task file at `{{FILE}}` and find the `## Main Session Instructions` section.
-2. Follow the instructions exactly — the task document specifies what skill to invoke, how to check outcome, and how to record the result.
-3. The dispatcher does NOT hardcode skill names or record logic — it delegates to the task document.
-4. If the task file lacks a `## Main Session Instructions` section, mark the task blocked and report: "MAIN_SESSION task missing Main Session Instructions section — task document is incomplete".
-5. After execution, verify the record file exists (same as Step 3 for subagent tasks).
-6. Skip to Step 6 (Continue Loop).
+1. Read task file at `FILE`, find `## Main Session Instructions` section.
+2. Follow instructions exactly — the task document specifies what skill to invoke, outcome check, and record logic. The dispatcher does NOT hardcode skill names or record logic.
+3. If section missing: report error, create fix task to block it using template in Error Handling. Then continue to Step 3.
+4. After execution, verify via `forge task status <TASK_ID>`. If STATUS != "completed", create fix task using template in Error Handling.
+5. **Submit record** — If task instructions did not already invoke submit-task, run `Skill(skill="forge:submit-task")`. Skip this step if the task explicitly handled its own submission.
+6. **Commit changes** — If task instructions did not already commit and there are uncommitted changes, invoke `Skill(skill="forge:git-commit")`. Skip this step if the task explicitly handled its own commit or if STATUS is "blocked".
+7. Skip to Step 3.
 
-Else:
-- Proceed to Step 2 (Dispatch with Timeout).
+Else: proceed to Step 2.
 
-### Step 2: Dispatch with Timeout
+### Step 2: Dispatch + Verify
 
-Determine if phase summary context should be injected:
+**2a. Dispatch** — `Agent(subagent_type="forge:task-executor", prompt="Execute task <TASK_ID>")`. **Timeout**: 30 min. NO `run_in_background` — wait for Agent return.
 
-**Phase boundary detection**:
-1. From `TASK_ID`, extract the phase number (integer before first dot, e.g., "2.1" → phase 2)
-2. If this is the first task of a new phase (phase number changed from previous task):
-   - Check if previous phase's summary record exists: `docs/features/<slug>/tasks/records/<prev-phase>-summary.md`
-   - If exists, include in dispatch prompt
-   - Skip injection for gate tasks (ID ends with `.gate`) and phase summary tasks (ID ends with `.summary`)
+**2b. Verify Record** — Run `forge task status <TASK_ID>`:
+- **STATUS == "completed"**: proceed to Step 3 (Continue Loop).
+- **STATUS == "blocked"** (auto-downgraded): create fix task using template in Error Handling. Continue loop.
+- **STATUS == "in_progress"** (no record created): proceed to 2c.
 
-```
-Agent(
-  subagent_type="forge:task-executor",
-  prompt="TASK_KEY: {{KEY}}
-TASK_ID: {{TASK_ID}}
-TASK_FILE: {{FILE}}
-SCOPE: {{SCOPE}}
-NO_TEST: {{NO_TEST}}
-{{PHASE_SUMMARY_SECTION}}
+**2c. Record-Missing Recovery** — `Agent(subagent_type="forge:task-executor", prompt="Fix record for task <TASK_ID>")`. After 2c, re-verify via 2b logic.
 
-IMPORTANT: Do NOT claim or start any other tasks after completing this one. Stop after recording the task result."
-)
-```
-
-Where `{{PHASE_SUMMARY_SECTION}}` is:
-```
-PHASE_SUMMARY: Read the following file for context from previous phases:
-docs/features/<slug>/tasks/records/<prev-phase>-summary.md
-```
-
-Phase summaries follow a fixed 5-section structure (Tasks Completed, Key Decisions, Types & Interfaces Changed, Conventions Established, Deviations from Design). The task-executor is trained to parse these sections.
-
-Or empty string if no phase summary exists.
-
-**Timeout**: 30 minutes
-
-### Step 3: Verify Record
-
-Check if record file exists after agent completes. Then check the task's actual status via CLI:
-
-```bash
-task query <TASK_ID>
-```
-
-- If STATUS is not `"completed"`: task was auto-downgraded (e.g. test failures).
-  Spawn fix task using `--block-source` to atomically block the source:
-  ```bash
-  task add --template fix-task --title "Fix: <failure>" \
-    --source-task-id <TASK_ID> \
-    --block-source \
-    --description "<reason>"
-  ```
-  `task add` automatically deduplicates — check output:
-  - `ACTION: ADDED` → new fix task created, continue loop
-  - `ACTION: SKIPPED` → active fix task already exists, continue loop
-- Only proceed if STATUS is `"completed"`
-
-### Step 4: Context Check
-
-After verifying the record, check if the completed task was a phase summary task (ID ends with `.summary`):
-- If yes: This phase's summary is now available for subsequent phases
-- No additional action needed — the summary will be injected on next phase boundary
-
-### Step 5: Breaking Task Gate
-
-Determine which gates to run based on claim output from Step 1:
-
-| BREAKING=true? | SCOPE frontend\|all + specs exist? | Run 5a? | Run 5b? |
-|----------------|-------------------------------------|---------|---------|
-| Yes | No | Yes | No |
-| No | Yes | No | Yes |
-| Yes | Yes | Yes | Yes |
-| No | No | Skip Step 5 entirely | Skip Step 5 entirely |
-
-If running both: execute 5a first. Only proceed to 5b if 5a passes.
-
-#### 5a. Unit/Integration Gate (BREAKING: true)
-
-```bash
-# Pre-flight: verify justfile and test recipe exist
-if [ ! -f justfile ] && [ ! -f Justfile ]; then
-    echo "Error: justfile not found — run /init-justfile first" >&2
-    exit 1
-fi
-just --list 2>/dev/null | grep -q "^    test " || {
-    echo "Error: 'test' recipe not found in justfile" >&2
-    exit 1
-}
-```
-
-```bash
-just test [scope]
-```
-
-Apply the **Scope Resolution** protocol from the Forge Guide — use the `SCOPE` extracted from the claim output in Step 1.
-
-**If tests fail**:
-- Run `task template fix-task` to view the template, then add fix task:
-  ```bash
-  task add --template fix-task --title "Fix: <failure>" \
-    --source-task-id <TASK_ID> \
-    --block-source \
-    --var SOURCE_FILES="<affected paths>" \
-    --var TEST_SCRIPT="<failing test>" \
-    --var TEST_RESULTS="<results path>" \
-    --description "<root cause>"
-  ```
-  **`--block-source`**: atomically sets source task to blocked before resolution, preserving the fix-chain model.
-  **`--source-task-id` auto-resolves**: if `<TASK_ID>` is a **completed** fix-task, the CLI automatically resolves to the root blocked task. Always pass the current failing task's ID — no manual chain tracing needed.
-- Continue loop — fix task (P0) will be claimed on next iteration
-- Do NOT proceed to next task until fix task completes
-
-**If tests pass**: if the routing table indicates 5b should also run (SCOPE frontend|all + specs exist), proceed to 5b. Otherwise continue to next iteration (Step 1).
-
-#### 5b. Feature E2E Gate (SCOPE=frontend|all, specs exist)
-
-<EXTREMELY-IMPORTANT>
-The dispatcher evaluates SCOPE and FEATURE from Step 1 claim output BEFORE executing any bash commands below. If SCOPE is `backend` or FEATURE is empty, skip this entire section.
-</EXTREMELY-IMPORTANT>
-
-Pre-conditions (all must be true):
-- SCOPE is `frontend` or `all` (defaults to "all" if absent from claim output)
-- FEATURE is non-empty (always true after successful claim)
-- Feature has e2e spec files: `tests/e2e/features/$FEATURE/` contains `.spec.ts` files
-- `test-e2e` recipe exists in justfile
-
-```bash
-# Pre-flight: verify test-e2e recipe exists — if missing, skip to next iteration
-SKIP=""
-just --list 2>/dev/null | grep -q "test-e2e" || { echo "Skip: test-e2e recipe not found"; SKIP=true; }
-
-# Check if specs exist for this feature
-if [ -z "$(ls "tests/e2e/features/$FEATURE/"*.spec.ts 2>/dev/null)" ]; then
-    echo "Skip: no .spec.ts files in tests/e2e/features/$FEATURE/"
-    SKIP=true
-fi
-
-# If pre-flights passed, run e2e
-if [ -z "$SKIP" ]; then
-    just e2e-setup
-    just test-e2e --feature "$FEATURE"
-fi
-```
-
-**If e2e fails**:
-- Add fix task using the fix-task template:
-  ```bash
-  task add --template fix-task --title "Fix: <concise description>" \
-    --source-task-id <TASK_ID> \
-    --block-source \
-    --var SOURCE_FILES="<affected source paths>" \
-    --var TEST_SCRIPT="tests/e2e/features/$FEATURE/<failing-spec>.spec.ts" \
-    --var TEST_RESULTS="tests/e2e/features/$FEATURE/results/latest.md" \
-    --description "<root cause and context>"
-  ```
-
-**If e2e passes or pre-flight skipped**: continue to next iteration (Step 1)
-
-### Step 6: Continue Loop
+### Step 3: Continue Loop
 
 Return to Step 1.
 
 ## Error Handling
 
+**Fix-Type Derivation**: extract `TASK_CATEGORY` from claim output, map to fix type:
+
+| Source Task Category | Fix Task Type |
+|----------------------|---------------|
+| `doc`, `eval`        | `doc.fix`     |
+| `coding`, `test`, `validation`, `gate` | `coding.fix` |
+
+**Fix task template** (used in all situations below):
+```bash
+forge task add --type <derived-fix-type> --title "Fix: <reason>" --source-task-id <TASK_ID> --block-source --var SOURCE_FILES="<affected-files>" --var TEST_SCRIPT="<test-path>" --var TEST_RESULTS="<test-output>" --description "<summary>"
+```
+
 | Situation | Action |
 |-----------|--------|
-| No available task | End loop, print summary |
-| Agent timeout | Mark blocked, continue next |
-| Record missing | Dispatch error-fixer (include: "Use /record-task skill to create record") |
-| 3 consecutive failures | STOP dispatcher |
-| Breaking task tests fail (5a) | `task add --template fix-task --block-source`, continue loop |
-| Feature e2e tests fail (5b) | `task add --template fix-task --block-source`, continue loop |
-| Main session task fails | Follow error handling in task document's `### Error Handling` section; if missing, `task add --template fix-task --block-source`, continue loop |
+| No available task | End loop, print summary (see format below) |
+| Agent timeout | Create fix task, increment `consecutive_failures`, continue loop |
+| Record missing | Dispatch fix-record subagent (2c) |
+| 3 consecutive failures | STOP |
+| Main session fails | Follow task doc's error section; if missing, create fix task then continue |
 
-### Error-Fixer Dispatch
+### Summary Format
 
-When dispatching error-fixer for missing record, include explicit instruction:
+When the loop ends (no available task or 3 consecutive failures), print:
 
 ```
-Agent(
-  subagent_type="forge:error-fixer",
-  prompt="TASK_ID: {{TASK_ID}}
-TASK_FILE: {{FILE}}
-ERROR_MESSAGES: Missing task record
-INSTRUCTION: Use /record-task skill to create the record (task record CLI is mandatory)"
-)
+## Dispatch Summary
+
+- Total claimed: <N>
+- Completed: <N>
+- Blocked: <N>
+- Failed (fix-task created): <N>
+- Consecutive failures at stop: <N>
+
+<If any blocked/failed tasks, list them:>
+- Task <ID>: <status> — <short reason>
 ```
 
 ## Post-Completion
 
-After all tasks are completed (loop ends with "No available task"):
+After loop ends, print a conditional completion message.
 
-```
-Print summary to user:
-"All tasks completed. T-test-3, T-test-4, and T-test-4.5 in the task chain handle
-e2e verification, graduation, and regression automatically."
-```
+**T-test-run** is a conventionally named auto-generated task (type `test`, title containing "test-run" or "run-tests") that `/breakdown-tasks` may include in the task index for surface-level test execution. When referenced below, it means: the task index contains at least one task whose type is `test` and whose purpose is running the full test suite for the feature.
 
-If the feature's task index does not include T-test-3/T-test-4, suggest:
-```
-"Run `/run-e2e-tests` to verify against PRD acceptance criteria,
-then `/graduate-tests` to migrate scripts to the regression suite."
-```
+- **Full pipeline mode** (tasks generated via `/breakdown-tasks`): "All tasks completed. T-test-run handles surface-level test execution automatically." If index lacks T-test-run, suggest: "Run `/run-tests` to execute surface-level tests."
+- **Quick mode** (tasks generated via `/quick-tasks`): "All tasks completed. Test tasks generated by quick-tasks handle verification." If no test tasks exist in the index, suggest: "Run `/run-tests` to execute any available tests."
 
-Do NOT run e2e tests outside of the Breaking Task Gate (Step 5) — the dispatcher only executes tests as quality gates.
+Do NOT run surface-level tests from the dispatcher.
 
-## Related Commands
+Do NOT commit post-loop artifacts. The `forge feature complete --if-done` Stop hook detects uncommitted artifacts and blocks the agent to commit them via `/git-commit`. This ensures artifacts are committed only after quality-gate passes.
 
-| Command | Usage |
-|---------|-------|
-| `/execute-task` | Manual single task |
-| `/record-task` | Create record + update status |
-| `/run-e2e-tests` | E2E verification against PRD |
+### Git Status Summary
+
+After printing the completion message, display a concise git summary so the user has immediate visibility into the current state. Run the following commands, wrapping each in error handling — if any command fails, skip it silently and continue:
+
+1. **Branch info**: `git branch --show-current` and `git rev-list --left-right --count main...HEAD` (shows ahead/behind relative to main). Print as: `On branch <name>, <n> ahead / <m> behind main`.
+
+2. **Working tree changes**: `git status --short`. Print the raw output if non-empty, or "Working tree clean" if empty.
+
+If all git commands fail (e.g., not in a git repository), print nothing — the completion message above is sufficient.

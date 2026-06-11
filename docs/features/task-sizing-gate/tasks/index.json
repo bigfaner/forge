@@ -1,0 +1,102 @@
+{
+  "feature": "task-sizing-gate",
+  "proposal": "docs/proposals/task-sizing-gate/proposal.md",
+  "created": "2026-05-31",
+  "tasks": {
+    "1-rename-validate-add-ac-check": {
+      "id": "1",
+      "title": "Rename validate-index to validate and add AC count validation",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-rename-validate-add-ac-check.md",
+      "record": "records/1-rename-validate-add-ac-check.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "medium"
+    },
+    "2-breakdown-tasks-audit-step": {
+      "id": "2",
+      "title": "Insert task sizing audit step in breakdown-tasks skill",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-breakdown-tasks-audit-step.md",
+      "record": "records/2-breakdown-tasks-audit-step.md",
+      "type": "doc"
+    },
+    "3-quick-tasks-audit-step": {
+      "id": "3",
+      "title": "Insert task sizing audit step in quick-tasks skill",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-quick-tasks-audit-step.md",
+      "record": "records/3-quick-tasks-audit-step.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: stale worktree lint errors blocking quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "skipped",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "1",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "fix-1"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

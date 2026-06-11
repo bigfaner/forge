@@ -1,0 +1,85 @@
+{
+  "feature": "eval-forge-runtime-audit",
+  "proposal": "docs/proposals/eval-forge-runtime-audit/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-rewrite-rubric": {
+      "id": "1",
+      "title": "Rewrite rubric.md: 6-dimension runtime reliability scoring",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-rewrite-rubric.md",
+      "record": "records/1-rewrite-rubric.md",
+      "type": "documentation"
+    },
+    "2-rewrite-scorer-prompt": {
+      "id": "2",
+      "title": "Rewrite scorer-prompt.md: 4-phase adversarial scoring methodology",
+      "priority": "P0",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-rewrite-scorer-prompt.md",
+      "record": "records/2-rewrite-scorer-prompt.md",
+      "type": "documentation"
+    },
+    "3-rewrite-reviser-prompt": {
+      "id": "3",
+      "title": "Rewrite reviser-prompt.md: two-layer fix strategy (safe-fix + guided-fix)",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-rewrite-reviser-prompt.md",
+      "record": "records/3-rewrite-reviser-prompt.md",
+      "type": "documentation"
+    },
+    "4-update-report-and-skill": {
+      "id": "4",
+      "title": "Update report.md scorecard and SKILL.md dimension table",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1",
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-update-report-and-skill.md",
+      "record": "records/4-update-report-and-skill.md",
+      "type": "documentation"
+    },
+    "eval-doc": {
+      "id": "T-eval-doc",
+      "title": "Evaluate Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "eval-doc.md",
+      "record": "records/eval-doc.md",
+      "scope": "all",
+      "type": "doc-evaluation"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

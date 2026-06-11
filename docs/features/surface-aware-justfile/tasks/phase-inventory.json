@@ -1,0 +1,30 @@
+[
+  {
+    "phase": 1,
+    "name": "数据模型与查询基础设施",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 1,
+        "description": "所有 Go 单元测试通过，Task struct 序列化/deserialization 正确，forge surfaces --json 输出格式符合 Interface 1b"
+      }
+    ]
+  },
+  {
+    "phase": 2,
+    "name": "上游组件适配",
+    "source": "PRD-explicit",
+    "gates": [
+      {
+        "afterPhase": 2,
+        "description": "breakdown-tasks/quick-tasks 生成的任务 frontmatter 包含 surface-key + surface-type，fix-task 能从文件路径推断 surface 信息"
+      }
+    ]
+  },
+  {
+    "phase": 3,
+    "name": "下游消费与清理",
+    "source": "PRD-explicit",
+    "gates": []
+  }
+]

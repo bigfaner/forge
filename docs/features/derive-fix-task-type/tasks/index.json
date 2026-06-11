@@ -1,0 +1,112 @@
+{
+  "feature": "derive-fix-task-type",
+  "proposal": "docs/proposals/derive-fix-task-type/proposal.md",
+  "created": "2026-05-29",
+  "tasks": {
+    "1-register-doc-fix-type": {
+      "id": "1",
+      "title": "Register doc.fix type in Go type system",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-register-doc-fix-type.md",
+      "record": "records/1-register-doc-fix-type.md",
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.feature",
+      "complexity": "medium"
+    },
+    "2-add-doc-fix-template": {
+      "id": "2",
+      "title": "Add doc-fix task template",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-add-doc-fix-template.md",
+      "record": "records/2-add-doc-fix-template.md",
+      "type": "doc"
+    },
+    "3-update-skill-files-derivation": {
+      "id": "3",
+      "title": "Update skill files with fix-type derivation rule",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-update-skill-files-derivation.md",
+      "record": "records/3-update-skill-files-derivation.md",
+      "type": "doc"
+    },
+    "doc-fix-1": {
+      "id": "doc-fix-1",
+      "title": "Fix: TYPE not listed as extractable field in claim output docs",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "doc-fix-1.md",
+      "record": "records/doc-fix-1.md",
+      "sourceTaskID": "T-review-doc",
+      "type": "doc.fix"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix unit-test: just unit-test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "2",
+        "3",
+        "doc-fix-1"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

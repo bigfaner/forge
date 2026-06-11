@@ -1,0 +1,156 @@
+{
+  "feature": "per-task-surface-scoped-gate",
+  "proposal": "docs/proposals/per-task-surface-scoped-gate/proposal.md",
+  "created": "2026-06-07",
+  "tasks": {
+    "1-rungate-prefixed-recipe": {
+      "id": "1",
+      "title": "RunGate() 增加 prefixed recipe 解析",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-rungate-prefixed-recipe.md",
+      "record": "records/1-rungate-prefixed-recipe.md",
+      "surface-type": "cli",
+      "type": "coding.enhancement",
+      "complexity": "high"
+    },
+    "2-surface-rules-gate-recipes": {
+      "id": "2",
+      "title": "Surface rules 增加 compile/fmt/lint/unit-test gate recipe 模板",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "2-surface-rules-gate-recipes.md",
+      "record": "records/2-surface-rules-gate-recipes.md",
+      "type": "doc"
+    },
+    "3-prompt-templates-prefix-pattern": {
+      "id": "3",
+      "title": "Prompt templates gate recipe 从参数模式切换为前缀模式",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-prompt-templates-prefix-pattern.md",
+      "record": "records/3-prompt-templates-prefix-pattern.md",
+      "type": "doc"
+    },
+    "4-clean-code-surface-aware": {
+      "id": "4",
+      "title": "clean-code skill 增加 surface-aware gate recipe 指引",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "4-clean-code-surface-aware.md",
+      "record": "records/4-clean-code-surface-aware.md",
+      "type": "doc"
+    },
+    "5-docs-sync-prefixed-recipe": {
+      "id": "5",
+      "title": "文档同步：quality gate prefixed recipe 规范更新",
+      "priority": "P2",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "5-docs-sync-prefixed-recipe.md",
+      "record": "records/5-docs-sync-prefixed-recipe.md",
+      "type": "doc"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "fix test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "coding.fix"
+    },
+    "gen-journeys": {
+      "id": "T-test-gen-journeys",
+      "title": "Generate Test Journeys",
+      "priority": "P1",
+      "estimatedTime": "20-30min",
+      "dependencies": [
+        "T-review-doc"
+      ],
+      "status": "completed",
+      "file": "gen-journeys.md",
+      "record": "records/gen-journeys.md",
+      "breaking": true,
+      "type": "test.gen-journeys"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-test-run"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "breaking": true,
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "5",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "breaking": true,
+      "type": "doc.review"
+    },
+    "run-test": {
+      "id": "T-test-run",
+      "title": "Run CLI Functional Test",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-test-gen-journeys"
+      ],
+      "status": "skipped",
+      "file": "run-test.md",
+      "record": "records/run-test.md",
+      "breaking": true,
+      "surface-key": ".",
+      "surface-type": "cli",
+      "type": "test.run"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

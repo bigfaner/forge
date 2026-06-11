@@ -1,0 +1,52 @@
+version: "1"
+auto:
+  test:
+    quick: false
+    full: true
+  consolidateSpecs:
+    quick: true
+    full: true
+  cleanCode:
+    quick: false
+    full: true
+  validation:
+    quick: false
+    full: true
+  runTasks:
+    quick: true
+    full: false
+  gitPush: true
+  knowledgeSave:
+    quick: true
+    full: true
+  eval:
+    proposal: true
+    prd: true
+    uiDesign: true
+    techDesign: true
+worktree:
+  source-branch: v3.0.0
+  copy-files: []
+eval:
+  proposal:
+    target: 850
+    iterations: 1
+  prd:
+    target: 900
+    iterations: 2
+  design:
+    target: 900
+    iterations: 2
+  ui:
+    target: 950
+    iterations: 3
+  journey:
+    target: 900
+    iterations: 3
+  contract:
+    target: 850
+    iterations: 2
+  consistency:
+    target: 900
+    iterations: 2
+surfaces: cli

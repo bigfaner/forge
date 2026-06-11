@@ -1,0 +1,230 @@
+{
+  "feature": "tui-ui-design",
+  "proposal": "docs/proposals/tui-ui-design/proposal.md",
+  "created": "2026-05-15",
+  "tasks": {
+    "1-tui-platform-themes": {
+      "id": "1",
+      "title": "TUI platform definition and themes",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-tui-platform-themes.md",
+      "record": "records/1-tui-platform-themes.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "2-prd-tui-navigation": {
+      "id": "2",
+      "title": "PRD TUI navigation template and write-prd awareness",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "2-prd-tui-navigation.md",
+      "record": "records/2-prd-tui-navigation.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "3-ui-design-tui-core": {
+      "id": "3",
+      "title": "ui-design SKILL.md and template TUI support",
+      "priority": "P1",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "completed",
+      "file": "3-ui-design-tui-core.md",
+      "record": "records/3-ui-design-tui-core.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "4-tui-html-prototype": {
+      "id": "4",
+      "title": "TUI HTML prototype simulation rules",
+      "priority": "P2",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-tui-html-prototype.md",
+      "record": "records/4-tui-html-prototype.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "5-eval-ui-multi-platform": {
+      "id": "5",
+      "title": "eval-ui multi-platform rubrics and selection logic",
+      "priority": "P2",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "5-eval-ui-multi-platform.md",
+      "record": "records/5-eval-ui-multi-platform.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "6-multi-platform-manifest": {
+      "id": "6",
+      "title": "Multi-platform manifest output support",
+      "priority": "P2",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "6-multi-platform-manifest.md",
+      "record": "records/6-multi-platform-manifest.md",
+      "scope": "all",
+      "type": "implementation"
+    },
+    "fix-1": {
+      "id": "fix-1",
+      "title": "Fix: manifest-update-ui.md missing prototype directory references",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-1.md",
+      "record": "records/fix-1.md",
+      "breaking": true,
+      "sourceTaskID": "T-quick-3",
+      "type": "fix"
+    },
+    "fix-2": {
+      "id": "fix-2",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-2.md",
+      "record": "records/fix-2.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-3": {
+      "id": "fix-3",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-3.md",
+      "record": "records/fix-3.md",
+      "breaking": true,
+      "type": "fix"
+    },
+    "fix-4": {
+      "id": "fix-4",
+      "title": "Fix: login bug",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-4.md",
+      "record": "records/fix-4.md",
+      "breaking": true,
+      "sourceTaskID": "1.1",
+      "type": "fix"
+    },
+    "fix-5": {
+      "id": "fix-5",
+      "title": "fix unit-test: just test failure in quality gate",
+      "priority": "P0",
+      "estimatedTime": "30min",
+      "status": "completed",
+      "file": "fix-5.md",
+      "record": "records/fix-5.md",
+      "breaking": true
+    },
+    "quick-gen-scripts-go-test": {
+      "id": "T-quick-2",
+      "title": "Generate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "T-quick-1"
+      ],
+      "status": "completed",
+      "file": "quick-gen-scripts-go-test.md",
+      "record": "records/quick-gen-scripts-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-scripts",
+      "profile": "go-test"
+    },
+    "quick-graduate-go-test": {
+      "id": "T-quick-4",
+      "title": "Graduate Quick Test Scripts (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-3"
+      ],
+      "status": "completed",
+      "file": "quick-graduate-go-test.md",
+      "record": "records/quick-graduate-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.graduate",
+      "profile": "go-test"
+    },
+    "quick-run-tests-go-test": {
+      "id": "T-quick-3",
+      "title": "Run Quick E2E Tests (go-test)",
+      "priority": "P1",
+      "estimatedTime": "15-30min",
+      "dependencies": [
+        "T-quick-2"
+      ],
+      "status": "completed",
+      "file": "quick-run-tests-go-test.md",
+      "record": "records/quick-run-tests-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.run",
+      "profile": "go-test"
+    },
+    "quick-test-cases-go-test": {
+      "id": "T-quick-1",
+      "title": "Generate Quick Test Cases (go-test)",
+      "priority": "P1",
+      "estimatedTime": "30min-1h",
+      "dependencies": [
+        "6"
+      ],
+      "status": "completed",
+      "file": "quick-test-cases-go-test.md",
+      "record": "records/quick-test-cases-go-test.md",
+      "scope": "all",
+      "type": "test-pipeline.gen-cases",
+      "profile": "go-test"
+    },
+    "quick-verify-regression": {
+      "id": "T-quick-5",
+      "title": "Verify Quick E2E Regression",
+      "priority": "P1",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "T-quick-4"
+      ],
+      "status": "completed",
+      "file": "quick-verify-regression.md",
+      "record": "records/quick-verify-regression.md",
+      "scope": "all",
+      "type": "test-pipeline.verify-regression"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

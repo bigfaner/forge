@@ -1,13 +1,13 @@
 1、增加一个系统化修复Bug的slash command或skill，先复现问题，补充单元测试和e2e测试，再修复问题，最后验证。done
-2、优化独立agent占用token的问题
+2、优化独立agent占用token的问题。done
 3、完善动态追加任务的机制：例如e2e测试失败，追加修复问题的任务。done
 4、遵循harness enginnering思想，持续迭代forge插件
 5、拆分forge，把辅助性的skill或slash command迁移到其它插件
 6、优化生成的feature e2e测试脚本的质量。done
-7、增加一个改进forge本身的skill或其它能力
+7、增加一个改进forge本身的skill或其它能力。done
 8、优化gen-sitemap的输出结果，避免重复的节点
 9、增加一个eval-test-cases skill。done
-10、task record命令检查验收标准是否完成？
+10、task record命令检查验收标准是否完成？rejected
 11、调整eval-prd的评分比重，用户故事提到高30分。done.
 12、改造tech-design skill：涉及到数据库表设计或变更时，需要输出到独立的E—R图文档和SQL文件，并必须得到人类的同意后，才可以继续。done
 13、init-justfile通过参数指定语言、项目类型，适应项目初始时什么都没有的场景。done
@@ -35,9 +35,263 @@ Bash(task record T-test-1b --data docs/features/train-recorder/tasks/process/rec
 
 24、eval-ui的评分必须达到94，才允许自动进入到生成原型的阶段。done
 25、把git-commit skill更改为slash command。done
-26、从pm-work-tracker、train-recorder提取e2e测试的经验，来优化forge的测试能力。doing
+26、从pm-work-tracker、train-recorder提取e2e测试的经验，来优化forge的测试能力。done
 27、forensic默认调查当前会话，/status获取会话ID？要知道如何排查当前项目的会话-- /Z--project-ai-coding-train-recorder/
 28、对比get-shit-done、superpowers、gstack等同类产品
-29、init-justfile支持覆盖式更新，just run 等命令去掉 --dev参数，更改为skill，内置模板，但是禁止大模型调用。
+29、init-justfile支持覆盖式更新，just run 等命令去掉 --dev参数，更改为skill，内置模板，但是禁止大模型调用。done
 30、forensic分析任务卡住不动时，要展示各个动作的耗时
-31、task feature 要支持worktree
+31、task feature 要支持worktree done
+32、重构forge done
+  1. task cli 扩展为forge cli，forge task *，forge forensic *，forge prompt *
+  2. 通过cli根据任务类型合成启动subagent的提示词。不同类型的任务采用不同的流程。
+  3. 技术设计时选定e2e测试框架，给gen-test-scripts指明方向
+  4. cli提取任务的formatter汇总成index.json
+33、评估提案要增加需求或逻辑是否全面的维度，整体逻辑是否一致，合理性，可行性。done
+34、forge的流程是否太重。
+35、开启subagent深度评估一致性：@task-cli/pkg/prompt/data/ 中的模板，run-tasks skill、task-executor agent                                  
+  等任务调度机制所有关联方。然后就问题逐个向我提问 
+36、增加forge proposal 命令展示当前项目的所有提案，包括创建时间（以文件创建时间为准）、是否关联了prd、是否完成。done
+37、增加forge feature [list|status] --<feature> 命令查询feature的状态，是否完成。done
+forge lesson，查看lesson
+forge config，交互式，提供内置选项，让用户输出必要的信息，初始化.forge/config.yaml
+forge init，初始化.gitignore和Claude.md、.forge/config.yaml，.gitignore要忽略forge的运行时文件。复制 CLAUDE.template.md到项目根目录下，并改名为Claude.md
+38、增加forge kb 命令对接知识库，集中管理编程知识。
+39、justfile拆分test：just test（快速，无-race）和 just test-race（完整检测，CI/发布前用）done
+40、forge，ui-design支持tui。done
+41、forge，分多个任务生成测试用例。done
+42、forge cli 生成各阶段的gate和sumary任务。done
+43、末尾增加clean code的任务 — 使用 /simplify 替代，见 docs/proposals/reject-clean-code-task/ done
+44、快速模式不限制任务数量，只是流程简化。done
+45、record-task skill 更名为submit-task跟forge task submit命令对齐。done
+46、优先使用justfile中的命令，而不是profile/manifest.yaml中的。done
+47、把使用nodejs编写的测试用例转成go。done
+48、forge cli根据任务类型决定是否追加测试任务，适配不同的场景。done
+49、去掉forge claim等输出的冗余信息。done
+50、forge init安装justfile。内置安装包，用户也可以自行安装。done
+51、末尾增加调整文档内容，保持一致性的任务。done
+52、调整consolidate-spec任务，在feature结束时，自动维护`docs/conventions`与`docs/business-rules/`中的文档，使其与最新代码保持一致。done
+53、forge feature set <feature> ，写入到.forge/state.json。同时，task feature支持从.forge/state.json获取feature。done
+54、forge cli增加一个分配测试用例编号的命令？避免冲突。
+55、追加doc-score和doc-revise任务到index.json。待评估
+56、T-eval-doc任务记录的内容，调整一下。done
+57、把just claude 和just claude-c迁移到forge-cli。done
+58、forge dashbaord，集中管理和查看各个项目生成的过程文档以及知识库？
+59、在.forge/config.yaml添加autoPush、autoCleanCode等配置项。done
+60、forge 初始化的gitignore文件追加：docs/features/*/tasks/index.json.lock
+61、自动commit生成的任务文档？done
+62、改进*-harness相关的skill。rejected
+63、深度评估forge各个skill的必要性。如无必要则删除或迁移。done
+64、优化run-tasks的步骤，使用forge task status 来verify，减少输出的信息，节约token。done
+65、精简forge-cli相关的e2e测试，只保留forge-cli代码相关的，去掉验证forge插件文本的。done
+66、优化extract-design-md：适配不同的UI。done
+67、有些任务例如迁移测试用例不需要重新编写单元测试用例。done
+68、只有web-ui，需要检查VERIFY:标记？
+69、forge proposal 和forge feature list 按照日期倒序排列。done
+70、评估eval-*能不能真正发现问题。done
+71、评估quick mode的测试任务是否合理，现在执行太慢了，流程似乎过重。done
+72、深度评估各个skill，是否清晰，是否冗余且可精简。done
+73、通过quick完成的提案，要变更提案的状态。done
+74、某些特定任务必须按需加载docs/conventions，并且重新设计查找和加载docs/conventions/ 文档的机制，避免在skill等地方写死文档名称。done
+75、gen-test-cases拆分模板。done
+76、forge要支持worktree。done
+77、定期更新readme.md。
+78、从架构层面与逻辑自洽方面全方位审计forge。done
+79、forge制定了目录规范了，用户在使用过程中，如何感知和使用呢？done
+80、优化testing model:如何组织测试呢？docs\proposals\unified-workflow-test-model\proposal.md 按照语言+interfaces的方式也似乎满足不了真实场景。done
+81、增加一个clean-code skill，配合clean code的任务。done
+82、eval-*skill要有挑战权威的动力，而不是照着表打分。done
+83、增加forge session-start、forge powerup类似claude powerup、forge isssu push命令
+84、forge worktree要支持指定源分支。done，是否从remove/branch 拉取分代码？done
+85、不同任务采用不同的任务记录模板。done
+86、guide.md 融入编程哲学或价值观、goal导向。参考andrej-karphthy-skills
+87、forge worktree 优化： worktree 支持交互模式，下拉选择未完成的feature或proposal, remove 支持--hard参数，删除工作区和分支。start 支持通过flag参数控制仅创建worktree，但是不启动claude code
+  forge wroktree start 要先创建分支，再创建worktree，增加一个push到远端的命令
+  # 删除 worktree
+  git worktree remove ../hotfix-123
+
+  # 清理已删除目录的残留记录
+  git worktree prune
+
+  要自动发布分支并push
+
+  增加forge forge push子命令。
+
+  forge worktree 增加slug补全提示，
+    remove/resume子命令的补全选项等于现存r的worktree列表。
+    start子命令的补全选项等于未完成的proposal列表+未完成的feature
+    退出会话自动清理worktree？
+    会话名称跟feature slug一致 -> resume自动恢复会话
+
+88、在任务pipepline自动执行consolidate-specs任务，并且该任务不要询问用户，直接保存，让用户事后review。done
+89、增加任务类型的标识：如果只涉及到文档，无法是新增还是调整，都只是算作纯文档任务，不要执行quality-gate. done
+90、skill 不要过分精简，考虑移除不符合claude code 插件的目录：plugins\forge\references，降低复杂性，提高稳定性。done
+91、优化doc-scorer and doc-reviser ：使用扮演不同领域专家的提示词模板启动subagent，提示词。done
+92、forge lesson要按照时间倒序排列。done
+93、run-tasks 提示主agent：等待通知，不要轮询subagent的状态。done
+94、breakdown-tasks 提示词太复杂。done
+95、根据最近几个lesson优化forge。done
+96、评估forge插件的一致性。done
+97、简化和重组guide.md，让它保持结构紧凑，信息精确而必要。done
+98、实现docs/proposals/contract-journey-test-model/proposal.md后，为什么还有forge profile? 为什么还检测语言？done
+99、quick mode：quick-task自动到run-tasks。done
+100、调整coding.refactor的指令，避免卡顿。 参考lesson：arch-constant-rename-whack-a-mole、pattern-large-scale-rename。done
+101、从各个skill、command提交公共知识，放到guide.md中。pending
+102、quick-tasks 是否支持带UI的任务？done
+103、去掉noTest标识。done
+104、逐个skill瘦身。done
+105、coding.* 系列任务，引入 https://github.com/multica-ai/andrej-karpathy-skills 。即优化任务的提示词模板。done
+106、CLI要保持独立性，跟具体的语言或业务解耦。
+107、智能地生成e2e相关的just命令，不是所有场景都e2e-setup，例如CLI。done
+108、不同coding任务单独设置单元测试覆盖率，避免agent陷入死循环。done
+109、业务任务不能是gate等CLI自动生成的任务类型。done
+110、改进brainstorm 要挑战用户的想法，敢于质疑需求是否合理、是否可行等，勇于探索问题的极限。done
+111、eval skill借鉴gstack
+112、优化eval-doc任务，扮演档案专家的角色，严格审核文档，杜绝逻辑矛盾、非法字符、错别字、语言不顺畅，确保文档结构清晰、内容严谨、无冗余信息。
+113、CLI的集成测试使用独立的编译产物，避免使用正式的可执行文件。因为在并行开发时，可以会互相影响。done
+114、forge init 要适配最新的.forge/config.yaml结构。done
+115、检查skill的结构是否清晰、步骤是否合理、指令是否精确、是否有矛盾等。还有skill内部是自身包含的，
+  不要使用${CLAUDE_SKILL_DIR}/rules/platform-routing.md，使用rules/platform-routing.md 。done
+116、评估各个任务的prompt模板的结构是否清晰、步骤是否合理、指令是否精确。done
+117、quick-tasks，如果是文档类的任务，不限制业务任务数量。done
+118、根据forge的最新规范调整forge cli的集成测试。done
+119、skill避免使用forge test detect等不存在的命令。done
+120、通过配置项控制自动提取知识后是否保存知识。done
+121、快速模式：拆分任务后，提交并自动执行。done
+122、评估：task-executor与prompt的契合程度，有没有矛盾。done
+123、created放在各类文档的frontmatter中。done
+124、设计知识管理与加载机制。forge-wiki，doing
+125、提取journey-contract的测试模型与规范。done
+126、run-tasks等引入forge proposal <slug>、forge feature status <slug>
+127、forge lesson/proposal的文档名称或slug要足够宽。done
+128、forge init交互恢复到选项式。done
+129、 forge config get auto.runTasks.quick 返回空值. done
+130、增加一个系统性调研某一项技术或产品的skill/slash command。done
+131、forge worktree resume <slug>，启动Claude code后，不要把slug作为消息发送给Claude code 。done
+132、gen-test-cases、gen-test-scripts等测试相关的任务或skill内置TUI、CLI等通用测试规则。done
+133、调整docs/conventions 中跟测试相关的文档，要区分不同场景。在执行编码任务时，只要加载单元测试相关的内容，不要加载e2e相关的测试知识。done
+134、run-e2e-tests更改名称？因为不是所有项目都需要e2e测试。validate-specs.mjs有什么作用，是否必要？done
+135、评估skill要检查术语、逻辑等一致性
+136、去掉profile命令及配置项
+137、删除*-harness skill。done
+138、在循环循环中，强制使用forge task add来添加fix等临时任务等，确保调度顺序准确。done
+139、各个阶段的gate必须确保当前项目的所有代码可编译，才可以进入到下一个阶段。done
+140、如CLI这样的没有UI的程序，不要添加validate-ux。done
+141、自动生成的任务缺少 ## Main Instructions。done
+142、大规模重构时，要避免卡死。done
+143、forge cli 对命令进行分组，同时删除无用的命令，如profile、e2e。 done
+
+```
+后续提案的目标结构：
+internal/cmd/
+├── cmd.go, errors.go, output.go, test_results.go
+├── task/       # forge task *
+├── e2e/        # forge e2e *  (现为 forge test *)
+├── feature/    # forge feature *
+├── worktree/   # forge worktree *
+├── forensic/   # forge forensic *
+├── testing/    # forge testing *
+├── prompt/     # forge prompt *
+└── 顶层命令（init, config, quality-gate, cleanup 等）
+```
+144、添加forge research 查询调研报告。done
+145、如何补全测试能力？让forge既通用又能深度测试。done
+146、等stop hook quality-gate等执行完，才提交post-loop artifacts。done
+147、去掉test-graduate任务。->145
+148、forge worktree status 要检测是否有未push的commit。如有，不允许删除worktree。done
+149、增加一个命令展示当前feature 所有任务的概要，列表形式。done
+150、forge research 跟 forge proposal / forge lesson 高度同构（Discover + FindBySlug + list/detail），是否有考虑过将这三个命令抽象为一个通用的
+  info-command 框架？当前每个命令都重复了 frontmatter 解析、排序、表格渲染逻辑。done
+151、run-tasks完成所有任务，自动执行 git status，告诉用户当前分支的状态. done
+152、优化forge init自动追加到.gitignore的条目。done
+153、init-justfile对齐最新的设计：just unit-test单元测试、just test高级测试。另外，根据CLI、TUI等场景生成对应的命令。done->107
+154、为什么生成任务的priority是"high"而不是"P1"？哪一种对AI和人更友好。done
+155、根据提案内容，临时生成一个专家角色进行深度评审。done
+156、quick-mode的任务上限更改为15。done
+157、追加一个任务：让agent检查任务是否达成预期目标？逻辑是否清晰？done->161
+158、后续使用真实项目验证forge plugin的测试能力。
+159、forge task list的各个列要隔得足够开，并且保持左对齐。done
+160、将 gen-journeys/gen-contracts 作为自动生成的测试任务，替换掉之前gen-test-cases等任务。done
+161、如何防止agent未按照tech-design.md来实现呢？docs\lessons\gotcha-spec-authority-drift.md。done
+162、改进quick-tasks / breakdown-tasks skill：Reference Files中的文档，如果只读一部分，指明section或行号范围。done->161
+163、write-prd skill 只针对代码生成用户故事->测试脚本。纯文档任务不生成测试脚本，eval-doc任务核对有没有按照要求修改文档。done
+164、有些自动生成的任务，如果依赖很多动态信息，而且后续实践表明任务生成效果比较差，就改成由LLM生成。
+165、评估：直接根据自由专家的意见修改proposal。docs/lessons/arch-freeform-findings-indirect-influence.md . done
+166、如果自由专家评估模式实践效果不错的话，则推广到prd、tech-design、ui-design等。
+167、PS Z:\project\ai\forge> forge worktree push review-doc-pipeline  done
+    Error: unknown command "review-doc-pipeline" for "forge worktree push"
+168、调整auto.e2eTest配置项，just test、just unit-test。done ->174
+169、缝合review-doc-pipeline与auto-gen-journeys-contracts提案的实现，避免任务pipeline断裂。done
+170、forge task list --<slug>，查询指定feature的任务，即使任务在worktree中。done
+171、forge init 支持配置interfaces或surfaces? done
+172、利用forge-cli-clean-code等新feature的任务记录验证与优化submit-task skill根据不同任务生成record。doing
+173、eval skill备份时，不要复制整个目录。done
+174、提升forge task submit 执行质量门禁的速度。done
+175、forge task list要展示breaking、mainSession的值。done
+176、review-doc要忽略的任务文档及其记录文档等过程中，只针对目标文档。done
+177、审计forge plugin:整体架构、task pipeline、测试能力、skill与forge cli之间的契合度等。doing
+178、surfaces是否忽略大小写？还有detect serfaces失败。done
+179、增加一个skill或自动任务：核心实现是否严格遵循proposal或tech-design.
+180、clean forge cli：重点清理废弃的功能及其测试用例。
+181、检查提案与prd验收标准的矛盾之处，参考lesson: gotcha-proposal-success-criteria-contradiction。done
+182、审计整个测试pipeline的逻辑连贯性。doing
+183、补充详细的架构说明、用户使用手册（包含环境配置）。doing
+184、把第一性原理内置到guide.md中。rejected
+185、自由专家要足够通用，领域不要太狭窄，不能只针对特定的proposal。doing
+186、forge surfaces detect 要忽略tests/。done
+187、如果一个feature涉及多个surface，要分开生成journey、contract、script，分开执行script等。
+  例如，同时存在frontend、backend的项目，针对frontend生成e2e测试、针对backend生成api测试。而且api测试在e2e测试之前。done
+188、评估哪些测试任务可以去掉。run-tests任务只是执行本feature新生成或相关journey的测试用例。done
+189、auto.eval.{proposal,prd,ui-design,tech-design}，增加是否自动评估的配置项。done
+190、检查justfile中的命令是否对应最新的实现，并且正确运行just test 和just unit-test。done
+191、forge task add 的--template参数更改为--type，通过type来查找模板。 done
+192、改动现有功能的提案，要列举受影响的点。doing
+193、forge init 支持auto.eval.*。除了auto.eval.proposal.*之外，其它只支持full模式，不支持quick模式。done
+194、优化cli内置的Claude.md模板，要对齐forge cli现状。done
+195、forge task list 按照依赖顺序从上到下依次排列。DAG图。done
+196、slim 任务prompt模板，去掉冗余的描述信息。done
+197、引入模板引擎：条件化构造prompt或任务模板。done
+  forge-cli\pkg\task\data\test-run.md 等任务模板，或提示词模板、skill、command、task-executor等对齐最新的概念，去掉scope等过时的概念。
+198、eval-proposal只执行一轮时，必须要执行自由专家评审。done
+199、run-tests等CLI自动生成的任务，要根据forge的规范调整任务模板，指定当前feature的journey、contract、test-scripts等路径。done
+  如docs/features/<slug>/testing/journeys/<journey>/contracts
+200、梳理并重组forge cli的代码包，输出规范。done
+201、quality_gate等不要直接追加fix任务？添加一个分析错误来决定是否拆解并追加更多fix任务。done
+202、全面查核forge cli自动添加任务的能力，最近出现好几起bug。现在这一部分逻辑，很脆弱，增加或减少任务类型就会导致pipeline断裂。done
+  如下图，在执行过程中，突然多了一个T-quick-doc-drift任务。
+   Z:\project\ai\forge> forge task list skill-instruction-audit
+8 found  (feature: skill-instruction-audit)
+
+ID            TYPE        TITLE                                               STATUS       BREAKING  MAIN_SESS
+------------  ----------  --------------------------------------------------  -----------  --------  ---------
+1             doc         Delete CLI behavior descriptions from pipeline ...  completed    false     false    
+2             doc         Delete CLI behavior descriptions from remaining...  completed    false     false    
+3             doc         Remove EXTREMELY-IMPORTANT redundancy from skills   completed    false     false    
+4             doc         Remove frontmatter duplication and rule preview...  completed    false     false    
+5             doc         Fix numbering/reference errors in skills            completed    false     false    
+6             doc         Fix ambiguity and logic issues in pipeline comm...  completed    false     false    
+7             doc         Fix ambiguity and logic issues in remaining ski...  completed    false     false    
+T-review-doc  doc.review  Review Documentation Quality                        in_progress  false     false    
+PS Z:\project\ai\forge> forge task list skill-instruction-audit
+9 found  (feature: skill-instruction-audit)
+
+ID                 TYPE        TITLE                                               STATUS       BREAKING  MAIN_SESS
+-----------------  ----------  --------------------------------------------------  -----------  --------  ---------
+1                  doc         Delete CLI behavior descriptions from pipeline ...  completed    false     false    
+2                  doc         Delete CLI behavior descriptions from remaining...  completed    false     false    
+3                  doc         Remove EXTREMELY-IMPORTANT redundancy from skills   completed    false     false    
+4                  doc         Remove frontmatter duplication and rule preview...  completed    false     false    
+5                  doc         Fix numbering/reference errors in skills            completed    false     false    
+6                  doc         Fix ambiguity and logic issues in pipeline comm...  completed    false     false    
+7                  doc         Fix ambiguity and logic issues in remaining ski...  completed    false     false     
+T-quick-doc-drift  doc.drift   Detect Spec Drift                                   pending      false     false    
+T-review-doc       doc.review  Review Documentation Quality                        pending      false     false
+
+203、通过配置项控制评估次数与分数。done
+204、guide.md补充核心coding原则：agent在未显式调用forge相关的skill时，也能遵循TDD？
+205、learn要区分forge自身错误还是业务错误。
+206、just unit-test 接受surfaceKey参数，精确执行指定surface的单元测试。done
+207、修改sql脚本，为什么要执行单元测试？参考milestone-map#task 1.2。done
+208、增加一个forge命令，结合forge surfaces的结果和justfile文件，罗列待生成的just recipes?
+209、任务调度异常后，如何让agent优雅地恢复？
+210、优化任务pipeling: 生成api测试脚本，就是执行api测试脚本；然后再生成e2e测试脚本，执行e2e测试脚本。doing
+  而且任务模板要设置AC：所有测试用例必须通过，必须是真实的测试，不能是假测试。确定是正式代码的问题，才能修改正式代码。如果问题很多，可以追加fix任务。

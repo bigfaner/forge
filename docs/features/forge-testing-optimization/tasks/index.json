@@ -146,8 +146,7 @@
       "status": "completed",
       "file": "quick-test-cases.md",
       "record": "records/quick-test-cases.md",
-      "scope": "all",
-      "noTest": true
+      "scope": "all"
     },
     "quick-verify-regression": {
       "id": "T-quick-5",

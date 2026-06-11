@@ -1,0 +1,6 @@
+[
+  {"phase": 0, "name": "Characterization Tests", "source": "PRD-explicit", "gates": [{"afterPhase": 0, "description": "All characterization tests pass, baseline behavior locked"}]},
+  {"phase": 1, "name": "Hygiene Cleanup", "source": "PRD-explicit", "gates": [{"afterPhase": 1, "description": "Zero behavior change verified by characterization tests + 1591 tests pass"}]},
+  {"phase": 2, "name": "Core Fixes", "source": "PRD-explicit", "gates": [{"afterPhase": 2, "description": "All characterization tests pass with updated expectations + 1591 tests pass"}]},
+  {"phase": 3, "name": "Structural Optimization (Stretch Goals)", "source": "PRD-explicit", "gates": []}
+]

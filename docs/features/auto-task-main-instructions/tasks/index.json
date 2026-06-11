@@ -1,0 +1,96 @@
+{
+  "feature": "auto-task-main-instructions",
+  "proposal": "docs/proposals/auto-task-main-instructions/proposal.md",
+  "created": "2026-05-22",
+  "tasks": {
+    "1-embed-templates": {
+      "id": "1",
+      "title": "Create embed template files for auto-gen task types and update GenerateTestTaskMD()",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "status": "completed",
+      "file": "1-embed-templates.md",
+      "record": "records/1-embed-templates.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "2-body-context": {
+      "id": "2",
+      "title": "Add BodyContext struct and renderBody placeholder substitution",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "2-body-context.md",
+      "record": "records/2-body-context.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "3-update-templates": {
+      "id": "3",
+      "title": "Update 13 embed template files with strategy-based content",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "3-update-templates.md",
+      "record": "records/3-update-templates.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "4-wire-body-context": {
+      "id": "4",
+      "title": "Wire BodyContext through BuildIndex with proposal/PRD data extraction",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "2",
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-wire-body-context.md",
+      "record": "records/4-wire-body-context.md",
+      "breaking": true,
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "5-update-tests": {
+      "id": "5",
+      "title": "Update existing tests and add body content verification tests",
+      "priority": "P1",
+      "estimatedTime": "1-2h",
+      "dependencies": [
+        "2",
+        "4"
+      ],
+      "status": "completed",
+      "file": "5-update-tests.md",
+      "record": "records/5-update-tests.md",
+      "scope": "backend",
+      "type": "coding.feature"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "scope": "all",
+      "type": "doc.drift"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "skipped",
+    "rejected",
+    "suspended"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

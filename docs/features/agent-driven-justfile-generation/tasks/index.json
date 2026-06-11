@@ -1,0 +1,99 @@
+{
+  "feature": "agent-driven-justfile-generation",
+  "proposal": "docs/proposals/agent-driven-justfile-generation/proposal.md",
+  "created": "2026-06-08",
+  "tasks": {
+    "1-create-server-lifecycle-rule": {
+      "id": "1",
+      "title": "Create server-lifecycle.md rule with PID tracking, idempotent start, and health check patterns",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "completed",
+      "file": "1-create-server-lifecycle-rule.md",
+      "record": "records/1-create-server-lifecycle-rule.md",
+      "type": "doc"
+    },
+    "2-rewrite-skill-agent-driven": {
+      "id": "2",
+      "title": "Rewrite SKILL.md for agent-driven justfile generation",
+      "priority": "P0",
+      "estimatedTime": "2h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-rewrite-skill-agent-driven.md",
+      "record": "records/2-rewrite-skill-agent-driven.md",
+      "type": "doc"
+    },
+    "3-simplify-surface-rules": {
+      "id": "3",
+      "title": "Simplify 5 surface rule files to replace TODO stubs with Recipe Generation Requirements",
+      "priority": "P1",
+      "estimatedTime": "1.5h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "3-simplify-surface-rules.md",
+      "record": "records/3-simplify-surface-rules.md",
+      "type": "doc"
+    },
+    "4-delete-templates-and-detection": {
+      "id": "4",
+      "title": "Delete language templates and project-detection rule",
+      "priority": "P1",
+      "estimatedTime": "0.5h",
+      "dependencies": [
+        "2"
+      ],
+      "status": "completed",
+      "file": "4-delete-templates-and-detection.md",
+      "record": "records/4-delete-templates-and-detection.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

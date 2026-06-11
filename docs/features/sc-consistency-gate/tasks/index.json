@@ -1,0 +1,81 @@
+{
+  "feature": "sc-consistency-gate",
+  "proposal": "docs/proposals/sc-consistency-gate/proposal.md",
+  "created": "2026-05-25",
+  "tasks": {
+    "1-create-sc-consistency-rule": {
+      "id": "1",
+      "title": "Create sc-consistency.md rule file with clustering + satisfiability check",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "1-create-sc-consistency-rule.md",
+      "record": "records/1-create-sc-consistency-rule.md",
+      "type": "doc"
+    },
+    "2-add-skill-reference": {
+      "id": "2",
+      "title": "Add sc-consistency rule reference to brainstorm SKILL.md Step 5",
+      "priority": "P1",
+      "estimatedTime": "30m",
+      "dependencies": [
+        "1"
+      ],
+      "status": "completed",
+      "file": "2-add-skill-reference.md",
+      "record": "records/2-add-skill-reference.md",
+      "type": "doc"
+    },
+    "3-expand-scorer-protocol": {
+      "id": "3",
+      "title": "Expand scorer-protocol self-contradiction check with clustering + satisfiability",
+      "priority": "P0",
+      "estimatedTime": "1h",
+      "status": "completed",
+      "file": "3-expand-scorer-protocol.md",
+      "record": "records/3-expand-scorer-protocol.md",
+      "type": "doc"
+    },
+    "4-adjust-proposal-rubric-d9": {
+      "id": "4",
+      "title": "Add SC internal consistency criterion to proposal rubric D9",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "3"
+      ],
+      "status": "completed",
+      "file": "4-adjust-proposal-rubric-d9.md",
+      "record": "records/4-adjust-proposal-rubric-d9.md",
+      "type": "doc"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "4"
+      ],
+      "status": "completed",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "scope": "all",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}

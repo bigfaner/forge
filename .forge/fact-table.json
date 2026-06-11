@@ -1,0 +1,472 @@
+{
+  "facts": [
+    {
+      "fact_id": "CLI_COMMAND_SURFACES",
+      "source": "static",
+      "subject": "forge surfaces CLI command signature and modes",
+      "kind": "signature",
+      "value": "forge surfaces [--json] [path] [--types]",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_LIST_MODE",
+      "source": "static",
+      "subject": "forge surfaces --json list mode output format",
+      "kind": "output_format",
+      "value": "{\"surfaces\": [{\"key\": \"<surface-key>\", \"type\": \"<surface-type>\"}]}",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_QUERY_MODE",
+      "source": "static",
+      "subject": "forge surfaces --json query mode output format",
+      "kind": "output_format",
+      "value": "[{\"key\": \"<surface-key>\", \"type\": \"<surface-type>\"}]; no match returns []",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_TYPES_MODE",
+      "source": "static",
+      "subject": "forge surfaces --json --types output format",
+      "kind": "output_format",
+      "value": "{\"types\": [\"<type1>\", \"<type2>\"]}",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_SURFACES_JSON_ERROR",
+      "source": "static",
+      "subject": "forge surfaces --json error format when surfaces not configured",
+      "kind": "output_format",
+      "value": "stderr: {\"error\": \"no surface configured; run `forge init` to configure surfaces\"}; exit 1",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STRUCT_SURFACE_KEY",
+      "source": "static",
+      "subject": "Task struct SurfaceKey field",
+      "kind": "signature",
+      "value": "SurfaceKey string; JSON tag: surface-key,omitempty",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STRUCT_SURFACE_TYPE",
+      "source": "static",
+      "subject": "Task struct SurfaceType field",
+      "kind": "signature",
+      "value": "SurfaceType string; JSON tag: surface-type,omitempty",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STRUCT_SCOPE_REMOVED",
+      "source": "static",
+      "subject": "Task struct Scope field removal",
+      "kind": "signature",
+      "value": "Scope field deleted, no backward compatibility layer",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_TYPES_FIXED_SET",
+      "source": "static",
+      "subject": "Fixed set of surface types",
+      "kind": "precondition",
+      "value": "web, api, cli, tui, mobile",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_KEY_VALIDATION_PATTERN",
+      "source": "static",
+      "subject": "Surface-key character validation pattern",
+      "kind": "precondition",
+      "value": "alphanumeric, dash, underscore only: [a-zA-Z0-9_-]",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "JUST_MINIMUM_VERSION",
+      "source": "static",
+      "subject": "Minimum just binary version requirement",
+      "kind": "precondition",
+      "value": ">= 1.4.0",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PROBE_RETRY_CONFIG",
+      "source": "static",
+      "subject": "Probe retry configuration for web/api surfaces",
+      "kind": "signature",
+      "value": "max 3 retries, 30-second intervals, total timeout 90s",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PROBE_LOG_FORMAT",
+      "source": "static",
+      "subject": "Probe retry log format",
+      "kind": "output_format",
+      "value": "[probe] [retry <current>/<max>] <url> -- <reason>",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "EXIT_CODE_SEMANTICS",
+      "source": "static",
+      "subject": "Exit code semantics for run-tests orchestration",
+      "kind": "error_code",
+      "value": "0=success, 1=retryable, 2=blocking",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "TEST_STATE_FILE",
+      "source": "static",
+      "subject": "Test state file path and purpose",
+      "kind": "side_effect",
+      "value": ".forge/test-state.json; tracks PID of background processes; cleaned up on teardown",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "WEB_ORCHESTRATION_SEQUENCE",
+      "source": "static",
+      "subject": "Web/api surface orchestration sequence",
+      "kind": "signature",
+      "value": "dev (background) -> probe -> test -> teardown",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CLI_ORCHESTRATION_SEQUENCE",
+      "source": "static",
+      "subject": "CLI/TUI surface orchestration sequence",
+      "kind": "signature",
+      "value": "build -> dev -> test (no probe, no teardown)",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "MOBILE_ORCHESTRATION_SEQUENCE",
+      "source": "static",
+      "subject": "Mobile surface orchestration sequence",
+      "kind": "signature",
+      "value": "test-setup -> dev -> test -> teardown",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "USER_CUSTOMIZED_PROTECTION",
+      "source": "static",
+      "subject": "User-customized recipe protection mechanism",
+      "kind": "precondition",
+      "value": "recipes marked with # user-customized comment are preserved unless --force-regenerate flag is passed",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PROMPT_TEMPLATE_COUNT",
+      "source": "static",
+      "subject": "Number of prompt templates requiring variable update",
+      "kind": "signature",
+      "value": "18 templates with {{SCOPE}} -> {{SURFACE_KEY}}, 1 template with {{TEST_TYPE_ARG}}, 3 skill templates",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "MIGRATION_CHECK_FUNCTION",
+      "source": "static",
+      "subject": "Legacy scope migration check function",
+      "kind": "signature",
+      "value": "CheckLegacyScope(tasks []Task) error; scans for scope field without surface-key, returns blocking error",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_RULE_FILES_INIT_JUSTFILE",
+      "source": "static",
+      "subject": "Surface rule files for init-justfile",
+      "kind": "signature",
+      "value": "skills/init-justfile/rules/surfaces/{web,api,cli,tui,mobile}.md",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "SURFACE_RULE_FILES_RUN_TESTS",
+      "source": "static",
+      "subject": "Surface rule files for run-tests",
+      "kind": "signature",
+      "value": "skills/run-tests/rules/surfaces/{web,api,cli,tui,mobile}.md",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "DEAD_CODE_FUNCTIONS",
+      "source": "static",
+      "subject": "Dead code functions to be removed after migration",
+      "kind": "signature",
+      "value": "extractTestTypeArg(), genScriptBases() in prompt.go",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "CONFIG_SURFACES_FIELD",
+      "source": "static",
+      "subject": "Config.yaml surfaces field format",
+      "kind": "precondition",
+      "value": "map<string, string> mapping surface-key to surface-type, e.g., {admin-panel: web}",
+      "confidence": "inferred",
+      "updated_at": "2026-05-26T00:00:00Z"
+    },
+    {
+      "fact_id": "PIPELINE_REGISTRY_GEN_SCRIPTS_EXPANSION",
+      "source": "static",
+      "subject": "PipelineRegistry gen-scripts node expansion mode",
+      "kind": "signature",
+      "value": "per-surface-key; ID template: T-test-gen-scripts-{surface-key}; interleaved rewiring in Phase 2",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "PIPELINE_REGISTRY_RUN_TEST_EXPANSION",
+      "source": "static",
+      "subject": "PipelineRegistry test-run node expansion mode",
+      "kind": "signature",
+      "value": "per-surface-key; ID template: T-test-run-{surface-key}; depends on own gen-scripts (interleaved)",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "INTERLEAVED_REWIRING_LOGIC",
+      "source": "static",
+      "subject": "Interleaved dependency rewiring for multi-surface gen-scripts and test-run",
+      "kind": "signature",
+      "value": "Phase 2 of GenerateTestTasks: gen-scripts[i>0] depends on test-run[i-1] of previous surface; test-run depends on own surface gen-scripts; only applies when NOT single-surface",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "SINGLE_SURFACE_DEGRADATION",
+      "source": "static",
+      "subject": "Single-surface task generation behavior",
+      "kind": "signature",
+      "value": "isSingleSurface returns true for scalar form (key '.') or map with exactly 1 entry; strips -{surface-key} suffix from ID; generates exactly 2 tasks: gen-scripts + run-tests",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "EXECUTION_ORDER_RESOLVE",
+      "source": "static",
+      "subject": "Execution order resolution logic",
+      "kind": "signature",
+      "value": "explicit execution-order used as-is; otherwise default priority: api > web > cli > tui > mobile; single surface returns nil",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_INDEX_FILE_FORMAT",
+      "source": "static",
+      "subject": "Task index file format and location",
+      "kind": "signature",
+      "value": "docs/features/<slug>/tasks/index.json; JSON with Feature, Tasks map, StatusEnum, PriorityEnum",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_STATUS_ENUM",
+      "source": "static",
+      "subject": "Task status enumeration values",
+      "kind": "precondition",
+      "value": "pending, in_progress, completed, blocked, suspended, skipped, rejected",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "FORGE_TASK_ADD_FIX_TASK",
+      "source": "static",
+      "subject": "forge task add for fix tasks with --block-source",
+      "kind": "signature",
+      "value": "forge task add --type <fix-type> --title <title> --source-task-id <ID> --block-source; creates fix task, blocks source, adds fix as dependency of source",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "TASK_DEPENDENCY_VALIDATION",
+      "source": "static",
+      "subject": "Task dependency validation in AddTask",
+      "kind": "precondition",
+      "value": "all dependencies must exist in the index; wildcard deps (e.g. 1.x) expand to matching business task IDs",
+      "confidence": "inferred",
+      "updated_at": "2026-06-08T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CLI_START_COMMAND",
+      "source": "static",
+      "subject": "forge worktree start command signature",
+      "kind": "signature",
+      "value": "forge worktree start [slug] [--source-branch branch] [--no-launch] [--interactive/-i]; max 1 arg; source: cmd_start.go:17-31",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CLI_REMOVE_COMMAND",
+      "source": "static",
+      "subject": "forge worktree remove command signature",
+      "kind": "signature",
+      "value": "forge worktree remove <slug> [--hard] [--force]; exactly 1 arg; source: cmd_remove.go:17-33",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_IDEMPOTENT_CHECK",
+      "source": "static",
+      "subject": "Worktree start idempotent directory check logic",
+      "kind": "signature",
+      "value": "os.Stat(targetDir) succeeds + IsDir -> validates .git file exists -> enters existing; source: cmd_start.go:107-143",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CORRUPTION_DETECTION",
+      "source": "static",
+      "subject": "Corrupted worktree detection logic",
+      "kind": "error_code",
+      "value": "directory exists but .git file missing -> stderr: 'error: worktree directory exists but is not a valid git worktree' + hint: 'forge worktree remove <slug>'; exit non-zero; source: cmd_start.go:114-118",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_SOURCE_BRANCH_WARNING",
+      "source": "static",
+      "subject": "--source-branch ignored warning on existing worktree",
+      "kind": "output_format",
+      "value": "stderr: 'warning: worktree already exists, ignoring --source-branch'; source: cmd_start.go:121-123",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_ENTERING_EXISTING",
+      "source": "static",
+      "subject": "Entering existing worktree message",
+      "kind": "output_format",
+      "value": "stderr: 'entering existing worktree: <slug>'; source: cmd_start.go:125",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_CREATED_NEW",
+      "source": "static",
+      "subject": "Created new worktree message",
+      "kind": "output_format",
+      "value": "stderr: 'created new worktree: <slug>'; source: cmd_start.go:237",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_NO_LAUNCH_PATH",
+      "source": "static",
+      "subject": "--no-launch output for existing worktree",
+      "kind": "output_format",
+      "value": "stdout: 'worktree path: <resolvedDir>'; exit 0; no claude session; source: cmd_start.go:128-131",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_NO_LAUNCH_NEW",
+      "source": "static",
+      "subject": "--no-launch output for new worktree",
+      "kind": "output_format",
+      "value": "stdout: 'worktree created at <targetDir>'; exit 0; no claude session; source: cmd_start.go:240-243",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INCLUDES_CONFIG",
+      "source": "static",
+      "subject": "Worktree includes config field",
+      "kind": "signature",
+      "value": "WorktreeConfig.Includes []string yaml:includes; source: config.go:72-75",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INCLUDES_COPY",
+      "source": "static",
+      "subject": "Includes file copying behavior",
+      "kind": "side_effect",
+      "value": "copyIncludesToWorktree copies files from projectRoot to worktreeDir; creates parent dirs; overwrites existing; only during creation (not re-entry); source: helpers.go:152-174",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INCLUDES_VALIDATION",
+      "source": "static",
+      "subject": "Includes path validation rules",
+      "kind": "precondition",
+      "value": "rejects absolute paths, Windows absolute paths, paths containing '..'; verifies file exists in projectRoot; source: helpers.go:120-150",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_BRANCH_RESOLUTION",
+      "source": "static",
+      "subject": "Worktree branch resolution three-layer strategy",
+      "kind": "signature",
+      "value": "Layer 1: local branch exists -> resume; Layer 2: remote branch exists -> create from remote; Layer 3: new branch from source-branch or HEAD; source: cmd_start.go:168-227",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_REMOVE_NOT_FOUND",
+      "source": "static",
+      "subject": "Worktree remove not found error",
+      "kind": "error_code",
+      "value": "targetDir does not exist -> AIError NOT_FOUND 'Worktree not found: <path>'; source: cmd_remove.go:63",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_REMOVE_UNPUSHED",
+      "source": "static",
+      "subject": "Worktree remove unpushed commits check",
+      "kind": "precondition",
+      "value": "checks unpushed commits before removal; blocks without --force; stderr: 'error: branch has N unpushed commit(s)'; source: cmd_remove.go:79-87",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INTERACTIVE_TTY_CHECK",
+      "source": "static",
+      "subject": "Interactive mode TTY requirement",
+      "kind": "precondition",
+      "value": "-i flag requires real terminal (TTY); non-TTY -> stderr: 'error: interactive mode requires a terminal (TTY)'; source: cmd_start.go:49-52",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_INTERACTIVE_NO_ITEMS",
+      "source": "static",
+      "subject": "Interactive mode when no unfinished items exist",
+      "kind": "output_format",
+      "value": "stdout: 'No unfinished proposals or features found.' + 'Create one with: forge proposal <slug> or forge feature <slug>'; exit 0; source: cmd_start.go:55-59",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    },
+    {
+      "fact_id": "WT_WORKTREE_LIST_PORCELAIN",
+      "source": "static",
+      "subject": "Git worktree list porcelain parsing",
+      "kind": "signature",
+      "value": "git worktree list --porcelain; ParsePorcelainWorktrees returns []WorktreeEntry with Path, HEAD, Branch, IsMain; source: worktree_list.go:25-77",
+      "confidence": "inferred",
+      "updated_at": "2026-06-09T00:00:00Z"
+    }
+  ]
+}
