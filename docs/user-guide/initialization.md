@@ -1,6 +1,6 @@
 # 初始化指南
 
-> 最后更新：2026-05-30 | 版本：v3.0.0
+> 最后更新：2026-06-11
 
 本文档说明如何从零开始初始化一个 Forge 项目，包括 `forge init` 的完整流程、配置文件全字段参考和 Surface 检测机制。
 
@@ -30,7 +30,7 @@ forge upgrade
 cd my-project && forge init
 
 # 4. 验证
-forge --version
+forge version
 forge surfaces   # 查看已检测的项目 surface 类型
 ```
 
@@ -160,7 +160,7 @@ auto:
   gitPush: true
   knowledgeSave:
     quick: true
-    full: true
+    full: false
   eval:
     proposal: true
     prd: false
@@ -168,9 +168,31 @@ auto:
     techDesign: false
 worktree:
   source-branch: main
-  copy-files:
+  includes:
     - .env
     - .env.local
+eval:
+  proposal:
+    target: 850
+    iterations: 1
+  prd:
+    target: 900
+    iterations: 2
+  design:
+    target: 900
+    iterations: 2
+  ui:
+    target: 950
+    iterations: 3
+  journey:
+    target: 900
+    iterations: 3
+  contract:
+    target: 850
+    iterations: 2
+  consistency:
+    target: 900
+    iterations: 2
 coverage:
   coding.feature: 80
   coding.enhancement: 60
@@ -211,7 +233,9 @@ execution-order:
 | `auto.eval.uiDesign` | bool | `true` | 生成 UI 设计后是否自动评估 |
 | `auto.eval.techDesign` | bool | `false` | 生成技术设计后是否自动评估 |
 | `worktree.source-branch` | string | — | 创建 worktree 时使用的源分支（如 `main`、`develop`） |
-| `worktree.copy-files` | string[] | `[]` | 创建 worktree 时从源分支复制的文件列表（如 `.env`） |
+| `worktree.includes` | string[] | `[]` | 创建 worktree 时从源分支复制的文件列表（如 `.env`） |
+| `eval.<type>.target` | int | 按类型内置默认值 | 评估目标分数（1000 分制），type 可选：`proposal`、`prd`、`design`、`ui`、`journey`、`contract`、`consistency` |
+| `eval.<type>.iterations` | int | 按类型内置默认值 | 评估最大迭代次数 |
 | `surfaces` | string / map | — | 项目的 surface 类型。标量形式（如 `surfaces: cli`）用于单一类型；映射形式（如 `surfaces: {frontend: web, backend: api}`）用于多类型项目 |
 | `execution-order` | string[] | — | Surface 的执行顺序。当多个 surface 类型相同时必须指定 |
 | `test-framework` | string | — | 测试框架名称（如 `jest`、`pytest`），由 test-guide skill 检测生成 |
@@ -245,11 +269,8 @@ execution-order:
 除了 `forge init` 的交互式配置，还可以使用 `forge config` 命令读写单个配置项：
 
 ```bash
-# 查看完整配置
-forge config
-
 # 读取单个字段
-forge config surfaces
+forge config get surfaces
 
 # 设置单个字段
 forge config set surfaces cli
@@ -378,7 +399,7 @@ source ~/.bashrc   # bash 用户
 forge upgrade
 
 # 验证安装
-forge --version
+forge version
 ```
 
 ### 2. 初始化项目
@@ -434,10 +455,9 @@ CREATED    surfaces (cli)
 
 ### 3. 验证配置
 
-```bash
-# 查看完整配置
-forge config
+查看 `.forge/config.yaml` 文件确认配置内容。
 
+```bash
 # 查看 surface 类型
 forge surfaces
 # 输出：cli

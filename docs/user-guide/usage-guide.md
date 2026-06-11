@@ -1,6 +1,6 @@
 # 使用指南
 
-> 最后更新：2026-05-30 | 对应版本：v3.0.0
+> 最后更新：2026-06-11
 
 本文档提供 Forge 两种工作模式的端到端实战示例、常用单命令场景以及常见问题排错指引。如果你还没有完成安装和环境配置，请先阅读 [环境准备](environment-setup.md) 和 [初始化项目](initialization.md)。
 
@@ -127,7 +127,27 @@ forge quality-gate
 
 ## Quick Mode 端到端实战
 
-Quick Mode 适合小功能、bug 修复或配置调整（预计 1-10 个任务），跳过 PRD 和设计阶段。
+Quick Mode 适合小功能、bug 修复或配置调整，跳过 PRD 和设计阶段。
+
+### 一键模式（推荐）
+
+直接使用 `/quick`，自动完成从探索到执行的全流程：
+
+```
+/quick
+```
+
+`/quick` 会依次自动执行 brainstorm → quick-tasks → run-tasks，无需手动分步。
+
+### 分步模式
+
+如果需要在每个阶段介入审查，可以手动逐步执行：
+
+```
+/brainstorm       → 生成 proposal.md
+/quick-tasks      → 基于 proposal 生成任务
+/run-tasks        → 自动分发执行
+```
 
 ### 场景：修复用户登录超时 Bug
 
@@ -248,29 +268,99 @@ forge quality-gate       # 运行项目级质量门禁
 
 ---
 
+## 团队协作：Worktree 并行开发
+
+Worktree 让多个 feature 在独立的 git worktree 中并行开发，互不干扰。每个 worktree 位于 `.forge/worktrees/<slug>`，自动关联对应 feature。
+
+### 创建 Worktree
+
+```bash
+# 从 HEAD 创建新 worktree（自动启动 Claude）
+forge worktree start my-feature
+
+# 从指定分支创建
+forge worktree start my-feature -b main
+
+# 交互式选择 proposal 或 feature
+forge worktree start -i
+
+# 仅创建 worktree，不启动 Claude
+forge worktree start my-feature --no-launch
+```
+
+### 查看和恢复 Worktree
+
+```bash
+# 列出所有 worktree
+forge worktree list
+
+# 查看当前 worktree 状态
+forge worktree status
+
+# 恢复之前的 Claude 会话
+forge worktree resume my-feature
+```
+
+### 推送和清理
+
+```bash
+# 推送 worktree 分支到远程
+forge worktree push
+
+# 移除 worktree（保留分支）
+forge worktree remove my-feature
+```
+
+### 典型工作流
+
+```bash
+# 1. 开发者 A 开始新功能
+forge worktree start feature-auth
+
+# 2. 开发者 B 同时修复 bug
+forge worktree start fix-login-timeout
+
+# 3. 查看并行状态
+forge worktree list
+
+# 4. 功能完成后推送
+cd .forge/worktrees/feature-auth
+forge worktree push
+
+# 5. 清理已合并的 worktree
+forge worktree remove feature-auth
+```
+
+---
+
 ## 常见问题与排错
 
-### 1. 安装失败：plugin marketplace add 报错
+### 1. 安装失败：forge upgrade 报错
 
-**症状**：执行 `/plugin marketplace add git@github.com:bigfaner/forge.git` 时报错。
+**症状**：执行 `forge upgrade` 时报错。
 
 **排查步骤**：
 
 ```bash
-# 检查 Go 版本（需要 1.25+）
-go version
+# 检查 forge CLI 是否已安装
+forge version
 
-# 检查 SSH 连接（如果使用 SSH 协议）
-ssh -T git@github.com
+# 检查网络连接
+curl -I https://github.com
 
-# 尝试 HTTPS 方式
-/plugin marketplace add https://github.com/bigfaner/forge.git
+# 重新安装 CLI
+curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
+
+# 刷新终端后重试
+source ~/.zshrc    # zsh 用户
+source ~/.bashrc   # bash 用户
+forge upgrade
 ```
 
 **常见原因**：
-- Go 版本低于 1.25：升级 Go
-- SSH key 未配置：改用 HTTPS，或配置 SSH key
+- CLI 未安装：先执行 curl 安装脚本
 - 网络问题：检查代理设置
+- PATH 未更新：刷新终端或重新打开
 
 ### 2. forge init 失败或配置错误
 
@@ -293,7 +383,7 @@ cat .forge/config.yaml
 ```
 
 **常见原因**：
-- 插件未安装：先执行 `/plugin install forge@forge --scope project`
+- 插件未安装：先执行 `forge upgrade`
 - 权限问题：检查项目目录的读写权限
 
 ### 3. 工作流中断：Skill 报错"前置条件不满足"
@@ -349,11 +439,14 @@ forge task list
 手动解除 blocked（仅在确认问题已解决时使用）：
 
 ```bash
-# 手动切换状态（需要提供 reason）
-forge task transition <task-id> --status pending --reason "依赖任务已完成"
+# 手动切换状态（status 为位置参数，需要提供 reason）
+forge task transition <task-id> pending --reason "依赖任务已完成"
+
+# 挂起任务
+forge task transition <task-id> suspended --reason "等待外部依赖"
 ```
 
-**注意**：`completed` 状态不可逆，无法通过任何命令恢复。`rejected` 和 `skipped` 可通过 `forge task reopen` 恢复为 `pending`。
+**注意**：`completed` 状态不可逆，无法通过任何命令恢复。`rejected` 和 `skipped` 可通过 `forge task reopen` 恢复为 `pending`。`suspended` 状态可通过 `forge task transition <task-id> pending --reason "..."` 恢复。
 
 ### 5. 测试失败：Quality Gate 报错
 
@@ -433,6 +526,50 @@ forge worktree start -i
 - 有未推送的 commit：forge 会阻止删除包含未推送 commit 的 worktree，先 push 或确认删除
 
 ---
+
+## CLI 命令速查
+
+| 命令 | 说明 |
+|------|------|
+| `forge init` | 初始化项目环境（交互式配置） |
+| `forge upgrade` | 升级 CLI binary 和 Plugin |
+| `forge version` | 查看当前版本 |
+| `forge config get <key>` | 读取配置项 |
+| `forge config set <key> <value>` | 设置配置项 |
+| `forge feature set <slug>` | 设置当前 feature 上下文 |
+| `forge feature list` | 列出所有 feature |
+| `forge feature status <slug>` | 查看 feature 状态 |
+| `forge feature complete --if-done` | 全部任务完成后标记 feature 完成 |
+| `forge task claim` | 认领下一个 pending 任务 |
+| `forge task list` | 列出任务 |
+| `forge task status <id>` | 查看任务状态 |
+| `forge task query <id>` | 查询任务详情（`-v` 显示完整信息） |
+| `forge task submit <id>` | 提交任务执行记录 |
+| `forge task add` | 创建新任务 |
+| `forge task transition <id> <status>` | 手动切换任务状态 |
+| `forge task reopen <id>` | 恢复 rejected/skipped 任务 |
+| `forge task index --feature <slug>` | 重新生成任务索引 |
+| `forge task validate` | 验证 index.json |
+| `forge task check-deps` | 验证任务依赖 |
+| `forge task cleanup` | 清理已完成/阻塞任务的状态文件 |
+| `forge surfaces` | 查看当前 surface 配置 |
+| `forge surfaces detect` | 检测项目 surface 类型 |
+| `forge surfaces detect --apply` | 检测并写入配置 |
+| `forge worktree start <slug>` | 创建 worktree 并启动 Claude |
+| `forge worktree resume <slug>` | 恢复 worktree 中的 Claude 会话 |
+| `forge worktree list` | 列出所有 worktree |
+| `forge worktree remove <slug>` | 移除 worktree |
+| `forge worktree push` | 推送 worktree 分支到远程 |
+| `forge quality-gate` | 运行质量门控 |
+| `forge proposal <slug>` | 查看 proposal 摘要 |
+| `forge prompt get-by-task-id <id>` | 获取任务执行 prompt |
+| `forge fact` | 管理 Fact Table |
+| `forge lesson` | 查看经验教训 |
+| `forge research` | 查看调研报告 |
+| `forge forensic` | 分析会话 transcript |
+| `forge verify-task-done` | 验证任务完成（git hook 用） |
+| `forge justfile` | Justfile 管理 |
+| `forge cleanup` | 清理已完成/阻塞任务的状态文件 |
 
 ## 相关文档
 
