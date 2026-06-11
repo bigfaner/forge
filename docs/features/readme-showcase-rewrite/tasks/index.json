@@ -1,0 +1,71 @@
+{
+  "feature": "readme-showcase-rewrite",
+  "proposal": "docs/proposals/readme-showcase-rewrite/proposal.md",
+  "created": "2026-06-11",
+  "tasks": {
+    "1-write-readme-zh": {
+      "id": "1",
+      "title": "重写 README.md（中文版）",
+      "priority": "P0",
+      "estimatedTime": "1.5h",
+      "status": "pending",
+      "file": "1-write-readme-zh.md",
+      "record": "records/1-write-readme-zh.md",
+      "type": "doc"
+    },
+    "2-write-readme-en": {
+      "id": "2",
+      "title": "撰写 README.en.md（英文版）",
+      "priority": "P1",
+      "estimatedTime": "1h",
+      "dependencies": [
+        "1"
+      ],
+      "status": "pending",
+      "file": "2-write-readme-en.md",
+      "record": "records/2-write-readme-en.md",
+      "type": "doc"
+    },
+    "quick-drift-detection": {
+      "id": "T-quick-doc-drift",
+      "title": "Detect Spec Drift",
+      "priority": "P2",
+      "estimatedTime": "15min",
+      "dependencies": [
+        "2"
+      ],
+      "status": "pending",
+      "file": "quick-drift-detection.md",
+      "record": "records/quick-drift-detection.md",
+      "type": "doc.drift"
+    },
+    "review-doc": {
+      "id": "T-review-doc",
+      "title": "Review Documentation Quality",
+      "priority": "P1",
+      "estimatedTime": "30min",
+      "dependencies": [
+        "1",
+        "2"
+      ],
+      "status": "pending",
+      "file": "review-doc.md",
+      "record": "records/review-doc.md",
+      "type": "doc.review"
+    }
+  },
+  "statusEnum": [
+    "pending",
+    "in_progress",
+    "completed",
+    "blocked",
+    "suspended",
+    "skipped",
+    "rejected"
+  ],
+  "priorityEnum": [
+    "P0",
+    "P1",
+    "P2"
+  ]
+}
