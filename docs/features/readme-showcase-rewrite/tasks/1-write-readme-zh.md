@@ -34,6 +34,9 @@ mainSession: false
 |------|--------|
 | _(无删除文件)_ | |
 
+## Hard Rules
+- 竞品功能矩阵中每个 ✓/✗ 标记必须可溯源：撰写时通过实时搜索竞品（Superpowers / Spec Kit / OpenSpec）的最新 README、文档和仓库，逐项验证功能是否支持，确保信息准确。对有争议的项在 Implementation Notes 中注明判断依据。
+
 ## Acceptance Criteria
 - [ ] 首屏（前 30 行）包含核心定位 + 痛点共鸣叙述（场景化叙事，非空泛口号）
 - [ ] 总长度 ≤ 200 行（当前 ~474 行）
