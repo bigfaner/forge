@@ -250,27 +250,32 @@ forge quality-gate       # 运行项目级质量门禁
 
 ## 常见问题与排错
 
-### 1. 安装失败：plugin marketplace add 报错
+### 1. 安装失败：forge upgrade 报错
 
-**症状**：执行 `/plugin marketplace add git@github.com:bigfaner/forge.git` 时报错。
+**症状**：执行 `forge upgrade` 时报错。
 
 **排查步骤**：
 
 ```bash
-# 检查 Go 版本（需要 1.25+）
-go version
+# 检查 forge CLI 是否已安装
+forge version
 
-# 检查 SSH 连接（如果使用 SSH 协议）
-ssh -T git@github.com
+# 检查网络连接
+curl -I https://github.com
 
-# 尝试 HTTPS 方式
-/plugin marketplace add https://github.com/bigfaner/forge.git
+# 重新安装 CLI
+curl -fsSL https://github.com/bigfaner/forge/releases/latest/download/install.sh | bash
+
+# 刷新终端后重试
+source ~/.zshrc    # zsh 用户
+source ~/.bashrc   # bash 用户
+forge upgrade
 ```
 
 **常见原因**：
-- Go 版本低于 1.25：升级 Go
-- SSH key 未配置：改用 HTTPS，或配置 SSH key
+- CLI 未安装：先执行 curl 安装脚本
 - 网络问题：检查代理设置
+- PATH 未更新：刷新终端或重新打开
 
 ### 2. forge init 失败或配置错误
 
@@ -293,7 +298,7 @@ cat .forge/config.yaml
 ```
 
 **常见原因**：
-- 插件未安装：先执行 `/plugin install forge@forge --scope project`
+- 插件未安装：先执行 `forge upgrade`
 - 权限问题：检查项目目录的读写权限
 
 ### 3. 工作流中断：Skill 报错"前置条件不满足"

@@ -362,6 +362,7 @@ Forge 提供两种工作模式，根据功能复杂度选择：
 │                                                     │
 │ /consolidate-specs  /learn  /forensic  /deep-research│
 │ /clean-code  /gen-web-sitemap  /test-guide           │
+│ /init-justfile  /extract-design-md  /eval            │
 │                                                     │
 └─────────────────────────────────────────────────────┘
 ```

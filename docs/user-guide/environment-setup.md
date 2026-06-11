@@ -100,7 +100,7 @@ forge upgrade
 4. 验证安装：
 
 ```bash
-forge --version
+forge version
 ```
 
 > **后续升级：** 运行 `forge upgrade` 即可同时升级 CLI binary 和 Plugin。
@@ -148,7 +148,7 @@ forge upgrade
 4. 验证安装：
 
 ```bash
-forge --version
+forge version
 ```
 
 > **开发提示：** 修改 CLI 源码后，需要重新执行步骤 1 中的 `bash scripts/install-local.sh` 重新构建安装。Forge CLI 安装位置为 `~/.forge/bin/forge`。
@@ -162,10 +162,10 @@ forge --version
 ### 1. 检查 Forge CLI 版本
 
 ```bash
-forge --version
+forge version
 ```
 
-应输出当前安装的版本号（如 `5.16.0`）。
+应输出当前安装的版本号（如 `5.21.0`）。
 
 ### 2. 检查 Forge 帮助信息
 
@@ -241,7 +241,7 @@ node --version
 
 ### 权限问题
 
-**症状：** 安装时报错 `Permission denied` 或 `forge --version` 提示命令未找到。
+**症状：** 安装时报错 `Permission denied` 或 `forge version` 提示命令未找到。
 
 **解决方案：**
 
