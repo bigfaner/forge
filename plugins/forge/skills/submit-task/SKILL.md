@@ -2,6 +2,7 @@
 name: submit-task
 description: Use after completing a task to create its execution record and update task status.
 argument-hint: "[task-id]"
+user-invocable: false
 ---
 
 # Submit Task
