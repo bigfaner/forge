@@ -1,7 +1,7 @@
 ---
 feature: "readme-showcase-rewrite"
 created: "2026-06-11"
-status: tasks
+status: completed
 mode: quick
 ---
 
