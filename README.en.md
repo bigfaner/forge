@@ -60,10 +60,10 @@ Every step comes with automated quality checks. The `compile -> fmt -> lint -> t
 # Initialize your project
 forge init
 
-# Quick mode — for small features (1-2h, 1-10 tasks)
+# Quick mode — shorter pipeline, skips PRD/design/eval
 /quick
 
-# Full pipeline — for complex features (>2h, >10 tasks)
+# Full pipeline — complete brainstorm -> PRD -> design -> tasks -> execute flow
 /brainstorm -> /write-prd -> /tech-design -> /breakdown-tasks -> /run-tasks
 ```
 
@@ -108,7 +108,14 @@ Building from source: `git clone` -> `cd forge-cli && bash scripts/install-local
 
 ---
 
-## Contributing
+## Learn More
+
+- [Architecture Overview](docs/user-guide/architecture-overview.md) — Plugin system, four core components, data flow and state management
+- [Usage Guide](docs/user-guide/usage-guide.md) — Full Mode / Quick Mode end-to-end walkthroughs, single-command scenarios, troubleshooting
+- [Project Initialization](docs/user-guide/initialization.md) — `forge init` walkthrough, config field reference, Surface detection
+- [Environment Setup](docs/user-guide/environment-setup.md) — Setting up your Forge development environment from scratch
+
+---
 
 ```bash
 git clone git@github.com:bigfaner/forge.git && cd forge

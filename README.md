@@ -60,10 +60,10 @@
 # 初始化项目
 forge init
 
-# 快速模式 — 适合小功能（1-2h，1-10 任务）
+# 快速模式 — 流程更短，跳过 PRD/设计/eval
 /quick
 
-# 完整模式 — 适合复杂功能（>2h，>10 任务）
+# 完整模式 — 完整的 brainstorm → PRD → 设计 → 任务 → 执行 流程
 /brainstorm -> /write-prd -> /tech-design -> /breakdown-tasks -> /run-tasks
 ```
 
@@ -105,6 +105,15 @@ cd my-project; forge init
 ```
 
 本地开发者构建：`git clone` -> `cd forge-cli && bash scripts/install-local.sh` -> `forge upgrade`
+
+---
+
+## 深入了解
+
+- [架构概览](docs/user-guide/architecture-overview.md) — 插件机制、四大组件、数据流与状态管理
+- [使用指南](docs/user-guide/usage-guide.md) — Full Mode / Quick Mode 端到端实战、单命令场景、常见问题排错
+- [项目初始化](docs/user-guide/initialization.md) — `forge init` 完整流程、配置字段参考、Surface 检测
+- [环境配置](docs/user-guide/environment-setup.md) — 从零开始配置 Forge 开发环境
 
 ---
 
