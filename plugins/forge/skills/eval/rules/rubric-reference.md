@@ -15,5 +15,5 @@ All rubrics: `rubrics/<type>.md`
 | `consistency` | 1000 | 900 | 3 | docs/full scope modes |
 | `validate-code` | 1000 | 700 | 1 | Single-pass; scenario tracing; no reviser |
 | `validate-ux` | 1000 | 700 | 1 | Single-pass; two-phase (snapshot + score); no reviser |
-| `journey` | 1150 | 975 | 3 | 7 dimensions incl. Workflow Coverage; per-dimension min thresholds |
-| `contract` | 1100 | 935 | 3 | 8 dimensions incl. Anchor Integrity + Fixture Specification; per-dimension min thresholds |
+| `journey` | 1000 | 850 | 3 | 7 dimensions incl. Workflow Coverage; per-dimension min thresholds |
+| `contract` | 1000 | 850 | 3 | 8 dimensions incl. Anchor Integrity + Fixture Specification; per-dimension min thresholds |
